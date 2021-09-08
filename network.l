@@ -267,10 +267,9 @@ transient unit Network
 	
 	string logTable = "frame,now,animTime,networkTime,tickTime,drawTime,iteration,restoreTime,replayFrames,replayTime,saveTime,user0,user1,user2,received,uncertain,offset,ahead,avarage,percentile,certainFrame,buffer,checksums,events,send,receive,write,parse,touch\n"
 	public string eventLog = ""; sentLog = "", receivedLog="", writeLog="", parseLog = "", touchLog = "", checksumLog = "", debugString = ""
-	public bool showDebugString
 	private float lastNetworkFrame, lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
 	private int replayFrames, checkedChecksums
-	private string lastError
+	private string lastError, connectionType
 	
 	internal const targetFps = 30
 	private const pingCount = 6
@@ -298,8 +297,8 @@ transient unit Network
 	private float[] checksums
 	private bool alertShown
 	private int nextReconnect
-	private string randomSeed
 	private bool isLocalhost
+	private bool startInLobby
 	private int ahead
 	private int[] aheads
 	private Buffer sendBuffer
@@ -309,7 +308,7 @@ transient unit Network
 	bool skipSending
 	
 	init
-		showDebugString = isLocalhost = Platform.url.contains("localhost")
+		Platform.showDebugInfo = isLocalhost = Platform.url.contains("localhost")
 		
 	initDatabase
 		IndexedDB.start "up4playing", "snapshot", 5
@@ -337,9 +336,10 @@ transient unit Network
 	startLocal: userCount = 1
 		userId = 0
 		mode = Local
+		startInLobby = false
+		certainFrame = int.maxValue
 		Input.internalUsers.clear
-		randomSeed = Math.generateRandomSeed
-		Math.setRandomSeed randomSeed
+		Math.setRandomSeed Math.generateRandomSeed
 		initDatabase
 		reset
 		resetStartTime
@@ -347,10 +347,12 @@ transient unit Network
 		
 	// Clears all inputs and resets the application to the first frame
 	stop
-		for Input.internalUsers: inputs.reset
+		for Input.internalUsers: .inputs.reset; .startInputFrame 0
 		frames = 0
 		frameWithNewWatches = 0
+		startInLobby = false
 		goToFrame 0
+		lastError = ""
 		
 	// Calls init functions, creates the local users, resets read positions and starts app
 	// This is called on startup, after every code change and when going backwards in the timeline
@@ -371,10 +373,10 @@ transient unit Network
 		// Reset read pos to replay inputs from the beginning
 		for Input.internalUsers: inputs.readPos = 0
 			
-		lobby.inLobby = false
 		Math.randomValueIndex = 0
 		frame = 0
-		startApp
+		lobby.inLobby = startInLobby
+		if !startInLobby: startApp
 	
 	// Steps forward when going to a frame in the future
 	// or replays from the beginning when going to a frame in the past
@@ -441,8 +443,8 @@ transient unit Network
 		let targetFrame = Math.floor((now - startTime)/targetFrameTime)+1
 		let nextInputFrame = targetFrame
 		let frameMinusOffset = targetFrame - aheadPercentile
-		certainFrame = Math.min(frameMinusOffset, receivedFrames)
-		
+		certainFrame = mode == Connected ? Math.min(frameMinusOffset, receivedFrames) : int.maxValue
+
 		if mode == Local && targetFrame > frame + targetFps*2
 			// After a long pause in local mode, we do not want to process all missed frames, so we adjust the start time
 			let prevTargetFrame = targetFrame
@@ -488,8 +490,8 @@ transient unit Network
 					lastError = error.message
 				
 				// Debug string
-				if showDebugString
-					debugString = "v{Platform.version} w:"
+				if Platform.showDebugInfo
+					debugString = "v{Platform.version} ct:{connectionType} seed:{Math.randomSeed} w:"
 					for user -> Input.internalUsers
 						if user
 							debugString += " " + user.inputs.writePos.format(grouping:true)
@@ -592,7 +594,7 @@ transient unit Network
 			log error
 			lastError = error.message
 			
-		drawText debugString, {0, 528}
+		drawText debugString, {0, 532}
 		drawTime = Time.measure
 			graphics.finishFrame
 		
@@ -716,11 +718,15 @@ transient unit Network
 		else
 			print "restore failed"
 		
-	saveLogs
-		if Input.isCertain: saveLogsInternal
+	saveEventStreamAndLogs
+		if Input.isCertain
+			saveEventStream
+			Platform.schedule delay:1000
+				saveLogs
 			
-	internal saveLogsInternal
-		Platform.saveTextFile "log.csv", logTable
+	internal saveLogs
+		let time = Time.current
+		Platform.saveTextFile "{Platform.appName} {time.dayShortMonthNameYearString} {time.hourMinuteSecondString} v{Platform.version}.csv", logTable
 		Http.post "/saveLog/{gameId}/{roomId}/{userId}", logTable
 			log "save logs"
 		else
@@ -730,7 +736,8 @@ transient unit Network
 		Buffer buffer
 		buffer.writeInt32 frame-1
 		buffer.writeInt32 frames
-		buffer.writeString randomSeed
+		buffer.writeString Math.randomSeed
+		buffer.writeBool startInLobby
 		buffer.writeInt8 Input.internalUsers.length
 		for Input.internalUsers
 			buffer.writeInt8 .id
@@ -745,7 +752,8 @@ transient unit Network
 			// Read event stream
 			frame = buffer.readInt32
 			frames = buffer.readInt32
-			randomSeed = buffer.readString
+			let randomSeed = buffer.readString
+			startInLobby = buffer.readBool
 			let userCount = buffer.readInt8
 			Input.internalUsers.clear
 			for userCount
@@ -758,10 +766,11 @@ transient unit Network
 			// Replay
 			for Input.internalUsers
 				.collectInputs = true
-				.currentFrame = frames - 1
+				.currentFrame = frames-1
+				if Platform.isDebug: .local = true
 				.startInputFrame frames
 			userId = Input.internalUsers.findIndex.local
-			certainFrame = frame-1
+			certainFrame = int.maxValue
 			Platform.sendFrame(frame, frames)
 			Math.setRandomSeed randomSeed
 			goToFrame targetFrame:frame, replay:true
@@ -847,6 +856,7 @@ transient unit Network
 	
 	js void join: string gameId, string roomId
 		init()
+		Network_startInLobby = true
 		Network_gameId = gameId
 		Network_roomId = roomId
 		Network_log("Network.join "+location.href)
@@ -1353,9 +1363,13 @@ transient unit Network
 				if !internalUser.local or Platform.showLocalPointer or Platform.mode == Play or frame < frames
 					for user.touches
 						if Framework.isVisibleFor .smoothPosition, this.userId
-							drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0
-							if user.color: drawRectangle .smoothPosition+{16,78}, size:{26,10}, user.color
-							
+							drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0, layer:int.maxValue
+							if user.color
+								if user.color == Black
+									drawRectangle .smoothPosition+{16,80}, size:{26,10}, user.color, layer:int.maxValue, outlineColor:{"a0a0a0"}, outlineWidth:2
+								else
+									drawRectangle .smoothPosition+{16,78}, size:{26,10}, user.color, layer:int.maxValue
+									
 	private js void logConnectionType(object peerConnection)
 		setTimeout(async () => {
 			let stats = await peerConnection.getStats()
@@ -1363,10 +1377,9 @@ transient unit Network
 			let candidatePair = candidatePairs.find(a => a.selected) || candidatePairs[0]
 			if(candidatePair) {
 				let candidate = stats.get(candidatePair.localCandidateId);
-				let type = candidate.candidateType
 				let ip = candidate.ip || candidate.address
-				Network_log(">>> Connection", type, ip, candidate)
-				if(Network_userId == 0) Platform_setTitle(candidate.candidateType+" "+ip) 
+				Network_connectionType = candidate.candidateType
+				Network_log("Connection: ", Network_connectionType, ip, candidate)
 			} else {
 				window.stats = [...stats.values()]
 				Network_log("Can't access stats", window.stats)

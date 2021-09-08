@@ -22,6 +22,9 @@ class Color
 	static js string componentToHex: int c
 		var hex = c.toString(16);
 		return hex.length == 1 ? "0" + hex : hex;
+		
+	inline js bool operator ==(Color a, Color b) a.hex == b.hex
+	inline js bool operator !=(Color a, Color b) a.hex != b.hex
 	
 // A texture that can be loaded into video memory
 class Texture
@@ -444,7 +447,10 @@ transient global unit graphics
 			if image: drawImage image, position, frame, scale, visibleFor, layer
 			if text:  drawText text, position+textOffset, fontSize, textColor, visibleFor, layer
 			
-		Input.onTouchDownWithin position, image.size*scale + touchMargin, userId:clickableBy, showTouchArea
+		// Handle click
+		// Only visible buttons can be clickable
+		let userId = clickableBy != -1 ? clickableBy : visibleFor != -1 ? visibleFor : currentlyVisibleFor
+		Input.onTouchDownWithin position, image.size*scale + touchMargin, userId, showTouchArea
 			onClick touch
 			
 	// Draws a rectangle on the screen

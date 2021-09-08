@@ -18,7 +18,7 @@ transient unit Platform
 	public userCount = 2
 	public bool showSafeArea = true
 	public bool showLocalPointer = false
-	public bool isLocal = false
+	public bool showDebugInfo = false
 	
 	public inline js string url := location.href
 	public inline js int version := version
@@ -118,8 +118,8 @@ transient unit Platform
 		let roomId = path[4]
 		
 		Image.mainTexture.open
-			if isDebug || isLocal || roomId == "local" || url.startsWith("file"): Network.startLocal userCount:userCount
-			else                                                                  Network.join gameId, roomId
+			if isDebug || roomId == "local" || url.startsWith("file"): Network.startLocal userCount:userCount
+			else                                                       Network.join gameId, roomId
 			this.engineStarted = true
 			sendEvaluateFinished
 			
@@ -195,7 +195,7 @@ transient unit Platform
 		document.title = title
 		
 	inline js void requestFullscreen
-		try   { if(!Network_isLocalhost) document.body.requestFullscreen() }
+		try   { if(!Network_isLocalhost && !Platform_isDebug) document.body.requestFullscreen() }
 		catch { }
 		
 	js void saveTextFile: string filename, string text
@@ -292,6 +292,10 @@ transient unit Platform
 		
 	inline js void pushState: object state, string title, string url = ""
 		history.pushState(state, title, url)
+		
+	inline js void schedule: int delay
+		                     void() then
+		setTimeout(then, delay)
 		
 struct FileFilter
 	string name
