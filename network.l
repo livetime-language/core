@@ -429,11 +429,11 @@ transient unit Network
 					sendBuffer.writeInt8 cast NetworkMessageType.Tick
 					sendBuffer.writeInt32 inputFrame        // You got all inputs up to and including this frame
 					sendBuffer.writeInt32 receiver.lagFrom  // TEMP for testing
-					sendBuffer.writeBuffer inputs, receiver.inputsSentPos, inputs.writePos - receiver.inputsSentPos
+					sendBuffer.writeBuffer inputs, receiver.sentInputPos, inputs.writePos - receiver.sentInputPos
 					send c, sendBuffer
 					
-					sentLog += " #{inputFrame} to:{c.userId} lag:{receiver.lagFrom} {receiver.inputsSentPos}->{inputs.writePos} {inputs.toRangeString(receiver.inputsSentPos, inputs.writePos)}"
-					receiver.inputsSentPos = inputs.writePos
+					sentLog += " #{inputFrame} to:{c.userId} lag:{receiver.lagFrom} {receiver.sentInputPos}->{inputs.writePos} {inputs.toRangeString(receiver.sentInputPos, inputs.writePos)}"
+					receiver.sentInputPos = inputs.writePos
 					tickMessageSize = sendBuffer.writePos
 
 	private onTickMessage: Connection c, Buffer buffer
