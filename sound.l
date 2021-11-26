@@ -18,10 +18,10 @@ class Sound
 		
 	js void volume: float value
 		this.fadeVolume = value
-		this.audio.volume = this.fadeVolume * audio_volume
+		if(this.audio) this.audio.volume = this.fadeVolume * audio_volume
 		
 	js void updateVolume
-		this.audio.volume = this.fadeVolume * audio_volume
+		if(this.audio) this.audio.volume = this.fadeVolume * audio_volume
 		
 	js void stop
 		if(!Platform_fastForward && this.audio) {
@@ -49,7 +49,8 @@ class Sound
 // A collection of functions for playing audio
 transient global unit audio
 	const float[] volumeLevels = [0, .01, .02, .04, .08, .16, .32, .64, 1]
-	float volumeLevel = 8
+	float volumeLevel = 5
+	// float volumeLevel = 8
 	float volume = volumeLevels[volumeLevel]
 	
 	// TEMP!!!
