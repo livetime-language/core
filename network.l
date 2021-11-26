@@ -1195,7 +1195,7 @@ transient unit Network
 				let candidate = stats.get(candidatePair.localCandidateId);
 				let ip = candidate.ip || candidate.address
 				Network_connectionType = candidate.candidateType
-				Network_log("Connection: ", Network_connectionType, ip, candidate)
+				Network_log("Connection: "+Network_connectionType+" "+ip+" "+candidate)
 			} else {
 				window.stats = [...stats.values()]
 				Network_log("Can't access stats", window.stats)
