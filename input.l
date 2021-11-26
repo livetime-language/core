@@ -7,7 +7,8 @@ transient class InternalUser
 	
 	bool collectInputs  // When we are done pinging, we add a join event and start collecting inputs
 	int inputFrame      // We got all inputs from this player up to and including this frame
-	int inputsSentPos
+	
+	int sentInputPos
 
 	int lagFrom
 	int lagTo
@@ -211,7 +212,7 @@ unit Input
 		let user = internalUsers[Network.userId], inputs = user.inputs
 		if !user.collectInputs: return
 		
-		inputs.writeInt32 user.inputFrame
+		inputs.writeUnsignedInt user.inputFrame
 		inputs.writeUnsignedInt16 cast type
 		inputs.writeString text
 			
@@ -220,7 +221,7 @@ unit Input
 		let user = internalUsers[Network.userId], inputs = user.inputs
 		if !user.collectInputs: return
 		
-		inputs.writeInt32 user.inputFrame
+		inputs.writeUnsignedInt user.inputFrame
 		inputs.writeUnsignedInt16 cast type
 		inputs.writeInt32 keyCode
 		
@@ -238,6 +239,7 @@ unit Input
 		let user = internalUsers[Network.userId], inputs = user.inputs
 		if !user.collectInputs: return
 
+		bool storeTouchMoveIndex
 		if inputType == TouchMove
 			int index = getLastTouchMoveIndex id
 			if index
@@ -247,16 +249,21 @@ unit Input
 				Network.writeLog += " #{user.inputFrame} override {id} at {index} to {Math.round(referencePos.x)} {Math.round(referencePos.y)}"
 				return
 			else
-				setLastTouchMoveIndex id, inputs.writePos+6
-				Network.writeLog += " save {id} at {inputs.writePos+6}"
+				storeTouchMoveIndex = true
 			
 		int composite = cast(inputType)                                 // inputType: 0 -  31 (5 bit)
 		              + Math.shiftLeft(touchType, 5)                    // touchType: 0 -   7 (3 bit)
 		              + Math.shiftLeft(Math.floor(Math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
-		inputs.writeInt32 user.inputFrame
+		inputs.writeUnsignedInt user.inputFrame
 		inputs.writeUnsignedInt16 composite
+		
+		if storeTouchMoveIndex
+			setLastTouchMoveIndex id, inputs.writePos
+			Network.writeLog += " save {id} at {inputs.writePos}"
+			
 		inputs.writeInt16 Math.round(referencePos.x)
 		inputs.writeInt16 Math.round(referencePos.y)
+		
 		Network.writeLog += " #{user.inputFrame} {composite} {Math.round(referencePos.x)} {Math.round(referencePos.y)} ({inputs.readPos}/{inputs.writePos})"
 		
 	private handleWheelEvent: float x, float y, float delta
@@ -265,7 +272,7 @@ unit Input
 		if !user.collectInputs: return
 		
 		Vector2 referencePos = {x*Platform.pixelRatio, y*Platform.pixelRatio}.getRelativeTo(Platform.baseMatrix)
-		inputs.writeInt32 user.inputFrame
+		inputs.writeUnsignedInt user.inputFrame
 		inputs.writeUnsignedInt16 cast InputType.Wheel
 		inputs.writeInt16 Math.round(referencePos.x)
 		inputs.writeInt16 Math.round(referencePos.y)
@@ -274,7 +281,7 @@ unit Input
 		
 	handleSetState: Buffer buffer
 		let user = internalUsers[Network.userId], inputs = user.inputs
-		inputs.writeInt32 user.inputFrame
+		inputs.writeUnsignedInt user.inputFrame
 		inputs.writeUnsignedInt16 cast InputType.SetState
 		inputs.writeBuffer buffer
 		
@@ -289,11 +296,11 @@ unit Input
 				Network.parseLog += " <{userId}>"
 				
 				while true
-					int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
+					int prevReadPos = inputs.readPos
+					int nextFrame = inputs.canRead ? inputs.readUnsignedInt : int.maxValue
 					Network.parseLog += " ({inputs.readPos}/{inputs.writePos})"
 					if inputs.canRead: Network.parseLog += " *{nextFrame}"
-					if nextFrame > frame: break
-					inputs.readPos += 4
+					if nextFrame > frame: inputs.readPos = prevReadPos; break
 					
 					let value = inputs.readUnsignedInt16
 					Network.parseLog += " "+value
@@ -411,7 +418,7 @@ unit Input
 							updateUserIndices
 							Network.parseLog += " join {userId} connectedTo:{user.connectedTo} userCount:{users.length}"
 							// TEMP logging
-							Network.log " join {userId} connectedTo:{user.connectedTo} userCount:{users.length}"
+							Network.log " join {userId} #{nextFrame} connectedTo:{user.connectedTo} userCount:{users.length}"
 						else
 							Network.parseLog += " join {userId} user already exists, userCount:{users.length}"
 							// TEMP logging

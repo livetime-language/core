@@ -273,8 +273,8 @@ transient unit Network
 				// Send imputs
 				if mode == Connected: sendInputs inputFrame:targetFrame-1, aheadAverage
 								
-				// Replay all frames from the first uncertain frame until the current frame
-				// when we received all inputs for frames that we were uncertain about before
+				// When we received all inputs for frames that we were uncertain about before,
+				// replay all frames from the first uncertain frame until the current frame.
 				replayState
 			
 			catch 
@@ -312,7 +312,7 @@ transient unit Network
 					
 				// Debug string
 				if Platform.showDebugInfo
-					debugString = "v{Platform.version} #{frame-1} ct:{connectionType} av:{aheadAverage.format(fractionDigits:1)}"
+					debugString = "v{Platform.version} #{frame-1} ct:{connectionType} msgSize:{tickMessageSize} av:{aheadAverage.format(fractionDigits:1)}"
 					for user -> Input.internalUsers
 						if . and !.local
 							debugString += " <{.id}> {.lagFrom}/{.lagTo} -> {.sendInterval}"
@@ -462,8 +462,8 @@ transient unit Network
 				Snapshot.serialize commonState
 			parseLog += " save u:{uncertainFrame} c:{Framework.checksum}"
 	
-	// Replay all frames from the first uncertain frame until the current frame
-	// when we received all inputs for frames that we were uncertain about before.
+	// When we received all inputs for frames that we were uncertain about before,
+	// replay all frames from the first uncertain frame until the current frame.
 	// This is called at the begining of animationFrame before we start stepping.
 	private replayState
 		if mode != Connected or Input.internalUsers.length == 1: return
@@ -969,9 +969,8 @@ transient unit Network
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast NetworkMessageType.Ping
 		sendBuffer.writeFloat64 pingTime
-		sendBuffer.writeInt32 certainFrame                    // The last certain frame with inputs from everybody
-		sendBuffer.writeFloat64 checksums[certainFrame] || 0  // The checksum of the last certain frame
-		
+		sendBuffer.writeInt32 certainFrame                     // Send checksum for this frame
+		sendBuffer.writeFloat64 checksums[certainFrame] || 0 // Checksum for the specified frame 
 		send c, sendBuffer
 			
 	private onPingMessage: Connection c, Buffer buffer
