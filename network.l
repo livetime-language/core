@@ -124,7 +124,7 @@ transient unit Network
 	initDatabase
 		IndexedDB.start "up4playing", "snapshot", 5
 
-	private startConnected: int startFrame = 0
+	private startConnected
 		if mode == Connected: return
 		for connections
 			if .state == PingPong
@@ -132,17 +132,18 @@ transient unit Network
 				.state = user.state = Connected
 				
 		let user = Input.internalUsers[userId]
-		user.startInputFrame startFrame
+		user.startInputFrame 0
 		
-		user.inputs.writeInt32 startFrame
+		int joinFrame = Math.floor((currentTime - this.startTime)/targetFrameTime)+1
+		user.inputs.writeInt32 joinFrame
 		user.inputs.writeInt16 cast InputType.Join
 		user.collectInputs = true
-		writeLog += " #{startFrame} Join"
+		writeLog += " #{joinFrame} Join"
 		
 		mode = Connected
-		receivedFrames = startFrame-1
-		certainFrame = startFrame-1
-		frame = startFrame
+		receivedFrames = -1
+		certainFrame = -1
+		frame = 0
 		log "Connected", userId, frame, startTime, this.startTime
 		saveState
 		
@@ -422,7 +423,8 @@ transient unit Network
 		for c -> connections
 			if c.state == Connected
 				let receiver = Input.internalUsers[c.userId]
-				receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 1 : 60
+				receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 1 : 15
+				// receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 1 : 60
 				
 				if (inputFrame % receiver.sendInterval) == 0
 					sendBuffer.reset
@@ -856,6 +858,7 @@ transient unit Network
 				// Create reliable data channel
 				// These options would create an unreliable one: {ordered:false, maxRetransmits:0}
 				let dataChannel = peerConnection.createDataChannel("channel")
+				// let dataChannel = peerConnection.createDataChannel("channel", {ordered:false, maxRetransmits:0})
 				dataChannel.binaryType = "arraybuffer"
 				connection.dataChannel = dataChannel
 				dataChannel.onopen = e => {
@@ -1018,11 +1021,14 @@ transient unit Network
 		
 		// Finish pinging after the 20th pong
 		if mode == Ping and pongCount >= 20 and c.fastestPingPongTime < 1000
-			// Request the state from the user who has been here the longest (has the lowest connectionId)
 			log "Ping-Pong complete", pongCount, c.fastestPingPongTime
-			master = Input.internalUsers.withMin.connectionId where . and (.state == Connected or .state == PingPong or .local)
-			let connection = connections.find.userId == master.id
-				sendRequestState connection
+			startConnected
+			
+			// Request the state from the user who has been here the longest (has the lowest connectionId)
+			// master = Input.internalUsers.withMin.connectionId where . and (.state == Connected or .state == PingPong or .local)
+			// let connection = connections.find.userId == master.id
+			// 	sendRequestState connection
+			
 
 		nextPingTime = now + (c.state == PingPong ? 100 : 3000)
 		
@@ -1066,9 +1072,10 @@ transient unit Network
 		buffer.readBuffer snapshotBuffer
 		Snapshot.deserialize Network.snapshotBuffer
 		Math.recreateRandomValues
-		int startFrame = Math.floor((currentTime - this.startTime)/targetFrameTime)+1
-		startConnected startFrame
-		log "received state",c.userId, frame, startFrame, snapshotBuffer.writePos, userCount
+		startConnected
+		// int startFrame = Math.floor((currentTime - this.startTime)/targetFrameTime)+1
+		// startConnected startFrame
+		// log "received state",c.userId, frame, startFrame, snapshotBuffer.writePos, userCount
 			
 	private js void send: Connection connection, Buffer buffer
 		connection.dataChannel.send(buffer.buffer)
@@ -1076,7 +1083,14 @@ transient unit Network
 	private js void setupLocalVideo: int userId
 		if(Network_isLocalhost) return
 		try {
-			Network_localVideoStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+			Network_localVideoStream = await navigator.mediaDevices.getUserMedia({
+				video: {
+					width: 80,
+					height: 60,
+					frameRate: 10
+				},
+				audio: true
+			});
 			Network_localVideoElement = Network_createVideoElement(Network_localVideoStream, /*local*/true);
 			Network_log("setupLocalVideo: success")
 		} catch(error) {
