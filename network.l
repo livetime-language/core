@@ -1085,9 +1085,9 @@ transient unit Network
 		try {
 			Network_localVideoStream = await navigator.mediaDevices.getUserMedia({
 				video: {
-					width: 80,
-					height: 60,
-					frameRate: 10
+					width: 500,
+					height: 375
+					// frameRate: 10
 				},
 				audio: true
 			});
