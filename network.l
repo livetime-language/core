@@ -115,6 +115,7 @@ transient unit Network
 	private bool startInLobby
 	private int ahead
 	private int[] aheads
+	visible float aheadAverage
 	private Buffer sendBuffer
 	private int tickMessageSize
 
@@ -249,7 +250,6 @@ transient unit Network
 			return
 			
 		// Ahead
-		float aheadAverage
 		int aheadPercentile
 		let localPlayer = Input.internalUsers[userId]
 		if mode == Connected and Input.users.length > 1
@@ -424,7 +424,8 @@ transient unit Network
 		for c -> connections
 			if c.state == Connected
 				let receiver = Input.internalUsers[c.userId]
-				receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 2 : 15
+				receiver.sendInterval = aheadAverage < 15 ? 2 : 15
+				// receiver.sendInterval = aheadAverage < 20 ? 10 : 30
 				// receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 1 : 60
 				
 				if (inputFrame % receiver.sendInterval) == 0
