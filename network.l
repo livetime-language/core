@@ -119,7 +119,8 @@ transient unit Network
 	private int tickMessageSize
 
 	init
-		Platform.showDebugInfo = isLocalhost = Platform.url.contains("localhost")
+		isLocalhost = Platform.url.contains("localhost")
+		Platform.showDebugInfo = true
 		
 	initDatabase
 		IndexedDB.start "up4playing", "snapshot", 5
