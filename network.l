@@ -413,7 +413,7 @@ transient unit Network
 			
 		Input.updateCursor
 		drawText debugString, {0, 528}
-		if Input.internalUsers.any . and .sendInterval >= 10: drawCircle {920, 496}, fillColor:Red
+		if Input.internalUsers.any . and .sendInterval > 10: drawCircle {920, 496}, fillColor:Red
 		drawTime = Time.measure
 			graphics.finishFrame
 		
@@ -424,8 +424,8 @@ transient unit Network
 		for c -> connections
 			if c.state == Connected
 				let receiver = Input.internalUsers[c.userId]
-				receiver.sendInterval = aheadAverage < 15 ? 2 : 15
-				// receiver.sendInterval = aheadAverage < 20 ? 10 : 30
+				// receiver.sendInterval = aheadAverage < 15 ? 2 : 15
+				receiver.sendInterval = aheadAverage < 20 ? 10 : 30
 				// receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 1 : 60
 				
 				if (inputFrame % receiver.sendInterval) == 0
