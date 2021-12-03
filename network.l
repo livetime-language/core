@@ -276,6 +276,9 @@ transient unit Network
 		let targetFrame = Math.floor((now - startTime)/targetFrameTime)+1
 		let frameMinusOffset = targetFrame - aheadPercentile
 		certainFrame = mode == Connected ? Math.min(frameMinusOffset, receivedFrames) : int.maxValue
+		
+		// TEMP for testing: Simulate mouse movement
+		Input.handleTouchEvent inputType:TouchMove, x:(targetFrame*10)%1000, y:50+userId*20, pointerType:"mouse", pointerId:0, button:0
 
 		if mode == Local && targetFrame > frame + targetFps*2
 			// After a long pause in local mode, we do not want to process all missed frames, so we adjust the start time
@@ -431,7 +434,7 @@ transient unit Network
 		if Platform.showDebugInfo
 			statisticsGraph.draw
 			drawText debugString, {0, 540}
-			drawText "peer, 1500ms lag outbound, interval {sendIntervalMin} : {sendInvervalMax}", statisticsGraph.position+{statisticsGraph.size.x/2-10, -statisticsGraph.size.y/2-20}, align:Right, layer:1000000
+			drawText "peer, sim, 1500ms lag outbound, interval {sendIntervalMin} : {sendInvervalMax}", statisticsGraph.position+{statisticsGraph.size.x/2-10, -statisticsGraph.size.y/2-20}, align:Right, layer:1000000
 		
 		if Input.internalUsers.any . and .sendInterval > 10: drawCircle {920, 496}, fillColor:Red
 		drawTime = Time.measure
