@@ -436,6 +436,9 @@ transient unit Network
 		if Input.internalUsers.any . and .sendInterval > 10: drawCircle {920, 496}, fillColor:Red
 		drawTime = Time.measure
 			graphics.finishFrame
+			
+	const sendIntervalMin = 1
+	const sendInvervalMax = 15
 		
 	// Send inputs to other user. This is called in animationFrame.
 	private sendInputs: int inputFrame, float aheadAverage
@@ -444,9 +447,7 @@ transient unit Network
 		for c -> connections
 			if c.state == Connected
 				let receiver = Input.internalUsers[c.userId]
-				// receiver.sendInterval = aheadAverage < 15 ? 2 : 15
-				receiver.sendInterval = aheadAverage < 20 ? 10 : 30
-				// receiver.sendInterval = receiver.lagFrom < 15 and receiver.lagTo < 15 ? 1 : 60
+				receiver.sendInterval = aheadAverage < 15 ? sendIntervalMin : sendInvervalMax
 				
 				if (inputFrame % receiver.sendInterval) == 0
 					sendBuffer.reset
