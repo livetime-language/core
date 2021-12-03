@@ -250,13 +250,28 @@ transient unit Network
 			return
 			
 		// Ahead
+		int aheadMax
 		int aheadPercentile
 		let localPlayer = Input.internalUsers[userId]
 		if mode == Connected and Input.users.length > 1
 			ahead = frame - receivedFrames
 			aheads.add ahead, maxLength:100
 			aheadAverage = aheads.average
-			aheadPercentile = smoothStrength ? aheads.percentile(smoothStrength).limit(0, 50) : 0
+			aheadMax = aheads.max .
+			aheadPercentile = aheadMax + 2
+			
+			// aheadsMax.add aheadMax, maxLength:10
+			// aheadPercentile = aheadsMax.average.round
+			// aheadPercentile = smoothStrength ? Math.round(aheads.percentile(smoothStrength).limit(0, 50)*1.2) : 0
+			// aheadPercentile = smoothStrength ? aheads.percentile(smoothStrength).limit(0, 50) : 0
+			
+			// statisticsGraph.add "aheadMax", aheadMax, Blue
+			statisticsGraph.add "ahead", ahead, Blue
+			statisticsGraph.add "average", aheadAverage, Red
+			
+			// let user = Input.internalUsers.find.local == false
+			// statisticsGraph.add "lagTo", user.lagTo, Red
+			// statisticsGraph.add "lagFrom", user.lagFrom, Yellow
 		
 		let targetFrame = Math.floor((now - startTime)/targetFrameTime)+1
 		let frameMinusOffset = targetFrame - aheadPercentile
@@ -412,7 +427,12 @@ transient unit Network
 			Platform.sendErrorToEditor error
 			
 		Input.updateCursor
-		drawText debugString, {0, 528}
+		
+		if Platform.showDebugInfo
+			statisticsGraph.draw
+			drawText debugString, {0, 540}
+			drawText "peer, 1500ms lag outbound, interval {sendIntervalMin} : {sendInvervalMax}", statisticsGraph.position+{statisticsGraph.size.x/2-10, -statisticsGraph.size.y/2-20}, align:Right, layer:1000000
+		
 		if Input.internalUsers.any . and .sendInterval > 10: drawCircle {920, 496}, fillColor:Red
 		drawTime = Time.measure
 			graphics.finishFrame
@@ -1091,7 +1111,8 @@ transient unit Network
 					height: 375
 					// frameRate: 10
 				},
-				audio: true
+				audio: false
+				// audio: true
 			});
 			Network_localVideoElement = Network_createVideoElement(Network_localVideoStream, /*local*/true);
 			Network_log("setupLocalVideo: success")
@@ -1217,3 +1238,42 @@ transient unit Network
 				Network_log("Can't access stats", window.stats)
 			}
 		}, 5000)
+
+class StatisticsGraphSeries
+	string name
+	float[] values
+	Color color
+	float lastValue := values.length > 0 ? values[values.length-1] : 0
+	
+transient unit statisticsGraph
+	const Vector2 position = {0, 440}
+	const Vector2 size = {880, 180}
+	
+	private StatisticsGraphSeries[] series
+	
+	add: string name, float value, Color color = White
+		var s = series.find.name == name
+		if !s: series.add s = {name, color:color}
+		s.values.add value, maxLength:size.x.round
+		
+	draw
+		float maxValue
+		for series:	for .values: if . > maxValue: maxValue = .
+			
+		Vector2 startPos = position + size/2
+		Vector2 labelPos = position - size/2 - {0,20}
+		for series
+			drawRectangle labelPos, {32,32}, fillColor:.color, align:Left, layer:1000000
+			drawText "{.name}: {.lastValue}", labelPos+{40, 0}, align:Left, layer:1000000
+			labelPos.x += 200
+			
+			Vector2 prevPos
+			int len = .values.length
+			for len
+				let value = .values[len-1-i]
+				Vector2 pos = {startPos.x - i, startPos.y - value/maxValue*size.y}
+				if i: drawLine prevPos, pos, color:.color, width:3, layer:1000000
+				prevPos = pos
+		drawRectangle position, size, fillColor:Black, outlineColor:White, outlineWidth:3, layer:1000000
+		drawText cast maxValue, position+{size.x/2+8, -size.y/2}, align:Left
+		drawText "0", position+{size.x/2+8, size.y/2}, align:Left
