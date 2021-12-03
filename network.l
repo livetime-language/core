@@ -437,8 +437,8 @@ transient unit Network
 		drawTime = Time.measure
 			graphics.finishFrame
 			
-	const sendIntervalMin = 1
-	const sendInvervalMax = 15
+	const sendIntervalMin = 10
+	const sendInvervalMax = 30
 		
 	// Send inputs to other user. This is called in animationFrame.
 	private sendInputs: int inputFrame, float aheadAverage
