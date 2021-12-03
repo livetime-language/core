@@ -440,7 +440,7 @@ transient unit Network
 		drawTime = Time.measure
 			graphics.finishFrame
 			
-	const sendIntervalMin = 10
+	const sendIntervalMin = 7
 	const sendInvervalMax = 30
 		
 	// Send inputs to other user. This is called in animationFrame.
