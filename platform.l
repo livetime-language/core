@@ -16,7 +16,8 @@ enum AnchorMode: TopLeft, TopCenter, Center
 // - the origin in the top left corner
 transient unit Platform
 	public userCount = 2
-	public bool showSafeArea = true
+	// FlappyBird Demo: Do not show safe area
+	public bool showSafeArea = false
 	public bool showDebugInfo = false
 	
 	public inline js string url := location.href
@@ -24,7 +25,8 @@ transient unit Platform
 	public inline js int appName := appName
 	public inline js int userAgent := navigator.userAgent.replace(/,/g," ")
 	
-	public Vector2 referenceSize = {1920, 1080}
+	// FlappyBird Demo: Portrait reference size
+	public Vector2 referenceSize = {1080, 1920}
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	

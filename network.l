@@ -395,6 +395,7 @@ transient unit Network
 	// Clear screen, process application tick, and draw all graphics
 	// This is called in step.
 	internal tick
+		Math.setRandomSeed("")
 		graphics.startFrame
 		PeerNetwork.updateVideoScreen
 		drawPointers
