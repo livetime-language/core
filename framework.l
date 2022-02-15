@@ -2,12 +2,21 @@ unit Framework
 	Object[] objects
 	Object[] selectedObjects
 	
+	// Evaluate: Immediately remove objects to avoid problems in
+	// - graphics.setUserVideo (updating video object that will be removed)
+	// - Coin.transferToNeighbor (the just removed coin is still their in updateNeighbors)
+	// Object[] toBeRemoved
+	
 	clear
+		// toBeRemoved.addRange objects
 		objects.clear
 		
 	tick
+		// if toBeRemoved
+		// 	toBeRemoved.each.siblings.remove .
+		// 	toBeRemoved.clear
 		fx.tick
-		objects.eachBackwards.tick
+		objects.each <- .tick
 		objects.each.update
 		Input.onTouchUp:  deselect touch.userId
 		
@@ -16,7 +25,7 @@ unit Framework
 		return !board or board.isVisibleFor userId
 			
 	getBoardAt: Vector2 pos
-		for object -> Framework.objects
+		for Framework.objects -> object
 			if object.type == Board
 				Board b = cast object
 				if pos >= b.position - b.size/2 && pos < b.position + b.size/2
@@ -28,7 +37,7 @@ unit Framework
 		
 	debugString
 		let result = ""
-		for objects: result+= o.debugString
+		for objects: result+= .debugString
 		return result
 		
 	private js float appChecksum()
@@ -36,11 +45,24 @@ unit Framework
 		
 	checksum
 		float result = appChecksum
-		for objects: result += o.checksum
+		for objects: result += .checksum
 		// We ensure that we never return 0
 		// because a checksum of 0 is used to indicate that we don't have a checksum for this frame yet
 		if result == 0: return 1.0
-		return result		
+		return result
+			
+transient global unit graphics
+	setUserVideo: int userId = 0, Vector2 pos = {}, float width = 440, float radius = 0
+		VideoObject videoObject = cast Framework.objects.find
+			if .type == VideoObject
+				VideoObject v = cast .
+				return v.userId == userId
+			return false
+		// if !videoObject or Framework.toBeRemoved.contains(videoObject): videoObject = VideoObject(userId)
+		if !videoObject: videoObject = VideoObject(userId)
+		videoObject.position = pos
+		videoObject.radius = radius
+		videoObject.size = {width, width*3/4}
 		
 enum Side: Front, Back
 		
@@ -50,7 +72,7 @@ class Object
 	float alpha = 1
 	int visibleFor = -1
 	
-	private siblings := Framework.objects
+	visible siblings := Framework.objects
 	internal checksum := 0
 	internal debugString := "(Object pos:{position.x} {position.y})"
 	internal tick
@@ -61,10 +83,12 @@ class Object
 		
 	remove
 		siblings.remove this
+		// Framework.toBeRemoved.add this
 		
 	moveTo: Vector2 pos
 		    int duration = 1000
 		    int delay = 0
+		    bool smooth = false
 		Vector2 startValue = position
 		let startTime = Time.now + delay
 		
@@ -77,41 +101,46 @@ class Object
 					startTime = moveEffect.startTime + moveEffect.duration
 					
 		let delta = pos - startValue
-		fx.add MoveEffect startTime, duration, this, startValue, delta
+		fx.add MoveEffect startTime, duration, smooth, this, startValue, delta
 		return this
 		
 	moveTo: Vector2 pos
 		    float speed = 1
 		    int delay = 0
+		    bool smooth = false
 		let delta = pos - position
 		let duration = Math.floor(delta.length / speed)
-		fx.add MoveEffect startTime:Time.now+delay, duration, this, startValue:position, delta
+		fx.add MoveEffect startTime:Time.now+delay, duration, smooth, this, startValue:position, delta
 		return this
 		
 	fadeIn: int duration = 1000
 		    int delay = 0
+		    bool smooth = false
 		alpha = 0
-		fx.add FadeEffect startTime:Time.now+delay, duration, this, startValue:0, delta:1
+		fx.add FadeEffect startTime:Time.now+delay, duration, smooth, this, startValue:0, delta:1
 		return this
 		
 	fadeOut: int duration = 1000
 		     int delay = 0
 		     bool removeWhenDone = true
-		fx.add FadeEffect startTime:Time.now+delay, duration, this, startValue:1, delta:-1, removeWhenDone
+		     bool smooth = false
+		fx.add FadeEffect startTime:Time.now+delay, duration, smooth, this, startValue:1, delta:-1, removeWhenDone
 		return this
 		
 	scaleTo: float scale 
 		     int duration = 1000
 		     int delay = 0
-		fx.add ScaleEffect startTime:Time.now+delay, duration, this, startValue:this.scale, delta:scale-this.scale
+		     bool smooth = false
+		fx.add ScaleEffect startTime:Time.now+delay, duration, smooth, this, startValue:this.scale, delta:scale-this.scale
 		return this
 	
 	fadeAndScaleIn: int duration = 200
 		            float startScale = 3
 		            int delay = 0
+		            bool smooth = false
 		alpha = 0
-		fx.add ScaleEffect startTime:Time.now+delay, duration, this, startValue:startScale, delta:1-startScale
-		fx.add FadeEffect  startTime:Time.now+delay, duration, this, startValue:0, delta:1
+		fx.add ScaleEffect startTime:Time.now+delay, duration, smooth, this, startValue:startScale, delta:1-startScale
+		fx.add FadeEffect  startTime:Time.now+delay, duration, smooth, this, startValue:0, delta:1
 		return this
 		
 Object RectangleObject
@@ -129,21 +158,32 @@ Object CircleObject
 	radiusTo: float value
 		      int duration = 200
 		      int delay = 0
-		fx.add RadiusEffect startTime:Time.now+delay, duration, this, startValue:radius, delta:value-radius
+		      bool smooth = false
+		fx.add RadiusEffect startTime:Time.now+delay, duration, smooth, this, startValue:radius, delta:value-radius
 
 Object TextObject
 	string text
 	int size
 	Font font
 	Color color = White
+	HorizontalAlignment align = Center // The horizontal alignment of the text
+	VerticalAlignment valign = Middle  // The vertical alignment of the text
 	tick
-		drawText text, position, size*scale, color, font, alpha, visibleFor
+		drawText text, position, size*scale, color, align, valign, font, alpha, visibleFor
 		
 Object ImageObject
 	Image image
 	tick
 		drawImage image, position, scale, alpha, visibleFor
 		
+Object VideoObject
+	int userId
+	Vector2 size = {440, 330}
+	float radius
+	tick
+		if radius: drawVideo userId, position, radius
+		else       drawVideo userId, position, size
+			
 Object Button
 	Image image                      // The image of the button
     text = ""                        // The text of the button
@@ -153,7 +193,7 @@ Object Button
     scale = 1.0                      // Scale the image by this factor
     fontSize = 18                    // The font size in pixels   
     touchMargin = Vector2(16,16)     // The margin around the button within which it is touchable
-    textOffset = Vector2()
+    textOffset = Vector2(0,-2)
     showTouchArea = false            // Show the area within which the button is touchable
     visibleFor = -1                  // Only this user will see the button
     clickableBy = -1                 // Only this user can click the button
@@ -240,13 +280,13 @@ Object Piece
 			if !rotateTouch || !rotatedOverThreshold
 				drawButton rotateIcon, position:position+iconPos*{1,-1}*scale, touchMargin:{50,50}
 					rotateTouch = touch
-					rotateOffset = angle - Math.atan2(touch.position - position)
+					rotateOffset = angle - Math.getAngleForVector(touch.position - position)
 					rotatedOverThreshold = false
 				
 			Input.onTouchMove rotateTouch
 				Network.smooth touch.userId
-					angle = targetAngle = Math.atan2(touch.position - position) + rotateOffset
-				if (touch.position - touch.startPosition).length > 4: rotatedOverThreshold = true
+					angle = targetAngle = Math.getAngleForVector(touch.position - position) + rotateOffset
+				if (touch.position - touch.startPosition).length > 16: rotatedOverThreshold = true
 				
 			Input.onTouchUp rotateTouch
 				targetAngle = Math.round(angle / (Math.PI/2)) * Math.PI/2
@@ -325,7 +365,7 @@ Piece Stack
 		size = (b.position+{b.size.x/2, -b.image.size.y/2}) - (a.position-{a.size.x/2, -a.size.y/2})
 	
 	tick
-		for i = Math.limit(objects.length-shownObjectCount, min:0) <- objects.length
+		for Math.limit(objects.length-shownObjectCount, min:0) to objects.length <- i
 			let obj = objects[i]
 			let image = obj.backImage || obj.image
 			drawImage image, obj.position, frame:obj.frame%image.frames.length, scale:obj.scale
@@ -369,12 +409,12 @@ Piece Board
 		
 	debugString
 		string children
-		for objects: children += o.debugString
+		for objects: children += .debugString
 		return "(Board pos:{position.x} {position.y} children:{children})"
 		
 	checksum
 		let result = position.x + position.y + cast(visibleForOthers) + matrix.m0 + matrix.m1 + matrix.m2 + matrix.m3 + matrix.m4 + matrix.m5
-		for objects: result += o.checksum
+		for objects: result += .checksum
 		return result
 		
 	add: Piece object
@@ -392,7 +432,7 @@ Piece Board
 		// Children
 		graphics.visibleFor visibleForOthers == Never or visibleForOthers == Off ? owner : -1
 			graphics.applyMatrix matrix
-				objects.eachBackwards.tick
+				objects.each <- .tick
 		
 		// Pan
 		if panable	
@@ -431,7 +471,7 @@ Piece Board
 	getSpotAt: Vector2 position, Vector2 threshold, Object currentObject
 		Vector2 closestSpotPos = Vector2.none
 		float minDistance = int.maxValue
-		for spot -> spots
+		for spots -> spot
 			let spotPos = spot.getClosestPoint position, this.position
 			let delta = (spotPos - position).abs
 			let distance = delta.length
@@ -479,14 +519,14 @@ Object ParticleSystem
 					angle: Math.randomFloat*Math.PI*2
 			nextBurst = ++burst < bursts ? Time.now + burstInterval : int.maxValue
 
-		for i,p <- particles
-			graphics.move p.pos
-				graphics.rotate p.angle
-					drawImage particleImage, frame:p.frame, scale:p.scale
-			p.pos += p.speed
-			p.speed.y += 1
-			p.angle += .05
-			if p.pos.y < -Platform.size.y/2
+		for particles <-
+			graphics.move .pos
+				graphics.rotate .angle
+					drawImage particleImage, frame:.frame, scale:.scale
+			.pos += .speed
+			.speed.y += 1
+			.angle += .05
+			if .pos.y < -Platform.size.y/2
 				particles.removeAt i
 		
 		if particles.length == 0	
@@ -501,6 +541,7 @@ Piece Coin
 	bool isInfinate
 	bool allowZero
 	int valueVisibleFor = -1
+	int userId = -1
 	image = Coin
 	
 	private Coin closestCoin
@@ -512,7 +553,7 @@ Piece Coin
 	
 	tick
 		if movable
-			Input.onTouchDownWithin position, radius:40
+			Input.onTouchDownWithin position, radius:40, userId
 				moveTouch = touch
 				touchOffset = position - touch.position
 				siblings.moveToBack this
@@ -532,7 +573,7 @@ Piece Coin
 				if closestCoinType == Over: mergeWith closestCoin; else
 				if !isBeingMoved:           transferToNeighbor closestCoin
 		else
-			Input.onTouchUpWithin position, radius:64
+			Input.onTouchUpWithin position, radius:64, userId
 				transferToNeighbor closestCoin
 			
 		if isInfinate or value or allowZero
@@ -546,12 +587,12 @@ Piece Coin
 			drawImage image, position, frame:closestCoinType == Over ? 1 : 0
 			
 	private static updateNeighbors: Object[] siblings, bool isBeingMoved
-		for object -> siblings
+		for siblings -> object
 			if object.type == Coin
 				Coin c = cast object
 				c.clearClosestCoin
 				
-		for object -> siblings
+		for siblings -> object
 			if object.type == Coin
 				Coin c = cast object
 				let closestCoin = getClosestCoin c, threshold:90
@@ -572,7 +613,7 @@ Piece Coin
 	private static getClosestCoin: Coin source, float threshold = float.infinity
 		Coin closestCoin = null
 		float minDistance = threshold
-		for object -> source.siblings
+		for source.siblings -> object
 			if object.type == Coin and object != source
 				Coin c = cast object
 				if c.image == source.image
@@ -602,7 +643,7 @@ Piece Coin
 		Coin neighbor = coin
 		if !neighbor
 			if value <= amount and !isInfinate: return
-			neighbor = {position:position+{45,58}, image:image}
+			neighbor = {position:position+{45,58}, image:image, userId}
 			if board: board.add neighbor
 		value -= amount
 		neighbor.value += amount

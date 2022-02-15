@@ -45,9 +45,7 @@ transient unit Platform
 		init()
 		Platform_updateBaseMatrix();
 		
-	private inline js void initCacheAndImages
-		_constCache.length = 0;
-		_constCache.push(null);
+	private inline js void initMedia
 		audio_init();
 		if(window.Image_init) Image_init();
 		if(window.Font_init)  Font_init();
@@ -66,7 +64,7 @@ transient unit Platform
 		if(!Platform_isMobile) 
 			window.onresize = e => { 
 				Platform_onResize();
-				if(Platform_mode == 0/*Pause*/ && Platform_engineStarted) Network_tick();
+				if(Platform_mode == 0/*Pause*/ && Platform_engineStarted) Network_tick(/*draw*/true);
 			}
 		
 	private js void onResize
@@ -108,7 +106,7 @@ transient unit Platform
 	
 	// This is called when the application starts for the first time	
 	private start: bool isDebug
-		initCacheAndImages
+		initMedia
 		initPlatform
 		this.engineStarted = false
 		this.isDebug = isDebug
@@ -122,6 +120,13 @@ transient unit Platform
 		let gameId = path[3]
 		let roomId = path[4]
 		
+		// TEMP: Allow relay
+		bool allowRelay = true
+		let peerIndex = roomId.indexOf("p")
+		if peerIndex != -1
+			allowRelay = false
+			roomId = roomId.substring(0,peerIndex)
+			
 		// TEMP: For testing, support joining a room with a given userId using the format /gameId/roomId-userId
 		// because starting the app in two browser tabs overwrites the userId in the local storage
 		let userId = -1
@@ -131,8 +136,9 @@ transient unit Platform
 			roomId = roomId.substring(0,dashIndex)
 		
 		openMedia
+			startInterval
 			if isDebug || roomId == "local" || url.startsWith("file"): Network.startLocal userCount:userCount
-			else                                                       Network.join gameId, roomId, userId
+			else                                                       Network.join gameId, roomId, userId, allowRelay
 			this.engineStarted = true
 			sendEvaluateFinished
 			
@@ -141,9 +147,14 @@ transient unit Platform
 		
 	// This is called after every code change to replay all inputs with the new code
 	private replay() 
-		initCacheAndImages
+		initMedia
 		openMedia
 			Network.goToFrame Network.frame-1, replay:true
+			
+	object interval
+	private js void startInterval
+		if(Platform_interval) clearInterval(Platform_interval)
+		Platform_interval = setInterval(() => Platform_tick(), 1000/Network_targetFps)
 	
 	// This is called every animation frame
 	private tick()   if mode == Play or mode == Record: Network.animationFrame
@@ -151,7 +162,7 @@ transient unit Platform
 	private enterSlideMode(PlatformMode mode) this.mode = mode; sendMode
 	
 	internal stop()    mode = Pause;  Network.stop; sendMode
-	internal pause()   mode = Pause;  audio.pause(); sendMode
+	internal pause()   mode = Pause;  audio.stop(); sendMode
 	internal record()  Network.resetStartTimeIfNeeded; mode = Record; sendMode
 	internal play()    Network.resetStartTimeIfNeeded; mode = Play;   sendMode
 	
@@ -173,7 +184,7 @@ transient unit Platform
 					if movedSinceTouchUp                   
 						locationIndex = 0
 						locations.clear
-						for item -> graphics.items
+						for graphics.items -> item
 							if item.location != null and pixelPos.isInsidePoygon item.poly
 								SourceCodeLocation[] itemLocations
 								item.location.flatten itemLocations
@@ -213,7 +224,7 @@ transient unit Platform
 		
 	inline js void setFullscreen: value = true, forUser = -1
 		try   {
-			if(forUser == -1 || Network_userId == forUser) {
+			if(forUser == -1 || Input_localUser?.id == forUser) {
 				if(value) {
 					if(!ServerNetwork_isLocalhost && !Platform_isDebug) document.body.requestFullscreen()
 				} else {
@@ -315,7 +326,7 @@ transient unit Platform
 		alert(message)
 		log(message)
 		
-	inline js void sendErrorToEditor: object error
+	inline js void sendErrorToEditor: Error error
 		if(window.sendErrorToEditor) sendErrorToEditor(error)
 		else                         console.log(error)
 		

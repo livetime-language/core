@@ -58,6 +58,12 @@ struct int
 	inline js int incrementAndWrap: int max // When the integer reaches this value, it wraps around to zero
 		(this = (((this+1) % max) + max) % max)
 	
+	inline js int incrementUpTo: int max // When the integer reaches this value, it wraps around to zero
+		(this < max ? this++ : max)
+		
+	// inline js int[] to: int max
+	// 	(() => {let list=[]; for(let _i=this; _i<max; _i++) list.push(_i); return list})()
+	
 // A number stored as a double precision 64-bit floating point value
 struct float
 	const inline js float minValue := Number.MIN_VALUE
@@ -77,7 +83,7 @@ struct float
 		(this % value)
 		
 	// Returns true if the floot is not zero
-	inline js bool toBool := this != 0
+	inline js bool toBool := this
 	
 	inline js string toString := this.toString()
 		
@@ -125,6 +131,7 @@ struct float
 		(Math.abs((((this % Math_TwoPI) + Math_TwoPI) % Math_TwoPI) - (((value % Math_TwoPI) + Math_TwoPI) % Math_TwoPI)) < epsilon)
 		
 // A sequence of characters
+js String
 class string
 	// Returns the number of characters in the string
 	inline js int length := this.length
@@ -173,6 +180,11 @@ class string
 	inline js string trim
 		this.trim()
 		
+	js string getExtension
+		let dot = this.lastIndexOf(".")
+		if(dot != -1) return this.substring(dot+1)
+		else          return ""
+		
 	inline js string capitalizeFirstCharacter
 		(this.length > 0 ? this[0].toUpperCase() + this.substring(1) : this)
 		
@@ -182,15 +194,21 @@ enum bool: false, true
 enum SortingOrder: Ascending, Descending
 	
 // A data container that grows in size as needed
+js Array
 class List<T>
-	// Execute code for each item in the list
-	inline js void each(void(T a) code)
-		for(let a of this) code()
-					
-	// Execute code for each item in the list in reverse order
-	inline js void eachBackwards(void(T a) code)
-		for(let i=this.length-1; i>=0; i--) {let a=this[i]; code()}
-					
+	// Execute code for each item in a list
+	inline js void each -> void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // The code to execute for each item in a list
+		for(let i=0, _subject=this, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; do()}
+		
+	inline js void each <- void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // The code to execute for each item in a list
+		for(let _subject=this, i=_subject.length-1; i>=0; --i) { let it = _subject[i]; do()}
+		
 	// Adds an item to the end of the list
 	inline js void add: T item // The item to add
 		this.push(item)
@@ -218,16 +236,16 @@ class List<T>
 		                        int count // The number of items to remove
 		this.splice(index, count)
 			
-	removeFirstWhere: bool(T a) condition // The condition to check
-		for i, item -> this
-			if condition(item)
+	T removeFirstWhere: bool(T a) condition // The condition to check
+		for this
+			if condition(.)
 				removeAt i
-				return item
+				return .
 		return null
 		
 	removeAllWhere: bool(T a) condition // The condition to check
-		for i, item <- this
-			if condition(item)
+		for this <-
+			if condition(.)
 				removeAt i
 		return null
 		
@@ -263,7 +281,7 @@ class List<T>
 	void setFilteredList: T[] list
 		                  bool(T a) condition
 		clear
-		for list: if condition(l): add l
+		for list: if condition(.): add .
 		
 	void setFilteredList: T[] list
 		                  bool(T a) condition
@@ -271,8 +289,8 @@ class List<T>
 		clear
 		int count = 0
 		for list
-			if condition(l)
-				add l
+			if condition .
+				add .
 				if ++count >= maxCount: break
 		
 	inline js T pop := this.pop()
@@ -332,17 +350,17 @@ class List<T>
 		float closestDistance = float.infinity
 		int closestIndex = -1
 		T closestItem = null
-		for i, item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			float distance
 			if value > max: distance = value - max; else
 			if value < min: distance = min - value; else
-				            this.removeAt(i); return item
+				            this.removeAt(i); return .
 				
 			if distance < closestDistance
 				closestDistance = distance
 				closestIndex = i
-				closestItem = item
+				closestItem = .
 		
 		if(closestIndex != -1) this.removeAt(closestIndex)
 		return closestItem
@@ -376,24 +394,24 @@ class List<T>
 		}
 		
 	// Sort the list
-	inline js void sort
+	inline js T[] sort
 		this.sort()
 	
-	inline js void sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
+	inline js T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		this.sort(comparer)
 	
 	// Sort the list by a given expression
-	orderBy: float(T a) expression // The expression to order by
-		this.sort(expression(a) - expression(b))
+	T[] orderBy: float(T a) expression // The expression to order by
+		return this.sort(expression(a) - expression(b))
 		
-	orderBy: string(T a) expression // The expression to order by
-		this.sort(expression(a) compareTo expression(b))
+	T[] orderBy: string(T a) expression // The expression to order by
+		return this.sort(expression(a) compareTo expression(b))
 		
 	// Sort the list by a given expression
-	orderBy: float(T a) expression // The expression to order by
+	T[] orderBy: float(T a) expression // The expression to order by
 		     SortingOrder order    // Specifies if you want to sort in ascending or descending order
-		if order == Ascending: this.sort(expression(a) - expression(b))
-		else                   this.sort(expression(b) - expression(a))
+		if order == Ascending: return this.sort(expression(a) - expression(b))
+		else                   return this.sort(expression(b) - expression(a))
 		
 	// Returns true if the given condition is true for any item in the list
 	inline js bool any: bool(T a) predicate // The condition to check
@@ -406,17 +424,23 @@ class List<T>
 	inline js bool all: bool(T a) predicate // The condition to check
 		this.every(predicate)
 		
+	inline js TValue[] select: TValue(T a) selector
+		this.map(selector)
+		
 	inline js T find: bool(T a) condition // The condition to check
 		this.find(condition)
 		
 	int findIndex: bool(T a) condition // The condition to check
-		for i, item -> this
-			if condition(item)
+		for this
+			if condition(.)
 				return i
 		return -1
 		
 	inline js T[] where: bool(T a) condition // The condition to check
 		this.filter(condition)
+		
+	inline js T[] take: int count
+		this.slice(0, count)
 		
 	// js int sum: int(T a) selector
 	// 	let sum = 0
@@ -434,7 +458,7 @@ class List<T>
 		return this.length > 0 ? this.sum() / this.length : 0
 		
 	shuffle
-		for i = 1 <- length
+		for 1 to length <- i
 			var j = Math.floor(Math.randomFloat * (i + 1))
 			var temp = this.get(i)
 			this.set(i, this.get(j))
@@ -456,8 +480,8 @@ class List<T>
 		 int threshold = int.maxValue
 		 int default = 0
 		int resultValue = threshold
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
@@ -465,8 +489,8 @@ class List<T>
 		 float threshold = float.maxValue
 		 float default = 0
 		float resultValue = threshold
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
@@ -475,9 +499,9 @@ class List<T>
 		 int default = 0
 		 bool(T a) where
 		int resultValue = threshold
-		for item -> this
-			if where(item)
-				let value = selector(item)
+		for this
+			if where(.)
+				let value = selector(.)
 				if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
@@ -486,9 +510,9 @@ class List<T>
 		 float default = 0
 		 bool(T a) where
 		float resultValue = threshold
-		for item -> this
-			if where(item)
-				let value = selector(item)
+		for this
+			if where(.)
+				let value = selector(.)
 				if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
@@ -496,8 +520,8 @@ class List<T>
 		 int threshold = int.minValue
 		 int default = 0
 		int resultValue = threshold
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
@@ -505,8 +529,8 @@ class List<T>
 		 float threshold = float.minValue
 		 float default = 0
 		float resultValue = threshold
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
@@ -515,9 +539,10 @@ class List<T>
 		 int default = 0
 		 bool(T a) where
 		int resultValue = threshold
-		for item -> this if where(item)
-			let value = selector(item)
-			if value > resultValue: resultValue = value
+		for this 
+			if where(.)
+				let value = selector(.)
+				if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: float(T a) selector
@@ -525,17 +550,18 @@ class List<T>
 		 float default = 0
 		 bool(T a) where
 		float resultValue = threshold
-		for item -> this if where(item)
-			let value = selector(item)
-			if value > resultValue: resultValue = value
+		for this
+			if where(.)
+				let value = selector(.)
+				if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	minIndex: int(T a) selector
 		      int threshold = int.maxValue
 		int resultValue = threshold
 		int index = -1
-		for i,item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value < resultValue
 				resultValue = value
 				index = i
@@ -545,8 +571,8 @@ class List<T>
 		      int threshold = int.minValue
 		int resultValue = threshold
 		int index = -1
-		for i,item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value > resultValue
 				resultValue = value
 				index = i
@@ -556,22 +582,22 @@ class List<T>
 		     int threshold = int.maxValue
 		int resultValue = threshold
 		T resultItem
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value < resultValue
 				resultValue = value
-				resultItem = item
+				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	withMin: float(T a) selector
 		     float threshold = float.maxValue
 		float resultValue = threshold
 		T resultItem
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value < resultValue
 				resultValue = value
-				resultItem = item
+				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	withMin: int(T a) selector
@@ -579,12 +605,12 @@ class List<T>
 		     bool(T a) where
 		int resultValue = threshold
 		T resultItem
-		for item -> this
-			if where(item)
-				let value = selector(item)
+		for this
+			if where(.)
+				let value = selector(.)
 				if value < resultValue
 					resultValue = value
-					resultItem = item
+					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	withMin: float(T a) selector
@@ -592,23 +618,23 @@ class List<T>
 		     bool(T a) where
 		float resultValue = threshold
 		T resultItem
-		for item -> this
-			if where(item)
-				let value = selector(item)
+		for this
+			if where(.)
+				let value = selector(.)
 				if value < resultValue
 					resultValue = value
-					resultItem = item
+					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	withMax: int(T a) selector
 		     int threshold = int.minValue
 		int resultValue = threshold
 		T resultItem
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value > resultValue
 				resultValue = value
-				resultItem = item
+				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 		
@@ -616,11 +642,11 @@ class List<T>
 		     float threshold = float.minValue
 		float resultValue = threshold
 		T resultItem
-		for item -> this
-			let value = selector(item)
+		for this
+			let value = selector(.)
 			if value > resultValue
 				resultValue = value
-				resultItem = item
+				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	withMax: int(T a) selector
@@ -628,12 +654,12 @@ class List<T>
 		     bool(T a) where
 		int resultValue = threshold
 		T resultItem
-		for item -> this
-			if where(item)
-				let value = selector(item)
+		for this
+			if where(.)
+				let value = selector(.)
 				if value > resultValue
 					resultValue = value
-					resultItem = item
+					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	withMax: float(T a) selector
@@ -641,29 +667,30 @@ class List<T>
 		     bool(T a) where
 		float resultValue = threshold
 		T resultItem
-		for item -> this
-			if where(item)
-				let value = selector(item)
+		for this
+			if where(.)
+				let value = selector(.)
 				if value > resultValue
 					resultValue = value
-					resultItem = item
+					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
 	count: bool(T a) predicate
 		int count = 0
-		for item -> this
-			if predicate(item)
+		for this
+			if predicate(.)
 				count++
 		return count
 		
 	countNot: bool(T a) predicate
 		int count = 0
-		for item -> this
-			if !predicate(item)
+		for this
+			if !predicate(.)
 				count++
 		return count
 		
 // A data container that stores key-value pairs
+js Map
 class Map<T>
 
 // Specifies that a function doesn't return a value
@@ -724,8 +751,9 @@ transient class SourceCodeLocation
 		if left != null:  left.flatten result
 		if right != null: right.flatten result
 	
+js Error
 class Error
-	inline js string message := this.message
+	string message
 	implicit inline js string toString := this.stack
 	
 // A collection of basic system functions
@@ -737,15 +765,226 @@ global transient unit System
 			
 	// Executes code depending on whether a given condition is true or false
 	global inline js void if: implicit bool condition // The condition to check
-		                      void() then                    // The code to execute if the condition is true
-		                      void() else                    // The code to execute if the condition is false
+		                      void() then             // The code to execute if the condition is true
+		                      void() else             // The code to execute if the condition is false
 		if(condition) then() @else else()
 			
 	// Executes code as long as a given condition is true
 	global inline js void while: implicit bool condition // The condition to check
-		                         void() block   // The code to execute while to condition is true
-		while(condition) block()
+		                         void() do               // The code to execute while to condition is true
+		while(condition) do()
 	
+	// Execute code a given number of times or for each item in a list
+	global inline js void for: void subject    // The list to iterate over or the exclusive upper bound to iterate towards
+		                       void do         // The code to execute for each item in a list or a given number of times
+		
+	// Execute code a given number of times or for each item in a list
+	global inline js void for: T[] subject    // The list to iterate over
+		                       -> void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           int i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // The code to execute for each item in a list
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; do()}
+		
+	// Execute code a given number of times or for each item in a list
+	global inline js void for: T[] subject    // The list to iterate over
+		                       <- void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           int i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // The code to execute for each item in a list
+		for(let _subject=subject, i=_subject.length-1; i>=0; --i) { let it = _subject[i]; do()}
+		
+	global inline js void for: int subject    // The exclusive upper bound to iterate towards
+		                       -> void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // The code to execute the given number of times
+		for(let i=0; i<subject; ++i) do()
+		
+	global inline js void for: int subject    // The exclusive upper bound to iterate towards
+		                       <- void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // The code to execute hte  given number of times
+		for(let i=subject-1; i>=0; --i) do()
+		
+	global inline js void for: int subject
+		                       -> void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // The code to execute for each value in the given range
+		                       int to         // If specified, we iterate from given start value to this exclusive upper bound 
+		for(let i=subject; i<to; ++i) do()
+		
+	global inline js void for: int subject
+		                       <- void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // The code to execute for each value in the given range
+		                       int to         // If specified, we iterate from given start value to this exclusive upper bound 
+		for(let i=to-1; i>=subject; --i) do()
+		
+	global inline js void for: string subject
+		                       -> void(
+		                           string it, // The current character of the string we are iterating over with the for-loop
+		                           int i      // The index of the current character of the string we are iterating over with the for-loop
+		                       ) do           // The code to execute for each character in the given string
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; do()}
+	
+	global inline js void for: string subject
+		                       <- void(
+		                           string it, // The current character of the string we are iterating over with the for-loop
+		                           int i      // The index of the current character of the string we are iterating over with the for-loop
+		                       ) do           // The code to execute for each character in the given string
+		for(let _subject=subject, i=_subject.length-1; i>=0; --i) { let it = _subject[i]; do()}
+				
+	global inline js void for: IntVector2 subject    // The exclusive upper bound to iterate towards
+		                       -> void(
+		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop
+		                           int x,          // The x component of the current position we are iterating over with the for-loop
+		                           int y           // The y component of the current position we are iterating over with the for-loop
+		                       ) do           // The code to execute the given number of times
+		for(let _size=subject, y=0; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) { let pos = new IntVector2(x,y); do()}
+			
+	global inline js void for: IntVector2 subject    // The exclusive upper bound to iterate towards
+		                       <- void(
+		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop
+		                           int x,          // The x component of the current position we are iterating over with the for-loop
+		                           int y           // The y component of the current position we are iterating over with the for-loop
+		                       ) do           // The code to execute the given number of times
+		for(let _size=subject, y=_size.y-1; y>=0; --y) for(let x=_size.x-1; x>=0; --x) { let pos = new IntVector2(x,y); do()}
+			
+	// [a,b,c] -> (a, next:b), (b, next:c), (c, next:null)
+	global inline js void forLookAhead: T[] subject    // The list to iterate over
+		                                    -> void(
+		                                        T it,      // The current item of the list we are iterating over with forLookAhead
+		                                        T next,    // The next item of the list we are iterating over with forLookAhead
+		                                        int i      // The index of the current item of the list we are iterating over with forLookAhead
+		                                    ) do           // The code to execute for each consecutive pair in a list
+		for(let _subject=subject, _len=_subject.length, i=0; i<_len; ++i) { let it = _subject[i], next = i+1<_len ? _subject[i+1] : null; do()}
+		
+	global inline js void forLookAhead: T[] subject    // The list to iterate over
+		                                    <- void(
+		                                        T it,      // The current item of the list we are iterating over with forLookAhead
+		                                        T next,    // The next item of the list we are iterating over with forLookAhead
+		                                        int i      // The index of the current item of the list we are iterating over with forLookAhead
+		                                    ) do           // The code to execute for each consecutive pair in a list
+		for(let _subject=subject, i=_subject.length-1; i>=0; --i) { let it = _subject[i], next = i>0 ? _subject[i-1] : null; do()}
+		
+	// [a,b,c] -> (prev:null, a), (prev:a, b), (prev:b, c)
+	global inline js void forLookBack: T[] subject    // The list to iterate over
+		                                    -> void(
+		                                        T it,      // The current item of the list we are iterating over with forLookBack
+		                                        T prev,    // The previous item of the list we are iterating over with forLookBack
+		                                        int i      // The index of the current item of the list we are iterating over with forLookBack
+		                                    ) do           // The code to execute for each consecutive pair in a list
+		for(let i=0, _len=subject.length; i<_len; ++i) { let it = subject[i], prev = i>0 ? subject[i-1] : null; do()}
+		
+	global inline js void forLookBack: T[] subject    // The list to iterate over
+		                                    <- void(
+		                                        T it,      // The current item of the list we are iterating over with forLookBack
+		                                        T prev,    // The previous item of the list we are iterating over with forLookBack
+		                                        int i      // The index of the current item of the list we are iterating over with forLookBack
+		                                    ) do           // The code to execute for each consecutive pair in a list
+		for(let _subject=subject, _len=subject.length, i=_len-1; i>=0; --i) { let it = _subject[i], prev = i+1<_len ? _subject[i+1] : null; do()}
+		
+	// [a,b,c] -> (prev:null, a, next:b), (prev:a, b, next:c), (prev:b, c, next:null)
+	global inline js void forLookAheadAndBack: T[] subject  // The list to iterate over
+		                              -> void(
+		                                  T it,    // The current item of the list we are iterating over with forLookAheadAndBack
+		                                  T prev,  // The previous item of the list we are iterating over with forLookAheadAndBack
+		                                  T next,  // The next item of the list we are iterating over with forLookAheadAndBack
+		                                  int i    // The index of the current item of the list we are iterating over with forLookAheadAndBack
+		                              ) do         // The code to execute for each triple in a list
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) { let it = _subject[i], next = i+1<_len ? _subject[i+1] : null, prev = i>0 ? _subject[i-1] : null; do()}
+		
+	global inline js void forLookAheadAndBack: T[] subject  // The list to iterate over
+		                              <- void(
+		                                  T it,    // The current item of the list we are iterating over with forLookAheadAndBack
+		                                  T prev,  // The previous item of the list we are iterating over with forLookAheadAndBack
+		                                  T next,  // The next item of the list we are iterating over with forLookAheadAndBack
+		                                  int i    // The index of the current item of the list we are iterating over with forLookAheadAndBack
+		                              ) do         // The code to execute for each triple in a list
+		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) { let it = _subject[i], next = i>0 ? _subject[i-1] : null, prev = i+1<_len ? _subject[i+1] : null; do()}
+		
+	// [a,b,c] -> (a, next:b), (b, next:c)
+	global inline js void forPairs: T[] subject  // The list to iterate over
+		                            -> void(
+		                                T it,    // The current item of the list we are iterating over with forPairs
+		                                T next,  // The next item of the list we are iterating over with forPairs
+		                                int i    // The index of the current item of the list we are iterating over with forPairs
+		                            ) do         // The code to execute for each consecutive pair in a list
+		for(let i=0, _subject=subject, _len=_subject.length-1; i<_len; ++i) { let it = _subject[i], next = _subject[i+1]; do()}
+		
+	global inline js void forPairs: T[] subject  // The list to iterate over
+		                            <- void(
+		                                T it,    // The current item of the list we are iterating over with forPairs
+		                                T next,  // The next item of the list we are iterating over with forPairs
+		                                int i    // The index of the current item of the list we are iterating over with forPairs
+		                            ) do         // The code to execute for each consecutive pair in a list
+		for(let _subject=subject, i=_subject.length-1; i>0; --i) { let it = _subject[i], next = _subject[i-1]; do()}
+		
+	// [a,b,c] -> (a, next:b), (b, next:c), (c, next:a) 
+	global inline js void forWrappingPairs: T[] subject    // The list to iterate over
+		                                   -> void(
+		                                       T it,      // The current item of the list we are iterating over with forWrappingPairs
+		                                       T next,    // The next item of the list we are iterating over with forWrappingPairs
+		                                       int i      // The index of the current item of the list we are iterating over with forWrappingPairs
+		                                   ) do           // The code to execute for each consecutive pair in a list
+		for(let _subject=subject, i=0, _len=_subject.length; i<_len; ++i) { let it = _subject[i], next = _subject[(i+1)%_len]; do()}
+		
+	global inline js void forWrappingPairs: T[] subject    // The list to iterate over
+		                                   <- void(
+		                                       T it,      // The current item of the list we are iterating over with forWrappingPairs
+		                                       T next,    // The next item of the list we are iterating over with forWrappingPairs
+		                                       int i      // The index of the current item of the list we are iterating over with forWrappingPairs
+		                                   ) do           // The code to execute for each consecutive pair in a list
+		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) { let it = _subject[i], next = _subject[(((i-1)%_len)+_len)%_len]; do()}
+		
+	// [a,b,c] -> (prev:a, b, next:c)
+	global inline js void forTriples: T[] subject  // The list to iterate over
+		                              -> void(
+		                                  T it,    // The current item of the list we are iterating over with forTriple
+		                                  T prev,  // The previous item of the list we are iterating over with forTriple
+		                                  T next,  // The next item of the list we are iterating over with forTriple
+		                                  int i    // The index of the current item of the list we are iterating over with forTriple
+		                              ) do         // The code to execute for each triple in a list
+		for(let i=1, _subject=subject, _len=_subject.length-1; i<_len; ++i) { let it = _subject[i], next = _subject[i+1], prev = _subject[i-1]; do()}
+		
+	global inline js void forTriples: T[] subject  // The list to iterate over
+		                              <- void(
+		                                  T it,    // The current item of the list we are iterating over with forTriple
+		                                  T prev,  // The previous item of the list we are iterating over with forTriple
+		                                  T next,  // The next item of the list we are iterating over with forTriple
+		                                  int i    // The index of the current item of the list we are iterating over with forTriple
+		                              ) do         // The code to execute for each triple in a list
+		for(let _subject=subject, i=_subject.length-2; i>=1; --i) { let it = _subject[i], next = _subject[i-1], prev = _subject[i+1]; do()}
+		
+	// [a,b,c] -> (prev:c, a, next:b), (prev:a, b, next:c), (prev:b, c, next:a)
+	global inline js void forWrappingTriples: T[] subject  // The list to iterate over
+		                                     -> void(
+		                                         T it,    // The current item of the list we are iterating over with forWrappingTriples
+		                                         T prev,  // The previous item of the list we are iterating over with forWrappingTriples
+		                                         T next,  // The next item of the list we are iterating over with forWrappingTriples
+		                                         int i    // The index of the current item of the list we are iterating over with forWrappingTriples
+		                                     ) do         // The code to execute for each triple in a list
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) { let it = _subject[i], next = _subject[(i+1)%_len], prev = _subject[(((i-1)%_len)+_len)%_len]; do()}
+		
+	global inline js void forWrappingTriples: T[] subject  // The list to iterate over
+		                                     <- void(
+		                                         T it,    // The current item of the list we are iterating over with forWrappingTriples
+		                                         T prev,  // The previous item of the list we are iterating over with forWrappingTriples
+		                                         T next,  // The next item of the list we are iterating over with forWrappingTriples
+		                                         int i    // The index of the current item of the list we are iterating over with forWrappingTriples
+		                                     ) do         // The code to execute for each triple in a list
+		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) { let it = _subject[i], next = _subject[(((i-1)%_len)+_len)%_len], prev = _subject[(i+1)%_len]; do()}
+
+	global inline js void forCentered: T[] subject  // The list to iterate over
+		                               Vector2 center = {0,0}
+		                               Vector2 delta = {100,0}
+		                               -> void(
+		                                   T it,    // The current item of the list we are iterating over with forCentered
+		                                   Vector2 pos,
+		                                   int i    // The index of the current item of the list we are iterating over with forCentered
+		                               ) do         // The code to execute for each item in a list
+		for(let i=0, _subject=subject, _center = center, _delta = delta, _len=_subject.length, _x = _center.x-(_len-1)*_delta.x/2, _y=_center.y-(_len-1)*_delta.y/2; i<_len; ++i, _x += _delta.x, _y += _delta.y) { let it = _subject[i], pos = new Vector2(_x, _y, _center.location || _delta.location ? new SourceCodeLocation(0, 0, null, _center.location, _delta.location) : null); do()}
+		
 	// Prints a message to the console
 	global js void print: logstring text // The text, variables or expressions to print
 		                  SourceCodeLocation location
@@ -766,7 +1005,7 @@ global transient unit System
 	global inline js void continue() continue
 		
 	global inline js void try: void() code
-		                       void(Error error) catch
+		                       nocolon void(Error error) catch
 		try code() @catch(error) catch()
 		
 		
@@ -840,13 +1079,11 @@ unit Math
 		Math_randomGenerator = Math.random
 		
 	js string generateRandomSeed:
-		if(typeof crypto != "undefined") {
+		let crypto = !window.crypto && typeof(require) != "undefined" ? require("crypto") : window.crypto
+		if(crypto) {
 			let out = new Uint8Array(256);
 			crypto.getRandomValues(out);
 			return out.toString();
-		}
-		else {
-			return Date.now().toString()
 		}
 		
 	internal string randomSeed
@@ -1024,10 +1261,13 @@ transient class Time
 	inline js string dayLongMonthNameYearString := (this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+" "+this.toLocaleString('en-US', {month: 'long'})+" "+this.getFullYear())
 	inline js string dayShortMonthNameYearString := (this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+" "+this.toLocaleString('en-US', {month: 'short'})+" "+this.getFullYear())
 	inline js string hourMinuteSecondString := (this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2}))+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string dayMonthYearHourMinuteSecondString := (this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2}))+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	inline js int time := this.getTime()
 		
 	static inline js Time current := new Date()
+		
+	static inline js Time fromTicks(int ticks) new Date(ticks)
 	
 	// The current frame	
 	static inline js int frame := Network_frame

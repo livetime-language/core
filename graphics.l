@@ -34,6 +34,12 @@ class Texture
 	Texture
 		if Platform.engineStarted
 			open
+			
+	js bool ensureIsAvailable()
+		if(!this._htmlImage) {
+			this._htmlImage = _htmlImageCache[this.file]
+		}
+		return this._htmlImage != null
 	
 	js void open
 		if(!window._htmlImageCache) _htmlImageCache = {}
@@ -96,28 +102,32 @@ transient global unit graphics
 		graphics_reset()
 		if(!Platform_fastForward)
 			Platform_context.clearRect(0,0,Platform_pixelSize.x, Platform_pixelSize.y)
-
-	internal js void reset
-		Matrix2D_assign_Matrix2D(graphics_totalMatrix, Platform_baseMatrix);
-		graphics_localMatrix.clear();
-		graphics_currentlyVisibleFor = -1
-		graphics_items.length = 0
-		if(!Platform_fastForward)
 			Platform_context.textBaseline = "hanging"
+
+	internal reset
+		totalMatrix = Platform.baseMatrix
+		localMatrix.clear
+		currentlyVisibleFor = -1
+		items.clear
 
 	internal finishFrame
 		if(Platform.fastForward) return
+		Input.internalUsers.each.videoElementIndex = 0
 		drawItems
 		drawSafeArea
+		for Input.internalUsers -> user
+			for user.videoElementIndex to user.videoElements.length
+				PeerNetwork.removeVideoElement user.videoElements[.]
+			user.videoElements.setLength user.videoElementIndex
 		
 	private drawItems
 		items.sort b.layer - a.layer
-		items.eachBackwards.draw
+		items.each <- .draw
 				
 	private isVisibleFor: int user
 		if(Platform.fastForward) return false
 		let visibleFor = user != -1 ? user : currentlyVisibleFor
-		return visibleFor == -1 || visibleFor == Network.userId
+		return visibleFor == -1 || visibleFor == Input.localUser.id
 			
 	internal js void drawSafeArea
 		Platform_context.fillStyle = "#404040"
@@ -257,7 +267,7 @@ transient global unit graphics
 		code()
 		currentColor = prev
 		return currentColor
-	private Color currentColor = White
+	private Color currentColor = {"ffffff"}
 	
 	// The default font for all draw operations
 	font
@@ -317,7 +327,7 @@ transient global unit graphics
 		  void() code          // All draw operation within this code block will be clipped
 		let prev = currentClippingPath
 		currentClippingPath = ClippingPath(show)
-		for points: currentClippingPath.points.add position + p
+		for points: currentClippingPath.points.add position + .
 		code()
 		currentClippingPath = prev
 		
@@ -362,6 +372,30 @@ transient global unit graphics
 		drawImage image, position, frame, scale, visibleFor, layer, alpha
 	
 	// Draws an image on the screen
+	global void drawImage: Image image                  // The image to draw
+		                   Vector2 position = {}        // The position to draw to
+		                   frame = 0                    // The frame of the image to draw
+		                   scale = 1.0                  // Scale the image by this factor
+		                   touchMargin = Vector2(16,16) // The margin around the button within which it is touchable
+		                   showTouchArea = false        // Show the area within which the button is touchable
+		                   visibleFor = -1              // Only this user will see the button
+		                   clickableBy = -1             // Only this user can click the button
+		                   hotkey = 0
+		                   implicit layer = 0           // Higher layers are drawn in front of lower layers
+		                   alpha = 1.0                  // The opacity of the button 0: fully transpart, 1: fully visible)
+		                   void(Touch touch) onClick    // Execute this code when the user clicks the button
+		drawImage image, position, frame, scale, visibleFor, layer, alpha
+			
+		// Handle click
+		// Only visible buttons can be clickable
+		let userId = clickableBy != -1 ? clickableBy : visibleFor != -1 ? visibleFor : currentlyVisibleFor
+		Input.onTouchDownWithin position, image.size*scale + touchMargin, userId, showTouchArea
+			onClick touch
+		if hotkey
+			Input.onKeyDown hotkey, userId
+				onClick null
+		
+	// Draws an image on the screen
 	global js void drawImage: Image image          // The image to draw
 		                      Vector2 position = {} // The position to draw to
 		                      frame = 0            // The frame of the image to draw
@@ -369,7 +403,7 @@ transient global unit graphics
 		                      visibleFor = -1      // Only this user will see the image
 		                      implicit layer = 0   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0          // The opacity of the image (0: fully transpart, 1: fully visible)
-		if(!image.texture || !image.texture._htmlImage) return
+		if(!image.texture?.ensureIsAvailable()) return
 		if(graphics_isVisibleFor(visibleFor)) {
 			let f = image.frames[frame % image.frames.length]
 			graphics_items.push(new DisplayImage(
@@ -393,7 +427,7 @@ transient global unit graphics
 		                      visibleFor = -1      // Only this user will see the image
 		                      implicit layer = 0   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0          // The opacity of the image (0: fully transpart, 1: fully visible)
-		if(!image.texture || !image.texture._htmlImage) return
+		if(!image.texture?.ensureIsAvailable()) return
 		if(graphics_isVisibleFor(visibleFor)) {
 			let f = image.frames[frame % image.frames.length]
 			let matrix = graphics_totalMatrix.clone()
@@ -469,15 +503,15 @@ transient global unit graphics
 		                    frame = 0                        // The frame of the image
 		                    scale = 1.0                      // Scale the image by this factor
 		                    fontSize = 18                    // The font size in pixels   
-		                    touchMargin = Vector2(16,16)      // The margin around the button within which it is touchable
 		                    textOffset = Vector2(0,-2)
+		                    touchMargin = Vector2(16,16)     // The margin around the button within which it is touchable
 		                    showTouchArea = false            // Show the area within which the button is touchable
 		                    visibleFor = -1                  // Only this user will see the button
 		                    clickableBy = -1                 // Only this user can click the button
 		                    hotkey = 0
 		                    implicit layer = 0               // Higher layers are drawn in front of lower layers
 		                    alpha = 1.0                      // The opacity of the button 0: fully transpart, 1: fully visible)
-		                    void(Touch touch) onClick = null // Execute this code when the user clicks the button
+		                    void(Touch touch) onClick        // Execute this code when the user clicks the button
 		if isVisibleFor(visibleFor)
 			if text:  drawText text, position+textOffset, fontSize, textColor, visibleFor, layer, alpha
 			if image: drawImage image, position, frame, scale, visibleFor, layer, alpha
@@ -549,7 +583,7 @@ transient global unit graphics
 		                        visibleFor = -1        // Only this user will see the texture
 		                        implicit int layer = 0 // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0            // The opacity of the texture (0: fully transpart, 1: fully visible)
-		if(!texture || !texture._htmlImage) return
+		if(!texture?.ensureIsAvailable()) return
 		if(graphics_isVisibleFor(visibleFor)) {
 			graphics_items.push(new DisplayImage(
 				graphics_totalMatrix,
@@ -572,7 +606,7 @@ transient global unit graphics
 		                        visibleFor = -1            // Only this user will see the texture
 		                        implicit int layer = 0     // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                // The opacity of the texture (0: fully transpart, 1: fully visible)
-		if(!texture || !texture._htmlImage) return
+		if(!image.texture?.ensureIsAvailable()) return
 		if(graphics_isVisibleFor(visibleFor)) {
 			graphics_items.push(new DisplayImage(
 				graphics_totalMatrix,
@@ -640,8 +674,8 @@ transient global unit graphics
 		}
 		
 	// Draws a line on the screen
-	global js void drawLine: Vector2 start
-		                     Vector2 end 
+	global js void drawLine: Vector2 from
+		                     nocolon Vector2 to 
 		                     Color color = null     // The color of the outline around the line
 		                     width = 0              // The width of the outline around the line
 		                     visibleFor = -1        // Only this user will see the line
@@ -650,10 +684,10 @@ transient global unit graphics
 		if(graphics_isVisibleFor(visibleFor)) {
 			graphics_items.push(new DisplayLine(
 				graphics_totalMatrix,
-				start.x, start.y,
-				end.x - start.x, end.y - start.y,
-				layer, alpha, graphics_currentClippingPath, "Line", start.location,
-				end,
+				from.x, from.y,
+				to.x - from.x, to.y - from.y,
+				layer, alpha, graphics_currentClippingPath, "Line", from.location,
+				to,
 				(color || graphics_currentColor).hex,
 				width || graphics_currentLineWidth
 			))
@@ -694,9 +728,18 @@ transient global unit graphics
 			))
 		}
 		
-	global drawPointer: int userId, Color color = null
-		if Network.userId != userId or Input.showLocalPointer
+	const Color[] defaultUserColors = [{"398CA9"},{"C01352"},{"FFD166"},{"16C66E"}]
+	setUserColor: int userId
+		          Color color = null
+		let user = Input.usersById[userId]
+			user.color = color || defaultUserColors[user.index]
+		
+	global drawPointer: int userId
+		                Color color = null
+		                bool showLocalPointer = Input.showLocalPointer
+		if userId != Input.localUser.id or showLocalPointer
 			let user = Input.usersById[userId]
+			if !color: color = user.color
 			for user.touches
 				drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0, layer:int.maxValue
 				if color
@@ -705,7 +748,43 @@ transient global unit graphics
 					else
 						drawRectangle .smoothPosition+{16,78}, size:{26,10}, color, layer:int.maxValue
 
-
+	global drawVideo: int userId
+		              Vector2 position = {}
+		              Vector2 size = {440, 330}
+		              visibleFor = -1      // Only clear the rectangle for this user
+		              implicit layer = 0   // Higher layers are process after lower layers
+		if isVisibleFor(visibleFor)
+			if not size.y: size.y = size.x * 3/4
+			if Network.mode == Local or !PeerNetwork.enableVideo
+				NetworkUser user = Input.usersById[userId]
+				drawImage VideoScreen, position, scale:size.x/440, frame:0, layer:1000000
+			else
+				items.add DisplayVideo(
+					m: totalMatrix,
+					x: position.x, y: position.y,
+					w: size.x,     h: size.y,
+					layer, alpha:1.0, currentClippingPath, "Video",
+					userId, radius:0
+				)
+				
+	global drawVideo: int userId
+		              Vector2 position = {}
+		              float radius = 440
+		              visibleFor = -1      // Only clear the rectangle for this user
+		              implicit layer = 0   // Higher layers are process after lower layers
+		if isVisibleFor(visibleFor)
+			if Network.mode == Local or !PeerNetwork.enableVideo
+				NetworkUser user = Input.usersById[userId]
+				drawImage VideoScreen, position, scale:radius/220, frame:1, layer:1000000
+			else
+				items.add DisplayVideo(
+					m: totalMatrix,
+					x: position.x, y: position.y,
+					w: radius*2,   h: radius*2,
+					layer, alpha:1.0, currentClippingPath, "Video",
+					userId, radius
+				)
+				
 transient class DisplayItem
 	float x, y, w, h
 	int layer
@@ -932,3 +1011,19 @@ transient DisplayItem DisplayLine
 		Platform_context.stroke()
 		
 		if(this.clippingPath) this.endClipping()
+			
+transient DisplayItem DisplayVideo
+	int userId
+	float radius
+	draw
+		InternalUser user = Input.internalUsers[userId]
+			let videoElement = user.videoElements[user.videoElementIndex]
+			               or (user.videoElements[user.videoElementIndex] = PeerNetwork.createVideoElement(user.mediaStream, user.local))
+			
+			let px = (m0 * x + m2 * y + m4) / Platform.pixelRatio
+			let py = (m1 * x + m3 * y + m5) / Platform.pixelRatio
+			let sizeX = w*m0 / Platform.pixelRatio
+			let sizeY = h*m3 / Platform.pixelRatio
+			PeerNetwork.updateVideoElement videoElement, px, py, sizeX, sizeY, radius
+			user.videoElementIndex++
+
