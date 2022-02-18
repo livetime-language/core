@@ -415,8 +415,8 @@ transient unit Network
 		
 	// Clear screen, process application tick, and draw all graphics
 	// This is called in step.
-		Math.setRandomSeed("")
 	internal tick: bool draw
+		Math.setRandomSeed("")
 		if draw
 			graphics.startFrame
 			let isPlayback = Platform.mode == Play or frame+1 < frames
