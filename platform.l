@@ -18,9 +18,9 @@ enum TickMode: Interval, AnimationFrame
 // - the origin in the top left corner
 transient skipInit unit Platform
 	public userCount = 2
+	public supportedUserCount = Range 2..4
 	// FlappyBird Demo: Do not show safe area
 	public bool showSafeArea = false
-	public supportedUserCount = Range 2..4
 	public bool showDebugInfo = false
 	public bool isLocal = false
 	

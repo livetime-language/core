@@ -459,7 +459,9 @@ transient skipInit unit Network
 	// Clear screen, process application tick, and draw all graphics
 	// This is called in step.
 	internal tick: bool draw
+		// FlappyBird Demo: Reset random seed every frame
 		Math.setRandomSeed("")
+		
 		graphics.startFrame
 		if draw
 			let isPlayback = Platform.mode == Play or frame+1 < frames
