@@ -1,6 +1,8 @@
 enum PlatformMode: Pause, Pointer, Slide, Play, Record
 enum ScaleMode: Auto, FixedWidth, FixedHeight, None
 enum AnchorMode: TopLeft, TopCenter, Center
+enum OperatingSystem: Windows, Mac, Linux, Android, iOS
+enum TickMode: Interval, AnimationFrame
 
 // Basic platform functionality
 // Screen space
@@ -14,11 +16,15 @@ enum AnchorMode: TopLeft, TopCenter, Center
 // Pixel space
 // - the size in the screen size in pixels of the target platform
 // - the origin in the top left corner
-transient unit Platform
+transient skipInit unit Platform
 	public userCount = 2
 	// FlappyBird Demo: Do not show safe area
 	public bool showSafeArea = false
+	public supportedUserCount = Range 2..4
 	public bool showDebugInfo = false
+	public bool isLocal = false
+	
+	public TickMode tickMode = Interval
 	
 	public inline js string url := location.href
 	public inline js int version := version
@@ -33,6 +39,7 @@ transient unit Platform
 	private object canvas
 	internal object context
 	visible bool isDebug
+	visible bool isStaging
 	visible Vector2 pixelSize, size
 	visible float pixelRatio
 	internal Matrix2D baseMatrix
@@ -40,10 +47,7 @@ transient unit Platform
 	visible PlatformMode mode
 	internal bool fastForward
 	visible bool isMobile = true
-	
-	internal inline js void initApplication
-		init()
-		Platform_updateBaseMatrix();
+	visible OperatingSystem os
 		
 	private inline js void initMedia
 		audio_init();
@@ -56,7 +60,10 @@ transient unit Platform
 		Math_init();
 		Network_init();
 		Input_init();
+		Network_log("Loading...")
 		Platform_isMobile = false;
+		let platform = navigator.platform
+		Platform_os = platform.startsWith("Win") ? 0 : platform.startsWith("Mac") ? 1 : 2
 		if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(navigator.userAgent) 
 			|| /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(navigator.userAgent.substr(0,4))) { 
 			Platform_isMobile = true;
@@ -66,11 +73,12 @@ transient unit Platform
 				Platform_onResize();
 				if(Platform_mode == 0/*Pause*/ && Platform_engineStarted) Network_tick(/*draw*/true);
 			}
+		if(window.app_init) app_init();
 		
 	private js void onResize
 		Platform_canvas = document.getElementById("canvas");
 		Platform_context = Platform_canvas.getContext("2d");
-		Platform_pixelRatio = 1;
+		Platform_pixelRatio = window.devicePixelRatio;
 		Platform_pixelSize = new Vector2(window.innerWidth*Platform_pixelRatio, window.innerHeight*Platform_pixelRatio, null);
 		Platform_canvas.style.width = window.innerWidth + "px";
 		Platform_canvas.style.height = window.innerHeight + "px";
@@ -79,6 +87,14 @@ transient unit Platform
 		Platform_canvas.imageSmoothingEnabled = true;
 		Platform_canvas.imageSmoothingQuality = "high";
 		Platform_updateBaseMatrix();
+		
+	private js void drawLoading
+		let text = "Loading..."
+		Platform_context.font = "24px Arial"
+		Platform_context.fillStyle = "#ffffff"
+		Platform_context.textBaseline = "middle"
+		let textSize = Platform_context.measureText(text)
+		Platform_context.fillText(text, (Platform_pixelSize.x-textSize.width)/2, Platform_pixelSize.y/2)
 		
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
@@ -110,36 +126,33 @@ transient unit Platform
 		initPlatform
 		this.engineStarted = false
 		this.isDebug = isDebug
-		if !isDebug: showSafeArea = false
+		if !isDebug: showSafeArea = false; Network.simulateConnection = false
 		showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
 		onResize
-		if !isDebug: Network.simulateConnection = false
+		drawLoading
 		if mode >= Play: mode = Pause
-		let path = url.split("/")
+		let path = url.getUntil("?").split("/")
 		let gameId = path[3]
 		let roomId = path[4]
-		
-		// TEMP: Allow relay
-		bool allowRelay = true
-		let peerIndex = roomId.indexOf("p")
-		if peerIndex != -1
-			allowRelay = false
-			roomId = roomId.substring(0,peerIndex)
 			
-		// TEMP: For testing, support joining a room with a given userId using the format /gameId/roomId-userId
+		// For testing, support joining a room with a given userId using the format /gameId/{roomId}u{userId}
 		// because starting the app in two browser tabs overwrites the userId in the local storage
 		let userId = -1
-		let dashIndex = roomId.indexOf("-")
-		if dashIndex != -1
-			userId = cast roomId.substring(dashIndex+1)
-			roomId = roomId.substring(0,dashIndex)
+		if roomId
+			let dashIndex = roomId.indexOf("u")
+			if dashIndex != -1
+				userId = cast roomId.substring(dashIndex+1)
+				roomId = roomId.substring(0,dashIndex)
+			
+		// If the roomId "staging", "latest" or negative, switch to staging mode (no audio, no fullscreen)
+		isStaging = isDebug or roomId == "staging" or roomId == "latest" or roomId?.startsWith("-")
 		
 		openMedia
-			startInterval
-			if isDebug || roomId == "local" || url.startsWith("file"): Network.startLocal userCount:userCount
-			else                                                       Network.join gameId, roomId, userId, allowRelay
 			this.engineStarted = true
+			startInterval
+			if isDebug || isLocal || roomId == "local" || url.startsWith("file"): Network.startLocal userCount:userCount
+			else                                                                  Network.join gameId, roomId, userId
 			sendEvaluateFinished
 			
 			// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
@@ -149,12 +162,22 @@ transient unit Platform
 	private replay() 
 		initMedia
 		openMedia
-			Network.goToFrame Network.frame-1, replay:true
+			Network.goToFrame Network.frame-1, replayFromStart:true
 			
 	object interval
 	private js void startInterval
 		if(Platform_interval) clearInterval(Platform_interval)
-		Platform_interval = setInterval(() => Platform_tick(), 1000/Network_targetFps)
+		if(window.tick) return
+			
+		if(Platform_tickMode == 0) {
+			Platform_interval = setInterval(() => Platform_tick(), 1000/Network_targetFps)
+		} else {
+			window.tick = function() {
+				Platform_tick();
+				window.requestAnimationFrame(window.tick);
+			}
+			window.tick();
+		}
 	
 	// This is called every animation frame
 	private tick()   if mode == Play or mode == Record: Network.animationFrame
@@ -163,12 +186,13 @@ transient unit Platform
 	
 	internal stop()    mode = Pause;  Network.stop; sendMode
 	internal pause()   mode = Pause;  audio.stop(); sendMode
-	internal record()  Network.resetStartTimeIfNeeded; mode = Record; sendMode
-	internal play()    Network.resetStartTimeIfNeeded; mode = Play;   sendMode
+	internal record()  Network.adjustStartTimeIfNeeded; mode = Record; sendMode
+	internal play()    Network.adjustStartTimeIfNeeded; mode = Play;   sendMode
 	
 	private goToFrame(int targetFrame) Network.goToFrame(targetFrame)
 		
-	private Vector2 touchUpPos
+	private Vector2 touchDownPos
+	private bool touchDownInsideGizmo
 	private int locationIndex
 	private SourceCodeLocation[] locations
 	
@@ -176,32 +200,39 @@ transient unit Platform
 		if Platform.mode == Pointer or Platform.mode == Slide
 			int row, column
 			string file
+			bool deselect
 			if Platform.mode == Pointer
-				let movedSinceTouchUp = (pixelPos manhattanDistanceTo touchUpPos) > 8
-				if inputType == TouchUp: touchUpPos = pixelPos
-					
-				if (inputType == TouchDown and movedSinceTouchUp) or (inputType == TouchUp and !movedSinceTouchUp)
-					if movedSinceTouchUp                   
-						locationIndex = 0
-						locations.clear
-						for graphics.items -> item
-							if item.location != null and pixelPos.isInsidePoygon item.poly
-								SourceCodeLocation[] itemLocations
-								item.location.flatten itemLocations
-								itemLocations.sort (a.file compareTo b.file) || b.row - a.row || a.column - b.column
-								for itemLocations
-									if !.file.startsWith("lib")
-										locations.add .
-					
+				let movedSinceTouchDown = (pixelPos manhattanDistanceTo touchDownPos) > 8
+				let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
+				if inputType == TouchDown: touchDownPos = pixelPos; touchDownInsideGizmo = insideGizmo
+				// if inputType != TouchMove: print "###", inputType, insideGizmo, movedSinceTouchDown, locationIndex
+				// print insideGizmo, gizmo.min, gizmo.max, referencePos
+				// if (inputType == TouchDown and movedSinceTouchUp) or (inputType == TouchUp and !movedSinceTouchUp)
+				if (inputType == TouchDown and !insideGizmo)
+				or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
+					locations.clear
+					for graphics.items -> item
+						if item.location != null and pixelPos.isInsidePoygon item.poly
+							SourceCodeLocation[] itemLocations
+							item.location.flatten itemLocations
+							itemLocations.sort (a.file compareTo b.file) || b.row - a.row || a.column - b.column
+							for itemLocations
+								if !.file.startsWith("lib")
+									locations.add .
+										
 					if locations.length
+						if inputType == TouchDown: locationIndex = 0
 						let selectedLocation = locations[locationIndex++ % locations.length]
 						row = selectedLocation.row
 						column = selectedLocation.column
 						file = selectedLocation.file
-			sendTouchToEditor id, referencePos, cast inputType, row, column, file
+					else
+						deselect = true
+						
+			sendTouchToEditor id, referencePos, cast inputType, row, column, file, deselect
 			
-	private js void sendTouchToEditor: int id, Vector2 pos, TouchPhase phase, int row, int column, string file
-		_sendToEditor({type:"touch", id, x:pos.x, y:pos.y, phase, row, column, file})
+	private js void sendTouchToEditor: int id, Vector2 pos, TouchPhase phase, int row, int column, string file, bool deselect
+		_sendToEditor({type:"touch", id, x:pos.x, y:pos.y, phase, row, column, file, deselect})
 	
 	internal js void sendFrame: int frame, int frames
 		_sendToEditor({type:"frame", frame, frames})
@@ -226,7 +257,7 @@ transient unit Platform
 		try   {
 			if(forUser == -1 || Input_localUser?.id == forUser) {
 				if(value) {
-					if(!ServerNetwork_isLocalhost && !Platform_isDebug) document.body.requestFullscreen()
+					if(!Platform_isStaging) document.body.requestFullscreen()
 				} else {
 					document.exitFullscreen()
 				}
@@ -295,6 +326,12 @@ transient unit Platform
 		let str = localStorage.getItem(key)
 		return str ? JSON.parse(str) : null 
 		
+	inline js void setLocalStorageString: string key, string value
+		localStorage.setItem(key, value)
+		
+	inline js string getLocalStorageString: string key
+		(localStorage.getItem(key) || "")
+		
 	js string generateObjectId
 		var result = (Date.now() / 1000 | 0).toString(16)
 		for(let i=0; i<16; i++)
@@ -302,7 +339,7 @@ transient unit Platform
 		return result.toLowerCase()
 		
 	inline js void vibrate: int duration = 100
-		navigator.vibrate(duration)
+		if(navigator.vibrate) navigator.vibrate(duration)
 		
 	js void saveImage: string dataUrl, string file
 		var base64Data = dataUrl.replace(/data:image\/png;base64,/, "");
@@ -328,20 +365,69 @@ transient unit Platform
 		
 	inline js void sendErrorToEditor: Error error
 		if(window.sendErrorToEditor) sendErrorToEditor(error)
-		else                         console.log(error)
+		else                         console.error(error)
 		
-	inline js void pushState: object state, string title, string url = ""
-		history.pushState(state, title, url)
-		
-	inline js void schedule: int delay
-		                     void() then
-		setTimeout(then, delay)
+	inline js void delay: Time time
+		                  void() then
+		setTimeout(then, time)
 		
 	inline js void copyToClipboard(string text)
 		navigator.clipboard.writeText(text)
 		
 	inline js void setLocation: string url
 		location.href = url
+		
+	js void showIcon
+		if(!Platform_isDebug && window.require) {
+			const { remote } = require('electron')
+			remote.app.dock?.show()
+		}
+	
+	js void hideIcon
+		if(!Platform_isDebug && window.require) {
+			const { remote } = require('electron')
+			remote.app.dock?.hide()
+		}
+	
+	js void show
+		if(!Platform_isDebug && window.require) {
+			const { remote } = require('electron')
+			remote.getCurrentWindow().show()
+		}
+	
+	js void hide
+		if(!Platform_isDebug && window.require) {
+			const { remote } = require('electron')
+			remote.getCurrentWindow().hide()
+		}
+		
+	js void registerGlobalShotcut: string shortcut
+		                           void() do
+		if(!Platform_isDebug && window.require) {
+			const { remote } = require('electron')
+			remote.globalShortcut.unregister(shortcut)
+			remote.globalShortcut.register(shortcut, () => do())
+		}
+		
+	js void setInterval: int interval
+		                 void() do
+		setInterval(() => do(), interval)
+		
+	inline js string resourcesPath := process.resourcesPath
+	
+	inline js void pushState: string url
+		                      object state = null
+		if(Network_isPremiere) history.pushState(state, "", url);
+		
+	inline js void replaceState: string url
+		                         object state = null
+		if(Network_isPremiere) history.replaceState(state, "", url);
+		
+	inline js void back
+		if(Network_isPremiere) history.back();
+		
+	inline js void reload
+		if(!Platform_isDebug) location.reload();
 		
 unit File
 	js string readPartial: string filename, int offset=0, int length, void(string result) callback
@@ -363,63 +449,18 @@ unit File
 		let fs = require("fs")
 		fs.writeFile(filename, data, "utf8", (err, data) => {
 			then?.()
-		})	
+		})
+		
+	inline js bool exists: string filename
+		require("fs").existsSync(filename)
+		
+	inline js void createDirectory: string path
+		require("fs").mkdirSync(path)
 		
 struct FileFilter
 	string name
 	string[] extensions
 
-transient unit Http	
-	js void get: string url, void(object result) code
-		let response = await fetch(url)
-		code(await response.json())
-		
-	js void delete: string url 
-		         void(object result) code
-		         void(string error) else
-		try {
-			let response = await fetch(url, {method:"DELETE"})
-			let result = await response.text()
-			code(result)
-		} catch(e) {
-			else(e.message)
-		}
-		
-	js void put: string url 
-		         void(object result) code
-		         void(string error) else
-		try {
-			let response = await fetch(url, {method:"PUT"})
-			let result = await response.text()
-			code(result)
-		} catch(e) {
-			else(e.message)
-		}
-		
-	js void put: string url
-		         object body
-		         void(object result) code
-		         void(string error) else
-		try {
-			let response = await fetch(url, {method:"PUT", body:JSON.stringify(body)})
-			let result = await response.json()
-			code(result)
-		} catch(e) {
-			else(e.message)
-		}
-		
-	js void post: string url
-		          string body
-		          void(object result) code
-		          void(string error) else
-		try {
-			let response = await fetch(url, {method:"POST", body})
-			let result = await response.text()
-			code(result)
-		} catch(e) {
-			else(e.message)
-		}
-		
 transient unit IndexedDB
 	private object db
 	
@@ -435,7 +476,6 @@ transient unit IndexedDB
 			}
 			request.onsuccess = e => {
 				IndexedDB_db = e.target.result;
-				Network_log("IndexedDB started successfully");
 			}
 			request.onerror = e => {
 				Network_log("Error in IndexedDB.start: "+request.error);

@@ -1,48 +1,66 @@
 // A sound
-class Sound
+skipInit class Sound
 	string file
 	float fadeVolume = 1
+	transient dynamic audioElement
+	
+	Sound
+		audio.sounds.add this
 	
 	js void open
 		return new Promise((resolve, reject) => {
-			this.audio = new Audio();
-			this.audio.oncanplaythrough = () => resolve();
-			this.audio.onerror = () => reject();
-			this.audio.src = this.file;			
+			this.nextAudioElement = new Audio();
+			this.nextAudioElement.oncanplaythrough = () => resolve();
+			this.nextAudioElement.onerror = () => reject();
+			this.nextAudioElement.src = _basePath+this.file;			
 		})
 		
 	js void volume: float value
 		this.fadeVolume = value
-		if(this.audio) this.audio.volume = this.fadeVolume * audio_volume
+		if(this.audioElement) this.audioElement.volume = this.fadeVolume * audio_volume
 		
 	js void updateVolume
-		if(this.audio) this.audio.volume = this.fadeVolume * audio_volume
+		if(this.audioElement) this.audioElement.volume = this.fadeVolume * audio_volume
 		
 	js void stop
-		this.audio?.pause()
+		if(this.audioElement) this.audioElement.pause()
 		
 	play
 		// We can play sounds immediately to ensure there is no lag
 		// If a sound turns out to be wrong after receiving new inputs, we stop it
-		let playingSound = audio.playingSounds.find.sound == this and .frame == Time.frame
+		let playingSound = audio.playingSounds.find(.sound == this and .frame == Time.frame)
 		if !playingSound
 			audio.playingSounds.add playingSound = {this, frame:Time.frame, isConfirmed:true}
-			if !(Platform.isDebug and Platform.fastForward) doPlay playingSound
+			if Network.isPremiere: doPlay playingSound
 		else
 			playingSound.isConfirmed = true
+			
+	js void currentTime: float value
+		if(this.audioElement) this.audioElement.currentTime = value
 		
 	private js void doPlay: PlayingSound ps
-		log("playing "+this.file);
+		// Recreate audio if it was lost during serialization
+		if(!this.nextAudioElement) this.preloadForNextPlayback();
+			
+		// Play audio
 		this.fadeVolume = 1;
-		this.audio = new Audio();
-		this.audio.src = this.file;
-		this.audio.volume = audio_volume;
-		this.audio.onended = () => audio_playingSounds.remove(ps);
-		this.audio.play();
+		this.audioElement = this.nextAudioElement;
+		this.audioElement.volume = audio_volume;
+		this.audioElement.onended = () => audio_playingSounds.remove(ps);
+		this.audioElement.play();
+		this.preloadForNextPlayback()
 		
-	fadeOut: int duration = 3000
-		     int delay = 0
-		fx.add FadeSoundEffect startTime:Time.now+delay, duration, smooth:false, this, startValue:1, delta:-1
+	internal js void preloadForNextPlayback
+		this.nextAudioElement = new Audio();
+		await this.nextAudioElement.setSinkId(PeerNetwork_audioOutputId);
+		this.nextAudioElement.src = _basePath+this.file;
+		
+	isPlaying
+		return audio.playingSounds.any.sound == this and .frame < Time.frame
+		
+	fadeOut: Time duration = 3000
+		     Time delay = 0
+		fx.add FadeSoundEffect startTime:Time.now+delay, duration, smooth:false, sound:this, startValue:1, delta:-1
 		return this
 
 transient class PlayingSound
@@ -51,11 +69,13 @@ transient class PlayingSound
 	bool isConfirmed
 	
 // A collection of functions for playing audio
-transient global unit audio
+transient global skipInit unit audio
 	const float[] volumeLevels = [0, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, .01, .02, .04, .08, .16, .32, .64, 1]
-	float volumeLevel = 10
+	int volumeLevel = 10
 	float volume = volumeLevels[volumeLevel]
+	
 	PlayingSound[] playingSounds
+	Sound[] sounds
 	
 	internal startFrame
 		playingSounds.each.isConfirmed = false
@@ -64,6 +84,9 @@ transient global unit audio
 		// Stop sounds that turned out to be wrong after receiving new inputs
 		playingSounds.each: if .frame == Time.frame and !.isConfirmed: .sound.stop
 		
+	internal reload
+		sounds.each.preloadForNextPlayback
+		
 	stop
 		playingSounds.each.sound.stop
 	
@@ -71,19 +94,15 @@ transient global unit audio
 		if forUser == -1 or forUser == Input.localUser?.id
 			volumeLevel = 0
 			volume = volumeLevels[volumeLevel]
+			playingSounds.each.sound.updateVolume
 	
-	decreaseVolume: int forUser = -1
+	adjustVolume: int delta = 1, int forUser = -1
 		if forUser == -1 or forUser == Input.localUser?.id
-			volumeLevel = Math.limit(volumeLevel-1, min:0, max:volumeLevels.length-1)
+			volumeLevel = Math.limit(volumeLevel+delta, min:0, max:volumeLevels.length-1)
 			volume = volumeLevels[volumeLevel]
+			playingSounds.each.sound.updateVolume
 	
-	increaseVolume: int forUser = -1
-		if forUser == -1 or forUser == Input.localUser?.id
-			volumeLevel = Math.limit(volumeLevel+1, min:0, max:volumeLevels.length-1)
-			volume = volumeLevels[volumeLevel]
-			print volume, forUser
-	
-	global playSound: Sound sound, int delay = 0, bool smooth = false
+	global playSound: Sound sound, Time delay = 0, bool smooth = false
 		if Time.frame == 0
 			fx.add PlaySoundEffect startTime:Math.ceil(Time.now+Network.targetFrameTime)+delay, sound, smooth
 		else

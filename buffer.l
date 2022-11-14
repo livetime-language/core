@@ -161,9 +161,16 @@ transient struct Buffer
 		}
 			
 	js void writeString: string value
+		if(!value) {
+			if(this.writePos+4 > this.buffer.byteLength)
+				this.expandBuffer(this.writePos+4)
+			this.dataView.setInt32(this.writePos, 0)
+			this.writePos += 4
+			return
+		}
 		let maxSize = value.length*3
 		if(this.writePos+maxSize+4 > this.buffer.byteLength)
-			this.expandBuffer((this.writePos+maxSize+4)*2)
+			this.expandBuffer(this.writePos+maxSize+4)
 			
 		var array = new Uint8Array(this.buffer, this.writePos+4, maxSize)
 		var result = Buffer_textEncoder.encodeInto(value, array)
@@ -188,8 +195,8 @@ transient struct Buffer
 		this.writePos += 4
 		return this.writePos
 	
-	internal js void writeSize: int pos
-		this.dataView.setInt32(pos-4, this.writePos-pos)
+	// private js void writeSize: int pos
+	// 	this.dataView.setInt32(pos-4, this.writePos-pos)
 	
 	js void writeInt8: int value
 		if(this.writePos+1 > this.buffer.byteLength)
@@ -221,6 +228,12 @@ transient struct Buffer
 		this.dataView.setInt32(this.writePos, value)
 		this.writePos += 4
 	
+	js void writeFloat32: float value
+		if(this.writePos+4 > this.buffer.byteLength)
+			this.expandBuffer(this.writePos+4)
+		this.dataView.setFloat32(this.writePos, value)
+		this.writePos += 4
+		
 	js void writeFloat64: float value
 		if(this.writePos+8 > this.buffer.byteLength)
 			this.expandBuffer(this.writePos+8)
@@ -296,6 +309,11 @@ transient struct Buffer
 		this.readPos += 4
 		return value
 
+	js float readFloat32
+		let value = this.dataView.getFloat32(this.readPos)
+		this.readPos += 4
+		return value
+		
 	js float readFloat64
 		let value = this.dataView.getFloat64(this.readPos)
 		this.readPos += 8

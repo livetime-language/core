@@ -1,14 +1,15 @@
-enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, Checksum
+enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, ReadyForStateRequests, MakePrimary, RequestState, State, Checksum
 
 transient unit ServerNetwork
 	private object socket
 	private Buffer sendBuffer
-	bool isLocalhost
+	int nextConnectionId = 1
 	
 	js void setup
+		let startTime = Date.now()
 		let socket
-		if(ServerNetwork_isLocalhost) socket = new WebSocket("ws://localhost:3112");
-		else                          socket = new WebSocket("wss://"+location.host+":3112");
+		if(location.href.indexOf("localhost") != -1) socket = new WebSocket("ws://localhost:3112");
+		else                                         socket = new WebSocket("wss://"+location.host+":3112");
 		socket.binaryType = "arraybuffer";
 		socket.onopen = function() {
 			Network_log("Websocket open");
@@ -21,6 +22,9 @@ transient unit ServerNetwork
 		socket.onclose = function(ev) {
 			Network_log("Websocket closed "+ev.code+" "+ev.reason)
 			ServerNetwork_socket = null
+			if(Date.now() - startTime < 30000) {
+				location.href = "/{Network_gameId}/{Network_roomId}"
+			}
 		}
 		socket.onerror = error => {
 			Network_error = "Can't connect to server."
@@ -32,10 +36,10 @@ transient unit ServerNetwork
 		return Input.internalUsers[id] || (Input.internalUsers[id] = {id, local:false})
 		
 	private onConnectedToServer
-		if Input.localUser.id == -1 and !isLocalhost
+		if Input.localUser.id == -1 and !Platform.isStaging
 			// We were in this room before -> connect with the same userId we had before
 			RoomInfo roomInfo = cast Platform.getLocalStorageObject "room"+Network.roomId
-			Input.localUser.id = roomInfo && roomInfo.time > Network.currentTime - 3600000*24 ? roomInfo.userId : -1
+			Input.localUser.id = roomInfo && roomInfo.time > Network.currentTime - 3600000*6 ? roomInfo.userId : -1
 			Network.log roomInfo, Input.localUser.id
 		
 		Network.log "onConnectedToServer as {Input.localUser.id} {Network.roomId}"
@@ -62,11 +66,11 @@ transient unit ServerNetwork
 		if type == Ice:          onIce buffer; else
 		if type == Tick:         onTick buffer; else
 		if type == Switch:       onSwitch buffer; else
-		if type == Reload:       onReload buffer;
+		if type == Reload:       onReload buffer; else
+		if type == MakePrimary:  onMakePrimary buffer;
+		if type == RequestState: onRequestState buffer;
 		
 	private void sendJoinMessage: string roomId, int userId, int version
-		print roomId, userId, version
-		
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast NetworkMessageType.Join
 		sendBuffer.writeString roomId
@@ -79,19 +83,20 @@ transient unit ServerNetwork
 		let userId = buffer.readInt32
 		let version = buffer.readInt32
 		let seed = buffer.readString
+		let serverStartTime = buffer.readFloat64
 		let userCount = buffer.readInt16
 		for userCount
 			let id = buffer.readInt32
 			InternalUser user
 			if id == userId: user = Input.localUser
-			else             user = {offerByMe:true}
+			else             user = {offerByMe:true, connectionId:nextConnectionId++}
 			user.id = id
 			Input.internalUsers[id] = user
 			buffer.readBuffer user.inputs
 
 		if roomId != Network.roomId
 			Network.log "Received room id {roomId}"
-			Platform.pushState null, "{Network.gameId} {roomId}", "/{Network.gameId}/{roomId}"
+			Platform.pushState "/{Network.gameId}/{roomId}"
 			Network.roomId = roomId
 			
 		if version != Platform.version
@@ -100,12 +105,17 @@ transient unit ServerNetwork
 		inputsSentPos = Input.localUser.inputs.writePos
 		Input.localUser.id = userId
 		Math.setRandomSeed seed
+		Network.serverStartTime = serverStartTime
 		Network.mode = Ping
-		Network.storeUserId
 		for Input.internalUsers
-			if !.local: PeerNetwork.createOffer .
+			if . and !.local: PeerNetwork.createOffer .
+		Network.storeUserId
 				
-		Network.log "Joining room {roomId} as user {userId}", seed
+		Network.log "Joining room {roomId} as user {userId}"
+		
+		// The first person in the room triggers sending an notification with the link to everybody
+		if userCount <= 1 and !Platform.isStaging: http.getInternal "https://up4playing.com:3114/sendGamedayNotification/{Network.gameId}/{Network.roomId}/hasStarted"
+
 		
 	float nextPingTime, fastestPingPongTime = int.maxValue, lastPingPongTime
 	int pongCount
@@ -113,19 +123,22 @@ transient unit ServerNetwork
 	ping
 		let now = Network.currentTime
 		if (Network.mode == Ping or Network.mode == Connected) and now >= nextPingTime
+			Network.log ">>> Ping {now}"
 			sendBuffer.reset
 			sendBuffer.writeInt8 cast NetworkMessageType.Ping
 			sendBuffer.writeFloat64 now
-			sendBuffer.writeInt32 Network.certainFrame                    // The last certain frame with inputs from everybody
+			sendBuffer.writeInt32 Network.certainFrame                            // The last certain frame with inputs from everybody
 			sendBuffer.writeFloat64 Network.checksums[Network.certainFrame] || 0  // The checksum of the last certain frame
 			send sendBuffer
-			nextPingTime = now + 5000
+			nextPingTime = now + (Network.mode == Ping ? 200 : pongCount < 20 ? 1000 : 30000)
 			
 	private onPong: Buffer buffer
 		float now = Network.currentTime
 		float timeSinceStart = buffer.readFloat64
 		float pingTime = buffer.readFloat64
 		float pingPongTime = now - pingTime
+		Network.log "<<< Pong ({pongCount}) {pingTime}", pingPongTime
+			
 		if pingPongTime < fastestPingPongTime
 			// Use the fastest ping-pong-time we have ever seen to calculate the start time
 			fastestPingPongTime = pingPongTime
@@ -135,13 +148,52 @@ transient unit ServerNetwork
 		pongCount++
 		lastPingPongTime = pingPongTime
 		
-		// Finish pinging after the 20th pong
-		if Network.mode == Ping and pongCount >= 10 and fastestPingPongTime < 1000
+		// Finish pinging after the 5th pong
+		if Network.mode == Ping and pongCount >= 5 and fastestPingPongTime < 1000
 			// Request the state from the user who has been here the longest (has the lowest connectionId)
 			Network.log "Ping-Pong complete", pongCount, fastestPingPongTime
-			Network.startConnected
+			requestStateTryNumber = 0
+			resolveState
 
-		nextPingTime = now + (Network.mode == Ping ? 100 : 10000)
+	private Time nextResolveStateTime
+	private int requestStateTryNumber
+		
+	resolveState
+		Network.mode = ResolveState
+		let now = Network.currentTime
+		if now > nextResolveStateTime
+			Network.log "resolveState: sending request state to server", requestStateTryNumber
+			sendRequestState requestStateTryNumber++
+			nextResolveStateTime = now + 7s
+			
+		// for Input.internalUsers
+		// 	print "    {.id} isConnected:{.isConnected}"
+			
+		// let master = Input.internalUsers.withMin.id where .isConnected and .dataChannel
+		// // if not masterId: masterId = Input.internalUsers.min.id
+		// // let masterId = Input.users.min.id
+			
+		// if master
+		// 	// Request state for master
+		// 	Network.log "ResolveState: The master is {master.id} -> sendRequestState"
+		// 	if master.isConnected and master.dataChannel: PeerNetwork.sendRequestState master
+		// else
+		// 	// Start application for first user
+		// 	Network.log "ResolveState: I'm the first user -> startConnected"
+		// 	let frame = Math.floor((now - Network.startTime)/Network.targetFrameTime)+3
+		// 	Network.startConnected frame
+			
+		// nextResolveStateTime = now + 5s
+		
+	private onRequestState: Buffer buffer
+		int requestedById = buffer.readInt16
+		Network.log "{requestedById} is requesting the state"
+		PeerNetwork.stateRequestedBy requestedById
+		
+	private onMakePrimary: Buffer buffer
+		Network.log "I'm the primary user -> startConnected"
+		let frame = Math.floor((Network.currentTime - Network.startTime)/Network.targetFrameTime)+3
+		Network.startConnected frame
 		
 	sendSignal:	int receiverId, string type, string sdp
 		sendBuffer.reset
@@ -152,6 +204,17 @@ transient unit ServerNetwork
 		sendBuffer.writeString sdp
 		send sendBuffer
 		
+	sendRequestState: int tryNumber
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast NetworkMessageType.RequestState
+		sendBuffer.writeInt16 tryNumber
+		send sendBuffer
+		
+	sendReadyForStateRequests
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast NetworkMessageType.ReadyForStateRequests
+		send sendBuffer
+		
 	private onSignal: Buffer buffer
 		let receiverId = buffer.readInt32
 		let senderId = buffer.readInt32
@@ -159,8 +222,14 @@ transient unit ServerNetwork
 		let sdp = buffer.readString
 		
 		let sender = getOrCreateUser senderId
-		if type == "offer":  PeerNetwork.onReceivedOffer sender, sdp; else
-		if type == "answer": PeerNetwork.onReceivedAnswer sender, sdp
+		if type == "offer"
+			// When we receive an offer, a new user is connecting or an old user is reconnecting
+			// -> Assign a new connection id
+			sender.connectionId = nextConnectionId++
+			PeerNetwork.onReceivedOffer sender, sdp
+		else
+		if type == "answer"
+			PeerNetwork.onReceivedAnswer sender, sdp
 			
 	sendIce: int receiverId, string candidate
 		sendBuffer.reset
@@ -223,17 +292,19 @@ transient unit ServerNetwork
 		if mode != Network.sendInputsMode
 			Network.sendInputsMode = mode
 	
-	sendReload: bool newRoom, bool newUserId
-		string url = "/{Network.gameId}/{newRoom ? Network.roomId+1 : Network.roomId}"
+	sendReload: bool newRoom, bool newUserId, bool keepMaster
+		string url = "/{Network.gameId}/{newRoom ? Network.roomId+(Network.roomId < 0 ? -1 : 1) : Network.roomId}"
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast NetworkMessageType.Reload
-		sendBuffer.writeString url
+		sendBuffer.writeBool keepMaster
 		sendBuffer.writeBool newUserId
+		sendBuffer.writeString url
 		send sendBuffer
 
 	onReload: Buffer buffer
-		let url = buffer.readString
+		let keepMaster = buffer.readBool
 		let newUserId = buffer.readBool
-		if !newUserId: url += "-{Input.localUser.id}"
+		let url = buffer.readString
+		if !newUserId: url += "u{Input.localUser.id}"
 		Platform.setLocation url
 			

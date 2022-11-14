@@ -1,4 +1,4 @@
-unit fx
+global unit fx
 	internal Effect[] effects
 	add: Effect effect
 		effects.add effect
@@ -6,19 +6,19 @@ unit fx
 	tick
 		let now = Time.now
 		for effects <-
-			if now >= .startTime and (not .smooth or Input.isCertain)
+			if now >= .startTime and (not .smooth or Network.isSmooth)
 				float f = .duration ? (now - .startTime)/.duration : 1
 				if f >= 1: f = 1; effects.removeAt i
 				.tick f
 				
-	run: int delay
-		 bool smooth = false
-		 stored void() code
-		add RunEffect startTime:Time.now+delay, smooth, code
+	global delay: Time time = 0
+		          bool smooth = false
+		          stored void() do
+		add RunEffect startTime:Time.now+time, smooth, do
 				
 class Effect
-	int startTime
-	int duration
+	Time startTime
+	Time duration
 	bool smooth
 	tick: float f
 
@@ -46,18 +46,22 @@ Effect RadiusEffect
 	tick(float f) object.radius = startValue + delta * f
 	
 Effect FadeSoundEffect
-	Sound sound
 	float startValue, delta
-	tick(float f) 
-		sound.volume = startValue + delta * f
-		if f >= 1: sound.stop
+	private dynamic audioElement
+	
+	FadeSoundEffect: Sound sound
+		this.audioElement = sound.audioElement
+	tick(float f)
+		if audioElement == null: return
+		audioElement.volume = (startValue + delta * f) * audio.volume
+		if f >= 1: audioElement.pause
 			
 Effect PlaySoundEffect
 	Sound sound
 	tick(float f) sound.play
 	
 Effect RunEffect
-	void() code
-	tick(float f) code()
+	void() do
+	tick(float f) do()
 	
 
