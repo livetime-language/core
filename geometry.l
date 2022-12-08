@@ -481,7 +481,7 @@ unit Math
 global transient unit System
 	global inline js void forPositions: T[] subject               // The list to iterate over
 		                                Vector2 start = {0,0}     // Left or top align items at this position
-		                                Vector2 delta = {100,0}   // Distance between items
+		                                Vector2 delta = {300,0}   // Distance between items
 		                                -> void(
 		                                    T it,                 // The current item of the list we are iterating over with forCentered
 		                                    Vector2 pos,          // The position of the current item
@@ -491,7 +491,7 @@ global transient unit System
 
 	global inline js void forPositions: int to                    // The exclusive upper bound to iterate towards
 		                                Vector2 start = {0,0}     // Left or top align items at this position
-		                                Vector2 delta = {100,0}   // Distance between items
+		                                Vector2 delta = {300,0}   // Distance between items
 		                                -> void(
 		                                    int i,                // The index of the current item of the list we are iterating over with forCentered
 		                                    Vector2 pos,          // The position of the current item
@@ -511,7 +511,7 @@ global transient unit System
 
 	global inline js void forPositions: T[] subject               // The list to iterate over
 		                                Vector2 center = {0,0}    // Center items at this position
-		                                Vector2 delta = {100,0}   // Distance between items
+		                                Vector2 delta = {300,0}   // Distance between items
 		                                -> void(
 		                                    T it,                 // The current item of the list we are iterating over with forCentered
 		                                    Vector2 pos,          // The position of the current item
@@ -521,7 +521,7 @@ global transient unit System
 
 	global inline js void forPositions: int to                    // The exclusive upper bound to iterate towards
 		                                Vector2 center = {0,0}    // Center items at this position
-		                                Vector2 delta = {100,0}   // Distance between items
+		                                Vector2 delta = {300,0}   // Distance between items
 		                                -> void(
 		                                    int i,                // The index of the current item of the list we are iterating over with forCentered
 		                                    Vector2 pos           // The position of the current item
@@ -530,7 +530,7 @@ global transient unit System
 
 	global inline js void forPositions: T[] subject               // The list to iterate over
 		                                Vector2 end = {0,0}       // Right or bottom align items at this position
-		                                Vector2 delta = {100,0}   // Distance between items
+		                                Vector2 delta = {300,0}   // Distance between items
 		                                -> void(
 		                                    T it,                 // The current item of the list we are iterating over with forCentered
 		                                    Vector2 pos,          // The position of the current item
@@ -678,21 +678,21 @@ class Grid<T>
 	IntVector2 size
 	T[] items
 	
-	get: int x
-		 int y
+	get: int x // The column to get the value from
+		 int y // The row to get the value from
 		return items[y*size.x + x]
 	
-	get: IntVector2 pos
-		return items[pos.y*size.x + pos.x]
+	get: IntVector2 position // The vector to get the value from
+		return items[position.y*size.x + position.x]
 	
-	set: int x
-		 int y
-		 T value
+	set: int x   // The column of the value to set
+		 int y   // The row of the value to set
+		 T value // The value to set
 		items[y*size.x + x] = value
 	
-	set: IntVector2 pos
-		 T value
-		items[pos.y*size.x + pos.x] = value
+	set: IntVector2 position // The grid position of the value to set
+		 T value             // The value to set
+		items[position.y*size.x + position.x] = value
 			
 global transient unit System
 	global inline js void for: IntVector2 subject    // The exclusive upper bound to iterate towards
