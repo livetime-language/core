@@ -168,7 +168,7 @@ transient skipInit unit Network
 		audio.stop
 		initAll
 		
-		if !startInLobby
+		// if !startInLobby
 			// When the developer changed Platform.userCount, add or remove internal users accordingly
 			for Input.internalUsers.length to Platform.userCount
 				Input.internalUsers.add {id:i, local:true, collectInputs:true}
@@ -213,6 +213,7 @@ transient skipInit unit Network
 	smooth: int userId
 		    void() do
 		if isSmooth or Input.localUser.id == userId: do
+		// if isSmooth: do
 	
 	smooth: void() do
 		if isSmooth: do
@@ -268,11 +269,12 @@ transient skipInit unit Network
 			// Ensure that step is called every targetFrameTime milliseconds
 			while frame < targetFrame
 				// Simulate mouse movement for testing
-				if simulateInputsForTesting
-					Input.localUser.startInputFrame frame
-					Vector2 pos = {(frame*10)%1920-960, -540+Input.localUser.id*30}
-					Vector2 pixelPos = Input.logicalToPixelPosition(pos)
-					Input.handleTouchEvent inputType:TouchMove, x:pixelPos.x, y:pixelPos.y, pointerType:"mouse", pointerId:0, button:0
+				if simulateInputsForTesting and Platform.showDebugInfo and Input.localUser and Input.localUser.collectInputs
+					Input.handleKeyEvent KeyDown, cast Key.F24, ""
+					Input.handleKeyEvent KeyUp, cast Key.F24, ""
+					// Vector2 pos = {(frame*10)%1920-960, -540+Input.localUser.id*30}
+					// Vector2 pixelPos = Input.logicalToPixelPosition(pos)
+					// Input.handleTouchEvent inputType:TouchMove, x:pixelPos.x, y:pixelPos.y, pointerType:"mouse", pointerId:0, button:0
 
 				for Input.internalUsers -> user
 					if user?.local: user.startInputFrame frame+1
@@ -300,6 +302,8 @@ transient skipInit unit Network
 	private int replayFrames
 	int tickMessageSize
 	bool logging = true
+
+
 	
 	collectStatistics
 		if mode == Connected and Input.users.length > 1 and frame > joinFrame + 120
@@ -307,17 +311,25 @@ transient skipInit unit Network
 			
 			if sendInterval == 1
 				aheads.add ahead, maxLength:400
-				aheadMax = aheads.percentile(50)
+				aheadMax = aheads.max .
 				aheadsMax.add aheadMax maxLength:400
-				int actualBufferFrames = Math.ceil(aheadsMax.average * 1.25) max 30
+				int actualBufferFrames = Math.ceil(aheadsMax.average) max 90
 				
 				// We only update bufferFrames if the new value is smaller or at least 2 larger
 				if actualBufferFrames < bufferFrames or actualBufferFrames > bufferFrames+1: bufferFrames = actualBufferFrames
+					
+				// aheads.add ahead, maxLength:400
+				// aheadMax = aheads.percentile(50)
+				// aheadsMax.add aheadMax maxLength:400
+				// int actualBufferFrames = Math.ceil(aheadsMax.average * 1.25) max 60
+				
+				// // We only update bufferFrames if the new value is smaller or at least 2 larger
+				// if actualBufferFrames < bufferFrames or actualBufferFrames > bufferFrames+1: bufferFrames = actualBufferFrames
 			else
 				aheads.add ahead, maxLength:200
 				aheadMax = aheads.percentile(50)
 				aheadsMax.add aheadMax maxLength:30
-				bufferFrames = Math.round(aheadsMax.average * 2.0) max 30
+				bufferFrames = Math.round(aheadsMax.average * 2.0) max 60
 			
 			Input.localUser.bufferFrames = bufferFrames
 			
@@ -474,13 +486,12 @@ transient skipInit unit Network
 		catch
 			onError error
 			
+		if Platform.showDebugInfo
+			graphics.resetMatrix
+			statistics.tickGraph
+			networkVisualizer.tick
+			
 		if draw and not Platform.isWaitingForInitialData
-			if Platform.showDebugInfo
-				statistics.draw
-				if errorMessage
-					drawText errorMessage, statistics.position+{statistics.size.x/2, -statistics.size.y/2-15}, align:Right, layer:1000001, size:12, color:{"ffff00"}
-				else
-					drawText "#{frame} {statistics.maxValue}", statistics.position+{statistics.size.x/2, -statistics.size.y/2-12}, align:Right, layer:1000001, size:12
 			drawTime = Time.measure
 				graphics.finishFrame
 			if Platform.mode != Manipulator: Input.updateCursor
@@ -650,8 +661,8 @@ transient skipInit unit Network
 	string gameId
 	
 	join: string gameId, string roomString, int userId
-		// Send statistics after 20 seconds
-		Platform.setTimeout 20s: statistics.manuallyTriggerSend -1, clear:false
+		// Send statistics after 25 seconds
+		Platform.setTimeout 25s: statistics.manuallyTriggerSend -1, clear:false
 		
 		isPremiere = true
 		initAll
@@ -710,9 +721,12 @@ class StatisticsGraphSeries
 			recentValues.clear
 				
 skipInit transient unit statistics
-	Vector2 position = {500, 460}
-	Vector2 size = {500, 160}
-	framesPerValue = 30
+	const Vector2 margin = {224,126}
+	const Vector2 position = {-960, 540}
+	const Vector2 size = {1920+margin.x, margin.y}
+	const Vector2 labelPos = {970, 528}
+	const Color backgroundColor = {"202020"}
+	const framesPerValue = 10
 	
 	float[] serverPings
 	private StatisticsGraphSeries[] series
@@ -773,9 +787,9 @@ skipInit transient unit statistics
 			
 	internal float maxValue
 	
-	setup: Vector2 position, Vector2 size = {880, 180}
-		this.position = position
-		this.size = size
+	// setup: Vector2 position, Vector2 size = {880, 180}
+	// 	this.position = position
+	// 	this.size = size
 	
 	add: string name, float value, Color color = White
 		var s = series.find.name == name
@@ -793,7 +807,7 @@ skipInit transient unit statistics
 		s.color = color
 		s.add value
 		
-	internal draw
+	internal tickGraph
 		maxValue = 0
 		for series -> s
 			int len = Math.min(.values.length, size.x.round)
@@ -801,8 +815,8 @@ skipInit transient unit statistics
 				let value = s.values[-1-i]
 				if value > maxValue: maxValue = value
 			
-		Vector2 startPos = position + size/2
-		Vector2 labelPos = position - size/2 - {0,13}
+		Vector2 startPos = position + size
+		Vector2 labelPos = this.labelPos
 		for series -> s, seriesIndex
 			string text = cast .lastValue
 			drawRectangle labelPos, {8,8}, fillColor:.color, align:Left, layer:1000000
@@ -817,5 +831,36 @@ skipInit transient unit statistics
 				if i: drawRectangle pos, size:{4, prevY-pos.y+4}, fillColor:s.color, layer:1000000, valign:Top
 				prevY = pos.y
 				
-		drawRectangle position - {0,size.y/2+10}, {size.x, 20}, fillColor:Black, layer:1000000
-		drawRectangle position, size, fillColor:Black, outlineColor:White, outlineWidth:3, layer:1000000
+		if Network.errorMessage: drawText Network.errorMessage, position, align:Left, layer:1000001, size:12, color:{"ffff00"}
+		drawText "#{Network.frame} {maxValue}", {position.x+size.x-8, labelPos.y}, align:Right, layer:1000001, size:12
+		drawRectangle position, size, fillColor:backgroundColor, layer:1000000, align:Left, valign:Top
+
+unit networkVisualizer		
+	private int[] posForUser = [0,-10000,-10000,-10000]
+	// private int[] posForUser = [0,0,0,0]
+		
+	internal tick
+		for Input.users -> user
+			if posForUser[.index] == -10000: posForUser[.index] = posForUser[0]
+				
+		for Input.users -> user
+			Network.smooth user.id
+				Input.onKeyDown F24, userId:user.id
+					if (posForUser[user.index] += 2) > 1080
+						posForUser[user.index] -= 1080
+					// print "onKeyDown", user.index, posForUser[user.index]
+			drawCircle {1110+user.index*20, -540+posForUser[user.index]}, size:20, fillColor:.color
+			// drawText position:{1110+user.index*20, -520+posForUser[user.index]}, cast posForUser[user.index], size:20
+			
+		// drawText cast Network.frame, {1140, 450}, size:40
+			
+		// Network.log posForUser.joinToString.toString
+		
+		let bufferY = 510 - getHeightForFrame(Network.frame-Network.bufferFrames)
+		drawLine {960,bufferY} to {1100,bufferY} width:5
+		for Input.users -> user
+			let internaluser = Input.internalUsers[.id]
+				drawRectangle {984+user.index*32, 510} size:{24, getHeightForFrame(internaluser.inputFrame)}, valign:Bottom, fillColor:.color
+	
+	private getHeightForFrame: int frame
+		return (100+frame-Network.frame)*10
