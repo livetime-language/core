@@ -251,6 +251,8 @@ struct Vector2
 Vector2 SmoothVector2
 	internal transient float viewX, viewY
 	internal transient float lastMoveFrame
+	// internal float viewX, viewY
+	// internal float lastMoveFrame
 	float speed = 10
 	
 	Vector2 operator = (SmoothVector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
@@ -299,6 +301,23 @@ Vector2 SmoothVector2
 		
 	bool inMotion := x != viewX or y != viewY
 	bool isMovingLeft := x < viewX
+	
+	internal smooth
+		// if viewX == float.undefined: viewX = x
+		// if viewY == float.undefined: viewY = y
+		let deltaX = x - viewX
+		let deltaY = y - viewY
+		if deltaX or deltaY
+			if !lastMoveFrame or Time.frame > lastMoveFrame
+				let factor = speed / Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+				if deltaX > 0: viewX = Math.min(viewX + deltaX * factor, x)
+				else           viewX = Math.max(viewX + deltaX * factor, x)
+				if deltaY > 0: viewY = Math.min(viewY + deltaY * factor, y)
+				else           viewY = Math.max(viewY + deltaY * factor, y)
+				lastMoveFrame = Time.frame
+			return {viewX, viewY}
+		else
+			return this
 
 // A 2D vector comprised of an integer x and y coordinate
 struct IntVector2

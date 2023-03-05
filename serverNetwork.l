@@ -130,23 +130,27 @@ transient unit ServerNetwork
 			sendBuffer.reset
 			sendBuffer.writeInt8 cast NetworkMessageType.Ping
 			sendBuffer.writeFloat64 now
-			sendBuffer.writeInt32 Network.certainFrame                            // The last certain frame with inputs from everybody
-			sendBuffer.writeFloat64 Network.checksums[Network.certainFrame] || 0  // The checksum of the last certain frame
+			// sendBuffer.writeInt32 Network.certainFrame                            // The last certain frame with inputs from everybody
+			// sendBuffer.writeFloat64 Network.checksums[Network.certainFrame] || 0  // The checksum of the last certain frame
 			send sendBuffer
-			nextPingTime = now + (Network.mode == Ping ? 200 : pongCount < 20 ? 1000 : 5000)
+			nextPingTime = now + (Network.mode == Ping ? 200 : pongCount < 20 ? 1000 : 6000)
 			
 	float[] calculatedStartTimes
 	float referenceStartTime
+	float[] pingPongTimes
 			
 	private onPong: Buffer buffer
 		float now = Network.currentTime
 		float timeSinceStart = buffer.readFloat64
 		float pingTime = buffer.readFloat64
 		float pingPongTime = now - pingTime
-		float calculatedStartTime = now - pingPongTime/2 - timeSinceStart
-		calculatedStartTimes.add calculatedStartTime maxLength:10
-		Network.startTime = calculatedStartTimes.average
 		
+		pongCount++
+		lastPingPongTime = pingPongTime
+		pingPongTimes.add pingPongTime maxLength:30
+		if pingPongTimes.length >= 30 and pingPongTime > pingPongTimes.average * 2: return
+			
+		float calculatedStartTime = now - pingPongTime/2 - timeSinceStart
 		int deltaFromAverage = Math.round(calculatedStartTime - Network.startTime)
 		int deltaFromReference = Math.round(calculatedStartTime - referenceStartTime)
 		statistics.serverPings.add pingPongTime
@@ -155,6 +159,11 @@ transient unit ServerNetwork
 		Network.log "reference", referenceStartTime, deltaFromReference 
 		statistics.addInfo "from average", deltaFromAverage
 		statistics.addInfo "from reference", deltaFromReference
+		// statistics.add "average", deltaFromAverage+20, color:Green, set:2
+		// statistics.add "reference", deltaFromReference+20, color:Red, set:2
+		
+		calculatedStartTimes.add calculatedStartTime maxLength:20
+		Network.startTime = calculatedStartTimes.average
 			
 		if pingPongTime < fastestPingPongTime
 			// Use the fastest ping-pong-time we have ever seen to calculate the start time
@@ -162,9 +171,6 @@ transient unit ServerNetwork
 			referenceStartTime = calculatedStartTime
 			Network.log "New fastest pingPongTime", pongCount, now, pingPongTime, timeSinceStart, Network.startTime, referenceStartTime
 			
-		pongCount++
-		lastPingPongTime = pingPongTime
-
 	sendSignal:	int receiverId, string type, string sdp
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast NetworkMessageType.Signal
@@ -216,8 +222,10 @@ transient unit ServerNetwork
 		sendBuffer.writeInt8 cast NetworkMessageType.Tick
 		sendBuffer.writeInt32 Input.localUser.id
 		sendBuffer.writeInt32 inputFrame // You got all inputs up to and including this frame
-		sendBuffer.writeInt32 Network.bufferFrames
+		// sendBuffer.writeInt32 Network.bufferFrames
 		sendBuffer.writeBuffer inputs, inputsSentPos, length
+		// sendBuffer.writeInt Network.lastChecksumFrame                            // The last certain frame with inputs from everybody
+		// sendBuffer.writeFloat64 Network.checksums[Network.lastChecksumFrame] || 0  // The checksum of the last certain frame
 		send sendBuffer
 		
 		if Network.logging: Network.sentLog += " #{inputFrame} {inputsSentPos}->{inputs.writePos} {inputs.toRangeString(inputsSentPos, inputs.writePos)}"
@@ -231,11 +239,21 @@ transient unit ServerNetwork
 		let prevWritePos = sender.inputs.writePos
 		
 		sender.inputFrame = buffer.readInt32
-		sender.bufferFrames = buffer.readInt32
+		// sender.bufferFrames = buffer.readInt32
 		buffer.readBuffer sender.inputs, prevWritePos
+		// Network.receivedFrames = Input.internalUsers.min.inputFrame where . and !.local
+		// Network.certainFrame = PeerNetwork.getMinReceivedFrames
 		
-		Network.receivedFrames = Input.internalUsers.min.inputFrame where . and !.local
-		if Network.logging: Network.receivedLog += " [{Network.currentTime}] <{senderId}> #{sender.inputFrame} ama:{sender.bufferFrames} {prevWritePos}->{sender.inputs.writePos} {sender.inputs.toRangeString(prevWritePos, sender.inputs.writePos)}"
+		// Checksum
+		// int checksumFor = buffer.readInt
+		// float checksum = buffer.readFloat64
+		// if Network.logging: Network.checksumLog += " <{senderId}> #{checksumFor} {checksum}"
+		
+		// let myChecksum = Network.checksums[checksumFor]
+		// if !myChecksum                           Network.checksums[checksumFor] = checksum; else
+		// if !myChecksum.isApproximately(checksum) Network.onWrongChecksum mine:myChecksum theirs:checksum
+		
+		if Network.logging: Network.receivedLog += " [{Network.currentTime}] <{senderId}> #{sender.inputFrame} {prevWritePos}->{sender.inputs.writePos} {sender.inputs.toRangeString(prevWritePos, sender.inputs.writePos)}"
 	
 	sendSwitch: SendInputsMode mode, int sendInterval
 		sendBuffer.reset

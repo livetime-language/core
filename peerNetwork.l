@@ -202,13 +202,15 @@ transient unit PeerNetwork
 				sendBuffer.reset
 				sendBuffer.writeInt8 cast NetworkMessageType.Tick
 				sendBuffer.writeInt inputFrame // You got all inputs up to and including this frame
-				sendBuffer.writeInt Network.bufferFrames
+				// sendBuffer.writeInt Network.bufferFrames
 				sendBuffer.writeInt user.inputsSentPos
 				sendBuffer.writeBuffer inputs, user.inputsSentPos, length
-				Network.tickMessageSize = send ., sendBuffer
+				sendBuffer.writeInt Network.lastChecksumFrame                            // The last certain frame with inputs from everybody
+				sendBuffer.writeFloat64 Network.checksums[Network.lastChecksumFrame] || 0  // The checksum of the last certain frame
 				
-				if Network.logging: Network.sentLog += " <{user.id}> #{inputFrame} {user.inputsSentPos}->{inputs.writePos} {inputs.toRangeString(user.inputsSentPos, inputs.writePos)} ({Network.tickMessageSize} bytes)"
+				Network.tickMessageSize = send ., sendBuffer
 				user.inputsSentPos = inputs.writePos
+				if Network.logging: Network.sentLog += " <{user.id}> #{inputFrame} {user.inputsSentPos}->{inputs.writePos} {inputs.toRangeString(user.inputsSentPos, inputs.writePos)} ({Network.tickMessageSize} bytes)"
 			
 	private js int send: InternalUser user, Buffer buffer
 		try {
@@ -224,7 +226,7 @@ transient unit PeerNetwork
 	// private js void onMessage: InternalUser user, Buffer buffer
 	// 	setTimeout(() => PeerNetwork_onMessageDo(user, buffer), 1000)
 		
-	private getMinReceivedFrames
+	getMinReceivedFrames
 		let minReceivedFrames = int.maxValue
 		for Input.users
 			let internalUser = Input.internalUsers[.id]
@@ -241,15 +243,26 @@ transient unit PeerNetwork
 			
 	private onTick: InternalUser sender, Buffer buffer
 		let inputFrame = buffer.readInt
+		// Network.replayLog += " >>> {sender.id} {inputFrame} <<<"
+		if sender.id == 1: Network.replayLog += "A({inputFrame})"
 		if inputFrame >= sender.inputFrame
 			sender.inputFrame = inputFrame
 			
-			sender.bufferFrames = buffer.readInt
+			// sender.bufferFrames = buffer.readInt
 			let prevWritePos = buffer.readInt
 			buffer.readBuffer sender.inputs, prevWritePos
 			
-			Network.receivedFrames = getMinReceivedFrames
-			if Network.logging: Network.receivedLog += " [{Network.currentTime}] <{sender.id}> #{inputFrame} buffer:{sender.bufferFrames} {prevWritePos}->{sender.inputs.writePos} {sender.inputs.toRangeString(prevWritePos, sender.inputs.writePos)}"
+			// Checksum
+			int checksumFor = buffer.readInt
+			float checksum = buffer.readFloat64
+			if Network.logging: Network.checksumLog += " <{sender.id}> #{checksumFor} {checksum}"
+			
+			let myChecksum = Network.checksums[checksumFor]
+			if !myChecksum                           Network.checksums[checksumFor] = checksum; else
+			if !myChecksum.isApproximately(checksum) Network.onWrongChecksum mine:myChecksum theirs:checksum
+			
+			// Network.certainFrame = getMinReceivedFrames
+			if Network.logging: Network.receivedLog += " [{Network.currentTime}] <{sender.id}> #{inputFrame} {prevWritePos}->{sender.inputs.writePos} {sender.inputs.toRangeString(prevWritePos, sender.inputs.writePos)}"
 		else
 			if Network.logging: Network.receivedLog += " [{Network.currentTime}] <{sender.id}> (ignoring #{inputFrame})"
 		
@@ -515,6 +528,7 @@ transient unit PeerNetwork
 		for Input.internalUsers if .
 			sendBuffer.writeInt32 .id
 			sendBuffer.writeInt32 .inputs.readPos
+			sendBuffer.writeBool .active
 		to.inputsSentPos = localPlayer.inputs.readPos
 		sendBuffer.writeBuffer buffer
 		send to, sendBuffer
@@ -531,9 +545,11 @@ transient unit PeerNetwork
 		for userCount
 			let id = buffer.readInt32
 			let readPos = buffer.readInt32
+			let active = buffer.readBool
 			let user = Input.internalUsers[id]
 				user.inputFrame = frame
 				user.inputs.readPos = user.inputs.writePos = readPos
+				user.active = active
 				
 		for Input.internalUsers if .
 			.inputsSentPos = Input.localUser.inputs.writePos
