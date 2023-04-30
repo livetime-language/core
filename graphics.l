@@ -1143,7 +1143,8 @@ transient global unit graphics
 			if not size.y: size.y = shape == Rectangle ? size.x * 3/4 : size.x
 			if Network.mode == Local or !PeerNetwork.enableVideo
 				NetworkUser user = Input.usersById[userId]
-				drawImage VideoScreen, position, size, frame:shape == Circle ? 1:0, layer:1000000, location
+				// Flappy Bird: Removed VideoScreen
+				// drawImage VideoScreen, position, size, frame:shape == Circle ? 1:0, layer:1000000, location
 			else
 				items.add DisplayVideo(
 					m: totalMatrix,
@@ -1163,7 +1164,8 @@ transient global unit graphics
 			if not size.y: size.y = size.x * 3/4
 			if Network.mode == Local or !PeerNetwork.enableVideo
 				NetworkUser user = Input.usersById[userId]
-				drawImage VideoScreen, position, size, frame:0, layer:1000000
+				// Flappy Bird: Removed VideoScreen
+				// drawImage VideoScreen, position, size, frame:0, layer:1000000
 			else
 				items.add DisplayVideo(
 					m: totalMatrix,

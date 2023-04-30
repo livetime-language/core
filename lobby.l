@@ -12,8 +12,9 @@ unit lobby
 			drawText "delta:{ticks-Time.frame} ticks:{ticks}", size:20, position:{-940, 520}, align:Left
 			ticks++
 			
-			drawButton Button, "Send Statistics", {864,498}
-				statistics.send round:-1 game:-1
+			// Flappy Bird: Removed Button
+			// drawButton Button, "Send Statistics", {864,498}
+			// 	statistics.send round:-1 game:-1
 		
 		if PeerNetwork.error or Network.errorMessage
 			drawText PeerNetwork.error, size:40
@@ -42,15 +43,16 @@ unit lobby
 			
 		if Network.mode == Ping
 			drawText "Connecting...", size:32
-		else
-		if Input.users.length withinInclusively Platform.supportedUserCount
-			for Input.users
-				if !.isReady
-					drawButton Button, "Start", {0, 450}, visibleFor:.id
-						if enableFullscreen: Platform.setFullscreen true forUser:touch.userId
-						Input.usersById[touch.userId].isReady = true
-						if Input.users.all.isReady
-							Network.startApp
+		// Flappy Bird: Removed Button
+		// else
+		// if Input.users.length withinInclusively Platform.supportedUserCount
+		// 	for Input.users
+		// 		if !.isReady
+		// 			drawButton Button, "Start", {0, 450}, visibleFor:.id
+		// 				if enableFullscreen: Platform.setFullscreen true forUser:touch.userId
+		// 				Input.usersById[touch.userId].isReady = true
+		// 				if Input.users.all.isReady
+		// 					Network.startApp
 							
 	private showSettings = false
 	
