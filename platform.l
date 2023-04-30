@@ -9,49 +9,57 @@ enum TickMode: Interval, AnimationFrame
 // - has always the reference size (1920 x 1080 by default) on all platforms
 // - the origin is in the middle of the screen
 //
-//          Top              🡺 x
-//     Left  +  Right      🡻 
-//        Bottom            y
+//          Top              → x
+//     Left  +  Right      ↓ 
+//         Bottom          y
 //
 // Pixel space
 // - the size in the screen size in pixels of the target platform
 // - the origin in the top left corner
 transient skipInit unit Platform
+	
+	// Configuration
 	public userCount = 2
 	public supportedUserCount = Range 2..4
 	// FlappyBird Demo: Do not show safe area
 	public bool showSafeArea = false
 	public bool showDebugInfo = false
 	public bool isLocal = false
-	
 	public TickMode tickMode = Interval
-	
-	public inline js string url := location.href
-	public inline js string host := location.host
-	public inline js int version := version
-	public inline js int appName := appName
-	public inline js int userAgent := navigator.userAgent.replace(/,/g," ")
-		
-	protocalAndHost := host ? "https://"+host : "http://localhost"
-	
 	// FlappyBird Demo: Portrait reference size
 	public Vector2 referenceSize = {1080, 1920}
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
+	// Info
+	public inline js string url := location.href
+	public inline js string host := location.host
+	public protocolAndHost := host ? "https://"+host : "http://localhost"
+	
+	public inline js int appName := appName
+	public inline js int version := version
+	public inline js int userAgent := navigator.userAgent.replace(/,/g," ")
+	public inline js float usedMemory := performance.memory.usedJSHeapSize
+	
+	visible OperatingSystem os
+	visible bool isMobile
+	visible bool isBrowser
+	visible bool isDebug
+	public bool isStaging
+	
+	visible Vector2 pixelSize
+	visible Vector2 size
+	visible float pixelRatio
+	
+	// Internal
 	private object canvas
 	internal object context
-	visible bool isDebug
-	visible bool isStaging
-	visible Vector2 pixelSize, size
-	visible float pixelRatio
 	internal Matrix2D baseMatrix
 	internal bool engineStarted
-	visible PlatformMode mode
+	internal PlatformMode mode
 	internal bool fastForward
-	visible bool isMobile = true
-	visible OperatingSystem os
-		
+	internal int waitingForInitialData
+	
 	private inline js void initMedia
 		audio_init();
 		if(window.Image_init) Image_init();
@@ -59,14 +67,16 @@ transient skipInit unit Platform
 		if(window.Sound_init) Sound_init();
 		
 	private js void initPlatform
+		statistics_init();
 		Platform_init();
 		Math_init();
 		Network_init();
 		Input_init();
 		gizmo_init();
-		statistics_init();
+		Loca_init();
 		Network_log("Loading...")
 		Platform_isMobile = false;
+		Platform_isBrowser = !window.require;
 		let platform = navigator.platform
 		Platform_os = platform.startsWith("Win") ? 0 : platform.startsWith("Mac") ? 1 : 2
 		if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(navigator.userAgent) 
@@ -104,7 +114,9 @@ transient skipInit unit Platform
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
 	private updateBaseMatrix
-		Vector2 ratio = {pixelSize.x / referenceSize.x, pixelSize.y / referenceSize.y}
+		let statisticsMargin = showDebugInfo ? statistics.margin : {}
+		let referenceSizeWithMargin = referenceSize + statisticsMargin
+		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
 		float scale
 		if scaleMode == Auto
 			if ratio.x < ratio.y: effectiveScaleMode = FixedWidth;  scale = ratio.x
@@ -123,7 +135,7 @@ transient skipInit unit Platform
 			
 		let offsetX = anchor > 0 ? pixelSize.x/2 : 0
 		let offsetY = anchor > 1 ? pixelSize.y/2 : 0
-		baseMatrix = {scale,0,0,scale,offsetX,offsetY}
+		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
 	
 	// This is called when the application starts for the first time	
 	private start: bool isDebug
@@ -136,7 +148,7 @@ transient skipInit unit Platform
 		showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
 		onResize
-		drawLoading
+		// drawLoading
 		if mode >= Play: mode = Pause
 		let path = url.getUntil("?").split("/")
 		let gameId = path[3]
@@ -187,7 +199,7 @@ transient skipInit unit Platform
 		}
 	
 	// This is called every animation frame
-	private tick()   if mode == Play or mode == Record: Network.animationFrame
+	private tick()   if mode == Play or mode == Record or waitingForInitialData: Network.animationFrame
 	
 	private enterSlideMode(PlatformMode mode) this.mode = mode; sendMode
 	
@@ -196,7 +208,7 @@ transient skipInit unit Platform
 	internal record()  Network.adjustStartTimeIfNeeded; mode = Record; gizmo.clear; sendMode
 	internal play()    Network.adjustStartTimeIfNeeded; mode = Play;   gizmo.clear; sendMode
 	
-	private goToFrame(int targetFrame) Network.goToFrame(targetFrame)
+	private goToFrame(int targetFrame) pause(); Network.goToFrame(targetFrame)
 		
 	internal js void sendSelectToEditor: string cursorFile, int cursorPos
 		_sendToEditor({type:"select", cursorFile, cursorPos})
@@ -213,8 +225,11 @@ transient skipInit unit Platform
 	internal js void sendFrame: int frame, int frames
 		_sendToEditor({type:"frame", frame, frames})
 	
-	internal js void sendWatch: int frame, string text, int row, int column, string file
-		_sendToEditor({type:"watch", frame, text, row, column, file})
+	internal js void sendWatch: int frame, string text, int location, string file
+		_sendToEditor({type:"watch", frame, text, location, file})
+	
+	internal js void sendClearTimeline:
+		_sendToEditor({type:"clearTimeline"})
 	
 	private js void sendMode
 		if(Platform_isDebug) _sendToEditor({type:"setPlatformMode", mode:Platform_mode, frame:Network_frame})
@@ -228,18 +243,19 @@ transient skipInit unit Platform
 	void toggleDebugInfo
 		showDebugInfo = !showDebugInfo;
 		setLocalStorageObject("showDebugInfo", showDebugInfo ? "true" : "false")
+		updateBaseMatrix
 		
 	inline js void setFullscreen: value = true, forUser = -1
-		try   {
-			if(forUser == -1 || Input_localUser?.id == forUser) {
+		if(!Platform_isStaging && !Platform_isDebug && (forUser == -1 || Input_localUser?.id == forUser)) {
+			try {
 				if(value) {
-					if(!Platform_isStaging) document.body.requestFullscreen()
+					document.body.requestFullscreen()
 				} else {
 					document.exitFullscreen()
 				}
+			} catch {
 			}
-		} catch {
-		}
+		}	
 		
 	js void saveTextFile: string filename, string text
 		var element = document.createElement('a');
@@ -348,7 +364,9 @@ transient skipInit unit Platform
 		setTimeout(then, time)
 		
 	inline js void copyToClipboard(string text)
-		navigator.clipboard.writeText(text)
+		if(Network_isPremiere && Input_isCertain) {
+			navigator.clipboard.writeText(text)
+		}
 		
 	inline js void setLocation: string url
 		location.href = url
@@ -387,7 +405,7 @@ transient skipInit unit Platform
 		
 	js void setInterval: int interval
 		                 void() code
-		setInterval(code)
+		setInterval(code, interval)
 		
 	inline js int setTimeout: Time time
 		                      void() code
@@ -412,8 +430,14 @@ transient skipInit unit Platform
 	inline js void reload
 		if(!Platform_isDebug) location.reload();
 			
-
-		
+skipInit transient float Time
+	// The number of milliseconds elapsed since January 1, 1970
+	static Time now
+	
+js(Date) transient struct Date
+	inline js Date() new Date(Time_now)
+	static inline js Date now := new Date(Time_now)
+	
 unit File
 	js string readPartial: string filename, int offset=0, int length, void(string result) callback
 		let fs = require("fs")
@@ -431,10 +455,11 @@ unit File
 		})		
 		
 	js string write: string filename, string data, void() then = null
-		let fs = require("fs")
-		fs.writeFile(filename, data, "utf8", (err, data) => {
-			then?.()
-		})
+		if(Network_isPremiere && Input_isCertain) {
+			require("fs").writeFile(filename, data, "utf8", (err, data) => {
+				then?.()
+			})
+		}
 		
 	inline js bool exists: string filename
 		require("fs").existsSync(filename)
@@ -451,9 +476,11 @@ transient unit IndexedDB
 	
 	js void start: string databaseName, string storeName, int version = 1
 		try {
+			Network_log("IndexedDB: start");
 			IndexedDB_storeName = storeName;
 			var request = indexedDB.open(databaseName, version)
 			request.onupgradeneeded = e => {
+				Network_log("IndexedDB: upgradeneeded");
 				IndexedDB_db = e.target.result;
 				if(!IndexedDB_db.objectStoreNames.contains(storeName))
 					IndexedDB_db.createObjectStore(storeName, { keyPath: "id" });
@@ -461,12 +488,14 @@ transient unit IndexedDB
 			}
 			request.onsuccess = e => {
 				IndexedDB_db = e.target.result;
+				Network_log("IndexedDB: success");
 			}
 			request.onerror = e => {
-				Network_log("Error in IndexedDB.start: "+request.error);
+				Network_log("IndexedDB: error "+request.error);
 			}
+			Network_log("IndexedDB: finished");
 		} catch(e) {
-			Network_log("Error in IndexedDB.start: "+e.message)
+			Network_log("IndexedDB: exception "+e.message)
 		}
 		
 	js void open: string storeName, string id, void(object data) then, void() else = null

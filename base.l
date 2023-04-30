@@ -36,21 +36,33 @@ struct int
 	inline js int shiftRight: int count
 		(this >> count)
 		
-	inline js int bitwiseOr: int value
+	inline js int bitwiseOr: implicit int value
 		(this | value)
 	
-	inline js int bitwiseAnd: int value
+	inline js int bitwiseAnd: implicit int value
 		(this & value)
 	
-	inline js int limit: int min
-		                 int max
-		(this < min ? min : this > max ? max : this)
-		
-	inline js int limit: int max
-		(this > max ? max : this)
+	inline js int setBit: implicit int value
+		(this |= value)
 	
-	inline js int limit: int min
-		(this < min ? min : this)
+	inline js int unsetBit: implicit int value
+		(this &= ~value)
+	
+	inline js int limit: int from
+		                 int to
+		(this < from ? from : this > to ? to : this)
+		
+	inline js int limit: int to
+		(this > to ? to : this)
+	
+	inline js int limit: int from
+		(this < from ? from : this)
+	
+	inline js int max: int value
+		(this > value ? value : this)
+	
+	inline js int min: int value
+		(this < value ? value : this)
 	
 	inline js int setIfLarger: int newValue
 		(this = Math.max(newValue, this))
@@ -67,6 +79,10 @@ struct int
 	inline js int incrementUpToExclusive: int max
 		(this < max-1 ? ++this : max-1)
 		
+	inline js int incrementBy: int value
+		                       int upTo
+		(this+value < upTo ? (this += value) : upTo)
+		
 	inline js int decrementDownTo: int min
 		(this > min ? --this : min)
 		
@@ -78,6 +94,9 @@ struct int
 		
 	inline js bool withinInclusively: Range range
 		(this >= range.from && this <= range.to)
+		
+	inline js int assignIfGreater: int value
+		(value > this ? this = value : this)
 	
 // A number stored as a double precision 64-bit floating point value
 struct float
@@ -98,6 +117,8 @@ struct float
 	// The remainer after a division by the given value. The sign stays the same.
 	inline js float remainder: float value
 		(this % value)
+		
+	inline js int toInt := Math.floor(this)
 		
 	// Returns true if the floot is not zero
 	inline js bool toBool := this
@@ -129,15 +150,21 @@ struct float
 	inline js int round
 		Math.round(this)
 		
-	inline js float limit: float min
-		                   float max
-		(this < min ? min : this > max ? max : this)
+	inline js float limit: float from
+		                   float to
+		(this < from ? from : this > to ? to : this)
 		
-	inline js float limit: float max
-		(this > max ? max : this)
+	inline js float limit: float to
+		(this > to ? to : this)
 	
-	inline js float limit: float min
-		(this < min ? min : this)
+	inline js float limit: float from
+		(this < from ? from : this)
+	
+	inline js float max: float value
+		(this > value ? value : this)
+	
+	inline js float min: float value
+		(this < value ? value : this)
 	
 	inline js bool isApproximately: float value
 		                            float epsilon = 0.00001
@@ -151,6 +178,10 @@ struct float
 		                         float speed
 		(this < value ? (this + speed < value ? (this += speed) : (this = value)) : (this - speed > value ? (this -= speed) : (this = value)))
 		
+	inline js float moveTowardsAndEaseOut: float value
+		                                   float speed
+		(this < value ? (this + speed * (value-this) < value ? (this += speed * (value-this)) : (this = value)) : (this - speed * (this-value) > value ? (this -= speed * (this-value)) : (this = value)))
+		
 	inline js float interpolateTo: float target
 		                           float value
 		(this + (target - this)*value)
@@ -160,21 +191,25 @@ struct float
 		                           EaseFunction ease
 		(this + (target - this)*ease.function.invoke(value))
 		
+	inline js float incrementBy: float value
+		                         float max
+		(this+value < max ? (this += value) : max)
+		
 	// ------------------------------------------- Time -------------------------------------------
 	
 	implicit inline js Time toTime() this
 	
 	// Milliseconds
-	inline js Time ms := this
+	inline js Time milliseconds := this
 	
 	// Seconds
-	inline js Time s := (this*1000)
+	inline js Time seconds := (this*1000)
 		
 	// Minutes
-	inline js Time min := (this*60000)
+	inline js Time minutes := (this*60000)
 		
 	// Hours
-	inline js Time h := (this*3600000)
+	inline js Time hours := (this*3600000)
 	
 	// Days
 	inline js Time days := (this*86400000)
@@ -223,8 +258,6 @@ class string
 	inline js bool toBool := this
 	
 	inline js string toString() this
-	
-	Color toColor := {this}
 	
 	inline js int toInt := parseInt(this)
 		
@@ -323,6 +356,27 @@ class List<T>
 		                       int i      // The index of the current item of the list we are iterating over
 		                   ) do           // Do this for each item in a list
 		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) { let it = _subject[i]; do()}
+			
+	js void eachDistinct: TKey(T it) selector
+		                         void(
+		                             TKey it,
+		                             T[] items,
+		                             int i
+		                         ) do
+		if(this.length > 0) {
+			let _subject = this.sort((a,b) => selector(a) - selector(b))
+			for(let _nextIndex=1, it = selector(_subject[0]), i=0; _nextIndex<_subject.length; ++_nextIndex) { 
+				let _nextIt = selector(_subject[_nextIndex]);
+				if(_nextIt != it) {
+					let items = _subject.slice(i, _nextIndex);
+					do(it, items, i)
+					it = _nextIt;
+					i = _nextIndex;
+				}
+			}
+		}
+			
+			
 		
 	// Adds an item to the end of the list
 	inline js void add: T item // The item to add
@@ -347,23 +401,25 @@ class List<T>
 		this.splice(index, 1)
 			
 	// Removes the item at the given index from the list
-	inline js void removeRange: int index // The index of the first item to remove
-		                        int count // The number of items to remove
-		this.splice(index, count)
+	inline js void removeRange: int start = 0 // The index of the first item to remove
+		                        int count     // The number of items to remove
+		this.splice(start, count)
 			
-	T removeFirstWhere: bool(T a) condition // The condition to check
-		for this
-			if condition(.)
-				removeAt i
-				return .
-		return null
-		
+	// Remove all item the meet a specific condition	
 	removeWhere: bool(T a) condition // The condition to check
 		for this <-
 			if condition(.)
 				removeAt i
 		return null
 		
+	// Remove the first item the meet a specific condition
+	T removeFirstWhere: bool(T a) condition // The condition to check
+		for this
+			if condition(.)
+				removeAt i
+				return .
+		return null
+	
 	// Adds an item to the list if it isn't already in there
 	inline js void ensure: T item // The item to add
 		if(this.indexOf(item) == -1) this.push(item)
@@ -455,7 +511,7 @@ class List<T>
 		return this.get((index+1)%length)
 		
 	T next: T currentItem
-		    bool(T item) where
+		    label bool(T item) where
 		int baseIndex = indexOf(currentItem)
 		for this.length
 			let item = this.get((baseIndex+i+1)%length)
@@ -527,18 +583,28 @@ class List<T>
 	inline js T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		this.sort(comparer)
 	
+	inline js T[] sort: Angle(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
+		this.sort(comparer)
+	
 	// Sort the list by a given expression
-	T[] orderBy: float(T a) expression // The expression to order by
+	T[] orderBy: float(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
 		
-	T[] orderBy: Time(T a) expression // The expression to order by
+	T[] orderBy: float(T it) expression           // First order by this expression
+		         label nocolon float(T it) thenBy // Then order by this expression
+		return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
+		
+	T[] orderBy: Time(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
 		
-	T[] orderBy: string(T a) expression // The expression to order by
+	T[] orderBy: Angle(T a) expression // First order by this expression
+		return this.sort(expression(a) - expression(b))
+		
+	T[] orderBy: string(T a) expression // First order by this expression
 		return this.sort(expression(a) compareTo expression(b))
 		
 	// Sort the list by a given expression
-	T[] orderBy: float(T a) expression // The expression to order by
+	T[] orderBy: float(T a) expression // First order by this expression
 		         SortingOrder order    // Specifies if you want to sort in ascending or descending order
 		if order == Ascending: return this.sort(expression(a) - expression(b))
 		else                   return this.sort(expression(b) - expression(a))
@@ -554,11 +620,17 @@ class List<T>
 	inline js bool all: bool(T a) predicate // The condition to check
 		this.every(predicate)
 		
-	inline js TValue[] select: TValue(T a) selector
+	inline js TValue[] select: TValue(T it) selector
 		this.map(selector)
 		
 	inline js T find: bool(T a) condition // The condition to check
 		this.find(condition)
+		
+	T findLast: bool(T a) condition // The condition to check
+		for this <-
+			if condition(.)
+				return .
+		return null
 		
 	int indexWhere: bool(T a) condition // The condition to check
 		for this
@@ -581,10 +653,20 @@ class List<T>
 	inline js T[] subList: int start, int count
 		this.slice(start, count)
 		
-	js int total: int(T a) selector
+	int total: int(T it) selector
 		let sum = 0
-		for(let i=0; i<this.length; i++)
-			sum += selector(this[i])
+		for this: sum += selector(.)
+		return sum
+		
+	int total: int(T it) selector
+		       label bool(T a) where
+		let sum = 0
+		for this: if where(.): sum += selector(.)
+		return sum
+		
+	float total: float(T it) selector
+		let sum = 0.0
+		for this: sum += selector(.)
 		return sum
 		
 	js int sum
@@ -596,8 +678,8 @@ class List<T>
 	js float average
 		return this.length > 0 ? this.sum() / this.length : 0
 		
-	string concat: string(T a) selector
-		           string separator = ", "
+	string joinToString: string(T a) selector
+		                 string separator = ", "
 		let result = ""
 		for this
 			if result: result += separator
@@ -644,7 +726,7 @@ class List<T>
 	min: int(T a) selector 
 		 int threshold = int.maxValue
 		 int default = 0
-		 bool(T a) where
+		 label bool(T a) where
 		int resultValue = threshold
 		for this
 			if where(.)
@@ -655,7 +737,7 @@ class List<T>
 	min: float(T a) selector 
 		 float threshold = float.maxValue
 		 float default = 0
-		 bool(T a) where
+		 label bool(T a) where
 		float resultValue = threshold
 		for this
 			if where(.)
@@ -693,7 +775,7 @@ class List<T>
 	max: int(T a) selector
 		 int threshold = int.minValue
 		 int default = 0
-		 bool(T a) where
+		 label bool(T a) where
 		int resultValue = threshold
 		for this 
 			if where(.)
@@ -704,7 +786,7 @@ class List<T>
 	max: float(T a) selector
 		 float threshold = float.minValue
 		 float default = 0
-		 bool(T a) where
+		 label bool(T a) where
 		float resultValue = threshold
 		for this
 			if where(.)
@@ -715,7 +797,7 @@ class List<T>
 	max: Time(T a) selector
 		 Time threshold = float.minValue
 		 Time default = 0
-		 bool(T a) where
+		 label bool(T a) where
 		Time resultValue = threshold
 		for this
 			if where(.)
@@ -806,7 +888,7 @@ class List<T>
 		
 	withMin: Time(T a) selector
 		     Time threshold = float.maxValue
-		     bool(T a) where
+		     label bool(T a) where
 		Time resultValue = threshold
 		T resultItem
 		for this
@@ -882,7 +964,7 @@ class List<T>
 		
 	withMax: int(T a) selector
 		     int threshold = int.minValue
-		     bool(T a) where
+		     label bool(T a) where
 		int resultValue = threshold
 		T resultItem
 		for this
@@ -895,7 +977,7 @@ class List<T>
 		
 	withMax: float(T a) selector
 		     float threshold = float.minValue
-		     bool(T a) where
+		     label bool(T a) where
 		float resultValue = threshold
 		T resultItem
 		for this
@@ -944,7 +1026,7 @@ class List<T>
 		      int to       // Return a new list up to (but not including) this index
 		return this.slice(from, to)
 	
-	js T get: int from = 0 // Return a new list starting from this index
+	js T get: int from // Return a new list starting from this index
 		return this.slice(from)
 	
 	js T set: int index // The index of the item to set
@@ -996,9 +1078,6 @@ class Map<TKey, TValue>
 
 // Specifies that a function doesn't return a value
 struct void
-
-// Classes derived from this type can be iterated over
-struct iterable	
 	
 // Denotes a type that can be null
 struct Nullable<T>
@@ -1044,8 +1123,7 @@ transient class SourceCodeLocation
 	SourceCodeLocation right
 	
 	inline js bool toBool() (this != null)
-	
-	SourceCodeLocation clone := {file, start, end, left, right}
+	inline js string toString() (this.file+":"+this.start)
 			
 	SourceCodeLocation find: string file, int pos
 		if this.file and this.file == file and pos >= this.start and pos <= this.end
@@ -1093,9 +1171,9 @@ global transient unit System
 		if(condition) then()
 			
 	// Executes code depending on whether a given condition is true or false
-	global inline js void if: implicit bool condition // The condition to check
-		                      void() then             // Do this if the condition is true
-		                      void() else             // Do this if the condition is false
+	global inline js void if: implicit bool condition   // The condition to check
+		                      void() then               // Do this if the condition is true
+		                      label nocolon void() else // Do this if the condition is false
 		if(condition) then() @else else()
 			
 	// Executes code as long as a given condition is true
@@ -1107,14 +1185,10 @@ global transient unit System
 		for(;;) do()
 	
 	global inline js void do: void() do                   // Do this while to condition is true
-		                      nolabel implicit bool while // The condition to check
+		                      nocolon implicit bool while // The condition to check
 		@do do() 
 		@while(while)
 	
-	// Do something a given number of times or for each item in a list
-	global inline js void for: void subject    // The list to iterate over or the exclusive upper bound to iterate towards
-		                       void do         // Do this for each item in a list or a given number of times
-		
 	// Do something a given number of times or for each item in a list
 	global inline js void for: T[] subject    // The list to iterate over
 		                       -> void(
@@ -1312,16 +1386,24 @@ global transient unit System
 		                                     ) do         // Do this for each triple in a list
 		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) { let it = _subject[i], next = _subject[(((i-1)%_len)+_len)%_len], prev = _subject[(i+1)%_len]; do()}
 
+	// Do something a given number of times or for each item in a list
+	global inline js void for: dynamic subject // The list to iterate over
+		                       -> void(
+		                           dynamic it,       // The current item of the list we are iterating over with the for-loop
+		                           string key   // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do             // Do this for each item in a list
+		{let _subject=subject; for(let key in _subject) { let it = _subject[key]; do()}}
+		
 	// Prints a message to the console
 	global js void print: logstring text // The text, variables or expressions to print
 		                  SourceCodeLocation location
-		log(text, location.row, location.column, location.file)
+		(location ? log(text, location.start, location.file) : log(text))
 	
 	// Display a message in the timeline
 	global js void watch: logstring text // The text, variables or expressions to watch
 		                  SourceCodeLocation location
-		if(Platform_isDebug && Network_frame >= Network_frameWithNewWatches) {
-			Platform_sendWatch(Network_frame, text, location.row, location.column, location.file)
+		if(Platform_isDebug && Network_frame >= Network_frameWithNewWatches && location) {
+			Platform_sendWatch(Network_frame, text, location.start, location.file)
 		}
 	
 	// Shows a dialog box with a given message
@@ -1339,80 +1421,85 @@ global transient unit System
 // A collection of mathematical functions and constants
 global skipInit unit Math
 	// Returns the absolute value
-	global inline js int abs: int value // The value to return the absolute value of
+	inline js int abs: int value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns the absolute value
-	global inline js float abs: float value // The value to return the absolute value of
+	inline js float abs: float value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns the absolute value
-	global inline js Angle abs: Angle value // The angle to return the absolute value of
+	inline js Angle abs: Angle value // The angle to return the absolute value of
 		Math.abs(value)
 		
 	// Returns the smallest integer greater than or equal to the given value 
-	global inline js int ceil: float value // The value to round up
+	inline js int ceil: float value // The value to round up
 		Math.ceil(value)
 		
 	// Returns the smallest integer greater than or equal to the given value 
-	global inline js Time ceil: Time value // The value to round up
+	inline js Time ceil: Time value // The value to round up
 		Math.ceil(value)
 		
 	// Returns the smallest integer greater than or equal to the given value 
-	global inline js Angle ceil: Angle value // The angle to round up
+	inline js Angle ceil: Angle value // The angle to round up
 		Math.ceil(value)
 		
 	// Returns the largest integer less than or equal to the given value
-	global inline js int floor: float value // The value to round down
+	inline js int floor: float value // The value to round down
 		Math.floor(value)
 		
 	// Returns the largest integer less than or equal to the given value
-	global inline js Time floor: Time value // The value to round down
+	inline js Time floor: Time value // The value to round down
 		Math.floor(value)
 		
 	// Returns the largest integer less than or equal to the given value
-	global inline js Angle floor: Angle value // The angle to round down
+	inline js Angle floor: Angle value // The angle to round down
 		Math.floor(value)
 		
 	// Returns the given value rounded to the nearest integer
-	global inline js int round: float value // The value to round
+	inline js int round: float value // The value to round
 		Math.round(value)
 		
 	// Returns the given value rounded to the nearest integer
-	global inline js Angle round: Angle value // The angle to round
+	inline js Angle round: Angle value // The angle to round
 		Math.round(value)
 		
 	// Returns the given value rounded to the nearest integer
-	global inline js Time round: Time value // The angle to round
+	inline js Time round: Time value // The angle to round
 		Math.round(value)
 		
-	global inline js int min: int a // The first value
-		                      int b // The second value
+	inline js int min: int a // The first value
+		               int b // The second value
 		Math.min(a, b)
 		
 	// Returns the smallest of the given values
-	global inline js float min: float a // The first value
-		                        float b // The second value
+	inline js float min: float a // The first value
+		                 float b // The second value
 		Math.min(a, b)
 		
 	// Returns the smallest of the given values
-	global inline js Angle min: Angle a // The first angle
-		                        Angle b // The second angle
+	inline js Angle min: Angle a // The first angle
+		                 Angle b // The second angle
 		Math.min(a, b)
 		
 	// Returns the largest of the given values
-	global inline js int max: int a // The first value
-		                      int b // The second value
+	inline js int max: int a // The first value
+		               int b // The second value
 		Math.max(a, b)
 		
 	// Returns the largest of the given values
-	global inline js float max: float a // The first value
-		                        float b // The second value
+	inline js float max: float a // The first value
+		                 float b // The second value
 		Math.max(a, b)
 		
 	// Returns the largest of the given values
-	global inline js Angle max: Angle a // The first angle
-		                        Angle b // The second angle
+	inline js Angle max: Angle a // The first angle
+		                 Angle b // The second angle
+		Math.max(a, b)
+		
+	// Returns the largest of the given values
+	inline js Time max: Time a // The first time
+		                Time b // The second time
 		Math.max(a, b)
 		
 	// Returns the positive square root of the given value
@@ -1619,22 +1706,49 @@ global skipInit unit Math
 		   float min
 		if value < min: return min
 			            return value
-	
-	interpolate: float value
-		         float fromStart = 0
-		         float fromEnd = 1
-		         float toStart = 0
-		         float toEnd = 1
-		if value < fromStart: return toStart
-		if value > fromEnd:   return toEnd
-			                  return toStart + (toEnd-toStart) * (value-fromStart)/(fromEnd-fromStart)
+			
+	// Maps a value from an input range to an output range
+	map: Time value        // The input value 
+		 Time from = 0     // The beginning of the input range
+		 Time to = 1       // The end of the input range
+		 float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
+		 float target = 1  // The highest possible output value, will be returned for values larger than "to".
+		if value <= from: return start
+		if value >= to:   return target
+		let factor = (value-from) / (to-from)
+		return start + (target-start) * factor
+			
+	// Maps a value from an input range to an output range
+	map: float value       // The input value 
+		 float from = 0    // The beginning of the input range
+		 float to = 1      // The end of the input range
+		 float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
+		 float target = 1  // The highest possible output value, will be returned for values larger than "to".
+		if value <= from: return start
+		if value >= to:   return target
+		let factor = (value-from) / (to-from)
+		return start + (target-start) * factor
+			
+	// Maps a value from an input range to an output range
+	map: float value       // The input value 
+		 float from = 0    // The beginning of the input range
+		 float to = 1      // The end of the input range
+		 float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
+		 float target = 1  // The highest possible output value, will be returned for values larger than "to".
+		 EaseFunction ease // The easing function to apply
+		if value <= from: return start
+		if value >= to:   return target
+		let factor = ease.function((value-from) / (to-from))
+		return start + (target-start) * factor
 		
-enum AngleUnit
-	turns // Turn (one full rotation is 1)
-	rad   // Radians (one full rotation is 2π)
-	deg   // Degrees (one full rotation is 360)
-	grad  // Gradiants (one full rotation is 400)
-	
+struct Average
+	float total
+	int count
+	add: float value
+		total += value
+		count++
+	average := total / count		
+
 transient float Angle
 	inline js float toFloat() this
 	inline js string toString() this.toString()
@@ -1679,22 +1793,20 @@ transient float Angle
 	inline js float in: AngleUnit unit
 		(unit==1 ? this*Math_TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
 		
-enum TimeUnit
-	ms   // Milliseconds
-	s    // Seconds
-	min  // Minutes
-	h    // Hours
-	days // Days
+enum AngleUnit
+	turns // Turn (one full rotation is 1)
+	rad   // Radians (one full rotation is 2π)
+	deg   // Degrees (one full rotation is 360)
+	grad  // Gradiants (one full rotation is 400)
 		
-transient float Time
+skipInit transient float Time
 	// The largest possible time value
 	const inline js Time maxValue := Number.MAX_VALUE
 	
 	// The smallest possible time value
 	const inline js Time minValue := Number.MIN_VALUE
 	
-	// The number of milliseconds elapsed since January 1, 1970
-	static Time now
+	static internal inline js float realTime := Date.now()
 
 	// The current frame
 	static inline js int frame := Network_frame
@@ -1723,14 +1835,52 @@ transient float Time
 	// Returns true if the time is not zero
 	inline js bool toBool := this
 	
+	inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+		
+	inline js string format: int fractionDigits, bool grouping = false
+		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
+		
+	inline js string format: int minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString('en-US', {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+	
 	inline js int milliseconds := Math.floor((this %    1000)          ) 
 	inline js int seconds      := Math.floor((this %   60000) /    1000) 
 	inline js int minutes      := Math.floor((this % 3600000) /   60000) 
 	inline js int hours        := Math.floor((this          ) / 3600000)
 		
-	inline js string minutesAndSeconds := (Math.floor((this % 3600000) / 60000) + (this % 60000 < 10000 ? ":0":":") + Math.floor((this % 60000) / 1000))
+	// (31.12.)
+	inline js string dayMonthString(language = Loca.language) new Date(this).dayMonthString(language)
+		
+	// (31.12.2000)
+	inline js string dayMonthYearString(language = Loca.language) new Date(this).dayMonthYearString(language)
 	
-	inline js string dayMonthYearHourMinuteString() new Date(this).dayMonthYearHourMinuteString()
+	// (31 December 2000)
+	inline js string dayLongMonthNameYearString(language = Loca.language) new Date(this).dayLongMonthNameYearString(language)
+	
+	// (31 Dec 2000)
+	inline js string dayShortMonthNameYearString(language = Loca.language) new Date(this).dayShortMonthNameYearString(language)
+	
+	// (Monday)
+	inline js string weekdayString(language = Loca.language) new Date(this).weekdayString(language)
+	
+	// (23:59)
+	inline js string hourMinuteString(language = Loca.language) new Date(this).hourMinuteString(language)
+	
+ 	// (59:59)
+	inline js string minuteSecondString() (Math.floor((this % 3600000) / 60000) + (this % 60000 < 10000 ? ":0":":") + Math.floor((this % 60000) / 1000))
+	
+	// (23:59:59)
+	inline js string hourMinuteSecondString(language = Loca.language) new Date(this).hourMinuteSecondString(language)
+	
+	// (31.12.2000 23:59)
+	inline js string dayMonthYearHourMinuteString(language = Loca.language) new Date(this).dayMonthYearHourMinuteString(language)
+	
+	// (31.12.2000 23:59:59)
+	inline js string dayMonthYearHourMinuteSecondString(language = Loca.language) new Date(this).dayMonthYearHourMinuteSecondString(language)
+	
+	// (31-12-2000 23-59-59)
+	inline js string invariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
 			
 	inline js Time  operator +  (Time a, Time b) a+b
 	inline js Time  operator +  (Time a, int b) a+b
@@ -1768,15 +1918,24 @@ transient float Time
 	js static void startTimer() window._timerStart = performance.now()
 	js static void printTimer(string text) log(text+": "+(performance.now()-window._timerStart))
 	static inline js float preciseTime := performance.now()
-	
-js Date
-transient struct Date
+		
+enum TimeUnit
+	ms   // Milliseconds
+	s    // Seconds
+	min  // Minutes
+	h    // Hours
+	days // Days
+		
+js(Date) transient struct Date
 	const dayStrings = [
-		["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Gameday", "Do not send"]
-		["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
+		["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+		["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
 	]
 		
-	inline js Date() new Date(Time_now)
+	const shortDayStrings = [
+		["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+		["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
+	]
 	
 	inline js int year := this.getFullYear()
 	inline js int month := (this.getMonth()+1)
@@ -1798,6 +1957,10 @@ transient struct Date
 	private static string toTwoDigitString: int value
 		return value < 10 ? "0"+value.toString : value.toString
 	
+	// (31.12.)
+	js string dayMonthString: language = Loca.language
+		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."
+	
 	// (31.12.2000)
 	js string dayMonthYearString: language = Loca.language
 		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+this.getFullYear()
@@ -1813,6 +1976,10 @@ transient struct Date
 	// (Monday)
 	string weekdayString: language = Loca.language
 		return dayStrings[language][dayOfWeek]
+	
+	// (Mon)
+	string shortWeekdayString: language = Loca.language
+		return shortDayStrings[language][dayOfWeek]
 	
 	// (23:59)
 	string hourMinuteString: language = Loca.language
@@ -1864,10 +2031,12 @@ transient struct Date
 			dif + pad(Math.floor(Math.abs(tzo) / 60)) +
 			':' + pad(Math.abs(tzo) % 60);
 
-	static inline js Date now := new Date(Time_now)
 	static inline js Date fromTime(Time time) new Date(time)
-	static inline js Date fromValues(int year, int month, int day, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
-
+	static inline js Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
+	
+	// Returns the real time, even during replay. Be careful: This can break the replay.
+	static inline js Date realtime := new Date()
+	
 class Range
 	int from // The start of the range
 	int to   // The end of the range
@@ -1891,11 +2060,48 @@ unit Loca
 	visible Language[] supportedLanguages = [English, German]
 	visible string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
 	
-	Language language = English
-	string locale = defaultLocaleForLanguage[language]
+	visible Language language = English
+	visible string locale = defaultLocaleForLanguage[language]
+	private dynamic localStrings
 	
-	set: Language language, string locale = null
-		this.language = language
-		this.locale = locale or defaultLocaleForLanguage[language]
+	init
+		setLanguage English
+	
+	js void setLanguage: Language language
+		                 string locale = null
+		Loca_language = language
+		Loca_locale = locale || Loca_defaultLocaleForLanguage[language]
+		if(window._strings) Loca_localStrings = _strings[language]
+		
+	js void format: int id
+		let entry = Loca_localStrings[id]
+		if(!entry || entry.s.length == 0) return "##########"
+		let strings = entry.s
+		let result = strings[0]
+		let stringIndex = 1
+		for(let placeholderNumber of entry.p) {
+			if(placeholderNumber >= 0) {
+				// Placeholder
+				//     "Step {currentStep}"          {s:["Step "],p:[0]}
+				//            ^                          ^           ^
+				let placeholderValue = arguments[placeholderNumber+1]
+				result += placeholderValue
+				if(stringIndex < strings.length) {
+					let str = strings[stringIndex++]
+					if(str) result += str
+				}
+			} else {
+				// Placeholder with pluralization
+				//     "Waiting for {playerCount} player[s]"          {s:["Waiting for ", " player.", " players."],p:[-1]}
+				//                   ^                                                    ^           ^               ^
+				// If the placeholder value is 1, we take the first string (sigular version), otherwise the second (plural version)
+				let placeholderValue = arguments[-placeholderNumber]
+				result += placeholderValue
+				let str = strings[placeholderValue == 1 ? stringIndex : stringIndex+1]
+				if(str) result += str
+				stringIndex += 2
+			}
+		}
+		return result
 	
 	

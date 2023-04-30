@@ -26,13 +26,11 @@ skipInit class Sound
 		if(this.audioElement) this.audioElement.pause()
 		
 	play: needsToBeCertain = false
-		print "pre-play", needsToBeCertain, Input.isCertain
 		if needsToBeCertain and not Input.isCertain: return
 			
 		// We can play sounds immediately to ensure there is no lag
 		// If a sound turns out to be wrong after receiving new inputs, we stop it
 		let playingSound = audio.playingSounds.find(.sound == this and .frame == Time.frame)
-		print "play", playingSound, Network.isPremiere
 		if !playingSound
 			audio.playingSounds.add playingSound = {this, frame:Time.frame, isConfirmed:true}
 			if Network.isPremiere: doPlay playingSound
@@ -56,7 +54,8 @@ skipInit class Sound
 		
 	internal js void preloadForNextPlayback
 		this.nextAudioElement = new Audio();
-		if(this.nextAudioElement.setSinkId) await this.nextAudioElement.setSinkId(PeerNetwork_audioOutputId);
+		if(PeerNetwork_audioOutputId && this.nextAudioElement.setSinkId) 
+			await this.nextAudioElement.setSinkId(PeerNetwork_audioOutputId);
 		this.nextAudioElement.src = _basePath+this.file;
 		
 	isPlaying
@@ -64,7 +63,7 @@ skipInit class Sound
 		
 	fadeOut: Time duration = 3000
 		     Time delay = 0
-		fx.add FadeSoundEffect startTime:Time.now+delay, duration, smooth:false, sound:this, startValue:1, delta:-1
+		fx.add FadeSoundEffect startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
 		return this
 
 transient class PlayingSound
@@ -88,7 +87,6 @@ transient global skipInit unit audio
 		// Stop sounds that turned out to be wrong after receiving new inputs
 		playingSounds.each
 			if .frame == Time.frame and !.isConfirmed
-				print "stopping", .sound.file, Time.frame, .isConfirmed
 				.sound.stop
 		
 	internal reload
