@@ -2,7 +2,7 @@ enum PlatformMode: Pause, Manipulator, Slide, Play, Record
 enum ScaleMode: Auto, FixedWidth, FixedHeight, None
 enum AnchorMode: TopLeft, TopCenter, Center
 enum OperatingSystem: Windows, Mac, Linux, Android, iOS
-enum TickMode: Interval, AnimationFrame
+enum IntervalMode: Interval, AnimationFrame
 
 // Basic platform functionality
 // Screen space
@@ -25,7 +25,7 @@ transient skipInit unit Platform
 	public bool showSafeArea = false
 	public bool showDebugInfo = false
 	public bool isLocal = false
-	public TickMode tickMode = Interval
+	public IntervalMode intervalMode = Interval
 	// FlappyBird Demo: Portrait reference size
 	public Vector2 referenceSize = {1080, 1920}
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
@@ -193,7 +193,7 @@ transient skipInit unit Platform
 		if(Platform_interval) clearInterval(Platform_interval)
 		if(window.tick) return
 			
-		if(Platform_tickMode == 0) {
+		if(Platform_intervalMode == 0) {
 			Platform_interval = setInterval(() => Platform_tick(), 1000/Network_targetFps)
 		} else {
 			window.tick = function() {
