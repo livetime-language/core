@@ -97,6 +97,15 @@ struct int
 		
 	inline js int assignIfGreater: int value
 		(value > this ? this = value : this)
+		
+	static js TResult[] enumerate: int from, int to, TResult(int i) selector
+		let result = []
+		for(let i=from; i < to; ++i)
+			result.push(selector(i))
+		return result
+		
+	inline js TResult[] times: TResult(int i) selector
+		int_enumerate(0, this, selector)
 	
 // A number stored as a double precision 64-bit floating point value
 struct float
@@ -381,13 +390,40 @@ class List<T>
 	inline js void add: T item // The item to add
 		this.push(item)
 		
-	inline js void add: T item
-		      int maxLength
+	inline js void add: T item  // The item to add
+		                T item2 // The second item to add
+		this.push(item, item2)
+		
+	inline js void add: T item  // The item to add
+		                T item2 // The second item to add
+		                T item3 // The third item to add
+		this.push(item, item2, item3)
+		
+	inline js void add: T item  // The item to add
+		                T item2 // The second item to add
+		                T item3 // The third item to add
+		                T item4 // The fourth item to add
+		this.push(item, item2, item3, item4)
+		
+	inline js void add: T item  // The item to add
+		                T item2 // The second item to add
+		                T item3 // The third item to add
+		                T item4 // The fourth item to add
+		                T item5 // The fifth item to add
+		this.push(item, item2, item3, item4, item5)
+		
+	inline js void add: T item // The item to add
+		      int maxLength    // If the list gets longer than this maximum length, remove an item from the beginning
 		this.push(item)
 		if(this.length > maxLength) this.splice(0, 1)
 			
-	inline js void insert: T item // The item to add
-		                   index = 0
+	// Adds an list of item to the end of the list
+	inline js void add: T[] items // The list of items to add
+		this.push(...items)
+			
+	// Insert an item at a given index
+	inline js void insert: T item    // The item to insert
+		                   index = 0 // Insert the item at this index
 		this.splice(index, 0, item)
 		
 	// Removes an item from the list
@@ -420,12 +456,16 @@ class List<T>
 		return null
 	
 	// Adds an item to the list if it isn't already in there
-	inline js void ensure: T item // The item to add
-		if(this.indexOf(item) == -1) this.push(item)
+	js void ensure: T item // The item to add
+		if(this.indexOf(item) == -1)
+			this.push(item)
 		
-	inline js void addRange: T[] items
-		this.push(...items)
-			
+	// Adds each item from a list if it isn't already in there
+	js void ensure: T[] items // The list of items to add
+		for(let it of items)
+			if(this.indexOf(it) == -1)
+				this.push(it)
+		
 	inline js bool contains: T item
 		(this.indexOf(item) != -1)
 		
@@ -619,8 +659,13 @@ class List<T>
 	inline js bool all: bool(T a) predicate // The condition to check
 		this.every(predicate)
 		
+	// Return a list that contains the selected field or expression for each item
 	inline js TValue[] select: TValue(T it) selector
 		this.map(selector)
+		
+	// Get the selected field or expression for each item and flattens the result
+	inline js TValue[] flatten: TValue[](T it) selector
+		this.flatMap(selector)
 		
 	inline js T find: bool(T a) condition // The condition to check
 		this.find(condition)
@@ -1075,11 +1120,23 @@ class List<T>
 // A data container that stores key-value pairs
 js Map
 class Map<TKey, TValue>
-	inline js TValue get: TKey key
+	// Get the item assosiated with the given key
+	inline js TValue get: TKey key  // The key of the item to get from the map
 		this.get(key)
-	inline js void set: TKey key
-		                TValue value
+	
+	// Set the item for the given key
+	inline js void set: TKey key     // The key of the item to add to the map
+		                TValue value // The item to add to the map
 		this.set(key, value)
+		
+	// Remove the item assosiated with the given key
+	inline js void delete: TKey key  // The key of the item to remove from the map
+		this.delete(key)
+		
+	// Remove all items from the map
+	inline js void clear
+		this.clear()
+	
 
 // Specifies that a function doesn't return a value
 struct void
@@ -1221,15 +1278,15 @@ global transient unit System
 	global inline js TResult[] for: T[] subject // The list to iterate over
 		                       -> TResult(
 		                           T it         // The current item of the list we are iterating over with the for-loop
-		                       ) selector       // Select the field or expression to be included in the result
-		subject.map(selector)
+		                       ) do             // Select the field or expression to be included in the result
+		subject.map(do)
 		
 	// Creates a new list populated with the results of calling a function on every element of the list
 	global inline js TResult[] for: T[] subject // The list to iterate over
 		                       <- TResult(
 		                           T it         // The current item of the list we are iterating over with the for-loop
-		                       ) selector       // Select the field or expression to be included in the result
-		subject.map(selector).reverse()
+		                       ) do             // Select the field or expression to be included in the result
+		subject.map(do).reverse()
 		
 		for(let _subject=subject, i=_subject.length-1; i>=0; --i) { let it = _subject[i]; do()}
 	// Do something for each item in a list. You can add or remove items inside the loop.
@@ -1248,40 +1305,53 @@ global transient unit System
 		                       ) do           // Do this for each item in a list
 		for(let _subject=[...subject], i=_subject.length-1; i>=0; --i) { let it = _subject[i]; do()}
 		
-	global inline js void for: int subject    // The exclusive upper bound to iterate towards
-		                       -> inline void(
-		                           int i      // The iteration variable of the for-loop
-		                       ) do           // Do this the given number of times
-		for(let i=0; i<subject; ++i) do()
-		
-	global inline js void for: int subject    // The exclusive upper bound to iterate towards
-		                       <- inline void(
-		                           int i      // The iteration variable of the for-loop
-		                       ) do           // Do this the given number of times
-		for(let i=subject-1; i>=0; --i) do()
-		
-	global inline js void for: int subject
+	global inline js void for: int from       // The integer to start iterating from (for exmaple "for 2 to 5: print ." prints 2, 3, 4)
 		                       -> inline void(
 		                           int i      // The iteration variable of the for-loop
 		                       ) do           // Do this for each value in the given range
-		                       int to         // If specified, we iterate from given start value to this exclusive upper bound 
-		for(let i=subject; i<to; ++i) do()
+		                       label int to   // The exclusive upper bound to iterate towards (for exmaple "for 3: print ." prints 0, 1, 2)
+		for(let i=from; i<to; ++i) do()
 		
-	global inline js void for: int subject
+	global inline js void for: int from       // The integer to start iterating from
 		                       <- inline void(
 		                           int i      // The iteration variable of the for-loop
 		                       ) do           // Do this for each value in the given range
-		                       int to         // If specified, we iterate from given start value to this exclusive upper bound 
-		for(let i=to-1; i>=subject; --i) do()
+		                       label int to   // The exclusive upper bound to iterate towards
+		for(let i=to-1; i>=from; --i) do()
 		
-	global inline js void for: string subject
+	global inline js void for: int to         // The exclusive upper bound to iterate towards
+		                       -> inline void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // Do this the given number of times
+		for(let i=0; i<to; ++i) do()
+		
+	global inline js void for: int to         // The exclusive upper bound to iterate towards
+		                       <- inline void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // Do this the given number of times
+		for(let i=to-1; i>=0; --i) do()
+		
+	global inline js TResult[] for: int to,    // The exclusive upper bound to iterate towards
+		                            TResult(
+		                                int i  // The iteration variable of the for-loop
+		                            ) do       // Select the field or expression to be included in the result
+		int_enumerate(0, to, do)
+		
+	global inline js TResult[] for: int from,    // The integer to start iterating from
+		                            TResult(
+		                                int i    // The iteration variable of the for-loop
+		                            ) do         // Select the field or expression to be included in the result
+		                            label int to // The exclusive upper bound to iterate towards
+		int_enumerate(from, to, do)
+		
+	global inline js void for: string subject // Iterate over every character of this string
 		                       -> inline void(
 		                           string it, // The current character of the string we are iterating over with the for-loop
 		                           int i      // The index of the current character of the string we are iterating over with the for-loop
 		                       ) do           // Do this for each character in the given string
 		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; do()}
 	
-	global inline js void for: string subject
+	global inline js void for: string subject // Iterate over every character of this string
 		                       <- void(
 		                           string it, // The current character of the string we are iterating over with the for-loop
 		                           int i      // The index of the current character of the string we are iterating over with the for-loop
@@ -1698,7 +1768,7 @@ class Range
 
 unit Json
 	inline js dynamic parse(string str) JSON.parse(str)
-	inline js string stringify(dynamic object) JSON.stringify(object)
+	inline js string stringify(any object) JSON.stringify(object)
 		
 enum Language: English, German, Spanish, Frensh, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
 

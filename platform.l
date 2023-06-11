@@ -2,7 +2,7 @@ enum PlatformMode: Pause, Manipulator, Slide, Play, Record
 enum ScaleMode: Auto, FixedWidth, FixedHeight, None
 enum AnchorMode: TopLeft, TopCenter, Center
 enum OperatingSystem: Windows, Mac, Linux, Android, iOS
-enum IntervalMode: Interval, AnimationFrame
+enum IntervalMode: JavaScriptInterval, AnimationFrame
 
 // Basic platform functionality
 // Screen space
@@ -19,15 +19,15 @@ enum IntervalMode: Interval, AnimationFrame
 transient skipInit unit Platform
 	
 	// Configuration
-	public userCount = 2
+	public userCount = 4
 	public supportedUserCount = Range 2..4
 	// FlappyBird Demo: Do not show safe area
 	public bool showSafeArea = false
 	public bool showDebugInfo = false
 	public bool isLocal = false
-	public IntervalMode intervalMode = Interval
 	// FlappyBird Demo: Portrait reference size
 	public Vector2 referenceSize = {1080, 1920}
+	public IntervalMode intervalMode = JavaScriptInterval
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
@@ -143,13 +143,15 @@ transient skipInit unit Platform
 		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
 	
 	// This is called when the application starts for the first time	
-	private start: bool isDebug
+	private start: bool isDebug, int userCount, bool simulateConnection, bool showSafeArea
 		initMedia
 		initPlatform
 		statistics.startTime = Time.preciseTime
 		this.engineStarted = false
 		this.isDebug = isDebug
-		if !isDebug: showSafeArea = false; Network.simulateConnection = false
+		this.userCount = userCount
+		Network.simulateConnection = simulateConnection
+		this.showSafeArea = showSafeArea
 		showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
 		onResize
@@ -175,7 +177,7 @@ transient skipInit unit Platform
 			this.engineStarted = true
 			statistics.loadTime = Time.preciseTime
 			startInterval
-			if isDebug || isLocal || roomId == "local" || url.startsWith("file"): Network.startLocal userCount:userCount
+			if isDebug || isLocal || roomId == "local" || url.startsWith("file"): Network.startLocal
 			else                                                                  Network.join gameId, roomId, userId
 			sendEvaluateFinished
 			
@@ -255,8 +257,9 @@ transient skipInit unit Platform
 		print isSmallScreen
 		setLocalStorageObject("smallScreen", isSmallScreen ? "true" : "false")
 		
-	inline js void setFullscreen: value = true, forUser = -1
-		if(!Platform_isStaging && !Platform_isDebug && (forUser == -1 || Input_localUser?.id == forUser)) {
+	inline js void setFullscreen: value = true
+		                          Player forPlayer = null
+		if(!Platform_isStaging && !Platform_isDebug && (forPlayer == null || Input_localUser?.id == forPlayer.id)) {
 			try {
 				if(value) {
 					document.body.requestFullscreen()
@@ -416,7 +419,7 @@ transient skipInit unit Platform
 			remote.globalShortcut.register(shortcut, () => do())
 		}
 		
-	js void setInterval: int interval
+	js void setInterval: Time interval
 		                 void() code
 		setInterval(code, interval)
 		
