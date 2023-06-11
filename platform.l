@@ -21,12 +21,10 @@ transient skipInit unit Platform
 	// Configuration
 	public userCount = 4
 	public supportedUserCount = Range 2..4
-	// FlappyBird Demo: Do not show safe area
-	public bool showSafeArea = false
+	public bool showSafeArea = true
 	public bool showDebugInfo = false
 	public bool isLocal = false
-	// FlappyBird Demo: Portrait reference size
-	public Vector2 referenceSize = {1080, 1920}
+	public Vector2 referenceSize = {1920, 1080}
 	public IntervalMode intervalMode = JavaScriptInterval
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
