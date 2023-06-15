@@ -23,7 +23,7 @@ unit Framework
 	tick
 		fx.tick
 		objects.eachChangable.tick
-		Input.onTouchUp: deselect touch.by
+		onTouchUp: deselect touch.by
 		
 		if toBeRemoved
 			toBeRemoved.each.siblings.remove .
@@ -67,7 +67,8 @@ unit Framework
 		// because a checksum of 0 is used to indicate that we don't have a checksum for this frame yet
 		if result == 0: return 1.0
 		return result
-			
+		
+// Draw on the screen
 transient global unit graphics
 	setPlayerVideo: Player player
 		            Vector2 pos = {}
@@ -160,7 +161,7 @@ class Object
 		    float speed = 1
 		    Time delay = 0
 		let delta = pos - position
-		let duration = Math.floor(delta.length / speed)
+		let duration = math.floor(delta.length / speed)
 		fx.add MoveEffect startTime:fx.endOfPrevEffect(this)+delay, duration, this, startValue:position, delta
 		return this
 		
@@ -222,7 +223,7 @@ Object CircleObject
 	Color color = White
 	internal checksum := position.x + position.y + alpha + size.x + size.x
 	override tick
-		drawCircle position, size, fillColor:color, visibleFor, layer
+		drawCircle position, size, color:color, visibleFor, layer
 
 Object TextObject
 	string text
@@ -342,39 +343,39 @@ Object Piece
 		// Rotate	
 		Vector2 iconPos = this.iconPos ? this.iconPos : (rotatable ? {(size.x+size.y)*.29, (size.x+size.y)*.29}*{1,-1} : size/2*{1,-1})
 		if rotatable and Framework.selectedObjects.contains(this)
-			Input.onTouchDownWithin position:position+iconPos, size:Image.rotateIcon.size+touchMargin, by:visibleFor
+			onTouchDownWithin position:position+iconPos, size:Image.rotateIcon.size+touchMargin, by:visibleFor
 				rotateTouch = touch
-				rotateOffset = angle - Math.getAngleForVector(touch.position - position)
+				rotateOffset = angle - math.getAngleForVector(touch.position - position)
 				rotatedOverThreshold = false
 				
-			Input.onTouchMove rotateTouch
-				Network.smooth touch.by
-					angle = targetAngle = Math.getAngleForVector(touch.position - position) + rotateOffset
+			onTouchMove rotateTouch
+				core.smooth touch.by
+					angle = targetAngle = math.getAngleForVector(touch.position - position) + rotateOffset
 				if (touch.position - touch.startPosition).length > 16: rotatedOverThreshold = true
 				
-			Input.onTouchUp rotateTouch
-				targetAngle = Math.round(angle / .25) * .25
+			onTouchUp rotateTouch
+				targetAngle = math.round(angle / .25) * .25
 				rotateTouch = null
 				if !rotatedOverThreshold: targetAngle += .25
 				interactingPlayer = touch.by
 				if angle == targetAngle: onRotate
 		
 		// Move
-		Input.onTouchDownWithin position, size, angle, by:visibleFor
+		onTouchDownWithin position, size, angle, by:visibleFor
 			if movable
 				moveTouch = touch
 				touchOffset = position - touch.position
 				siblings.moveToFront this
 				isBeingMoved = false
 			
-		Input.onTouchMove moveTouch
-			Network.smooth moveTouch.by
+		onTouchMove moveTouch
+			core.smooth moveTouch.by
 				position = touch.position + touchOffset
 				if touch.position - touch.startPosition > 8: isBeingMoved = true
 				if board: board.snap this, touch.position
 				checkBoardsWhileMoving touch
 							
-		Input.onTouchUp moveTouch
+		onTouchUp moveTouch
 			Framework.selectedObjects[touch.by.id] = this
 			moveTouch = null
 			onDrop
@@ -386,8 +387,8 @@ Object Piece
 		
 		// Animate rotation
 		if angle != targetAngle
-			Network.smooth interactingPlayer
-				angle = Math.moveTowards(angle, targetAngle, .03)
+			core.smooth interactingPlayer
+				angle = math.moveTowards(angle, targetAngle, .03)
 				if angle == targetAngle: onRotate
 		
 		// Draw rotation icon
@@ -449,7 +450,7 @@ Piece Stack
 		
 	private updatePositions
 		if objects.length == 0: return
-		shownObjectCount = Math.min(3, objects.length)
+		shownObjectCount = math.min(3, objects.length)
 		position = basePosition + (shownObjectCount-1)/2 * stackOffset
 		for shownObjectCount: objects[objects.length-shownObjectCount+i].position = basePosition + i * stackOffset
 			
@@ -458,14 +459,14 @@ Piece Stack
 		size = (b.position+{b.size.x/2, b.image.size.y/2}) - (a.position-{a.size.x/2, a.size.y/2})
 	
 	override tick
-		for Math.limit(objects.length-shownObjectCount, min:0) to objects.length <- i
+		for math.limit(objects.length-shownObjectCount, min:0) to objects.length <- i
 			let obj = objects[i]
 			let image = obj.backImage || obj.image
 			drawImage image, obj.position, frame:obj.frame%image.frames.length, size:obj.size
 			
 		// We pop after drawing, because the newly created card won't be drawn until the next frame
 		// and we don't want to draw the new, smaller stack without drawing the popped card as well
-		Input.onTouchDownWithin position, size
+		onTouchDownWithin position, size
 			let obj = pop
 			obj.moveTouch = touch
 			obj.touchOffset = obj.position - touch.position
@@ -527,25 +528,25 @@ Piece Board
 		
 		// Pan
 		if panable	
-			Input.onTouchDownWithin position, size, by:visibleFor
+			onTouchDownWithin position, size, by:visibleFor
 				panTouch = touch
 				downMatrix = matrix
-			Input.onTouchMove panTouch
+			onTouchMove panTouch
 				matrix = downMatrix
 				matrix.move touch.position - touch.startPosition
-			Input.onTouchUp panTouch
+			onTouchUp panTouch
 				panTouch = null
 				Framework.deselect touch.by
 				
 		// Zoom
 		if zoomable	
-			Input.onWheelWithin position, size, by:visibleFor
-				float factor = zoomLookupTable[Math.limit Math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
-				if Network.logging: Network.touchLog += "[{Network.frame}] zoom value:{event.delta} factor:{factor} matrix:{matrix}"
+			onWheelWithin position, size, by:visibleFor
+				float factor = zoomLookupTable[math.limit math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
+				if core.logging: core.touchLog += "[{core.frame}] zoom value:{event.delta} factor:{factor} matrix:{matrix}"
 				matrix.move event.position
 				matrix.scale {factor, factor}
 				matrix.move event.position*{-1,-1}
-				if Network.logging: Network.touchLog += " -> {matrix}"
+				if core.logging: core.touchLog += " -> {matrix}"
 			
 		// Visiblity icon
 		if contentVisibleForOthers == On or contentVisibleForOthers == Off
@@ -553,7 +554,7 @@ Piece Board
 			drawButton icon, position:position+{size.x/2-32, -size.y/2+32}, clickableBy:owner
 				contentVisibleForOthers = contentVisibleForOthers == On ? Off : On
 				
-		if color: drawRectangle position, size, fillColor:color, layer:-1, visibleFor
+		if color: drawRectangle position, size, color:color, layer:-1, visibleFor
 		if image: drawImage image, position, size
 		
 	snap: Piece currentObject, Vector2 position
@@ -633,7 +634,7 @@ struct Particle
 	Angle angle, rotationSpeed
 	int frame
 
-enum ParticleMode: Burst, Break
+enum ParticleMode: Burst, Single
 	
 Object ParticleSystem
 	private Particle[] particles
@@ -651,26 +652,26 @@ Object ParticleSystem
 	
 	override tick
 		if Time.now > nextBurst
-			if mode == Break
+			if mode == Single
 				for particleImage.frames.length
-					let r = -Math.randomFloat .5
-					let speedFactor = Math.randomFloat 10..15
+					let r = -math.randomFloat .5
+					let speedFactor = math.randomFloat 10..15
 					particles.add Particle
 						pos: position
-						speed: {Math.cos(r), Math.sin(r)} * speedFactor
+						speed: {math.cos(r), math.sin(r)} * speedFactor
 						angle: randomFloat*.05
-						rotationSpeed: Math.randomFloat -.01 to .01
+						rotationSpeed: math.randomFloat -.01 to .01
 						frame: .
 				nextBurst = Time.maxValue
 			else
 				for particlesPerBurst
-					let r = -Math.randomFloat
-					let speedFactor = Math.randomFloat*(maxSpeed-minSpeed) + minSpeed
+					let r = -math.randomFloat
+					let speedFactor = math.randomFloat*(maxSpeed-minSpeed) + minSpeed
 					particles.add Particle
 						pos: position
-						speed: {Math.cos(r), Math.sin(r)} * speedFactor
-						angle: Math.randomFloat
-						frame: Math.randomInteger(particleImage.frames.length)
+						speed: {math.cos(r), math.sin(r)} * speedFactor
+						angle: math.randomFloat
+						frame: math.randomInteger(particleImage.frames.length)
 				nextBurst = ++burst < bursts ? Time.now + burstInterval : Time.maxValue
 
 		for particles <-
@@ -708,32 +709,32 @@ Piece Coin
 	
 	override tick
 		if movable
-			Input.onTouchDownWithin position, radius:40, by:owner
+			onTouchDownWithin position, radius:40, by:owner
 				moveTouch = touch
 				touchOffset = position - touch.position
 				siblings.moveToFront this
 				isBeingMoved = false
 			
-			Input.onTouchMove moveTouch
-				Network.smooth touch.by
+			onTouchMove moveTouch
+				core.smooth touch.by
 					position = touch.position + touchOffset
 				if touch.position - touch.startPosition > 8: isBeingMoved = true
 				updateNeighbors siblings, isBeingMoved
 				checkBoardsWhileMoving touch
 			
-			Input.onTouchUp moveTouch
+			onTouchUp moveTouch
 				Framework.selectedObjects[touch.by.id] = this
 				moveTouch = null
 				
 				if closestCoinType == Over: mergeWith closestCoin; else
 				if !isBeingMoved:           transferToNeighbor closestCoin
 		else
-			Input.onTouchUpWithin position, radius:64, by:owner
+			onTouchUpWithin position, radius:64, by:owner
 				transferToNeighbor closestCoin
 			
 		if isInfinate or value or allowZero
 			if closestCoinType == Neighbor 
-				drawCircle (position + closestCoin.position)/2, size:12, fillColor:darkColor, outlineColor:lightColor, outlineWidth:5
+				drawCircle (position + closestCoin.position)/2, size:12, color:darkColor, outlineColor:lightColor, outlineWidth:5
 			if !isInfinate
 				if value < 10:  drawText cast value, position+{0, -4}, color:darkColor, size:42, style:Bold, font:ShadowedSerif, visibleFor:valueVisibleFor; else
 				if value < 100: drawText cast value, position+{0, -4}, color:darkColor, size:30, style:Bold, font:ShadowedSerif, visibleFor:valueVisibleFor; else
@@ -819,7 +820,7 @@ Object Menu
 	Menu
 		if includeDefaultItems
 			items.insert {New,  "New Game",        onClick:startGame}, 0
-			items.add    {Save, "Save Game"        onClick:Network.saveEventStreamAndLogs}
+			items.add    {Save, "Save Game"        onClick:core.saveEventStreamAndLogs}
 			items.add    {Quit, "Exit Fullscreen", onClick:Platform.setFullscreen false, forPlayer:touch.by}
 		
 	private inline js void startGame
@@ -832,20 +833,20 @@ Object Menu
 				drawText .label, pos+{-60}, size:30, align:Left, layer:int.maxValue
 				if item.type == Button
 					if .image: drawImage .image, pos+{-120}, layer:int.maxValue
-					Input.onTouchDownWithin pos, size:{500,60}, do:item.onClick(true, touch)
+					onTouchDownWithin pos, size:{500,60}, do:item.onClick(true, touch)
 				else
 				if item.type == Check
 					if .image: drawImage Checkbox, pos+{-120}, layer:int.maxValue, frame:item.value ? 1 : 0
-					Input.onTouchDownWithin pos, size:{500,60}
+					onTouchDownWithin pos, size:{500,60}
 						item.value = !item.value
 						item.onClick(item.value, touch)
 						doNotClose = true
 					
-			drawRectangle popupPosition, outlineColor:White, fillColor:Black, size:{500,60+items.length*60}, outlineWidth:3, layer:int.maxValue
-			drawRectangle size:{1920,1080}, fillColor:overlayColor, layer:int.maxValue
+			drawRectangle popupPosition, outlineColor:White, color:Black, size:{500,60+items.length*60}, outlineWidth:3, layer:int.maxValue
+			drawRectangle size:{1920,1080}, color:overlayColor, layer:int.maxValue
 			
 			if not doNotClose
-				Input.onTouchDownAny
+				onTouchDownAny
 					active = false
 				
 		drawImage Menu, position, location

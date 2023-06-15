@@ -13,12 +13,12 @@ unit lobby
 			ticks++
 			
 			drawButton Button, "Send Statistics", {864,498}
-				Input.isCertain = true
+				input.isCertain = true
 				statistics.send round:-2 game:-2
 		
-		if PeerNetwork.error or Network.errorMessage
+		if PeerNetwork.error or core.errorMessage
 			drawText PeerNetwork.error, size:40
-			drawText Network.errorMessage, size:14, position:{0,40}
+			drawText core.errorMessage, size:14, position:{0,40}
 			return
 			
 		int count = players.length
@@ -33,15 +33,16 @@ unit lobby
 					drawText text, basePos+{32,4}, size:32, font:OpenSans, align:Left
 			
 		// Place points with a click for testing
-		// Input.onTouchDown: points.add .position.clone
-		// points.each drawCircle ., size:50
+		if core.drawPointsForTesting
+			onTouchDown: points.add .position.clone
+				points.each drawCircle ., size:50
 		
 		if Loca.supportedLanguages.length > 1
 			forPositions Loca.supportedLanguages, end:{930,-510}, delta:{40}
 				drawImage Flag[i], pos, frame:Loca.language == cast(i) ? 1 : 0
 					Loca.setLanguage cast(i)
 			
-		if Network.mode == Ping
+		if core.mode == Ping
 			drawText "Connecting...", size:32
 		else
 		if players.length withinInclusively Platform.supportedUserCount
@@ -49,15 +50,15 @@ unit lobby
 				if !.isReadyInLobby
 					drawButton Button, "Start", {0, 450}, visibleFor:.
 						if enableFullscreen: Platform.setFullscreen true forPlayer:touch.by
-						Input.playersById[touch.by.id].isReadyInLobby = true
+						input.playersById[touch.by.id].isReadyInLobby = true
 						if players.all.isReadyInLobby
-							Network.startApp
+							core.startApp
 							
 	private showSettings = false
 	
 	tickSettings
-		if not Input.localUser: return
-		drawImage settingsIcon, {-920,-500}, clickableBy:Input.localPlayer, size:32
+		if not input.localUser: return
+		drawImage settingsIcon, {-920,-500}, clickableBy:input.localPlayer, size:32
 			showSettings = !showSettings
 			
 		if showSettings
@@ -67,7 +68,7 @@ unit lobby
 				drawImage cameraIcon, pos
 				forPositions PeerNetwork.devices.videoInput start:pos+{36} delta:{0,26} -> device
 					drawText .label, pos, size:18, align:Left, color:PeerNetwork.videoInputId == .deviceId ? Green : White
-					Input.onTouchDownWithin pos+{200,0}, size:{400,30}, showTouchArea:false, by:Input.localPlayer
+					onTouchDownWithin pos+{200,0}, size:{400,30}, showTouchArea:false, by:input.localPlayer
 						PeerNetwork.setVideoInput device.deviceId
 				pos += {450}
 			
@@ -75,7 +76,7 @@ unit lobby
 				drawImage microphoneIcon, pos
 				forPositions PeerNetwork.devices.audioInput start:pos+{36} delta:{0,26} -> device
 					drawText .label, pos, size:18, align:Left, color:PeerNetwork.audioInputId == .deviceId ? Green : White
-					Input.onTouchDownWithin pos+{200,0}, size:{400,30}, showTouchArea:false, by:Input.localPlayer
+					onTouchDownWithin pos+{200,0}, size:{400,30}, showTouchArea:false, by:input.localPlayer
 						PeerNetwork.setAudioInput device.deviceId
 				pos += {550}
 				
@@ -83,5 +84,5 @@ unit lobby
 				drawImage speakerIcon, pos
 				forPositions PeerNetwork.devices.audioOutput start:pos+{36} delta:{0,26} -> device
 					drawText .label, pos, size:18, align:Left, color:PeerNetwork.audioOutputId == .deviceId ? Green : White
-					Input.onTouchDownWithin pos+{200,0}, size:{400,30}, showTouchArea:false, by:Input.localPlayer
+					onTouchDownWithin pos+{200,0}, size:{400,30}, showTouchArea:false, by:input.localPlayer
 						PeerNetwork.setAudioOutput device.deviceId
