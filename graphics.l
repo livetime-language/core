@@ -441,13 +441,13 @@ transient global unit graphics
 	                        SourceCodeLocation location
 		if isVisibleFor(visibleFor)
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
-			if text:  drawText text, position+textOffset, fontSize, textColor, visibleFor, layer, effectiveAlpha, location
+			if text:  drawText text, position+textOffset, textSize, textColor, visibleFor, layer, effectiveAlpha, location
 			if image: drawImage image, position, frame, size, visibleFor, layer, effectiveAlpha, location
 			
 		if enabled and onTouch != null
 			// Handle click (only visible buttons are clickable)
 			let effectivetouchableBy = gettouchableBy(visibleFor, touchableBy)
-			Vector2 effectiveSize = image ? getEffectiveSize(image.size, size) : {getTextWidth(text), fontSize}
+			Vector2 effectiveSize = image ? getEffectiveSize(image.size, size) : {getTextWidth(text), textSize}
 			input.onTouchDownWithin position, effectiveSize + touchMargin, by:effectivetouchableBy, showTouchArea, do:onTouch
 			if hotkey
 				input.onKeyDown hotkey, by:effectivetouchableBy
@@ -1154,6 +1154,7 @@ skipInit unit gizmo
 		handleSize = math.map math.min(max.x-min.x, max.y-min.y) 64..256 start:16 target:32
 	
 	internal tick
+		if Platform.mode != Manipulator: return
 		findInfluencedItems
 		
 		if items
