@@ -363,7 +363,28 @@ skipInit global unit input
 	transient bool isCertain
 	transient ControllerButtonPlayerAndIndex[Key] controllerButtonMap
 
+	// A list of all players
 	global Player[] players
+		
+	// Do something for every player
+	global inline js void everybody: void(Player it) do
+		for(let i=0, _len=input_players.length; i<_len; ++i) { let it = input_players[i]; do()}
+		
+	// Returns true if the given condition is true for every player
+	global inline js bool everybody: bool(Player it) predicate
+		input_players.every(predicate)
+		
+	// Returns true if the given condition is true for any player
+	global inline js bool anybody: bool(Player it) predicate
+		input_players.some(predicate)
+		
+	// Returns true if the given condition is true for no player
+	global inline js bool nobody: bool(Player it) predicate
+		!input_players.some(predicate)
+		
+	// All players
+	global inline js Player everybody() null
+		
 	internal Player[] playersById
 	Cursor cursor
 	
@@ -1003,7 +1024,7 @@ skipInit global unit input
 		if core.logging: core.touchLog += " #{core.frame}{isCertain ? " c" : ""} {text} {pos}"
 
 	private getTargetedPlayers: Player[] by
-		return (core.mode == Connected || core.simulateConnection) && by ? by : players
+		return (core.mode == Connected || core.simulateConnection) and by and by.length > 0 and by[0] ? by : players
 		
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
@@ -1015,12 +1036,14 @@ skipInit global unit input
 	//                 print "Click at {touch.position}"
 	// Image: onTouchDown.png
 	global onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
 		for getTargetedPlayers(by) -> player
 			for internalUsers[player.id].downTouches -> touch
 				if !touch.handled and (player.enableTouch or touch.type != Touch)
 					log "down", touch.referencePosition
 					do touch
+					if markAsHandled: touch.handled = true
 
 	// Do something when the player touches or clicks within a given area
 	// Example: Draw an OK button and print "Clicked OK" when the user touches it.
