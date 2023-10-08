@@ -1,5 +1,5 @@
 // A number stored as a 32-bit integer
-struct int
+immutable struct int
 	// The largest possible integer value
 	const maxValue = 2147483647
 	
@@ -132,7 +132,7 @@ struct int
 		int_enumerate(0, this, selector)
 	
 // A number stored as a double precision 64-bit floating point value
-struct float
+immutable struct float
 	// The largest possible floating point value
 	const inline js float maxValue := Number.MAX_VALUE
 	
@@ -140,6 +140,9 @@ struct float
 	const inline js float minValue := -Number.MAX_VALUE
 	
 	const inline js float infinity := Number.POSITIVE_INFINITY
+
+	inline js float += int value: this += value
+	inline js float += float value: this += value
 	
 	inline js float operator ** (float a, float b) 
 		Math.pow(a,b)
@@ -203,10 +206,6 @@ struct float
 		                            float epsilon = 0.00001
 		(Math.abs(this - value) < epsilon)
 		
-	inline js bool isAngleApproximately: float value
-		                                 float epsilon = 0.0175
-		(Math.abs((((this % math_TwoPI) + math_TwoPI) % math_TwoPI) - (((value % math_TwoPI) + math_TwoPI) % math_TwoPI)) < epsilon)
-		
 	inline js float moveTowards: float value
 		                         float speed
 		(this < value ? (this + speed < value ? (this += speed) : (this = value)) : (this - speed > value ? (this -= speed) : (this = value)))
@@ -225,8 +224,8 @@ struct float
 		(this + (target - this)*ease.function.invoke(value))
 		
 	inline js float incrementBy: float value
-		                         float max
-		(this+value < max ? (this += value) : max)
+		                         nocolon float to
+		(this+value < to ? (this += value) : to)
 		
 	// ------------------------------------------- Time -------------------------------------------
 	
@@ -250,25 +249,7 @@ struct float
 	// Weeks	
 	inline js Time weeks := (this*604800000)
 		
-	// ------------------------------------------- Angle -------------------------------------------
-	
-	implicit inline js Angle toAngle() this
-	
-	inline js Angle operator °(float angle) (angle/360)
-	
-	// One full rotation is 1
-	inline js Angle turns := this
-	
-	// One full rotation is 2π (about 6.2832)
-	inline js Angle radians := (this/math_TwoPI)
-		
-	// One full rotation is 360
-	inline js Angle degrees := (this/360)
-		
-	// One full rotation is 400
-	inline js Angle gradians := (this/400)
-		
-class EaseFunction
+immutable EaseFunction
 	float(float value) function
 	
 	global const EaseFunction None    = { . }
@@ -277,7 +258,7 @@ class EaseFunction
 	
 // A sequence of characters
 js String
-class string
+immutable class string
 	// Returns the number of characters in the string
 	inline js int length := this.length
 	
@@ -323,6 +304,12 @@ class string
 		let index = this.indexOf(value)
 		if(index != -1) return this.substring(start, index)
 		else            return this
+		
+	js string getAfter: string value
+		                int start = 0
+		let index = this.indexOf(value)
+		if(index != -1) return this.substring(index+1)
+		else            return ""
 		
 	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
 	inline js int compareTo: string value // The string to compare to
@@ -674,6 +661,13 @@ class List<T>
 		this.removeAt(index)
 		return item
 		
+	T popRandomWhere: bool(T a) condition
+		let filteredList = this.where(condition)
+		int index = math.randomInteger(filteredList.length)
+		T item = filteredList[index]
+		this.remove(item)
+		return item
+		
 	T next: T currentItem
 		int index = indexOf(currentItem)
 		return this.get((index+1)%length)
@@ -751,9 +745,6 @@ class List<T>
 	inline js T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		this.sort(comparer)
 	
-	inline js T[] sort: Angle(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-		this.sort(comparer)
-	
 	// Sort the list by a given expression
 	T[] orderBy: float(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
@@ -763,9 +754,6 @@ class List<T>
 		return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
 	T[] orderBy: Time(T a) expression // First order by this expression
-		return this.sort(expression(a) - expression(b))
-		
-	T[] orderBy: Angle(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
 		
 	T[] orderBy: string(T a) expression // First order by this expression
@@ -1262,6 +1250,12 @@ class List<T>
 	js T decrementItem: int index // The index of the item to change
 		return index >= 0 ? this[index]-- : this[this.length+index]--
 		
+immutable ImmutableList<T>
+	T[] list
+	
+	inline T get: implicit int index // The index of the item to get
+		list.get(index)
+		
 // A data container that stores key-value pairs
 js Map
 class Map<TKey, TValue>
@@ -1293,7 +1287,7 @@ class Map<TKey, TValue>
 		
 
 // Specifies that a function doesn't return a value
-struct void
+immutable struct void
 	
 // Denotes a type that can be null
 struct Nullable<T>
@@ -1342,7 +1336,7 @@ interface object
 
 		
 // This struct is automatically filled with the source code location
-transient class SourceCodeLocation
+transient immutable SourceCodeLocation
 	string file
 	int start
 	int end
@@ -1385,7 +1379,7 @@ transient class SourceCodeLocation
 		return null
 		
 js Error
-class Error
+immutable Error
 	string message
 	string stack
 	implicit inline js string toString := this.stack
@@ -1645,7 +1639,7 @@ global transient priority unit System
 		if(Platform_isDebug && core_frame >= core_frameWithNewWatches && location) {
 			Platform_sendWatch(core_frame, text, location.start, location.file)
 		}
-	
+		
 	// Shows a dialog box with a given message
 	global inline js void alert: implicit string message // The message to show
 		alert(message)
@@ -1705,20 +1699,12 @@ global skipInit unit math
 	inline js float abs: float value // The value to return the absolute value of
 		Math.abs(value)
 		
-	// Returns the absolute value
-	inline js Angle abs: Angle value // The angle to return the absolute value of
-		Math.abs(value)
-		
 	// Returns the smallest integer greater than or equal to the given value 
 	inline js int ceil: float value // The value to round up
 		Math.ceil(value)
 		
 	// Returns the smallest integer greater than or equal to the given value 
 	inline js Time ceil: Time value // The value to round up
-		Math.ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline js Angle ceil: Angle value // The angle to round up
 		Math.ceil(value)
 		
 	// Returns the largest integer less than or equal to the given value
@@ -1729,16 +1715,8 @@ global skipInit unit math
 	inline js Time floor: Time value // The value to round down
 		Math.floor(value)
 		
-	// Returns the largest integer less than or equal to the given value
-	inline js Angle floor: Angle value // The angle to round down
-		Math.floor(value)
-		
 	// Returns the given value rounded to the nearest integer
 	inline js int round: float value // The value to round
-		Math.round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline js Angle round: Angle value // The angle to round
 		Math.round(value)
 		
 	// Returns the given value rounded to the nearest integer
@@ -1754,11 +1732,6 @@ global skipInit unit math
 		                 float b // The second value
 		Math.min(a, b)
 		
-	// Returns the smallest of the given values
-	inline js Angle min: Angle a // The first angle
-		                 Angle b // The second angle
-		Math.min(a, b)
-		
 	// Returns the largest of the given values
 	inline js int max: int a // The first value
 		               int b // The second value
@@ -1767,11 +1740,6 @@ global skipInit unit math
 	// Returns the largest of the given values
 	inline js float max: float a // The first value
 		                 float b // The second value
-		Math.max(a, b)
-		
-	// Returns the largest of the given values
-	inline js Angle max: Angle a // The first angle
-		                 Angle b // The second angle
 		Math.max(a, b)
 		
 	// Returns the largest of the given values
@@ -1787,53 +1755,6 @@ global skipInit unit math
 		                 float exponent
 		Math.pow(base, exponent)
 		
-	// The ratio of a circle's circumference to its diameter
-	float PI = 3.141592653589793
-	
-	// The ratio of a circle's radius to its diameter
-	float TwoPI = 6.283185307179586
-	
-	internal inline js float nativeSin: float angle // The angle in radians
-		Math.sin(angle)
-		
-	internal inline js float nativeCos: float angle // The angle in radians
-		Math.cos(angle)
-		
-	internal inline js float nativeTan: float angle // The angle in radians
-		Math.tan(angle)
-		
-	// Returns the sine of an angle in turns
-	sin: Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .5 - math.floor(angle))
-	    result *= 16 * (math.abs(result) - .5)
-	    result += .225 * result * (math.abs(result) - 1)
-	    return result
-
-	// Returns the cosine of an angle in turns
-	cos: Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .25 - math.floor(angle + .25))
-	    result *= 16 * (math.abs(result) - .5)
-	    result += .225 * result * (math.abs(result) - 1)
-	    return result
-	
-	// Returns the tangent of an angle in turns
-	tan: Angle angle
-		return sin(angle) / cos(angle)
-		
-	// Returns the inverse tangent in turns
-	Angle atan2: float y, float x
-		float r, angle;
-		float abs_y = math.abs(y) + .00000000001
-		if x < 0.0
-			r = (x + abs_y) / (abs_y - x);
-			angle = .375;
-		else
-			r = (x - abs_y) / (x + abs_y);
-			angle = .125;
-		angle += (.03124211533 * r * r - .1562424076) * r;
-		if y < 0.0: return cast -angle
-		else        return cast angle
-		
 	inline js int shiftLeft: int value
 		                     int count
 		(value << count)
@@ -1845,12 +1766,6 @@ global skipInit unit math
 	moveTowards: float value
 		         float targetValue
 		         float speed = 1
-		if targetValue > value: return math.min(value + speed, targetValue) else
-		if targetValue < value: return math.max(value - speed, targetValue)
-			
-	moveTowards: Angle value
-		         Angle targetValue
-		         Angle speed = 1
 		if targetValue > value: return math.min(value + speed, targetValue) else
 		if targetValue < value: return math.max(value - speed, targetValue)
 			
@@ -1930,7 +1845,7 @@ struct Average
 		count++
 	average := total / count		
 
-class Range
+immutable Range
 	int from // The start of the range
 	int to   // The end of the range
 	
@@ -1950,9 +1865,9 @@ unit Json
 enum Language: English, German, Spanish, Frensh, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
 
 unit Loca
-	visible Language[] supportedLanguages = [English, German]
-	visible string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
+	private const string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
 	
+	visible Language[] supportedLanguages = [English, German]
 	visible Language language = English
 	visible string locale = defaultLocaleForLanguage[language]
 	

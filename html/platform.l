@@ -17,7 +17,7 @@ skipInit global unit Platform
 		
 	bool isDebug
 	global bool isMobile
-	Vector2 size
+	Vector2 size, nativeSize
 	float scale
 	float debugScale = 1
 	ReferenceSize[] referenceSizes
@@ -88,7 +88,7 @@ skipInit global unit Platform
 			initMedia
 			initAll
 			Time.frame = 0
-			app.start
+			startApp
 			Html.updateScale
 			Html.render
 		catch
@@ -100,7 +100,10 @@ skipInit global unit Platform
 		Html.reset
 		replay
 		
-	js void tick
+	private js void startApp
+		if(window.app_start) app_start()
+		
+	private js void tick
 		Platform_heartbeat("tick")
 		if(window.app_tick) app_tick()
 		Time_frame++
@@ -120,8 +123,8 @@ skipInit global unit Platform
 		}
 		
 	internal inline js void sendErrorToEditor: Error error
-		if(window.sendErrorToEditor) _sendErrorToEditor(error)
-		else                         console.error(error)
+		if(window._sendErrorToEditor) _sendErrorToEditor(error)
+		else                          console.error(error)
 		
 	private inline js void sendFinished
 		console.log("[app] ----- Finished -----")
@@ -130,6 +133,7 @@ skipInit global unit Platform
 	Time nextHeartbeatTime = 0
 	
 	private js void heartbeat: string context
+		if(!Platform_isDebug) return
 		let now = Date.now();
 		if(now > Platform_nextHeartbeatTime) {
 			console.log("[app]", (now%100000).toLocaleString("en-US", {minimumIntegerDigits:6, useGrouping:true})+" sending heartbeat from "+context);
@@ -206,33 +210,40 @@ global skipInit unit math
 		
 // A color comprised of a red, green, blue and alpha component
 class Color
-	global const Color Black   = {"000000"}
-	global const Color White   = {"ffffff"}
-	global const Color Blue    = {"118ab2"}
-	global const Color Red     = {"ef476f"}
-	global const Color Green   = {"06d6a0"}
-	global const Color Yellow  = {"ffd166"}
-	global const Color Gray    = {"3d3d3d"}
-	global const Color TransparentRed   = {"ff000080"}
+	global const Color White       = {"#ffffff", "White"}
+	global const Color Black       = {"#000000", "Black"}
+	global const Color Red         = {"#ef476f", "Red"}
+	global const Color Yellow      = {"#ffd166", "Yellow"}
+	global const Color Green       = {"#06d6a0", "Green"}
+	global const Color Blue        = {"#118ab2", "Blue"}
+	global const Color Gray        = {"#3d3d3d", "Gray"}
+	global const Color Transparent = {"#00000000", "Transparent"}
+		
+	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
+	
 	string hex
+	string name
+	
+	implicit string toString := hex
 	
 	Color: string hex = ""
-		   int red = 0
+		this.hex = hex
+
+	Color: int red = 0
 		   int green = 0
 		   int blue = 0
 		   int alpha = 255
-		if hex: this.hex = "#" + hex
-		else    this.hex = "#" + componentToHex(red) + componentToHex(green) 
-		                       + componentToHex(blue) + componentToHex(alpha)
+		this.hex = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue) + componentToHex(alpha)
 			
 	static js string componentToHex: int c
 		var hex = c.toString(16);
 		return hex.length == 1 ? "0" + hex : hex;
 		
-	implicit js string toString() return this.hex
-		
 	inline js bool operator ==(Color a, Color b) a.hex == b.hex
 	inline js bool operator !=(Color a, Color b) a.hex != b.hex
+	
+	Color withAlpha: float alpha
+		return {hex[1..7]+componentToHex(math.floor(alpha*255))}
 	
 skipInit class Image
 	string previewSrc
@@ -250,10 +261,15 @@ global unit Html
 	
 	private Node parentNode
 	private Node currentNode
+	private Node currentOverlay
+	
+	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform_scale)
 	
 	private inline js Node body() document.body
 	
 	internal js void reset
+		while(document.body.nextSibling) 
+			document.body.nextSibling.remove()
 		document.body.innerHTML = ""
 	
 	internal js void updateScale
@@ -270,6 +286,7 @@ global unit Html
 				}
 			}
 			Platform_scale = window.innerWidth / referenceWidth
+			Platform_nativeSize = new Vector2(window.innerWidth, window.innerHeight)
 			Platform_size = new Vector2(referenceWidth, referenceWidth * window.innerHeight/window.innerWidth)
 			body.style = "background-color: white; font:32px OpenSans"
 			body.style.transform = 'none !important'
@@ -295,10 +312,18 @@ global unit Html
 			for(let key in attributes)
 				node.setAttribute(key, attributes[key])
 		
+	static js void expandStyle: Style style
+		if(style.size) { style.width = style.size.x+"px"; style.height = style.size.y+"px" }
+		if(style.overlay) {
+			let rect = document.body.getBoundingClientRect()
+			style.position = "fixed"; style.top = 0; style.left = 0; style.width = (window.innerWidth/Platform_scale)+"px"; style.height = (document.body.scrollHeight)+"px"  
+		}
+		return style 
+	
 	private js void setStyle: Node node, dynamic style
 		node.style = ""
 		if(style) {
-			for(let key in style)
+			for(let key in Html_expandStyle(style))
 				node.style[key] = style[key]
 				
 			// Temporary Backfill. Starting from Chrome 104, Safari 14.1 this is no longer needed.
@@ -333,11 +358,19 @@ global unit Html
 	void render
 		parentNode = body
 		currentNode = parentNode.firstChild
+		currentOverlay = body.nextSibling
 		app.render
 		while currentNode
 			let next = currentNode.nextSibling
 			currentNode.remove
 			currentNode = next
+		while currentOverlay
+			let next = currentOverlay.nextSibling
+			currentOverlay.remove
+			currentOverlay = next
+		// if not overlayNode
+		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
+		// 	body.parentNode.appendChild overlayNode
 						
 	global row: expand Attributes attributes = null // The attributes of the HTML element
 		        expand Style style = {}             // The css style of the HTML element
@@ -408,12 +441,9 @@ global unit Html
 		          expand Attributes attributes = {} // The attributes of the HTML element 
 		          expand Style style = {}           // The css style of the HTML element 
 		          SourceCodeLocation location
-		attributes.src = src
-		attributes.autoplay = "autoplay"
-		attributes.muted = "muted"
 		style.position = Absolute
 		style.zIndex = -1000
-		return div tag:"video", attributes, style, location
+		div tag:"video", attributes, style, location, data:{src, autoplay:"autoplay", muted:"muted"}
 
 	global div: string text = null                // The text content of the element 
 		        string tag = "div"                // The tag of element
@@ -468,3 +498,46 @@ global unit Html
 		currentNode = nextNode
 		return node
 		
+	global overlay: expand Attributes attributes = {} // The attributes of the element
+		            expand Style style = null         // Apply this css style to the element
+		            void() children = null            // The children of the element
+		            SourceCodeLocation location
+		Node node, nextNode
+		string sourceLocation = location?.toString
+		
+		if !currentOverlay or currentOverlay.sourceLocation != sourceLocation
+			node = Node.create "div"
+			nextNode = currentOverlay
+			if nextNode: body.parentNode.insertBefore node, nextNode
+			else         body.parentNode.appendChild node
+		else
+			node = currentOverlay
+			nextNode = currentOverlay.nextSibling
+		
+		if style == null: style = {}	
+		if not style.inset:           style.inset = PaddingOrMargin(0,0,0,0)
+		if not style.position:        style.position = Fixed
+		// if not style.backgroundColor: style.backgroundColor = Black
+		// if not style.opacity:         style.opacity = .5
+		setStyle node, style
+		
+		if attributes != null
+			if attributes.id != null:           node.id = attributes.id
+			if attributes.class != null:        node.class = attributes.class
+			if attributes.onClick != null:      node.onclick = attributes.onClick
+			if attributes.onRightClick != null: node.oncontextmenu = attributes.onRightClick
+				
+		let prevParentNode = parentNode
+		let prevCurrentNode = currentNode
+		parentNode = node
+		currentNode = node.firstChild
+		children()
+		while currentNode
+			let next = currentNode.nextSibling
+			currentNode.remove
+			currentNode = next
+		parentNode = prevParentNode
+		currentNode = prevCurrentNode
+		
+		currentOverlay = nextNode
+		return node

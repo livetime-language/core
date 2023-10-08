@@ -71,7 +71,7 @@ enum Side: Front, Back
 		
 class Object
 	Vector2 position
-	implicit Vector2 size
+	implicit Vector2 size = {32,32}
 	float alpha = 1
 	implicit Player[] visibleFor = null
 	int layer = 0
@@ -188,6 +188,25 @@ Object CircleObject
 	Color color = White
 	override tick
 		drawCircle position, size, color:color, visibleFor, layer
+
+global transient unit System
+	global visualize: Vector2 position = {}
+		              Color color = White
+		              logstring text = ""
+		              SourceCodeLocation location
+		VisualizeObject(position, color, index:core.watchIndex, text)
+		if Platform.isDebug and core.frame >= core.frameWithNewWatches and location
+			Platform.sendWatch core.frame, text:text or position.toString, location.start, location.file
+		core.watchIndex++
+
+Object VisualizeObject
+	Color color = White
+	int index
+	string text
+	override tick
+		drawText index, position, color:Black, layer:int.maxValue, size:30
+		drawText text, position+{0,32}, color, layer:int.maxValue, size:14
+		drawCircle position, size, color, layer:int.maxValue
 
 Object TextObject
 	string text
@@ -357,9 +376,9 @@ Object Menu
 enum MenuItemType: Button, Check, Radio
 		
 class MenuItem
-	Image image
-	string label
+	immutable Image image
+	immutable string label
+	immutable MenuItemType type = Button
 	bool value
-	MenuItemType type = Button
-	void(bool value, Touch touch) onClick
+	immutable void(bool value, Touch touch) onClick
 
