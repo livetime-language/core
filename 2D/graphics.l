@@ -7,7 +7,6 @@ immutable Color
 	global const Color Green       = {"#06d6a0", "Green"}
 	global const Color Blue        = {"#118ab2", "Blue"}
 	global const Color Gray        = {"#3d3d3d", "Gray"}
-	global const Color Transparent = {"#00000000", "Transparent"}
 		
 	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
 	
@@ -16,22 +15,33 @@ immutable Color
 	
 	string toString := name or hex
 	
+	int red()   return hex[1..3].parseInt(16)
+	int green() return hex[3..5].parseInt(16)
+	int blue()  return hex[5..7].parseInt(16)
+	
+	Color * float other: return {math.floor(red*other), math.floor(green*other), math.floor(blue*other)}
+	
+	inline js bool == Color other: this?.hex == other?.hex
+	inline js bool != Color other: this?.hex != other?.hex
+	
 	Color: string hex = ""
-		this.hex = hex
+		this.hex = hex[0] == "#" ? hex : "#"+hex
 
 	Color: int red = 0
 		   int green = 0
 		   int blue = 0
-		   int alpha = 255
+		this.hex = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue)
+			
+	Color: int red
+		   int green
+		   int blue
+		   int alpha
 		this.hex = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue) + componentToHex(alpha)
 			
-	static js string componentToHex: int c
+	static private js string componentToHex: int c
 		var hex = c.toString(16);
 		return hex.length == 1 ? "0" + hex : hex;
 		
-	inline js bool operator ==(Color a, Color b) a.hex == b.hex
-	inline js bool operator !=(Color a, Color b) a.hex != b.hex
-	
 	Color withAlpha: float alpha
 		return {hex[1..7]+componentToHex(math.floor(alpha*255))}
 	
@@ -39,16 +49,17 @@ immutable Color
 immutable Texture
 	string file
 	Vector2 size
+	transient dynamic imageOrCanvas, context
 	
 	Texture
-		if Platform.engineStarted
+		if Platform.engineStarted and file
 			open
 			
 	js bool ensureIsAvailable()
-		if(!this._htmlImage) {
-			this._htmlImage = _htmlImageCache[this.file]
+		if(!this.imageOrCanvas && this.file) {
+			this.imageOrCanvas = _htmlImageCache[this.file]
 		}
-		return this._htmlImage != null
+		return this.imageOrCanvas != null
 	
 	js void open
 		if(!window._htmlImageCache) _htmlImageCache = {}
@@ -57,7 +68,7 @@ immutable Texture
 			return new Promise((resolve, reject) => {
 				image = new Image()
 				image.onload = e => {
-					this._htmlImage = image
+					this.imageOrCanvas = image
 					window._htmlImageCache[this.file] = image
 					this.size = new Vector2(image.width, image.height, null)
 					resolve(this);
@@ -65,9 +76,67 @@ immutable Texture
 				image.src = this.file.startsWith("http") || this.file.startsWith("data") ? this.file : _basePath+this.file
 			})
 		} else {
-			this._htmlImage = image
+			this.imageOrCanvas = image
 			this.size = new Vector2(image.width, image.height, null)
 			return this
+		}
+		
+	js void setSize: Vector2 size
+		if((size.x != this.size.x || size.y != this.size.y) && this.imageOrCanvas) {
+			this.imageOrCanvas.width = size.x
+			this.imageOrCanvas.height = size.y
+		}
+		this.size.assign(size);
+		
+	js void modify: implicit Player[] visibleFor = null // Only make any modification for this player or list of players
+		            void() do                           // This block of code will draw on the created image instead of drawing on the screen
+		let isVisible = graphics.isVisibleFor(visibleFor)
+		if(isVisible) {
+			// Save previous canvas
+			var prevContext = graphics.context
+			var prevPixelSizeX = graphics.pixelSize.x
+			var prevPixelSizeY = graphics.pixelSize.y
+			var prevItems = graphics.items
+			var prevFastForward = Platform.fastForward
+			
+			// Create canvas
+			if(!this.context) {
+				this.imageOrCanvas = document.createElement("canvas")
+				this.imageOrCanvas.width = this.size.x
+				this.imageOrCanvas.height = this.size.y
+				this.context = this.imageOrCanvas.getContext("2d")
+			}
+			
+			// Setup canvas
+			graphics.context = this.context
+			graphics.pixelSize.x = this.size.x
+			graphics.pixelSize.y = this.size.y
+			graphics.items = []
+			Platform.fastForward = false
+			var a = graphics.localMatrix.matrix, b = graphics.totalMatrix.matrix
+			var a0 = graphics.localMatrix.m0, a1 = graphics.localMatrix.m1, a2 = graphics.localMatrix.m2, a3 = graphics.localMatrix.m3, a4 = graphics.localMatrix.m4, a5 = graphics.localMatrix.m5
+			var b0 = graphics.totalMatrix.m0, b1 = graphics.totalMatrix.m1, b2 = graphics.totalMatrix.m2, b3 = graphics.totalMatrix.m3, b4 = graphics.totalMatrix.m4, b5 = graphics.totalMatrix.m5
+			graphics.localMatrix.set(1, 0, 0, 1, -this.size.x/2, -this.size.y/2)
+			graphics.totalMatrix.set(1, 0, 0, 1, this.size.x/2, this.size.y/2)
+			graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
+			graphics.context.textBaseline = "top"
+		}
+		
+		// Draw on canvas
+		do()
+			
+		if(isVisible) {
+			// Draw all display items
+			graphics.drawItems()
+			
+			// Restore previous canvas
+			graphics.localMatrix.m0 = a0; graphics.localMatrix.m1 = a1; graphics.localMatrix.m2 = a2; graphics.localMatrix.m3 = a3; graphics.localMatrix.m4 = a4; graphics.localMatrix.m5 = a5
+			graphics.totalMatrix.m0 = b0; graphics.totalMatrix.m1 = b1; graphics.totalMatrix.m2 = b2; graphics.totalMatrix.m3 = b3; graphics.totalMatrix.m4 = b4; graphics.totalMatrix.m5 = b5
+			graphics.context = prevContext
+			graphics.pixelSize.x = prevPixelSizeX
+			graphics.pixelSize.y = prevPixelSizeY
+			graphics.items = prevItems
+			Platform.fastForward = Platform.fastForward
 		}
 		
 // A font that can be used to draw text
@@ -156,6 +225,7 @@ transient skipInit global unit graphics
 	public Vector2 referenceSize = {1920, 1080}
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
+	public bool showSafeArea = true
 	visible Vector2 pixelSize
 	visible Vector2 size
 	visible float pixelRatio
@@ -164,19 +234,19 @@ transient skipInit global unit graphics
 		this.referenceSize = referenceSize
 	
 	internal js void onResize
-		graphics_canvas = document.getElementById("canvas");
-		graphics_pixelRatio = window.devicePixelRatio;
-		graphics_pixelSize = new Vector2(window.innerWidth*graphics_pixelRatio, window.innerHeight*graphics_pixelRatio, null);
-		graphics_isSmallScreen = screen.width < 600 || (localStorage.getItem("smallScreen") == "true")
-		graphics_canvas.style.width = window.innerWidth + "px";
-		graphics_canvas.style.height = window.innerHeight + "px";
-		graphics_canvas.width = graphics_pixelSize.x;
-		graphics_canvas.height = graphics_pixelSize.y;
-		graphics_canvas.imageSmoothingEnabled = true;
-		graphics_canvas.imageSmoothingQuality = "high";
+		graphics.canvas = document.getElementById("canvas");
+		graphics.pixelRatio = window.devicePixelRatio;
+		graphics.pixelSize = new Vector2(window.innerWidth*graphics.pixelRatio, window.innerHeight*graphics.pixelRatio, null);
+		graphics.isSmallScreen = screen.width < 600 || (localStorage.getItem("smallScreen") == "true")
+		graphics.canvas.style.width = window.innerWidth + "px";
+		graphics.canvas.style.height = window.innerHeight + "px";
+		graphics.canvas.width = graphics.pixelSize.x;
+		graphics.canvas.height = graphics.pixelSize.y;
+		graphics.canvas.imageSmoothingEnabled = true;
+		graphics.canvas.imageSmoothingQuality = "high";
 		
-		graphics_context = graphics_canvas.getContext("2d");
-		graphics_updateBaseMatrix()
+		graphics.context = graphics.canvas.getContext("2d");
+		graphics.updateBaseMatrix()
 
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
@@ -188,32 +258,33 @@ transient skipInit global unit graphics
 		if scaleMode == Auto
 			if ratio.x < ratio.y: effectiveScaleMode = FixedWidth;  scale = ratio.x
 			else                  effectiveScaleMode = FixedHeight; scale = ratio.y
-			size = referenceSize
 		else
-		if scaleMode == FixedWidth
+			effectiveScaleMode = scaleMode
+			
+		if effectiveScaleMode == FixedWidth
 			effectiveScaleMode = scaleMode
 			scale = ratio.x
 			size = {referenceSize.x, pixelSize.y/scale}
 		else
-		if scaleMode == FixedHeight
+		if effectiveScaleMode == FixedHeight
 			effectiveScaleMode = scaleMode
 			scale = ratio.y; 
 			size = {pixelSize.x/scale, referenceSize.y}
 			
-		let offsetX = anchor > 0 ? pixelSize.x/2 : 0
-		let offsetY = anchor > 1 ? pixelSize.y/2 : 0
+		let offsetX = anchor > TopLeft   ? pixelSize.x/2 : 0
+		let offsetY = anchor > TopCenter ? pixelSize.y/2 : 0
 		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
 		
 	internal js void startFrame
-		graphics_reset()
-		if(!Platform_fastForward && !Platform_waitingForInitialData)
-			if(!graphics_backgroundColor || graphics_backgroundColor.hex == "#000000") {
-				graphics_context.clearRect(0, 0, graphics_pixelSize.x, graphics_pixelSize.y)
+		graphics.reset()
+		if(!Platform.fastForward && !Platform.waitingForInitialData)
+			if(!graphics.backgroundColor || graphics.backgroundColor.hex == "#000000") {
+				graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			} else {
-				graphics_context.fillStyle = graphics_backgroundColor.hex
-				graphics_context.fillRect(0, 0, graphics_pixelSize.x, graphics_pixelSize.y)
+				graphics.context.fillStyle = graphics.backgroundColor.hex
+				graphics.context.fillRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			}
-			graphics_context.textBaseline = "top"
+			graphics.context.textBaseline = "top"
 			
 	internal reset
 		totalMatrix = baseMatrix
@@ -241,8 +312,8 @@ transient skipInit global unit graphics
 		resetTransform
 		
 	private js void resetTransform
-		graphics_context.resetTransform()
-		graphics_context.globalAlpha = 1
+		graphics.context.resetTransform()
+		graphics.context.globalAlpha = 1
 				
 	private isVisibleFor: Player[] visibleFor
 		if(Platform.fastForward) return false
@@ -250,28 +321,28 @@ transient skipInit global unit graphics
 		let effectiveVisibleFor = visibleFor and (visibleFor.length != 1 or visibleFor[0]) ? visibleFor : currentlyVisibleFor
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
 		
-	private Player[] gettouchableBy: Player[] visibleFor, Player[] touchableBy
+	private Player[] getClickableBy: Player[] visibleFor, Player[] clickableBy
 		Player[] effectiveVisibleBy = visibleFor or currentlyVisibleFor
-		return effectiveVisibleBy and touchableBy
-		     ? effectiveVisibleBy intersectWith touchableBy 
-		     : effectiveVisibleBy or touchableBy
+		return effectiveVisibleBy and clickableBy
+		     ? effectiveVisibleBy intersectWith clickableBy 
+		     : effectiveVisibleBy or clickableBy
 			
 	internal js void drawSafeArea
-		graphics_resetTransform()
-		graphics_context.fillStyle = "#404040"
-		if(Platform_showSafeArea) {
-			if(graphics_effectiveScaleMode == 1) {
+		graphics.resetTransform()
+		graphics.context.fillStyle = "#404040"
+		if(graphics.showSafeArea) {
+			if(graphics.effectiveScaleMode == 1) {
 				// Fixed width
-				let ratio = graphics_pixelSize.x / graphics_referenceSize.x
-				let margin = (graphics_pixelSize.y-graphics_referenceSize.y*ratio)/2
-				graphics_context.fillRect(0,0,graphics_pixelSize.x, margin)
-				graphics_context.fillRect(0,graphics_pixelSize.y-margin,graphics_pixelSize.x, margin)
-			} else if(graphics_effectiveScaleMode == 2) {
+				let ratio = graphics.pixelSize.x / graphics.referenceSize.x
+				let margin = (graphics.pixelSize.y-graphics.referenceSize.y*ratio)/2
+				graphics.context.fillRect(0,0,graphics.pixelSize.x, margin)
+				graphics.context.fillRect(0,graphics.pixelSize.y-margin,graphics.pixelSize.x, margin)
+			} else if(graphics.effectiveScaleMode == 2) {
 				// Fixed height
-				let ratio = graphics_pixelSize.y / graphics_referenceSize.y
-				let margin = (graphics_pixelSize.x-graphics_referenceSize.x*ratio)/2
-				graphics_context.fillRect(0, 0, margin, graphics_pixelSize.y)
-				graphics_context.fillRect(graphics_pixelSize.x-margin, 0, margin, graphics_pixelSize.y)
+				let ratio = graphics.pixelSize.y / graphics.referenceSize.y
+				let margin = (graphics.pixelSize.x-graphics.referenceSize.x*ratio)/2
+				graphics.context.fillRect(0, 0, margin, graphics.pixelSize.y)
+				graphics.context.fillRect(graphics.pixelSize.x-margin, 0, margin, graphics.pixelSize.y)
 			}
 		}
 		
@@ -294,21 +365,21 @@ transient skipInit global unit graphics
 		                      HorizontalAlignment align = Center  // The horizontal alignment of the image
 		                      VerticalAlignment valign = Middle   // The vertical alignment of the image
 		                      SourceCodeLocation location
-		if(!image.texture?.ensureIsAvailable()) return
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(!image?.texture?.ensureIsAvailable()) return
+		if(graphics.isVisibleFor(visibleFor)) {
 			let f = image.frames[frame % image.frames.length]
 			let sizeX = size.x || f.w
 			let sizeY = size.y || (sizeX/f.w)*f.h
-			let factor = graphics_getScaleImagesAsPointerGetsCloserFactor(position)
+			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 			if(factor > 1) { sizeX *= factor; sizeY *= factor }
-			graphics_items.push(new DisplayImage(
-				graphics_totalMatrix,
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha, graphics_currentClippingPath, image.file,
+				layer, alpha, graphics.currentClippingPath, image.file,
 				location, position.location, size.location,
-				image.texture._htmlImage,
+				image.texture.imageOrCanvas,
 				f.x1, f.y1, f.w, f.h,
 				color
 			))
@@ -333,27 +404,27 @@ transient skipInit global unit graphics
 		                      flipY = false                       // Mirror the image vertically
 		                      SourceCodeLocation location
 		if(angle == 0 && !flipX && !flipY) {
-			graphics_drawImage(image, position, size, visibleFor, frame, layer, alpha, color, 1, 1, location)
+			graphics.drawImage(image, position, size, visibleFor, frame, layer, alpha, color, 1, 1, location)
 		} else {
 			if(!image.texture?.ensureIsAvailable()) return
-			if(graphics_isVisibleFor(visibleFor)) {
+			if(graphics.isVisibleFor(visibleFor)) {
 				let f = image.frames[frame % image.frames.length]
 				let sizeX = size.x || f.w
 				let sizeY = size.y || (sizeX/f.w)*f.h
-				let factor = graphics_getScaleImagesAsPointerGetsCloserFactor(position)
+				let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 				if(factor > 1) { sizeX *= factor; sizeY *= factor }
-				let matrix = graphics_totalMatrix.clone()
+				let matrix = graphics.totalMatrix.clone()
 				matrix.move(position)
 				matrix.rotate(angle)
 				if(flipX || flipY) matrix.scale(new Vector2(flipX ? -1:1, flipY ? -1:1	))
-				graphics_items.push(new DisplayImage(
+				graphics.items.push(new DisplayImage(
 					matrix,
 					-sizeX/2,
 					-sizeY/2,
 					sizeX, sizeY,
-					layer, alpha, graphics_currentClippingPath, image.file, 
+					layer, alpha, graphics.currentClippingPath, image.file, 
 					location, position.location, size.location,
-					image.texture._htmlImage,
+					image.texture.imageOrCanvas,
 					f.x1, f.y1, f.w, f.h,
 					color
 				))
@@ -388,7 +459,7 @@ transient skipInit global unit graphics
 		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
-		                   framesPerSecond = 0                 // Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                   framesPerSecond = 0                  // Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
 		                   implicit int layer = 0               // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
@@ -403,34 +474,36 @@ transient skipInit global unit graphics
 	// Example: If the current player instance clicks the image or 16 pixels around it, we print the exact position that was clicked. If other players will click the image, nothing will happen.
 	//     Player
 	//         tick
-	//             drawImage Idle, position:{0,0}, touchMargin:{16,16}, touchableBy:me
+	//             drawImage Idle, position:{0,0}, clickableMargin:{16,16}, clickableBy:me
 	//                 print "The image was clicked at {touch.position}"
 	// Image: drawImage0.png
 	global void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
 		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
-		                   implicit Player[] touchableBy = null // Only this player or list of players can touch or click the image
+		                   implicit Player[] clickableBy = null // Only this player or list of players can touch or click the image
 		                   implicit frame = 0                   // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
 		                   implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
 		                   Angle angle = 0.0                    // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
-		                   touchMargin = Vector2(16,16)         // The margin around the image within which it is touchable
-		                   showTouchArea = false                // Highlight the touchable area for debugging
-		                   hotkey = Key.None                    // This keyboard shortcut will execute the onTouch handler
-		                   void(Touch touch) onTouch            // Execute this code when the user touches or clicks the image or presses the hotkey
+		                   flipX = false                        // Mirror the image horizontally
+		                   flipY = false                        // Mirror the image vertically
+		                   clickableMargin = Vector2(16,16)     // The margin around the image within which it is clickable
+		                   showClickableArea = false            // Highlight the clickable area for debugging
+		                   hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		                   void(Touch touch) onClick            // Execute this code when the user touches or clicks the image or presses the hotkey
 		                   SourceCodeLocation location
-		drawImage image, position, frame, size, angle, visibleFor, layer, alpha, color, location
+		drawImage image, position, frame, size, visibleFor, layer, alpha, color, angle, flipX, flipY, location
 			
 		// Handle click (only visible buttons are clickable)
-		let effectivetouchableBy = gettouchableBy(visibleFor, touchableBy)
+		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
 		if size.x == 0 and size.y == 0: size = image.size; else
 		if size.y == 0: size.y = size.x * image.size.y / image.size.x
-		input.onTouchDownWithin position, size + touchMargin, by:effectivetouchableBy, showTouchArea, do:onTouch
+		input.onTouchDown position, size + clickableMargin, by:effectiveClickableBy, showClickableArea, do:onClick
 		if hotkey
-			input.onKeyDown hotkey, by:effectivetouchableBy
-				onTouch null
+			input.onKeyDown hotkey, by:effectiveClickableBy
+				onClick null
 		
 	// ------------------------------------------------------- Text -------------------------------------------------------
 	
@@ -455,24 +528,65 @@ transient skipInit global unit graphics
 		                     implicit layer = 0                  // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the text (0: fully transparent, 1: fully visible)
 		                     SourceCodeLocation location
-		if(graphics_isVisibleFor(visibleFor)) {
-			let effectiveFont = font || graphics_currentFont
-			let fontSize = size.y || size.x || graphics_currentFontSize
+		if(graphics.isVisibleFor(visibleFor)) {
+			let effectiveFont = font || graphics.currentFont
+			let fontSize = size.y || size.x || graphics.currentFontSize
 			let contextFont = (style ? "bold ":"")+fontSize+"px "+effectiveFont.name;
-			graphics_context.font = contextFont
-			let textSize = graphics_context.measureText(text)
+			graphics.context.font = contextFont
+			let textSize = graphics.context.measureText(text)
 			let sizeX = textSize.width
 			let sizeY = fontSize*effectiveFont.actualHeightFactor
-			graphics_items.push(new DisplayText(
-				graphics_totalMatrix, 
-				position.x - graphics_alignmentFactor[ align]*sizeX,
-				position.y - graphics_alignmentFactor[valign]*sizeY,
+			graphics.items.push(new DisplayText(
+				graphics.totalMatrix, 
+				position.x - graphics.alignmentFactor[ align]*sizeX,
+				position.y - graphics.alignmentFactor[valign]*sizeY,
 				sizeX, sizeY, 
-				layer, alpha, graphics_currentClippingPath, text, 
+				layer, alpha, graphics.currentClippingPath, text, 
 				location, position.location, size.location,
-				(color || graphics_currentColor).hex, 
+				(color || graphics.currentColor).hex, 
 				outlineColor ? outlineColor.hex : null,
-				outlineWidth || graphics_currentLineWidth,
+				outlineWidth || graphics.currentLineWidth,
+				effectiveFont.offset.y*sizeY,
+				contextFont
+			))
+		}
+		
+	global js void drawText: implicit string text                // A string or anything that can be converted into a string (for example, an interger or a float)
+		                     Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                     implicit Vector2 size = {}          // The size of the text
+		                     Color color = null                  // The color of the text
+		                     Angle angle = 0.0                   // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
+		                     HorizontalAlignment align = Center  // The horizontal alignment of the text
+		                     VerticalAlignment valign = Middle   // The vertical alignment of the text
+		                     FontStyle style = Normal            // Whether the text should be bold or normal style
+		                     Font font = null                    // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
+		                     Color outlineColor = null           // The color of the outline around the text
+		                     outlineWidth = 0                    // The width of the outline around the text in pixels
+		                     implicit Player[] visibleFor = null // Only this player or list of players will see the text
+		                     implicit layer = 0                  // Higher layers are drawn in front of lower layers
+		                     alpha = 1.0                         // The opacity of the text (0: fully transparent, 1: fully visible)
+		                     SourceCodeLocation location
+		if(graphics.isVisibleFor(visibleFor)) {
+			let effectiveFont = font || graphics.currentFont
+			let fontSize = size.y || size.x || graphics.currentFontSize
+			let contextFont = (style ? "bold ":"")+fontSize+"px "+effectiveFont.name;
+			graphics.context.font = contextFont
+			let textSize = graphics.context.measureText(text)
+			let sizeX = textSize.width
+			let sizeY = fontSize*effectiveFont.actualHeightFactor
+			let matrix = graphics.totalMatrix.clone()
+			matrix.move(position)
+			matrix.rotate(angle)
+			graphics.items.push(new DisplayText(
+				matrix, 
+				-graphics.alignmentFactor[ align]*sizeX,
+				-graphics.alignmentFactor[valign]*sizeY,
+				sizeX, sizeY, 
+				layer, alpha, graphics.currentClippingPath, text, 
+				location, position.location, size.location,
+				(color || graphics.currentColor).hex, 
+				outlineColor ? outlineColor.hex : null,
+				outlineWidth || graphics.currentLineWidth,
 				effectiveFont.offset.y*sizeY,
 				contextFont
 			))
@@ -493,34 +607,55 @@ transient skipInit global unit graphics
 		                    text = ""                            // The text of the button
 		                    Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                    implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                    frame = 0                            // The frame from a sequence of images (for example "Button0.png", "Button1.png", ...)
+		                    frame = -1                           // The frame from a sequence of images (for example "Button0.png", "Button1.png", ...)
 		                    Color textColor = null               // The color of the text
-		                    textSize = 18                        // The font size in pixels   
+		                    textSize = 24                        // The font size in pixels   
 		                    textOffset = Vector2(0,0)            // Draw the text at this offset to the image
-		                    touchMargin = Vector2(16,16)         // The margin around the button within which it is touchable
-		                    showTouchArea = false                // Highlight the touchable area for debugging
+		                    clickableMargin = Vector2(16,16)     // The margin around the button within which it is clickable
+		                    showClickableArea = false            // Highlight the clickable area for debugging
+		                    scaleOnHover = 1.0                   // Scale the button by this factor when the mouse hovers over the button
+		                    frameOnHover = 1                     // Draw this frame when the mouse hovers over the button
+		                    Color textColorOnHover = null        // Draw the text in this color when the mouse hovers over the button
+		                    Image accentImage = null             // Draw this image tited with the accent color on top of the button
+		                    Color accentColor = null             // Tint the accent image with this color, defaults to the color of the local player
 		                    implicit Player[] visibleFor = null  // Only this player or list of players will see the button
-		                    implicit Player[] touchableBy = null // Only this player or list of players can touch or click the button
-		                    hotkey = Key.None                    // This keyboard shortcut will execute the onTouch handler
+		                    implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
+		                    hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
 		                    implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                    alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
-		                    enabled = true                       // When not enabled, the button isn't touchable and is drawn transparently (50% by default)
+		                    enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
 		                    alphaWhenDisabled = .5               // The opacity of the button will be multiplied with this factor when its disabled
-		                    void(Touch touch) onTouch = null     // Execute this code when the user touches or clicks the button or presses the hotkey
+		                    void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the button or presses the hotkey
 	                        SourceCodeLocation location
+		float scale = 1.0
+		Vector2 effectiveSize = image ? getEffectiveSize(image.size, size) : {getTextWidth(text, size:textSize), textSize}
+		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
+		if enabled and onClick != null
+			// Handle click (only visible buttons are clickable)
+			Vector2 sizeWithMargin = effectiveSize + clickableMargin
+			bool switchFrameOnHover = frameOnHover != -1 and frame == -1 and (image?.frames.length > frameOnHover or accentImage?.frames.length > frameOnHover)
+			if switchFrameOnHover or scaleOnHover != 1.0 or textColorOnHover
+				input.onTouchOver position, sizeWithMargin, by:effectiveClickableBy
+					if textColorOnHover:    textColor = textColorOnHover
+					if switchFrameOnHover:  frame = frameOnHover
+					if scaleOnHover != 1.0: scale = scaleOnHover
+			input.onTouchDown position, sizeWithMargin, by:effectiveClickableBy, showClickableArea, do:onClick
+			if hotkey
+				input.onKeyDown hotkey, by:effectiveClickableBy
+					onClick null
+					
 		if isVisibleFor(visibleFor)
+			if frame == -1: frame = 0
+			if scale != 1.0: textSize = math.round(textSize * scale); effectiveSize *= scale
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
 			if text:  drawText text, position+textOffset, textSize, textColor, visibleFor, layer, effectiveAlpha, location
-			if image: drawImage image, position, frame, size, visibleFor, layer, effectiveAlpha, location
+			if accentImage
+				if not accentColor
+					if effectiveClickableBy and effectiveClickableBy[0]: accentColor = effectiveClickableBy[0].color
+					else                                                 accentColor = input.localPlayer.color
+				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer, effectiveAlpha, location, color:accentColor
+			if image: drawImage image, position, frame, effectiveSize, visibleFor, layer, effectiveAlpha, location
 			
-		if enabled and onTouch != null
-			// Handle click (only visible buttons are clickable)
-			let effectivetouchableBy = gettouchableBy(visibleFor, touchableBy)
-			Vector2 effectiveSize = image ? getEffectiveSize(image.size, size) : {getTextWidth(text), textSize}
-			input.onTouchDownWithin position, effectiveSize + touchMargin, by:effectivetouchableBy, showTouchArea, do:onTouch
-			if hotkey
-				input.onKeyDown hotkey, by:effectivetouchableBy
-					onTouch null
 			
 	// ------------------------------------------------------- Rectangle -------------------------------------------------------
 	
@@ -541,19 +676,19 @@ transient skipInit global unit graphics
 		                          HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                          VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
 		                          SourceCodeLocation location
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
-			graphics_items.push(new DisplayRectangle(
-				graphics_totalMatrix,
+			graphics.items.push(new DisplayRectangle(
+				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha, graphics_currentClippingPath, "Rectangle", 
+				layer, alpha, graphics.currentClippingPath, "Rectangle", 
 				location, position.location, size.location,
-				color || !outlineColor ? (color || graphics_currentColor).hex : null,
+				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
-				outlineWidth || graphics_currentLineWidth
+				outlineWidth || graphics.currentLineWidth
 			))
 		}
 		
@@ -574,20 +709,20 @@ transient skipInit global unit graphics
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                                 HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                                 VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
-			graphics_items.push(new DisplayRoundedRectangle(
-				graphics_totalMatrix,
+			graphics.items.push(new DisplayRoundedRectangle(
+				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha, graphics_currentClippingPath, "RoundedRectangle", 
+				layer, alpha, graphics.currentClippingPath, "RoundedRectangle", 
 				location, position.location, size.location,
 				radius,
-				color || !outlineColor ? (color || graphics_currentColor).hex : null,
+				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
-				outlineWidth || graphics_currentLineWidth
+				outlineWidth || graphics.currentLineWidth
 			))
 		}
 		
@@ -614,27 +749,27 @@ transient skipInit global unit graphics
 		                       Color color = null                      // The color of the area within the circle
 		                       Color outlineColor = null               // The color of the outline around the circle
 		                       outlineWidth = 0                        // The width of the outline around the circle in pixels
-		                       Angle startAngle = -.25                 // Draw an arc with this start angle in turns, measured from the positive x-axis
+		                       Angle startAngle = 0                    // Draw an arc with this start angle in turns, measured from the positive x-axis
 		                       Angle angle = 1.0                       // Draw an arc with this angle in turns (0.25: quarter circle, 0.5: half circle, 1: full circle)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
 		                       implicit Player[] visibleFor = null     // Only this player or list of players will see the circle
 		                       implicit layer = 0                      // Higher layers are drawn in front of lower layers
 		                       alpha = 1.0                             // The opacity of the circle (0: fully transparent, 1: fully visible)
 		                       SourceCodeLocation location
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x, sizeY = size.y || size.x
-			graphics_items.push(new DisplayCircle(
-				graphics_totalMatrix, 
+			graphics.items.push(new DisplayCircle(
+				graphics.totalMatrix, 
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
-				layer, alpha, graphics_currentClippingPath, "Circle", 
+				layer, alpha, graphics.currentClippingPath, "Circle", 
 				location, position.location, size.location,
 				startAngle, angle,
 				direction == 1,
-				color || !outlineColor ? (color || graphics_currentColor).hex : null,
+				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
-				outlineWidth || graphics_currentLineWidth
+				outlineWidth || graphics.currentLineWidth
 			))
 		}
 		
@@ -653,16 +788,16 @@ transient skipInit global unit graphics
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                     implicit int layer = 0              // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
-		if(graphics_isVisibleFor(visibleFor)) {
-			graphics_items.push(new DisplayLine(
-				graphics_totalMatrix,
+		if(graphics.isVisibleFor(visibleFor)) {
+			graphics.items.push(new DisplayLine(
+				graphics.totalMatrix,
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
-				layer, alpha, graphics_currentClippingPath, "Line", 
+				layer, alpha, graphics.currentClippingPath, "Line", 
 				location, from.location, null,
 				to,
-				(color || graphics_currentColor).hex,
-				width || graphics_currentLineWidth
+				(color || graphics.currentColor).hex,
+				width || graphics.currentLineWidth
 			))
 		}
 		
@@ -680,17 +815,17 @@ transient skipInit global unit graphics
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                      implicit int layer = 0              // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
-		if(graphics_isVisibleFor(visibleFor)) {
-			graphics_items.push(new DisplayPolygon(
-				graphics_totalMatrix,
+		if(graphics.isVisibleFor(visibleFor)) {
+			graphics.items.push(new DisplayPolygon(
+				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer, alpha, graphics_currentClippingPath, "Line", 
+				layer, alpha, graphics.currentClippingPath, "Line", 
 				location, position.location, null,
 				points,
 				null, // no fill color, because we want to draw a line instead of a polygon
-				(color || graphics_currentColor).hex,
-				width || graphics_currentLineWidth,
+				(color || graphics.currentColor).hex,
+				width || graphics.currentLineWidth,
 				smooth, /*close*/false
 			))
 		}
@@ -712,17 +847,17 @@ transient skipInit global unit graphics
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
 		                        implicit int layer = 0              // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
-		if(graphics_isVisibleFor(visibleFor)) {
-			graphics_items.push(new DisplayPolygon(
-				graphics_totalMatrix,
+		if(graphics.isVisibleFor(visibleFor)) {
+			graphics.items.push(new DisplayPolygon(
+				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer, alpha, graphics_currentClippingPath, "Polygon", 
+				layer, alpha, graphics.currentClippingPath, "Polygon", 
 				location, position.location, null,
 				points,
-				color || !outlineColor ? (color || graphics_currentColor).hex : null,
+				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
-				outlineWidth || graphics_currentLineWidth,
+				outlineWidth || graphics.currentLineWidth,
 				smooth, /*close*/true
 			))
 		}
@@ -794,17 +929,17 @@ transient skipInit global unit graphics
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(!texture?.ensureIsAvailable()) return
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
-			graphics_items.push(new DisplayImage(
-				graphics_totalMatrix,
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer, alpha, graphics_currentClippingPath, texture.file,
+				layer, alpha, graphics.currentClippingPath, texture.file,
 				location, position.location, size.location,
-				texture._htmlImage,
+				texture.imageOrCanvas,
 				0, 0, texture.size.x, texture.size.y,
 				color
 			))
@@ -827,17 +962,17 @@ transient skipInit global unit graphics
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(!texture?.ensureIsAvailable()) return
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
-			graphics_items.push(new DisplayImage(
-				graphics_totalMatrix,
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer, alpha, graphics_currentClippingPath, texture.file, 
+				layer, alpha, graphics.currentClippingPath, texture.file, 
 				location, position.location, size.location,
-				texture._htmlImage,
+				texture.imageOrCanvas,
 				sourcePosition.x+texture.size.x/2-sourceSize.x/2,
 				sourcePosition.y+texture.size.y/2-sourceSize.y/2,
 				sourceSize.x, 
@@ -860,15 +995,15 @@ transient skipInit global unit graphics
 		                           implicit layer = 0                  // Higher layers are drawn in front of lower layers
                                    HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
                                    VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
-		if(graphics_isVisibleFor(visibleFor)) {
+		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
-			graphics_items.push(new DisplayRectangle(
-				graphics_totalMatrix,
+			graphics.items.push(new DisplayRectangle(
+				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, 1, graphics_currentClippingPath, "Clear", 
+				layer, 1, graphics.currentClippingPath, "Clear", 
 				location, position.location, size.location,
 				"clear", null, 0
 			))
@@ -1035,6 +1170,7 @@ transient skipInit global unit graphics
 	
 	// Teh default player colors
 	const Color[] defaultColors = [{"#398CA9", "Blue"}, {"#C01352", "Red"}, {"#16C66E", "Green"}, {"#FFD166", "Yellow"}]
+	const Color[] darkDefaultColors = [{"#193742", "Dark Blue"}, {"#470B21", "Dark Red"}, {"#0A3620", "Dark Green"}, {"#4B3F21", "Dark Yellow"}]
 
 	// The default color for all drawing operations
 	color
@@ -1107,16 +1243,19 @@ transient skipInit global unit graphics
 		                        implicit Vector2 size = {}  // The font size of the text
 		                        Font font = null            // The font of the text
 		                        FontStyle style = Normal    // Whether the text should be bold or normal style
-		let effectiveFont = font || graphics_currentFont
-		let fontSize = size.y || size.x || graphics_currentFontSize
-		graphics_context.font =  (style ? "bold ":"")+fontSize+"px "+effectiveFont.name;
-		let textSize = graphics_context.measureText(text)
+		let effectiveFont = font || graphics.currentFont
+		let fontSize = size.y || size.x || graphics.currentFontSize
+		graphics.context.font =  (style ? "bold ":"")+fontSize+"px "+effectiveFont.name;
+		let textSize = graphics.context.measureText(text)
 		return textSize.width
 		
 	// ------------------------------------------------------- Position -------------------------------------------------------
 	
 	getAbsolutPosition: Vector2 position
 		return position.getTransformed(localMatrix)
+		
+	getRelativePosition: Vector2 position
+		return position.getRelativeTo(localMatrix)
 		
 	getPixelPosition: Vector2 position
 		return position.getTransformed(totalMatrix) / pixelRatio
@@ -1154,7 +1293,8 @@ transient skipInit global unit graphics
 	private getScaleImagesAsPointerGetsCloserFactor: Vector2 position
 		if not scaleAsPointerGetsCloserRadius: return 1.0
 		let distance = scaleAsPointerGetsCloserBy ? scaleAsPointerGetsCloserBy.pointerPosition.distanceTo(position) : players.min.pointerPosition.distanceTo(position)
-		return math.map distance, 0, scaleAsPointerGetsCloserRadius, scaleAsPointerGetsCloserFactor, 1
+		// return math.map distance, 0, scaleAsPointerGetsCloserRadius, scaleAsPointerGetsCloserFactor, 1
+		return scaleAsPointerGetsCloserFactor interpolateTo 1 progress:distance 0..scaleAsPointerGetsCloserRadius
 		
 	// --------------------------------------------- Create and Manipulate Images ---------------------------------------------
 	
@@ -1162,39 +1302,46 @@ transient skipInit global unit graphics
 	js void createImage: Vector2 size     // The size of the image
 		                 string file = "" // Save the image to a file with this filename
 		                 void() code      // This block of code will draw on the created image instead of drawing on the screen
-		let prevContext = graphics_context
-		let prevPixelSizeX = graphics_pixelSize.x
-		let prevPixelSizeY = graphics_pixelSize.y
-		let prevItems = graphics_items
-		graphics_items = []
+		let prevContext = graphics.context
+		let prevPixelSizeX = graphics.pixelSize.x
+		let prevPixelSizeY = graphics.pixelSize.y
+		let prevItems = graphics.items
+		graphics.items = []
 		let canvas = document.createElement("canvas")
 		canvas.width = size.x
 		canvas.height = size.y
-		graphics_context = canvas.getContext("2d")
-		graphics_pixelSize.x = size.x
-		graphics_pixelSize.y = size.y
-		let a = graphics_localMatrix.matrix, b = graphics_totalMatrix.matrix
-		let a0 = graphics_localMatrix.m0, a1 = graphics_localMatrix.m1, a2 = graphics_localMatrix.m2, a3 = graphics_localMatrix.m3, a4 = graphics_localMatrix.m4, a5 = graphics_localMatrix.m5
-		let b0 = graphics_totalMatrix.m0, b1 = graphics_totalMatrix.m1, b2 = graphics_totalMatrix.m2, b3 = graphics_totalMatrix.m3, b4 = graphics_totalMatrix.m4, b5 = graphics_totalMatrix.m5
-		graphics_localMatrix.set(1, 0, 0, 1, -size.x/2, -size.y/2)
-		graphics_totalMatrix.set(1, 0, 0, 1, size.x/2, size.y/2)
+		graphics.context = canvas.getContext("2d")
+		graphics.pixelSize.x = size.x
+		graphics.pixelSize.y = size.y
+		let a = graphics.localMatrix.matrix, b = graphics.totalMatrix.matrix
+		let a0 = graphics.localMatrix.m0, a1 = graphics.localMatrix.m1, a2 = graphics.localMatrix.m2, a3 = graphics.localMatrix.m3, a4 = graphics.localMatrix.m4, a5 = graphics.localMatrix.m5
+		let b0 = graphics.totalMatrix.m0, b1 = graphics.totalMatrix.m1, b2 = graphics.totalMatrix.m2, b3 = graphics.totalMatrix.m3, b4 = graphics.totalMatrix.m4, b5 = graphics.totalMatrix.m5
+		graphics.localMatrix.set(1, 0, 0, 1, -size.x/2, -size.y/2)
+		graphics.totalMatrix.set(1, 0, 0, 1, size.x/2, size.y/2)
 		code()
-		graphics_drawItems()
+		graphics.drawItems()
 		var dataUrl = canvas.toDataURL("image/png");
-		if(file) file_saveImage(dataUrl, file);
-		graphics_localMatrix.m0 = a0; graphics_localMatrix.m1 = a1; graphics_localMatrix.m2 = a2; graphics_localMatrix.m3 = a3; graphics_localMatrix.m4 = a4; graphics_localMatrix.m5 = a5
-		graphics_totalMatrix.m0 = b0; graphics_totalMatrix.m1 = b1; graphics_totalMatrix.m2 = b2; graphics_totalMatrix.m3 = b3; graphics_totalMatrix.m4 = b4; graphics_totalMatrix.m5 = b5
-		graphics_context = prevContext
-		graphics_pixelSize.x = prevPixelSizeX
-		graphics_pixelSize.y = prevPixelSizeY
-		graphics_items = prevItems
+		if(file) file.saveImage(dataUrl, file);
+		graphics.localMatrix.m0 = a0; graphics.localMatrix.m1 = a1; graphics.localMatrix.m2 = a2; graphics.localMatrix.m3 = a3; graphics.localMatrix.m4 = a4; graphics.localMatrix.m5 = a5
+		graphics.totalMatrix.m0 = b0; graphics.totalMatrix.m1 = b1; graphics.totalMatrix.m2 = b2; graphics.totalMatrix.m3 = b3; graphics.totalMatrix.m4 = b4; graphics.totalMatrix.m5 = b5
+		graphics.context = prevContext
+		graphics.pixelSize.x = prevPixelSizeX
+		graphics.pixelSize.y = prevPixelSizeY
+		graphics.items = prevItems
 		return dataUrl
+		
+	js void copyScreenshotToClipboard
+		graphics.canvas.toBlob((blob) => {
+			const item = new ClipboardItem({ 'image/png': blob });
+			navigator.clipboard.write([item]);
+			log("Copied screenshot to clipboard");
+		});
 	
 	// Directly manipulate the pixels on the screen or an image
 	js int[] accessPixel: void(int[] pixels) code // This code can manipulate the pixels
-		let imageData = graphics_context.getImageData(0,0,graphics_pixelSize.x, graphics_pixelSize.y)
+		let imageData = graphics.context.getImageData(0,0,graphics.pixelSize.x, graphics.pixelSize.y)
 		code(imageData.data)
-		graphics_context.putImageData(imageData, 0, 0)
+		graphics.context.putImageData(imageData, 0, 0)
 		
 immutable struct GizomInfluence
 	string file
@@ -1247,7 +1394,8 @@ skipInit transient unit gizmo
 					if .y < min.y: min.y = .y
 					if .x + .w > max.x: max.x = .x + .w
 					if .y + .h > max.y: max.y = .y + .h
-		handleSize = math.map math.min(max.x-min.x, max.y-min.y) 64..256 start:16 target:32
+		// handleSize = math.map math.min(max.x-min.x, max.y-min.y) 64..256 start:16 target:32
+		handleSize = 16 interpolateTo 32 progress:math.min(max.x-min.x, max.y-min.y) 64..256
 	
 	internal tick
 		if Platform.mode != Manipulator: return
@@ -1423,20 +1571,20 @@ transient immutable DisplayItem
 		if(points.length >= 2) {
 			let x = this.x, y = this.y
 			let firstPos = points[points.length-1]
-			graphics_context.beginPath();
-			graphics_context.moveTo(firstPos.x, firstPos.y)
-			for(let p of points) graphics_context.lineTo(p.x, p.y)
+			graphics.context.beginPath();
+			graphics.context.moveTo(firstPos.x, firstPos.y)
+			for(let p of points) graphics.context.lineTo(p.x, p.y)
 			if(this.clippingPath.show) {
-				graphics_context.fillStyle = "#ff000080"
-				graphics_context.fill()
+				graphics.context.fillStyle = "#ff000080"
+				graphics.context.fill()
 			}
-			graphics_context.save()
-			graphics_context.clip()
+			graphics.context.save()
+			graphics.context.clip()
 		}
 		
 	js void endClipping
 		if(this.clippingPath.points.length >= 2)
-			graphics_context.restore()
+			graphics.context.restore()
 			
 transient DisplayItem DisplayImage
 	object htmlImage
@@ -1444,12 +1592,12 @@ transient DisplayItem DisplayImage
 	Color color
 	js void draw
 		if(this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 			
-		if(this.color.hex == "#ffffff") {
-			try{ graphics_context.drawImage(this.htmlImage, this.sx, this.sy, this.sw, this.sh, this.x, this.y, this.w, this.h) }
+		if(this.color.hex == "#ffffff" || this.color.hex == "#ffffffff") {
+			try{ graphics.context.drawImage(this.htmlImage, this.sx, this.sy, this.sw, this.sh, this.x, this.y, this.w, this.h) }
 			catch(e) { log("DisplayImage: "+e.message) }
 		} else {
 			// Create offscreen buffer
@@ -1472,7 +1620,7 @@ transient DisplayItem DisplayImage
 			offscreenContext.drawImage(this.htmlImage, this.sx, this.sy, this.sw, this.sh, 0, 0, this.sw, this.sh)
 				
 			// Draw tinted image
-	        graphics_context.drawImage(offscreenCanvas, this.x, this.y, this.w, this.h);		
+	        graphics.context.drawImage(offscreenCanvas, this.x, this.y, this.w, this.h);		
 		}
 		
 		if(this.clippingPath) this.endClipping()
@@ -1484,18 +1632,18 @@ transient DisplayItem DisplayText
 	string font
 	js void draw
 		if(this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 			
-		graphics_context.font = this.font
+		graphics.context.font = this.font
 		if(this.outlineColor) {
-			graphics_context.lineWidth = this.outlineWidth
-			graphics_context.strokeStyle = this.outlineColor
-			graphics_context.strokeText(this.name, this.x, this.y)
+			graphics.context.lineWidth = this.outlineWidth
+			graphics.context.strokeStyle = this.outlineColor
+			graphics.context.strokeText(this.name, this.x, this.y)
 		}
-		graphics_context.fillStyle = this.fillStyle
-		graphics_context.fillText(this.name, this.x, this.y - this.offsetY)
+		graphics.context.fillStyle = this.fillStyle
+		graphics.context.fillText(this.name, this.x, this.y - this.offsetY)
 		
 		if(this.clippingPath) this.endClipping()
 		
@@ -1504,22 +1652,22 @@ transient DisplayItem DisplayRectangle
 	float outlineWidth
 	js void draw
 		if(this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 			
 		if(this.color == "clear") {
-			graphics_context.clearRect(this.x, this.y, this.w, this.h)
+			graphics.context.clearRect(this.x, this.y, this.w, this.h)
 		}
 		else
 		if(this.color) {
-			graphics_context.fillStyle = this.color
-			graphics_context.fillRect(this.x, this.y, this.w, this.h)
+			graphics.context.fillStyle = this.color
+			graphics.context.fillRect(this.x, this.y, this.w, this.h)
 		}
 		if(this.outlineColor) {
-			graphics_context.lineWidth = this.outlineWidth
-			graphics_context.strokeStyle = this.outlineColor
-			graphics_context.strokeRect(this.x, this.y, this.w, this.h)
+			graphics.context.lineWidth = this.outlineWidth
+			graphics.context.strokeStyle = this.outlineColor
+			graphics.context.strokeRect(this.x, this.y, this.w, this.h)
 		}
 		if(this.clippingPath) this.endClipping()
 		
@@ -1529,45 +1677,45 @@ transient DisplayItem DisplayRoundedRectangle
 	float outlineWidth
 	js void draw
 		if(this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 		let sizeX = this.w, sizeY = this.h, x = this.x, y = this.y, radius = this.radius
 		
 		// Arcs
-		graphics_context.beginPath();
-		graphics_context.moveTo(x + radius, y);
-		graphics_context.lineTo(x + sizeX - radius, y);
-		graphics_context.arcTo(x + sizeX, y, x + sizeX, y + radius, radius);
-		graphics_context.lineTo(x + sizeX, y + sizeY - radius);
-		graphics_context.arcTo(x + sizeX, y + sizeY, x + sizeX - radius, y + sizeY, radius);
-		graphics_context.lineTo(x + radius, y + sizeY);
-		graphics_context.arcTo(x, y + sizeY, x, y + sizeY - radius, radius);
-		graphics_context.lineTo(x, y + radius);
-		graphics_context.arcTo(x, y, x + radius, y, radius);
-		graphics_context.closePath();
+		graphics.context.beginPath();
+		graphics.context.moveTo(x + radius, y);
+		graphics.context.lineTo(x + sizeX - radius, y);
+		graphics.context.arcTo(x + sizeX, y, x + sizeX, y + radius, radius);
+		graphics.context.lineTo(x + sizeX, y + sizeY - radius);
+		graphics.context.arcTo(x + sizeX, y + sizeY, x + sizeX - radius, y + sizeY, radius);
+		graphics.context.lineTo(x + radius, y + sizeY);
+		graphics.context.arcTo(x, y + sizeY, x, y + sizeY - radius, radius);
+		graphics.context.lineTo(x, y + radius);
+		graphics.context.arcTo(x, y, x + radius, y, radius);
+		graphics.context.closePath();
 		
 		// Quadratic Curves
-		// graphics_context.beginPath();
-		// graphics_context.moveTo(x + radius, y);
-		// graphics_context.lineTo(x + sizeX - radius, y);
-		// graphics_context.quadraticCurveTo(x + sizeX, y, x + sizeX, y + radius);
-		// graphics_context.lineTo(x + sizeX, y + sizeY - radius);
-		// graphics_context.quadraticCurveTo(x + sizeX, y + sizeY, x + sizeX - radius, y + sizeY);
-		// graphics_context.lineTo(x + radius, y + sizeY);
-		// graphics_context.quadraticCurveTo(x, y + sizeY, x, y + sizeY - radius);
-		// graphics_context.lineTo(x, y + radius);
-		// graphics_context.quadraticCurveTo(x, y, x + radius, y);
-		// graphics_context.closePath();
+		// graphics.context.beginPath();
+		// graphics.context.moveTo(x + radius, y);
+		// graphics.context.lineTo(x + sizeX - radius, y);
+		// graphics.context.quadraticCurveTo(x + sizeX, y, x + sizeX, y + radius);
+		// graphics.context.lineTo(x + sizeX, y + sizeY - radius);
+		// graphics.context.quadraticCurveTo(x + sizeX, y + sizeY, x + sizeX - radius, y + sizeY);
+		// graphics.context.lineTo(x + radius, y + sizeY);
+		// graphics.context.quadraticCurveTo(x, y + sizeY, x, y + sizeY - radius);
+		// graphics.context.lineTo(x, y + radius);
+		// graphics.context.quadraticCurveTo(x, y, x + radius, y);
+		// graphics.context.closePath();
 		
 		if(this.color) {
-			graphics_context.fillStyle = this.color
-			graphics_context.fill()
+			graphics.context.fillStyle = this.color
+			graphics.context.fill()
 		}
 		if(this.outlineColor) {
-			graphics_context.lineWidth = this.outlineWidth
-			graphics_context.strokeStyle = this.outlineColor
-			graphics_context.stroke()
+			graphics.context.lineWidth = this.outlineWidth
+			graphics.context.strokeStyle = this.outlineColor
+			graphics.context.stroke()
 		}
 		if(this.clippingPath) this.endClipping()
 		
@@ -1578,42 +1726,42 @@ transient DisplayItem DisplayPolygon
 	bool smooth, close
 	js void draw
 		if(this.points.length < 2 || this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 		let x = this.x, y = this.y
 		let points = this.points, startPoint = points[0]
 		
-		graphics_context.beginPath();
-		graphics_context.moveTo(x + startPoint.x, y + startPoint.y)
+		graphics.context.beginPath();
+		graphics.context.moveTo(x + startPoint.x, y + startPoint.y)
 		
 		if(!this.smooth || points.length < 3) {
 			for(let i=1, len = points.length; i<len; ++i) {
 				let p = points[i]
-				graphics_context.lineTo(x + p.x, y + p.y)
+				graphics.context.lineTo(x + p.x, y + p.y)
 			}
 		} else {
 			for(var i = 1, len = points.length - 2; i<len; i++)
 			{
 				let p1 = points[i], p2 = points[i + 1]
-				graphics_context.quadraticCurveTo(p1.x, p1.y, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+				graphics.context.quadraticCurveTo(p1.x, p1.y, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
 			}
 			let p1 = points[i], p2 = points[i + 1]
-			graphics_context.quadraticCurveTo(p1.x, p1.y, p2.x,p2.y);
+			graphics.context.quadraticCurveTo(p1.x, p1.y, p2.x,p2.y);
 		}
 		if(this.close || this.color) {
-			graphics_context.closePath()
+			graphics.context.closePath()
 		}
 		if(this.color) {
 			// Close the polygon and fill it
-			graphics_context.fillStyle = this.color
-			graphics_context.fill()
+			graphics.context.fillStyle = this.color
+			graphics.context.fill()
 		}
 		if(this.outlineColor) {
 			// Draw outline
-			graphics_context.lineWidth = this.outlineWidth
-			graphics_context.strokeStyle = this.outlineColor
-			graphics_context.stroke()
+			graphics.context.lineWidth = this.outlineWidth
+			graphics.context.strokeStyle = this.outlineColor
+			graphics.context.stroke()
 		}
 		if(this.clippingPath) this.endClipping()
 		
@@ -1624,31 +1772,32 @@ transient DisplayItem DisplayCircle
 	float outlineWidth
 	js void draw
 		if(this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 			
-		graphics_context.beginPath();
+		graphics.context.beginPath();
 		if(this.w == this.h) {
 			let radius = this.w/2
 			if(this.angle == 1) {
-				graphics_context.arc(this.x+radius, this.y+radius, radius, 0, math_TwoPI, this.direction);
+				graphics.context.arc(this.x+radius, this.y+radius, radius, 0, math.TwoPI, this.direction);
 			} else {
-				graphics_context.arc(this.x+radius, this.y+radius, radius, this.startAngle*math_TwoPI, (this.startAngle+this.angle)*math_TwoPI, this.direction);
+				let startAngle = this.startAngle - .25
+				graphics.context.arc(this.x+radius, this.y+radius, radius, startAngle*math.TwoPI, (startAngle+this.angle)*math.TwoPI, this.direction);
 			}
 		} else {
 			let radiusX = this.w/2
 			let radiusY = this.h/2
-			graphics_context.ellipse(this.x+radiusX, this.y+radiusY, radiusX, radiusY, 0, math_TwoPI, this.direction);
+			graphics.context.ellipse(this.x+radiusX, this.y+radiusY, radiusX, radiusY, 0, math.TwoPI, this.direction);
 		}
 		if(this.color) {
-			graphics_context.fillStyle = this.color
-			graphics_context.fill()
+			graphics.context.fillStyle = this.color
+			graphics.context.fill()
 		}
 		if(this.outlineColor) {
-			graphics_context.lineWidth = this.outlineWidth
-			graphics_context.strokeStyle = this.outlineColor
-			graphics_context.stroke()
+			graphics.context.lineWidth = this.outlineWidth
+			graphics.context.strokeStyle = this.outlineColor
+			graphics.context.stroke()
 		}
 		if(this.clippingPath) this.endClipping()
 		
@@ -1658,16 +1807,16 @@ transient DisplayItem DisplayLine
 	float outlineWidth
 	js void draw
 		if(this.alpha == 0) return
-		graphics_context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
-		graphics_context.globalAlpha = this.alpha
+		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
+		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
 		
-		graphics_context.beginPath();
-		graphics_context.moveTo(this.x,this.y)
-		graphics_context.lineTo(this.end.x, this.end.y)
-		graphics_context.lineWidth = this.outlineWidth
-		graphics_context.strokeStyle = this.outlineColor
-		graphics_context.stroke()
+		graphics.context.beginPath();
+		graphics.context.moveTo(this.x,this.y)
+		graphics.context.lineTo(this.end.x, this.end.y)
+		graphics.context.lineWidth = this.outlineWidth
+		graphics.context.strokeStyle = this.outlineColor
+		graphics.context.stroke()
 		
 		if(this.clippingPath) this.endClipping()
 			
