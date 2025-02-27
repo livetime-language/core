@@ -1,4 +1,4 @@
-class AStarNode
+internal class AStarNode
 	IntVector2 pos
 	combinedCost = 0
 	travelCostSoFar = 0
@@ -8,7 +8,7 @@ class AStarNode
 	exploredAllNeighbors = false
 	AStarNode previousNode
 
-class BinaryHeap
+internal class BinaryHeap
 	AStarNode[] content
 
 	push: AStarNode element
@@ -464,7 +464,7 @@ unit algorithms
 		return targetPosition
 				
 		
-PriorityQueue
+internal class PriorityQueue
 	PathfindingNode[] content
 
 	push: PathfindingNode element
@@ -574,11 +574,11 @@ PriorityQueue
 				// Otherwise, we are done.
 				break
 				
-PathfindingNeighbor
+internal PathfindingNeighbor
 	PathfindingNode node
 	float cost = 0.0
 				
-PathfindingNode
+internal PathfindingNode
 	transient static int searchNumber
 		
 	Vector2 location

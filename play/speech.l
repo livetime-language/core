@@ -1,11 +1,11 @@
-interface SpeechSynthesisVoice
+internal interface SpeechSynthesisVoice
 	bool default // Indicates whether the voice is the default voice for the current app language
 	string lang // Returns a BCP 47 language tag indicating the language of the voice.
 	bool localService // Indicates if its local speech synthesizer service (true) or a remote service (false)
 	string name // Returns a human-readable name that represents the voice.
 	string voiceURI // Returns the type of URI and location of the speech synthesis service for this voice.
 	
-VoicePreference
+internal VoicePreference
 	string lang
 	string langAndCountry
 	string[] names

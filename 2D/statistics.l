@@ -1,6 +1,6 @@
 skipInit transient unit statistics
 	const Color backgroundColor = {"#202020"}
-	draw
+	internal draw
 		Vector2 startPos = position + size
 		Vector2 labelPos = position + {size.x/2, -12}
 		const height = size.y - 20
@@ -31,8 +31,8 @@ skipInit transient unit statistics
 		drawText "#{core.frame} {maxValue}", {position.x+size.x-8, labelPos.y}, align:Right, size:12
 		drawRectangle position, size, color:backgroundColor, align:Left, valign:Top
 		
-unit networkVisualizer
-	draw
+internal unit networkVisualizer
+	internal draw
 		if core.simulateInputsForTesting
 			for players -> player
 				drawCircle {1110+player.index*20, -540+posForPlayer[player.index]}, size:20, color:.color

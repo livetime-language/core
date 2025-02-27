@@ -202,12 +202,12 @@ class Object
 		
 Object RectangleObject
 	Color color = White
-	override tick
+	internal override tick
 		if alpha: drawRectangle position, size, color, visibleFor, layer, alpha
 
 Object CircleObject
 	Color color = White
-	override tick
+	internal override tick
 		if alpha: drawCircle position, size, color:color, visibleFor, layer
 
 global transient unit System
@@ -225,7 +225,7 @@ Object VisualizeObject
 	int index
 	string text
 	
-	override tick
+	internal override tick
 		drawText index, position, color:Black, layer:int.maxValue, size:30
 		drawText text, position+{0,32}, color, layer:int.maxValue, size:14
 		drawCircle position, size, color, layer:int.maxValue
@@ -238,7 +238,7 @@ Object TextObject
 	VerticalAlignment valign = Middle  // The vertical alignment of the text
 	float maxWidth
 	
-	override tick
+	internal override tick
 		if alpha: drawText text, position, size, angle, color, align, valign, font, visibleFor, alpha, layer, maxWidth
 		
 // Draw text around a circle
@@ -250,7 +250,7 @@ Object CircularTextObject
 	Angle angle = 0      // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
 	float spacing = .2   // The spacing between the letters of the text
 	
-	override tick
+	internal override tick
 		if alpha: drawCircularText text, position, size.x, color, font, layer, radius, angle, spacing, visibleFor
 		
 Object ImageObject
@@ -259,7 +259,7 @@ Object ImageObject
 	ImageObject
 		if size.x == 0 and size.y == 0: size = image.size
 	
-	override tick
+	internal override tick
 		if alpha: drawImage image, position, size, angle, alpha, visibleFor, layer
 		
 Object Effect
@@ -270,7 +270,7 @@ Object Effect
 	Effect
 		if size.x == 0 and size.y == 0: size = image.size
 	
-	override tick
+	internal override tick
 		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
 		if alpha and frame < image.frames.length
 			drawImage image, position, size, alpha, visibleFor, layer, frame, location
@@ -280,7 +280,8 @@ Object Effect
 Object VideoObject
 	Player player
 	VideoShape shape
-	override tick
+
+	internal override tick
 		if alpha and player: drawVideo player, position, size, shape
 			
 Object Button
@@ -301,7 +302,7 @@ Object Button
     void(Touch touch) onClick    // Execute this code when the user clicks the button
 	bool removeOnClick = false   // Remove the button after the user clicks it
 	
-	override tick
+	internal override tick
 		if alpha
 			drawButton image, text, position, textColor, frame, size, fontSize, clickableMargin, textOffset, scaleOnHover, frameOnHover, showClickableArea, visibleFor, clickableBy, hotkey, layer, alpha, enabled, alphaWhenDisabled
 			onClick:
@@ -317,7 +318,7 @@ Object StandardButton
     void(Touch touch) onClick    // Execute this code when the user clicks the button
 	bool removeOnClick = false   // Remove the button after the user clicks it
 	
-	override tick
+	internal override tick
 		if alpha
 			drawStandardButton text, position, visibleFor, clickableBy, hotkey, layer, enabled
 			onClick:
@@ -346,9 +347,9 @@ Object ParticleSystem
 	angleSpread = 1.0
 	
 	private int burst
-	debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
+	internal debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
 	
-	override tick
+	internal override tick
 		if Time.now > nextBurst
 			if mode == OneParticlePerImageFrame
 				for image.frames.length
@@ -406,7 +407,7 @@ Object Menu
 			items.add    {image:Back, "Back to Lobby",   onClick:lobby.show}
 			items.add    {image:Quit, "Exit Fullscreen", onClick:Platform.setFullscreen false, forPlayer:touch.by}
 		
-	override tick
+	internal override tick
 		bool doNotClose
 		if active
 			forPositions items, center:popupPosition, delta:{0,60} -> item
@@ -435,7 +436,7 @@ Object Menu
 		
 enum MenuItemType: Button, Check, Radio
 		
-class MenuItem
+internal class MenuItem
 	immutable Image image
 	immutable string label
 	immutable MenuItemType type = Button

@@ -227,7 +227,7 @@ unit lobby
 Player
 	bool showSettingsInLobby
 	
-Object LobbyTextField
+internal Object LobbyTextField
 	string text
 	Font font
 	Color color = White

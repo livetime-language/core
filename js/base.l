@@ -1722,7 +1722,7 @@ struct Reference<T>
 		return container[key]
 		
 // This struct is automatically filled with the source code location
-transient immutable SourceCodeLocation
+internal transient immutable SourceCodeLocation
 	string file
 	int start
 	int end
@@ -2310,14 +2310,7 @@ global skipInit unit math
 		string token
 		for length: token += chars[math.randomInteger chars.length-1]
 		return token
-
-struct Average
-	float total
-	int count
-	add: float value
-		total += value
-		count++
-	average := total / count		
+		
 
 struct RollingList
 	int length = 30
@@ -2379,7 +2372,7 @@ unit Loca
 	visible string locale = defaultLocaleForLanguage[language]
 	string languageName := languageNames[language]
 	
-	init
+	internal init
 		setLanguage English
 	
 	js void setLanguage: Language language

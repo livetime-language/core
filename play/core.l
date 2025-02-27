@@ -1,8 +1,8 @@
 enum NetworkMode: None, Ping, Local, Connected
-transient immutable RoomInfo: int time, userId
+internal transient immutable RoomInfo: int time, userId
 enum SendInputsMode: None, Peer, Server
 	
-transient skipInit unit core
+internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
 	bool enabledMilestones = true
@@ -761,7 +761,7 @@ transient skipInit unit core
 		log "{errorMessage}"
 		Platform.sendErrorToEditor error
 		
-transient unit Snapshot
+internal transient unit Snapshot
 	int autoSaveCount
 	int lastSnapshotSize
 	
@@ -820,7 +820,7 @@ global transient unit System
 			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location ? location.start : 0, file:location ? location.file: ""});
 		}
 
-class StatisticsGraph
+internal class StatisticsGraph
 	int userIndex = -1
 	int set
 	string label = null
@@ -843,7 +843,7 @@ class StatisticsGraph
 	addDirectly: float value
 		values.add value
 			
-immutable StatisticsInfo
+internal immutable StatisticsInfo
 	float value
 	int index
 	int frame

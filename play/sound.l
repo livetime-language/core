@@ -69,7 +69,7 @@ skipInit immutable Sound
 		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
 		return this
 
-transient PlayingSound
+internal transient PlayingSound
 	immutable Sound sound
 	immutable int frame
 	bool isConfirmed

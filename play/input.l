@@ -1,5 +1,5 @@
 // The internal state of a user that isn't serialized and shoudn't be accessed by the app
-transient class InternalUser
+internal transient class InternalUser
 	int id              // This id stays the same when a user reconnects
 	bool local          // Is this the local user?
 	int connectionId    // The connectionId increases with every connection, even if the same user reconnects
@@ -141,7 +141,7 @@ priority class Player
 					downTouches.remove .
 					.isDown = false
 				
-UserAccount
+internal UserAccount
 	string _id
 	Language language
 	string email
@@ -156,7 +156,7 @@ enum TouchPhase: Still, Down, Move, Up
 enum TouchType: Left, Middle, Right, Touch, Pen
 
 // A touch or a click
-class Touch
+internal Touch
 	int id
 	Player by
 	TouchPhase phase
@@ -175,7 +175,7 @@ class Touch
 	
 	markAsHandled() handled = true
 	
-transient class ScrollEvent
+internal transient ScrollEvent
 	immutable int userId
 	immutable Vector2 delta
 	immutable bool isPinch
@@ -342,7 +342,7 @@ enum Cursor
 	Auto = "auto" // The cursor will be based on the current context, for example "text" when hovering text
 	None = "none" // No cursor is rendered
 	
-class DigitalButton
+internal DigitalButton
 	string name
 	Key key
 	
@@ -362,14 +362,14 @@ class DigitalButton
 		prevState = state
 		state = false
 		
-transient immutable struct ControllerButtonPlayerAndIndex
+internal transient immutable struct ControllerButtonPlayerAndIndex
 	int userId
 	int buttonIndex
 	
 enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Select, Start, Menu
 	
 enum GameControllerType: Keyboard, Xbox, PlayStation
-class GameController
+internal GameController
 	const deadZone = .1
 	
 	// Sticks
@@ -408,11 +408,11 @@ enum ShowPointersMode
 	Remote         // Show the mouse pointer only for remote players
 	LocalAndRemote // Show the mouse pointers of all players
 	
-immutable class InternetGamePadButton
+internal immutable InternetGamePadButton
 	bool pressed, touched
 	float value
 	
-immutable class InternetGamePad
+internal immutable InternetGamePad
 	float[] axes
 	InternetGamePadButton[] buttons
 	string id

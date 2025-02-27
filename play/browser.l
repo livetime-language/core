@@ -159,7 +159,7 @@ unit file
 		document.body.appendChild(fileInput)
 		fileInput.click()
 	
-HTMLElement
+internal HTMLElement
 	Vector2 position, size = {1920,100}
 	Color color
 	
@@ -177,7 +177,7 @@ HTMLElement
 			}
 		}
 		
-HTMLElement HTMLInput
+internal HTMLElement HTMLInput
 	fontSize = 50
 	borderColor = Color("ffffff00")
 	HorizontalAlignment align = Center
@@ -234,14 +234,14 @@ HTMLElement HTMLInput
 		// this.element.style.height = "{size.y}px"
 		// this.element.style.font = "{fontSize}px OpenSans"
 		
-IndexedDBIndex
+internal IndexedDBIndex
 	string name
 	string[] keyPaths
 	
 	IndexedDBIndex
 		if not keyPaths: keyPaths.add name
 		
-IndexedDBStore
+internal IndexedDBStore
 	string name
 	IndexedDBIndex[] indices
 	
@@ -335,7 +335,7 @@ IndexedDBStore
 			else?.();
 		}
 
-transient skipInit unit IndexedDB
+internal transient skipInit unit IndexedDB
 	internal dynamic db
 	IndexedDBStore[] stores
 	

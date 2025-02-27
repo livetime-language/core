@@ -1,4 +1,4 @@
-transient class Buffer
+internal transient class Buffer
 	js void writeInt: int value
 		if(value <= -2147483647 || value >= 2147483647)
 			throw new Error("Value out of integer range: "+value)

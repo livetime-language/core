@@ -477,7 +477,7 @@ immutable class DateTime
 		return cast "{year}-{twoDigitMonth}-{twoDigitDay} {twoDigitHour}:{twoDigitMinute}:{twoDigitSecond}"
 		
 // Calculate dates using the JavaScript Date class
-js(Date) transient class Date
+js(Date) internal transient class Date
 	inline js Date() new Date()
 	static inline js Date now := new Date()
 		

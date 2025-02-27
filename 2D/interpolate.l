@@ -1,4 +1,4 @@
-immutable EaseFunction
+internal immutable EaseFunction
 	float(float x) function
 	
 	// Interpolate linearly without easing

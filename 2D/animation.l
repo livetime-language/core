@@ -162,34 +162,34 @@ transient global skipInit unit audio
 		if Time.now >= at and Time.now < math.floor at + core.frameTime
 			sound.play
 				
-immutable Animation
+internal immutable Animation
 	Time startTime
 	Time duration
 	Object object
 	tick: float progress
 	
-Animation FadeAnimation
+internal Animation FadeAnimation
 	float startValue, delta
 	bool removeWhenDone
 	tick(float progress) 
 		object.alpha = startValue + delta * progress
 		if progress >= 1 and removeWhenDone: Framework.objects.remove object
 		
-Animation MoveAnimation
+internal Animation MoveAnimation
 	Vector2 startValue, delta
 	tick(float progress) object.position = startValue + delta * progress
 		
-Animation ScaleAnimation
+internal Animation ScaleAnimation
 	implicit Vector2 startValue
 	implicit Vector2 delta
 	tick(float progress) object.size = startValue + delta * progress
 	
-Animation RotateAnimation
+internal Animation RotateAnimation
 	implicit Angle startValue
 	implicit Angle delta
 	tick(float progress) object.angle = startValue + delta * progress
 	
-Animation FadeSoundAnimation
+internal Animation FadeSoundAnimation
 	float startValue, delta
 	Sound sound
 	tick(float progress)
@@ -197,15 +197,15 @@ Animation FadeSoundAnimation
 		sound.volume = startValue + delta * progress
 		if progress >= 1: sound.stop
 			
-Animation PlaySoundAnimation
+internal Animation PlaySoundAnimation
 	Sound sound
 	tick(float progress) sound.play
 	
-Animation DelayAnimation
+internal Animation DelayAnimation
 	void() do
 	tick(float progress) do()
 	
-Animation InterpolateAnimation
+internal Animation InterpolateAnimation
 	void(float progress) do
 	tick(float progress) do(progress)
 

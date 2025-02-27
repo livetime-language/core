@@ -20,30 +20,30 @@
 //     onAnwserReceived
 //     onConnectionStateChange
 
-transient immutable Signal
+internal transient immutable Signal
 	int receiverId
 	string type
 	string sdp
 
-transient immutable IceMessage
+internal transient immutable IceMessage
 	int receiverId
 	object iceCandidate
 	
 enum VideoShape: Rectangle, Square, Circle
 enum RelayMode: Never, Auto, Always
 		
-immutable MediaDeviceInfo
+internal immutable MediaDeviceInfo
 	string deviceId
 	string groupId
 	string kind
 	string label
 
-immutable MediaDevices
+internal immutable MediaDevices
 	MediaDeviceInfo[] audioInput
 	MediaDeviceInfo[] audioOutput
 	MediaDeviceInfo[] videoInput
 	
-transient skipInit unit PeerNetwork
+internal transient skipInit unit PeerNetwork
 	RelayMode relayMode = Auto
 	
 	internal enableVideo = true

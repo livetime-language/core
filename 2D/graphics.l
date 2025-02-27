@@ -57,13 +57,13 @@ immutable Texture
 		if Platform.engineStarted and file
 			open
 			
-	js bool ensureIsAvailable()
+	internal js bool ensureIsAvailable()
 		if(!this.imageOrCanvas && this.file) {
 			this.imageOrCanvas = _htmlImageCache[this.file]
 		}
 		return this.imageOrCanvas != null
 	
-	js void open
+	internal js void open
 		if(!window._htmlImageCache) _htmlImageCache = {}
 		let image = _htmlImageCache[this.file]
 		if(!image) {
@@ -198,7 +198,7 @@ skipInit immutable Font
 		// log(this.name+" "+this.offset)
 
 // A single frame of an animated image
-immutable struct ImageFrame
+internal immutable struct ImageFrame
 	float x1, y1, x2, y2, w, h
 
 // An image that can be drawn on the screen and can have several frames of animation
@@ -217,9 +217,9 @@ enum AnchorMode: TopLeft, TopCenter, Center
 enum HorizontalAlignment: Left, Center, Right
 enum VerticalAlignment: Top, Middle, Bottom
 enum FontStyle: Normal, Bold
-immutable ClippingPath: Vector2[] points; bool show
+internal immutable ClippingPath: Vector2[] points; bool show
 	
-TextHighlight
+internal TextHighlight
 	string from
 	string to
 	Color color
@@ -260,7 +260,7 @@ transient skipInit global unit graphics
 	internal Vector2 size
 	internal float pixelRatio
 	
-	async setup: Vector2 referenceSize
+	internal async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
 	
 	internal js void onResize
@@ -1795,7 +1795,7 @@ transient skipInit global unit graphics
 
 // --------------------------------------------- Gizmo ---------------------------------------------
 	
-immutable struct GizomInfluence
+internal immutable struct GizomInfluence
 	string file
 	int start
 	int end
@@ -1803,11 +1803,11 @@ immutable struct GizomInfluence
 	float[] initialValues
 	string label
 
-immutable struct GizmoOverItem
+internal immutable struct GizmoOverItem
 	DisplayItem item
 	SourceCodeLocation location
 	
-skipInit transient unit gizmo
+internal skipInit transient unit gizmo
 	private DisplayItem[] items
 	private Vector2 min, max
 	private SourceCodeLocation cursorLocation
@@ -2008,7 +2008,7 @@ awardScreen
 				
 // --------------------------------------------- Display Item ---------------------------------------------
 
-transient immutable DisplayItem
+internal transient immutable DisplayItem
 	float x, y, w, h
 	int layer
 	float alpha
@@ -2052,7 +2052,7 @@ transient immutable DisplayItem
 		if(this.clippingPath.points.length >= 2)
 			graphics.context.restore()
 			
-transient DisplayItem DisplayImage
+internal transient DisplayItem DisplayImage
 	object htmlImage
 	float sx, sy, sw, sh
 	Color color
@@ -2091,7 +2091,7 @@ transient DisplayItem DisplayImage
 		
 		if(this.clippingPath) this.endClipping()
 
-transient DisplayItem DisplayText
+internal transient DisplayItem DisplayText
 	string fillStyle, outlineColor
 	float outlineWidth
 	float offsetY
@@ -2134,13 +2134,13 @@ transient DisplayItem DisplayText
 		
 		if(this.clippingPath) this.endClipping()
 
-TextSegment
+internal TextSegment
 	string text
 	TextHighlight highlight
 	Vector2 position
 	Vector2 size
 		
-transient DisplayItem DisplayTextWithHighlights
+internal transient DisplayItem DisplayTextWithHighlights
 	string fillStyle, outlineColor
 	float outlineWidth
 	float offsetY
@@ -2203,7 +2203,7 @@ transient DisplayItem DisplayTextWithHighlights
 		
 		if(this.clippingPath) this.endClipping()
 
-transient DisplayItem DisplayRectangle
+internal transient DisplayItem DisplayRectangle
 	string color, outlineColor
 	float outlineWidth
 	js void draw
@@ -2227,7 +2227,7 @@ transient DisplayItem DisplayRectangle
 		}
 		if(this.clippingPath) this.endClipping()
 		
-transient DisplayItem DisplayRoundedRectangle
+internal transient DisplayItem DisplayRoundedRectangle
 	float radius
 	string color, outlineColor
 	float outlineWidth
@@ -2275,7 +2275,7 @@ transient DisplayItem DisplayRoundedRectangle
 		}
 		if(this.clippingPath) this.endClipping()
 		
-transient DisplayItem DisplayPolygon
+internal transient DisplayItem DisplayPolygon
 	Vector2[] points
 	string color, outlineColor
 	float outlineWidth
@@ -2321,7 +2321,7 @@ transient DisplayItem DisplayPolygon
 		}
 		if(this.clippingPath) this.endClipping()
 		
-transient DisplayItem DisplayCircle
+internal transient DisplayItem DisplayCircle
 	float startAngle, angle
 	RotationDirection direction
 	string color, outlineColor
@@ -2357,7 +2357,7 @@ transient DisplayItem DisplayCircle
 		}
 		if(this.clippingPath) this.endClipping()
 		
-transient DisplayItem DisplayLine
+internal transient DisplayItem DisplayLine
 	Vector2 end
 	string outlineColor
 	float outlineWidth
@@ -2376,7 +2376,7 @@ transient DisplayItem DisplayLine
 		
 		if(this.clippingPath) this.endClipping()
 			
-transient DisplayItem DisplayVideo
+internal transient DisplayItem DisplayVideo
 	int userId
 	VideoShape shape
 	draw
