@@ -75,7 +75,7 @@ immutable Texture
 					this.size = new Vector2(image.width, image.height, null)
 					resolve(this);
 				}
-				image.src = this.file.startsWith("http") || this.file.startsWith("data") ? this.file : _basePath+this.file
+				image.src = Platform.getAbsoluteUrl(this.file)
 			})
 		} else {
 			this.imageOrCanvas = image
@@ -152,7 +152,7 @@ skipInit immutable Font
 		if(!window._fontCache) _fontCache = {}
 		let font = _fontCache[this.file]
 		if(!font) {
-			let font = new FontFace(this.name, "url("+_basePath+this.file+")");
+			let font = new FontFace(this.name, "url("+Platform.getAbsoluteUrl(this.file)+")");
 			await font.load();
 			document.fonts.add(font);
 			_fontCache[this.file] = font;
@@ -384,7 +384,7 @@ transient skipInit global unit graphics
 		
 	// ------------------------------------------------------- Image -------------------------------------------------------
 	
-	// Draw an image. Place a PNG file in the media folder and it will automatically be imported.
+	// Draw an image. Place a PNG file in the "media" folder and it will automatically be imported.
 	// 
 	// Example: We place an image called "Idle.png" in the "media" folder. Then, we draw this image at the position {0,0}, scale it to a width of 32 pixels. Only the current player instance will see the image.
 	// ```
