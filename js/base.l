@@ -415,6 +415,13 @@ immutable class string
 		if(start > 0)   return this.substring(start);
 		                return this
 		
+	js string getUntilLast: string value
+		                    int start = 0
+		let index = this.lastIndexOf(value, start)
+		if(index != -1) return this.substring(start, index);
+		if(start > 0)   return this.substring(start);
+		                return this
+		
 	js string getAfter: string value
 		                int start = 0
 		let index = this.indexOf(value, start)
