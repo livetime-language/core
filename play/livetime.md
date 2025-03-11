@@ -160,9 +160,6 @@ class Player
 
 # Another example game in the LiveTime programming language
 ´´´
-enum Role: Offence, Defence
-enum Phase: DragItems, Reveal, GameOver
-		
 app
 	int round
 	Player currentPlayer
@@ -240,7 +237,11 @@ app
 		
 		// Order players by score
 		players.orderBy.score order:Descending
-					
+
+// Always put classes, structs and enums outside of classes. You can't put them inside a class like "app".
+enum Role: Offence, Defence
+enum Phase: DragItems, Reveal, GameOver
+
 class Player
 	bool alive
 	Role role
@@ -429,6 +430,13 @@ app
 		Player[] lastFourPlayers = players[-4..]
 		
 		Player[] top3Players = players.orderBy.score | take 3
+
+		// Does any player have a score of 10?
+		// "any" require an argument, don't make the mistake of writing just "players.any"
+		bool hasAnybodyAScoreOf10 = players.any.score == 10
+
+		// Are all players alive?
+		bool areAllPlayersAlive = players.all.alive
 		
 		delay 1 seconds
 			print "1 second later"
