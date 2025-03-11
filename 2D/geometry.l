@@ -5,21 +5,21 @@ struct Vector2
 	SourceCodeLocation location
 	
 	// Used to specify that the vector is not set or invalid
-	static important inline Vector2 none() Vector2(float.infinity, float.infinity, null)
+	static important inline Vector2 None() Vector2(float.infinity, float.infinity, null)
 	
 	// {float.minValue, float.minValue}
-	static important inline Vector2 minValue() Vector2(float.minValue, float.minValue, null)
+	static important inline Vector2 MinValue() Vector2(float.minValue, float.minValue, null)
 	
 	// {float.maxValue, float.maxValue}
-	static important inline Vector2 maxValue() Vector2(float.maxValue, float.maxValue, null)
+	static important inline Vector2 MaxValue() Vector2(float.maxValue, float.maxValue, null)
 	
 	// {0,0}
-	static important inline Vector2 zero() Vector2(0, 0, null)
+	static important inline Vector2 Zero() Vector2(0, 0, null)
 		
 	// A string representation of the vector
 	important string toString() := "{x} {y}"
 	
-	// Returns true if the vector is not equal to Vector2.none
+	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
 	
 	// Creates a copy of the vector with the same values
@@ -361,8 +361,8 @@ Path
 	float[] segmentLengths
 	float length
 	
-	Vector2 first := nodes ? nodes.first : Vector2.none
-	Vector2 last :=  nodes ? nodes.last  : Vector2.none
+	Vector2 first := nodes ? nodes.first : Vector2.None
+	Vector2 last :=  nodes ? nodes.last  : Vector2.None
 	int count := nodes.length
 	inline Vector2 get(int index) this.nodes[index]
 	
@@ -377,7 +377,7 @@ Path
 			length += segmentLengths[i] = math.sqrt(x*x + y*y)
 		
 	Vector2 getPosition: float distance
-		if nodes.length == 0: return Vector2.none
+		if nodes.length == 0: return Vector2.None
 		if nodes.length == 1: return nodes[0]
 			
 		float travelledSoFar
@@ -392,7 +392,7 @@ Path
 		return nodes.last
 		
 	PositionAndVector getPositionAndVector: float distance
-		if nodes.length == 0: return { position:Vector2.none }
+		if nodes.length == 0: return { position:Vector2.None }
 		if nodes.length == 1: return { position:nodes[0] }
 			
 		float travelledSoFar
@@ -418,10 +418,54 @@ struct IntVector2
 	SourceCodeLocation location
 	
 	// Used to specify that the vector is not set or invalid
-	static important inline IntVector2 none() IntVector2(int.minValue, int.minValue, null)
+	static important inline IntVector2 None() IntVector2(int.minValue, int.minValue, null)
 		
 	// {0,0}
-	static important inline IntVector2 zero() IntVector2(0, 0, null)
+	static important inline IntVector2 Zero() IntVector2(0, 0, null)
+
+	const important immutable IntVector2 Up     = { 0,-1, location:null} // negative y direction (0,-1)
+	const important immutable IntVector2 Right  = { 1, 0, location:null} // positive x direction (1,0)
+	const important immutable IntVector2 Down   = { 0, 1, location:null} // positive y direction (0,1)
+	const important immutable IntVector2 Left   = {-1, 0, location:null} // negative x direction (-1,0)
+	const important immutable IntVector2 Center = { 0, 0, location:null} // negative x direction (-1,0)
+		
+	const immutable IntVector2 UpLeft    = {-1,-1, location:null} // negative x, negative y direction (-1,-1)
+	const immutable IntVector2 UpRight   = { 1,-1, location:null} // positive x, negative y direction (1,-1)
+	const immutable IntVector2 DownRight = { 1, 1, location:null} // positive x, positive y direction (1,1)
+	const immutable IntVector2 DownLeft  = {-1, 1, location:null} // negative x, positive y direction (-1,1)
+	
+	// List of the four primary direction: Right, Down, Left, Up
+	const important immutable IntVector2[] primaryDirections = [Up, Right, Down, Left]
+	
+	// List of the four diagonals: UpLeft, UpRight, DownLeft, DownRight
+	const important immutable IntVector2[] diagonalDirections = [UpLeft, UpRight, DownRight, DownLeft]
+	
+	// The two horitontal directions: Left and Right
+	const important immutable IntVector2[] horizontalDirections = [Left, Right]
+	
+	// The two vertical directions: Up and Down
+	const important immutable IntVector2[] verticalDirections = [Up, Down]
+	
+	// Directions that form a triangle pointing up: Up, DownRight, DownLeft
+	const immutable IntVector2[] trianglePointingUp = [Up, DownRight, DownLeft]
+	
+	// Directions that form a triangle pointing right: UpLeft, Right, DownLeft
+	const immutable IntVector2[] trianglePointingRight = [UpLeft, Right, DownLeft]
+	
+	// Directions that form a triangle pointing down: UpLeft, UpRight, Down
+	const immutable IntVector2[] trianglePointingDown = [UpLeft, UpRight, Down]
+	
+	// Directions that form a triangle pointing left: Left, UpRight, DownRight
+	const immutable IntVector2[] trianglePointingLeft = [Left, UpRight, DownRight]
+	
+	// List of the primary direction and the diagonals
+	const important immutable IntVector2[] allDirections = [Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft]
+
+	// The center and all surrounding directions (a 3 x 3 around the center)
+	const immutable IntVector2[] centerAndAllDirections = [Center, Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft]
+
+	// The center and all horizontal and vertical directions (a cross)
+	const immutable IntVector2[] centerAndPrimaryDirections = [Center, Up, Right, Down, Left]
 	
 	// Creates a copy of the vector with the same values
 	important IntVector2 clone := {x, y, location}
@@ -866,18 +910,18 @@ global skipInit unit math
 		let x4    = endB.x,   y4 = endB.y
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.none // lines are parallel
+		if (denominator == 0) return Vector2.None // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.none
+			return Vector2.None
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -886,8 +930,8 @@ global skipInit unit math
 		let lineVector = to - from
 		let pointVector = point - from
 		let scalar = (pointVector dot lineVector) / lineVector.lengthSquared
-		if type >= Ray     and scalar < 0: return Vector2.none
-		if type == Segment and scalar > 1: return Vector2.none
+		if type >= Ray     and scalar < 0: return Vector2.None
+		if type == Segment and scalar > 1: return Vector2.None
 		return from + lineVector * scalar
 	
 	closestPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
@@ -1023,7 +1067,7 @@ class IsometicGrid
 		let x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		let y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-		else                                                                  return Vector2.none
+		else                                                                  return Vector2.None
 		
 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 	getGridPosition: Vector2 screenPos // The screen position
@@ -1032,7 +1076,7 @@ class IsometicGrid
 		let x = math.round((xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y))
 		let y = math.round((xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y))
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return IntVector2(x,y)
-		else                                                                  return IntVector2.none
+		else                                                                  return IntVector2.None
 		
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
@@ -1047,76 +1091,7 @@ class IsometicGrid
 		return xOffset*worldVector.x + yOffset*worldVector.y
 		
 enum RotationDirection: Clockwise, CounterClockwise
-		
-immutable Direction
-	global const important Direction Up     = {"Up",      0, { 0,-1, location:null},   0, 210°} // negative y direction (0,-1)
-	global const important Direction Right  = {"Right",   1, { 1, 0, location:null}, .25, 330°} // positive x direction (1,0)
-	global const important Direction Down   = {"Down",    2, { 0, 1, location:null}, .50,  30°} // positive y direction (0,1)
-	global const important Direction Left   = {"Left",    3, {-1, 0, location:null}, .75, 150°} // negative x direction (-1,0)
-	global const important Direction None   = {"None",   -1, { 0, 0, location:null},   0,   0°} // no direction (0,0)
-		
-	const Direction UpLeft    = {"UpLeft",    0, {-1,-1, location:null},-.125} // negative x, negative y direction (-1,-1)
-	const Direction UpRight   = {"UpRight",   1, { 1,-1, location:null}, .125} // positive x, negative y direction (1,-1)
-	const Direction DownRight = {"DownRight", 2, { 1, 1, location:null}, .375} // positive x, positive y direction (1,1)
-	const Direction DownLeft  = {"DownLeft",  3, {-1, 1, location:null}, .625} // negative x, positive y direction (-1,1)
-		
 	
-	// List of the four primary direction: Right, Down, Left, Up
-	const important Direction[] primaryDirections = [Up, Right, Down, Left]
-	
-	// List of the four diagonals: UpLeft, UpRight, DownLeft, DownRight
-	const important Direction[] diagonalDirections = [UpLeft, UpRight, DownRight, DownLeft]
-	
-	// The two horitontal directions: Left and Right
-	const important Direction[] horizontalDirections = [Left, Right]
-	
-	// The two vertical directions: Up and Down
-	const important Direction[] verticalDirections = [Up, Down]
-	
-	// Directions that form a triangle pointing up: Up, DownRight, DownLeft
-	const Direction[] trianglePointingUp = [Up, DownRight, DownLeft]
-	
-	// Directions that form a triangle pointing right: UpLeft, Right, DownLeft
-	const Direction[] trianglePointingRight = [UpLeft, Right, DownLeft]
-	
-	// Directions that form a triangle pointing down: UpLeft, UpRight, Down
-	const Direction[] trianglePointingDown = [UpLeft, UpRight, Down]
-	
-	// Directions that form a triangle pointing left: Left, UpRight, DownRight
-	const Direction[] trianglePointingLeft = [Left, UpRight, DownRight]
-	
-	// List of the primary direction and the diagonals
-	const important Direction[] allDirections = [Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft]
-
-	// The center and all surrounding directions (a 3 x 3 around the center)
-	const Direction[] centerAndAllDirections = [None, Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft]
-
-	// The center and all horizontal and vertical directions (a cross)
-	const Direction[] centerAndPrimaryDirections = [None, Up, Right, Down, Left]
-
-	important string name       // The name of the direction (e.g. "Left", "Right", "Up", "Down", "UpLeft", "DownRight", ...)
-	int index         // The index starting with "Right" and going around clockwise (0: Right, 1: Down, 2: Left, 3: Up)
-	important IntVector2 vector // The vector of the direction (Right: {1,0}, Down:{0,1}, Left:{-1,0}, Up:{0,-1})
-	important Angle angle       // The angle in turns starting with "Right" and going around clockwise
-	Angle isoAngle    // The angle in turns within an isometric grid
-	
-	toString := name
-	
-	bool == Direction value 
-		this.angle == value.angle
-	
-	rotated: RotationDirection direction = Clockwise
-		return primaryDirections[(index+(direction == Clockwise ? 1:3))%4]
-		
-	inverted
-		return primaryDirections[(index+2)%4]
-		
-	isOrthogonalTo: Direction value
-		return index%2 != value.index%2
-		
-	isParallelTo: Direction value
-		return index%2 == value.index%2
-		
 enum LineType: Line, Ray, Segment
 	
 immutable Line
@@ -1135,18 +1110,18 @@ immutable Line
 		let typeB = other.type
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.none // lines are parallel
+		if (denominator == 0) return Vector2.None // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.none
+			return Vector2.None
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))

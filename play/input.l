@@ -851,7 +851,7 @@ skipInit global unit input
 							touch.type = type
 							if isSmoothPosition: touch.smoothPosition = referencePos
 						else
-							touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
+							touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 							player.touches.add touch
 								
 						player.pointerPosition = referencePos
@@ -867,7 +867,7 @@ skipInit global unit input
 							touch.type = type
 							if isSmoothPosition: touch.smoothPosition = referencePos
 						else
-							touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
+							touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 							player.touches.add touch
 						
 						player.pointerPosition = referencePos

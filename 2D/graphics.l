@@ -1475,7 +1475,7 @@ transient skipInit global unit graphics
 	//                 drawImage Button
 	// ```
 	// Image: graphicsTransform.png
-	transform: Vector2 move = Vector2.none  // The distance to move
+	transform: Vector2 move = Vector2.None  // The distance to move
 		       Angle rotate = 0             // The angle in turns (0: no rotation, 1: one full rotation)
 		       float scale = 1              // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
@@ -1855,13 +1855,13 @@ internal skipInit transient unit gizmo
 			// Draw handles
 			let size = max - min
 			let center = (max + min)/2 
-			for Direction.allDirections
-				drawImage ResizeHandle, center + size/2*.vector, size:handleSize, location:null, layer:int.maxValue
+			for IntVector2.allDirections
+				drawImage ResizeHandle, center + size/2 * ., size:handleSize, location:null, layer:int.maxValue
 				
 			// Draw selection
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
-	private Direction overHandleDirection
+	private IntVector2 overHandleDirection
 	private Vector2 touchDownPos = {float.infinity, float.infinity}
 	private bool touchDownInsideGizmo
 	private int locationIndex
@@ -1870,35 +1870,35 @@ internal skipInit transient unit gizmo
 	private bool isManipulating
 	
 	clear
-		overHandleDirection = null
-		touchDownPos = Vector2.none
+		overHandleDirection = IntVector2.None
+		touchDownPos = Vector2.None
 		touchDownInsideGizmo = false
 		locationIndex = 0
 		waitingForCodeId = 0
 		aspectRatio = 1
 		items.clear
-		min = Vector2.none
-		max = Vector2.none
+		min = Vector2.None
+		max = Vector2.None
 	
 	internal onTouch: InputType InputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 		if Platform.mode != Manipulator: return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if InputType == TouchDown: touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if InputType == TouchUp:   touchDownPos = Vector2.none; isManipulating = false
+		if InputType == TouchUp:   touchDownPos = Vector2.None; isManipulating = false
 			
 		// Which handle are we currently hovering over?
 		if items and not touchDownPos
 			let center = (min + max)/2
-			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = Direction.DownRight; else
-			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = Direction.UpLeft; else
-			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = Direction.UpRight; else
-			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = Direction.DownLeft; else
-			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = Direction.Right; else
-			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = Direction.Left; else
-			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = Direction.Up; else
-			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = Direction.Down; else
-				                                                                overHandleDirection = null
+			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = IntVector2.DownRight; else
+			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = IntVector2.UpLeft; else
+			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = IntVector2.UpRight; else
+			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = IntVector2.DownLeft; else
+			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = IntVector2.Right; else
+			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = IntVector2.Left; else
+			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = IntVector2.Up; else
+			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = IntVector2.Down; else
+				                                                                overHandleDirection = IntVector2.None
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
@@ -1930,7 +1930,7 @@ internal skipInit transient unit gizmo
 			GizomInfluence[] influences
 			if overHandleDirection
 				// Resize the item (we are over a handle)
-				let handle = overHandleDirection.vector
+				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0
 				let dx = (referencePos.x - touchDownPos.x) * handle.x
 				let dy = (referencePos.y - touchDownPos.y) * handle.y

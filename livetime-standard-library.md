@@ -159,10 +159,10 @@ class Time
 	static int frame:
 
 class Vector2
-	static Vector2 none:
-	static Vector2 minValue:
-	static Vector2 maxValue:
-	static Vector2 zero:
+	static Vector2 None:
+	static Vector2 MinValue:
+	static Vector2 MaxValue:
+	static Vector2 Zero:
 	string toString:
 	Vector2 clone:
 	float length:
@@ -193,8 +193,18 @@ static class audio
 	global void playSound: Sound sound, Time at, bool needsToBeCertain
 
 class IntVector2
-	static IntVector2 none:
-	static IntVector2 zero:
+	static IntVector2 None:
+	static IntVector2 Zero:
+	const IntVector2 Up
+	const IntVector2 Right
+	const IntVector2 Down
+	const IntVector2 Left
+	const IntVector2 Center
+	const IntVector2[] primaryDirections
+	const IntVector2[] diagonalDirections
+	const IntVector2[] horizontalDirections
+	const IntVector2[] verticalDirections
+	const IntVector2[] allDirections
 	IntVector2 clone:
 	string toString:
 	float length:
@@ -209,21 +219,6 @@ class IntVector2
 class Angle
 	Angle rotateTowards: Angle value, Angle speed
 	Angle normalize:
-
-class Direction
-	const Direction Up
-	const Direction Right
-	const Direction Down
-	const Direction Left
-	const Direction None
-	const Direction[] primaryDirections
-	const Direction[] diagonalDirections
-	const Direction[] horizontalDirections
-	const Direction[] verticalDirections
-	const Direction[] allDirections
-	string name
-	IntVector2 vector
-	Angle angle
 
 class Rect
 	Vector2 position
