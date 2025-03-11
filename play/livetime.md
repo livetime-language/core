@@ -22,7 +22,7 @@ app
 	
 	// We use a two dimensional grid of Cell for the cells of the game board
 	// We can later access the individual cells with cell[x,y]
-	Grid<Cell> cells = {size:cellCount}
+	Grid<Cell> cells = {size:{cellCount, cellCount}}
 	
 	Player currentPlayer
 	Phase phase = PlacePiece
@@ -55,8 +55,8 @@ app
 		// Don't make the mistake of multiplying by cellCount / -2 instead of (cellCount - 1) / -2
 		Vector2 cellSize = totalBoardSize / cellCount
 		Vector2 cellOffset = cellSize * (cellCount - 1) / -2
-		for cellCount.x as x
-			for cellCount.y as y
+		for cellCount as x
+			for cellCount as y
 				IntVector2 gridPos = {x,y}
 				Vector2 pixelPos = cellOffset + gridPos * cellSize
 				Cell cell = cells[gridPos]
@@ -153,7 +153,6 @@ class Player
 		Vector2 scorePos = pos + math.getVectorForAngle(-45°)*radius
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
-
 ´´´
 
 
