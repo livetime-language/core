@@ -882,7 +882,7 @@ global skipInit unit math
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	important projectPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
+	projectPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
 		let lineVector = to - from
 		let pointVector = point - from
 		let scalar = (pointVector dot lineVector) / lineVector.lengthSquared
@@ -890,7 +890,7 @@ global skipInit unit math
 		if type == Segment and scalar > 1: return Vector2.none
 		return from + lineVector * scalar
 	
-	important closestPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
+	closestPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
 		let lineVector = to - from
 		let pointVector = point - from
 		let scalar = (pointVector dot lineVector) / lineVector.lengthSquared
@@ -1212,8 +1212,12 @@ class Grid<T>
 		this.items.map(selector)
 		
 	// Get the selected field or expression for each item and flattens the result
-	important inline js TValue[] flatten: TValue[](T it) selector
+	inline js TValue[] flatten: TValue[](T it) selector
 		this.items.flatMap(selector)
+		
+	// Returns true if the given condition is true for all items in the list
+	inline js bool all
+		this.items.every(a => a)
 		
 	// Returns true if the given condition is true for any item in the list
 	inline js bool any
@@ -1226,16 +1230,12 @@ class Grid<T>
 	important inline js T[] where: bool(T a) predicate // The condition to check
 		this.items.filter(predicate)
 		
-	important int count: bool(T a) predicate // The condition to check
+	int count: bool(T a) predicate // The condition to check
 		int count = 0
 		for items
 			if predicate(.)
 				count++
 		return count
-		
-	// Returns true if the given condition is true for all items in the list
-	inline js bool all
-		this.items.every(a => a)
 		
 	// Returns true if the given condition is true for all items in the list
 	important inline js bool all: bool(T a) predicate // The condition to check

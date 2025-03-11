@@ -260,7 +260,7 @@ transient skipInit global unit graphics
 	internal Vector2 size
 	internal float pixelRatio
 	
-	important async setup: Vector2 referenceSize
+	async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
 	
 	internal js void onResize
@@ -391,7 +391,7 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawImage Idle, position:{0,0}, size:32, frame:0, visibleFor:me
 	// Image: drawImage0.png
-	global important js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
+	global js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
 		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                      implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the image
@@ -431,7 +431,7 @@ transient skipInit global unit graphics
 	//             drawImage Idle, position:{0,0}, angle:45°
 	// ```
 	// Image: drawImage1.png
-	global important js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
+	global js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
 		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                      implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the image
@@ -480,7 +480,7 @@ transient skipInit global unit graphics
 	//             drawImage Walk, position:{0,0}, framesPerSecond:10
 	// ```
 	// Image: drawImage2.gif
-	global important void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
+	global void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
 		                   Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                   implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null // Only this player or list of players will see the image
@@ -501,7 +501,7 @@ transient skipInit global unit graphics
 	//             drawImage Walk, position:{0,0}, framesPerSecond:10, flipX:true
 	// ```
 	// Image: drawImage3.gif
-	global important void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
+	global void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
 		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
@@ -730,7 +730,7 @@ transient skipInit global unit graphics
 	//         { "\"" to: "\"" color:White, backgroundColor:app.helpingColor, padding:{12,3}, cornerRadius:12 }
 	//     ]
 	// ```
-	global important float drawTextWithHighlight: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
+	global float drawTextWithHighlight: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
 		                                Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                                TextHighlight[] highlights = []      // Sepecifies which characters surround a sections and how it should be highlighted
 		                                implicit Vector2 size = {}           // The font size of the text
@@ -915,7 +915,7 @@ transient skipInit global unit graphics
 	//     drawVideo me, position:pos, shape:Circle, size:radius*2-40
 	//     drawCircularText "Made up by", position:pos, size:30, radius, angle:-.07
 	// ```
-	global important drawCircularText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
+	global drawCircularText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
 		                     Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                     float size = 0                       // The font size of the text
 		                     Color color = null                   // The color of the text
@@ -952,7 +952,7 @@ transient skipInit global unit graphics
 	//                     done = true
 	// ```
 	// Image: drawButton.png
-	global important void drawButton: Image image = null                   // The image of the button. PNG images in the "media" folder will automatically show up here
+	global void drawButton: Image image = null                   // The image of the button. PNG images in the "media" folder will automatically show up here
 		                    text = ""                            // The text of the button
 		                    Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                    implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
@@ -1276,7 +1276,7 @@ transient skipInit global unit graphics
 	//             drawPointer me
 	// ```
 	// Image: drawPointer.png
-	global important drawPointer: Player player                  // Show the mouse position of this player
+	global drawPointer: Player player                  // Show the mouse position of this player
 		                ShowPointersMode mode = Remote // Choose whether you want to draw the pointers for local players, remote players or both
 		                Color color = null             // The color of the pointer. If this is left out, the player color is used
 		if mode == LocalAndRemote

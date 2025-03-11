@@ -171,7 +171,7 @@ Touch
 	// even if we never check the touch with a input.onTouch method
 	
 	important Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
-	important Vector2 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
+	Vector2 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
 	important markAsHandled() handled = true
 	
@@ -1170,7 +1170,7 @@ skipInit global unit input
 	//                 print "Clicked character"
 	// ```
 	// Image: onTouchDown2.png
-	global important onTouchDown: Vector2 position                    // The center of the touch area
+	global onTouchDown: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                Angle angle                         // Rotate the touch area by this angle
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
@@ -1257,7 +1257,7 @@ skipInit global unit input
 	//                 print "Clicked OK"
 	// ```
 	// Image: onTouchDown4.png
-	global important onTouchDown: Vector2[] points                    // The points that define the clickable polygon
+	global onTouchDown: Vector2[] points                    // The points that define the clickable polygon
 		                Vector2 position = {0,0}            // The position all polygon points are relative to
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this polygon
@@ -1292,7 +1292,7 @@ skipInit global unit input
 	//                 print "Click at {touch.position}"
 	// ```
 	// Image: onTouchDown0.png
-	global important onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
 		for getTargetedPlayers(by) -> player
@@ -1412,7 +1412,7 @@ skipInit global unit input
 	//                 print "Touch moved to {touch.position}"
 	// ```
 	// Image: onTouchDown0.png
-	global important onTouchMove: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global onTouchMove: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                triggeredOnTouchDown = true         // Ensure we also get a touchMove before the touchDown event on touch screens
 		                void(Touch touch) do                // Do this for each touch or click
 		if not active: return
@@ -1469,7 +1469,7 @@ skipInit global unit input
 	//                 print "Touch ended at {touch.position}"
 	// ```
 	// Image: onTouchDown0.png
-	global important onTouchUp: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global onTouchUp: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
 		if not active: return
@@ -1492,7 +1492,7 @@ skipInit global unit input
 	//                 print "Clicked OK"
 	// ```
 	// Image: onTouchDown1.png
-	global important onTouchUp: Vector2 position                    // The center of the touch area
+	global onTouchUp: Vector2 position                    // The center of the touch area
 		              Vector2 size                        // The size of the rectangular touch area
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool showClickableArea = false      // Highlight the clickable area for debugging
@@ -1526,7 +1526,7 @@ skipInit global unit input
 	//                 print "Clicked ball"
 	// ```
 	// Image: onTouchDown3.png
-	global important onTouchUp: Vector2 position                    // The center of the circle
+	global onTouchUp: Vector2 position                    // The center of the circle
 		              float radius                        // The radius of the circle
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		              Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1553,7 +1553,7 @@ skipInit global unit input
 	// ---------------------------------------------- Scroll ----------------------------------------------
 	
 	// Do something when a player scrolls with the touch pad or mouse wheel
-	global important onScroll: implicit nocolon Player[] by = null // Only consider events by this player or list of players
+	global onScroll: implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		             void(ScrollEvent event) do          // Do this for each event
 		if not active: return
 		for getTargetedPlayers(by)
@@ -1561,7 +1561,7 @@ skipInit global unit input
 				do .
 	
 	// Do something when a player scrolls with the touch pad or mouse wheel over a rectangle
-	global important onScrolllWithin: Vector2 position                    // The center of the rectangle
+	global onScrolllWithin: Vector2 position                    // The center of the rectangle
 		                    Vector2 size                        // The size of the rectangle
 		                    implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		                    bool showClickableArea = false      // Highlight the rectangle for debugging

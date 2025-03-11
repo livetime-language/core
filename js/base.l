@@ -139,16 +139,16 @@ immutable struct int
 	inline js int setIfLarger: int newValue
 		(this = Math.max(newValue, this))
 		
-	important inline js int incrementAndWrap: int max // When the integer reaches this value, it wraps around to zero
+	inline js int incrementAndWrap: int max // When the integer reaches this value, it wraps around to zero
 		(this = (((this+1) % max) + max) % max)
 	
-	important inline js int decrementAndWrap: int max // When the integer reaches this value, it wraps around to zero
+	inline js int decrementAndWrap: int max // When the integer reaches this value, it wraps around to zero
 		(this = (((this-1) % max) + max) % max)
 	
-	important inline js int incrementUpTo: int max
+	inline js int incrementUpTo: int max
 		(this < max ? ++this : max)
 		
-	important inline js int incrementUpToExclusive: int max
+	inline js int incrementUpToExclusive: int max
 		(this < max-1 ? ++this : max-1)
 		
 	inline js int incrementBy: int value
@@ -276,7 +276,7 @@ immutable struct float
 	important inline js int round
 		Math.round(this)
 		
-	important inline js float limit: float from
+	inline js float limit: float from
 		                   float to
 		(this < from ? from : this < to ? this : to)
 		
@@ -1020,7 +1020,7 @@ class List<T>
 		this.map(selector)
 		
 	// Get the selected field or expression for each item and flattens the result
-	important inline js TValue[] flatten: TValue[](T it) selector
+	inline js TValue[] flatten: TValue[](T it) selector
 		this.flatMap(selector)
 		
 	// Find an item the meets the given condition
@@ -2092,7 +2092,7 @@ global transient priority low unit System
 // A collection of mathematical functions and constants
 global skipInit unit math
 	// Returns the absolute value
-	important inline js int abs: int value // The value to return the absolute value of
+	inline js int abs: int value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns the absolute value
@@ -2259,11 +2259,11 @@ global skipInit unit math
 		
 	// ------------------------------------------------------- Bit shifts -------------------------------------------------------
 	
-	important inline js int shiftLeft: int value
+	inline js int shiftLeft: int value
 		                     int count
 		(value << count)
 	
-	important inline js int shiftRight: int value
+	inline js int shiftRight: int value
 		                      int count
 		(value >> count)
 			
