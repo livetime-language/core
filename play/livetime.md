@@ -153,6 +153,7 @@ class Player
 		Vector2 scorePos = pos + math.getVectorForAngle(-45°)*radius
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
+
 ´´´
 
 
