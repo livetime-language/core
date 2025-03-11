@@ -6,7 +6,7 @@ alwaysApply: true
 We use the LiveTime programming language.
 - LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces.
 - Put all the code in the file "src/app.l".
-- Important: If you are asked to draw anything, read the file "media/availableMedia.md" first for all available images.
+- Important: If you are asked to draw anything, read the file "media/availableMedia.md" first to see which images are available.
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 ´´´
@@ -18,7 +18,7 @@ app
 	// We need to display the player video at the left and right side of the screen
 	// That leave a usable area of {700,700} in the middle of the screen
 	const Vector2 totalBoardSize = {700,700}
-	const IntVector2 cellCount = {9,9}
+	const int cellCount = 9
 	
 	// We use a two dimensional grid of Cell for the cells of the game board
 	// We can later access the individual cells with cell[x,y]
@@ -37,8 +37,8 @@ app
 		Menu()
 		
 		// Create empty grid cells
-		for cellCount.x as x
-			for cellCount.y as y
+		for cellCount as x
+			for cellCount as y
 				cells[x,y] = Cell(player:null)
 		
 		// In LiveTime, the global variable "players" always contains a list of players
@@ -51,8 +51,10 @@ app
 		// The x-coordinate ranges from -960 to 960
 		// The y-coordinate ranges from -540 to 540
 		// So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}
+		// To correctly center the board, we need to offset it by cellSize * (cellCount - 1) / -2
+		// Don't make the mistake of multiplying by cellCount / -2 instead of (cellCount - 1) / -2
 		Vector2 cellSize = totalBoardSize / cellCount
-		Vector2 cellOffset = cellSize * (cellCount - {1,1}) / -2
+		Vector2 cellOffset = cellSize * (cellCount - 1) / -2
 		for cellCount.x as x
 			for cellCount.y as y
 				IntVector2 gridPos = {x,y}
@@ -151,6 +153,7 @@ class Player
 		Vector2 scorePos = pos + math.getVectorForAngle(-45°)*radius
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
+
 ´´´
 
 
