@@ -19,7 +19,7 @@ cs(UnityEngine) struct Vector3
 	// A string representation of the vector
 	string toString := "({x} {y} {z})"
 	
-	// Returns true if the vector is not equal to Vector2.none
+	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
 	
 	// Creates a copy of the vector with the same values
@@ -557,18 +557,18 @@ unit Math
 	// 	var x4    = endB.x,   y4 = endB.y
 		
 	// 	// Check if none of the lines are of length 0
-	// 	if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+	// 	if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 	// 	// compute line params
 	// 	var denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-	// 	if (denominator == 0) return Vector2.none // lines are parallel
+	// 	if (denominator == 0) return Vector2.None // lines are parallel
 	// 	var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 	// 	var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 	// 	// is the intersection along the segments
 	// 	if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 	// 	|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-	// 		return Vector2.none
+	// 		return Vector2.None
 			
 	// 	// Return a object with the x and y coordinates of the intersection
 	// 	return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -690,7 +690,7 @@ global transient unit System
 // 		var x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 // 		var y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 // 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-// 		else                                                                  return Vector2.none
+// 		else                                                                  return Vector2.None
 		
 // 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 // 	getGridPosition: Vector2 screenPos // The screen position
@@ -763,18 +763,18 @@ struct Direction
 // 		var typeB = other.type
 		
 // 		// Check if none of the lines are of length 0
-// 		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+// 		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 // 		// compute line params
 // 		var denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-// 		if (denominator == 0) return Vector2.none // lines are parallel
+// 		if (denominator == 0) return Vector2.None // lines are parallel
 // 		var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 // 		var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 // 		// is the intersection along the segments
 // 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 // 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-// 			return Vector2.none
+// 			return Vector2.None
 			
 // 		// Return a object with the x and y coordinates of the intersection
 // 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))

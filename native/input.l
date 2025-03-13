@@ -949,7 +949,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " move {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " move(new) {id} {referencePos} {type}"
 								
@@ -968,7 +968,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " up {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " up(new) {id} {referencePos} {type}"
 								

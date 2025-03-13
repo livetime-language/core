@@ -10,7 +10,7 @@ immutable Color
 		
 	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
 	
-	string hex
+	important string hex
 	string name
 	
 	string toString := name or hex
@@ -24,7 +24,7 @@ immutable Color
 	inline js bool == Color other: this?.hex == other?.hex
 	inline js bool != Color other: this?.hex != other?.hex
 	
-	Color: string hex = ""
+	important Color: string hex = ""
 		this.hex = hex[0] == "#" ? hex : "#"+hex
 
 	Color: int red = 0
@@ -249,7 +249,7 @@ transient skipInit global unit graphics
 	private const alignmentFactor = [0, .5, 1]
 	
 	public Vector2 referenceSize = {1920, 1080}
-	public DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInFront
+	public important DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInFront
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
@@ -260,7 +260,7 @@ transient skipInit global unit graphics
 	internal Vector2 size
 	internal float pixelRatio
 	
-	internal async setup: Vector2 referenceSize
+	async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
 	
 	internal js void onResize
@@ -387,11 +387,9 @@ transient skipInit global unit graphics
 	// Draw an image. Place a PNG file in the "media" folder and it will automatically be imported.
 	// 
 	// Example: We place an image called "Idle.png" in the "media" folder. Then, we draw this image at the position {0,0}, scale it to a width of 32 pixels. Only the current player instance will see the image.
-	// ```
 	//     Player
 	//         tick
 	//             drawImage Idle, position:{0,0}, size:32, frame:0, visibleFor:me
-	// ```
 	// Image: drawImage0.png
 	global js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
 		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
@@ -528,7 +526,7 @@ transient skipInit global unit graphics
 	//                 print "The image was clicked at {touch.position}"
 	// ```
 	// Image: drawImage0.png
-	global void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
+	global important void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
 		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
@@ -568,7 +566,7 @@ transient skipInit global unit graphics
 	//                 drawText "You've won!", size:100, color:Black, font:OpenSans, visibleFor:me
 	// ```
 	// Image: drawText.png
-	global drawText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
+	global important drawText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
 		             Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		             implicit Vector2 size = {}           // The font size of the text
 		             Color color = null                   // The color of the text
@@ -1019,7 +1017,7 @@ transient skipInit global unit graphics
 	//             drawRectangle size:{500,100}, color:White, outlineColor:Black, outlineWidth:8
 	// ```
 	// Image: drawRectangle.png
-	global js void drawRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global important js void drawRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                          implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                          Color color = null                  // The color of the area within the rectangle
 		                          Color outlineColor = null           // The color of the outline around the rectangle
@@ -1055,7 +1053,7 @@ transient skipInit global unit graphics
 	//             drawRoundedRectangle size:{500,100}, outlineColor:Black, outlineWidth:8, radius:20
 	// ```
 	// Image: drawRoundedRectangle.png
-	global js void drawRoundedRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global important js void drawRoundedRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                                 implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                                 radius = 32                         // The radius of the rounded corners
 		                                 Color color = null                  // The color of the area within the rectangle
@@ -1110,7 +1108,7 @@ transient skipInit global unit graphics
 	//             drawCircle outlineColor:#118ab2, outlineWidth:24, size:100, startAngle:0°, angle:180°
 	// ```
 	// Image: drawCircle2.png
-	global js void drawCircle: position = Vector2()                    // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global important js void drawCircle: position = Vector2()                    // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                       implicit Vector2 size = {256,256}       // The size of the circle, use a float to draw a circle, use a vector draw an ellipse
 		                       Color color = null                      // The color of the area within the circle
 		                       Color outlineColor = null               // The color of the outline around the circle
@@ -1150,7 +1148,7 @@ transient skipInit global unit graphics
 	//             drawLine {-100,0} to {100,0} color:Blue
 	// ```
 	// Image: drawLine.png
-	global js void drawLine: Vector2 from                        // The point to start the line from
+	global important js void drawLine: Vector2 from                        // The point to start the line from
 		                     nocolon Vector2 to                  // The point to draw the line to
 		                     Color color = null                  // The color of the line
 		                     width = 0                           // The width of the line in pixels
@@ -1179,7 +1177,7 @@ transient skipInit global unit graphics
 	//             drawLines [{-50,0}, {0,50}, {100,-50}] color:Blue width:32
 	// ```
 	// Image: drawLines.png
-	global js void drawLines: Vector2[] points                    // A list of points for the line
+	global important js void drawLines: Vector2[] points                    // A list of points for the line
 		                      Vector2 position = {}               // The position all points are relative to 
 		                      Color color = null                  // The color of the line
 		                      width = 0                           // The width of the line in pixels
@@ -1213,7 +1211,7 @@ transient skipInit global unit graphics
 	//             drawPolygon [{-50,50}, {0,-50}, {50,50}] color:White outlineColor:Blue
 	// ```
 	// Image: drawPolygon.png
-	global js void drawPolygon: Vector2[] points                    // A list of points for the polygon
+	global important js void drawPolygon: Vector2[] points                    // A list of points for the polygon
 		                        Vector2 position = {0,0}            // The position all polygon points are relative to
 		                        Color color = null                  // The color of the area within the polygon
 		                        Color outlineColor = null           // The color of the outline around the polygon
@@ -1248,7 +1246,7 @@ transient skipInit global unit graphics
 	//             drawVideo me, size:200
 	// ```
 	// Image: drawVideo.png
-	global drawVideo: Player player                       // Draw the video showing this player
+	global important drawVideo: Player player                       // Draw the video showing this player
 		              Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		              implicit Vector2 size = {440}       // A float scales the image to that width keeping the aspect ratio, a vector stretches the video
 		              VideoShape shape = Rectangle        // Choose whether the video should be drawn as a rectangle, a square or a circle
@@ -1477,7 +1475,7 @@ transient skipInit global unit graphics
 	//                 drawImage Button
 	// ```
 	// Image: graphicsTransform.png
-	transform: Vector2 move = Vector2.none  // The distance to move
+	transform: Vector2 move = Vector2.None  // The distance to move
 		       Angle rotate = 0             // The angle in turns (0: no rotation, 1: one full rotation)
 		       float scale = 1              // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
@@ -1857,13 +1855,13 @@ internal skipInit transient unit gizmo
 			// Draw handles
 			let size = max - min
 			let center = (max + min)/2 
-			for Direction.allDirections
-				drawImage ResizeHandle, center + size/2*.vector, size:handleSize, location:null, layer:int.maxValue
+			for IntVector2.allDirections
+				drawImage ResizeHandle, center + size/2 * ., size:handleSize, location:null, layer:int.maxValue
 				
 			// Draw selection
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
-	private Direction overHandleDirection
+	private IntVector2 overHandleDirection
 	private Vector2 touchDownPos = {float.infinity, float.infinity}
 	private bool touchDownInsideGizmo
 	private int locationIndex
@@ -1872,35 +1870,35 @@ internal skipInit transient unit gizmo
 	private bool isManipulating
 	
 	clear
-		overHandleDirection = null
-		touchDownPos = Vector2.none
+		overHandleDirection = IntVector2.None
+		touchDownPos = Vector2.None
 		touchDownInsideGizmo = false
 		locationIndex = 0
 		waitingForCodeId = 0
 		aspectRatio = 1
 		items.clear
-		min = Vector2.none
-		max = Vector2.none
+		min = Vector2.None
+		max = Vector2.None
 	
 	internal onTouch: InputType InputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 		if Platform.mode != Manipulator: return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if InputType == TouchDown: touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if InputType == TouchUp:   touchDownPos = Vector2.none; isManipulating = false
+		if InputType == TouchUp:   touchDownPos = Vector2.None; isManipulating = false
 			
 		// Which handle are we currently hovering over?
 		if items and not touchDownPos
 			let center = (min + max)/2
-			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = Direction.DownRight; else
-			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = Direction.UpLeft; else
-			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = Direction.UpRight; else
-			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = Direction.DownLeft; else
-			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = Direction.Right; else
-			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = Direction.Left; else
-			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = Direction.Up; else
-			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = Direction.Down; else
-				                                                                overHandleDirection = null
+			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = IntVector2.DownRight; else
+			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = IntVector2.UpLeft; else
+			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = IntVector2.UpRight; else
+			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = IntVector2.DownLeft; else
+			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = IntVector2.Right; else
+			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = IntVector2.Left; else
+			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = IntVector2.Up; else
+			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = IntVector2.Down; else
+				                                                                overHandleDirection = IntVector2.None
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
@@ -1932,7 +1930,7 @@ internal skipInit transient unit gizmo
 			GizomInfluence[] influences
 			if overHandleDirection
 				// Resize the item (we are over a handle)
-				let handle = overHandleDirection.vector
+				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0
 				let dx = (referencePos.x - touchDownPos.x) * handle.x
 				let dy = (referencePos.y - touchDownPos.y) * handle.y
