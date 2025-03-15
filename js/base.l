@@ -453,6 +453,12 @@ immutable class string
 	important inline js string trim
 		this.trim()
 		
+	inline js string trimStart
+		this.trimStart()
+		
+	inline js string trimEnd
+		this.trimEnd()
+		
 	js string trimQuotes
 		return this.substring(this[0] == '"' ? 1 : 0, this[this.length-1] == '"' ? this.length-1 : this.length)
 		
