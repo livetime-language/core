@@ -7,7 +7,7 @@ transient skipInit pocketBase
 		await connect
 		
 	async js void connect
-		// if(!pocketBase.url) pocketBase.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
+		if(!pocketBase.url) pocketBase.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
 		// const PocketBase = (await import((pocketBase.libUrl || ".")+"/lib/pocketbase.es.mjs")).default
 		const PocketBase = (await import((pocketBase.libUrl || _basePath || location.href.getUntilLast("/")+"/")+"lib/pocketbase.es.mjs")).default
 		if(pocketBase.pb) pocketBase.pb.realtime.unsubscribe();
