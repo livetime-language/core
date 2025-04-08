@@ -24,7 +24,7 @@ transient speech
 		English: {"en", "en-US", ["Microsoft", "Google"]}
 	}
 	
-	private inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
+	inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
 		
 	nextVoice
 		voiceOverride = voices[voiceIndex incrementAndWrap voices.length]
@@ -37,10 +37,10 @@ transient speech
 		utterance.voice = speech.currentVoice = voice.voice;
 		utterance.rate = speech.rate = rate;
 		speechSynthesis.speak(utterance);
-		// document.onclick = e => {
-		// 	speech.say("");
-		// 	document.onclick = null;
-		// }
+		document.onclick = e => {
+			speech.say("", "Spanish", 1, null);
+			document.onclick = null;
+		}
 		
 	VoicePreference getVoice: string language
 		let pref = preferences[language] or preferences["English"]
@@ -64,7 +64,7 @@ transient speech
 			let voice = speech.getVoice(language);
 			utterance.lang = voice.langAndCountry;
 			utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
-			utterance.rate = rate;
+			utterance.rate = rate || 1;
 			if(then != null) {
 				utterance.onend = () => {
 					System.print("say onend");
