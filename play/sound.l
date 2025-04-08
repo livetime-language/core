@@ -12,8 +12,11 @@ skipInit immutable Sound
 	js void open
 		return new Promise((resolve, reject) => {
 			this.nextAudioElement = new Audio();
-			this.nextAudioElement.oncanplaythrough = () => resolve();
-			this.nextAudioElement.onerror = () => reject();
+			this.nextAudioElement.onloadedmetadata = () => resolve()
+			this.nextAudioElement.onerror = () => {
+				System.print(`Failed to load sound ${this.file}`)
+				reject();
+			}
 			this.nextAudioElement.src = Platform.getAbsoluteUrl(this.file);			
 		})
 		
