@@ -183,12 +183,10 @@ struct Vector2
 	// Round each coordinate up to an integer value
 	important IntVector2 ceil := IntVector2(math.ceil(x), math.ceil(y))
 		
-	// Make each coordinate positive
+	// Return a new vector with each coordinate positive
 	important abs
-		x = math.abs(x)
-		y = math.abs(y)
-		return this
-		
+		return {math.abs(x), math.abs(y)}
+
 	// The larger of the two coordinates
 	max := x > y ? x : y
 	
