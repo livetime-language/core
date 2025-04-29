@@ -20,7 +20,7 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", ["Microsoft Sofia", "Microsoft Catalina", "Microsoft Ximena", "Google", "Paulina", "Mónica"]}
-		German:  {"de", "de-DE", ["Microsoft", "Google"]}
+		German:  {"de", "de-DE", ["Microsoft", "Google", "Helena","Anna"]}
 		English: {"en", "en-US", ["Microsoft", "Google"]}
 	}
 	
