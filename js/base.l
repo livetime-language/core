@@ -1000,6 +1000,30 @@ class List<T>
 	inline js TValue[] flatten: TValue[](T it) selector
 		this.flatMap(selector)
 		
+	js TValue[][] groupBy: TKey(T it) selector
+		                   EachDistinctSortBy sortBy = SortByInteger
+		
+		let listOfLists = [];
+		if(this.length > 0) {
+			let _subject = this
+			let defaultValue;
+			if(sortBy == 1) {defaultValue = 0; _subject = [...this].sort((a,b) => (selector(a) || 0) - (selector(b) || 0)); } else
+			if(sortBy == 2) {defaultValue = ""; _subject = [...this].sort((a,b) => (selector(a) || "").localeCompare(selector(b) || "")); }
+			let it = selector(_subject[0]) || defaultValue, i=0;
+			for(let _nextIndex=1; _nextIndex<_subject.length; ++_nextIndex) { 
+				let _nextIt = selector(_subject[_nextIndex]) || defaultValue;
+				if(_nextIt != it) {
+					listOfLists.push(_subject.slice(i, _nextIndex));
+					it = _nextIt;
+					i = _nextIndex;
+				}
+			}
+			listOfLists.push(_subject.slice(i, _subject.length));
+		}		
+		
+		return listOfLists;
+			
+		
 	// Find an item the meets the given condition
 	// Example: Find a player with a specific id
 	//     app
@@ -1638,6 +1662,7 @@ interface object
 		
 	static inline js string toJson(any value) JSON.stringify(value)
 	static inline js string toFormattedJson(any value) JSON.stringify(value, null, "\t")
+	static inline js any fromJson(string json) JSON.parse(json)
 	static inline js bool isEqualAndSameType(any a, any b) (a === b)
 		
 	static internal js string stringify: object subject, int depth = 0 
