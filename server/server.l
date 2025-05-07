@@ -238,8 +238,8 @@ unit websocket
 		                          void() onStart
 		                          void(Connection connection) onOpen
 		                          void(Connection connection, int errorCode) onClose
-		                          void(Connection connection, Buffer buffer) onMessage
-		                          void(Connection connection, string message) onStringMessage
+		                          void(Connection connection, Buffer buffer) onMessage = null
+		                          void(Connection connection, string message) onStringMessage = null
 		const uWS = require('uWebSockets.js')
 		const app =  process.platform == "win32" || process.platform == "darwin" ? uWS.App() :
 			uWS.SSLApp({
@@ -296,6 +296,7 @@ class WebsocketHttpResponse
 		
 class Connection
 	inline js bool send(Buffer buffer) this.send(buffer.toByteArray(), /*isBinary*/true, /*compress*/false)
+	inline js bool sendJson(dynamic data) this.send(new TextEncoder("utf-8").encode(JSON.stringify(data)))
 	inline js int bufferedAmount() this.getBufferedAmount()
 	inline js object data := this.data
 	inline js void data(object value) this.data = value
