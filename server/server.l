@@ -239,6 +239,7 @@ unit websocket
 		                          void(Connection connection) onOpen
 		                          void(Connection connection, int errorCode) onClose
 		                          void(Connection connection, Buffer buffer) onMessage
+		                          void(Connection connection, string message) onStringMessage
 		const uWS = require('uWebSockets.js')
 		const app =  process.platform == "win32" || process.platform == "darwin" ? uWS.App() :
 			uWS.SSLApp({
@@ -254,7 +255,13 @@ unit websocket
 				onOpen(ws);
 			},
 			message: (ws, message, isBinary) => {
-				onMessage(ws, new Buffer(message, 0, 0, 0))
+				if (isBinary) {
+					onMessage(ws, new Buffer(message, 0, 0, 0))
+				}
+				else {
+					onStringMessage(ws, new TextDecoder("utf-8").decode(buffer));
+				}
+				
 			},
 			drain: (ws) => {
 				log('WebSocket backpressure: ' + ws.getBufferedAmount());
