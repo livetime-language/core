@@ -93,7 +93,9 @@ transient skipInit unit Platform
 			core.simulateConnection = simulateConnection
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
-			await graphics.setup {referenceSizeX, referenceSizeY}
+			// isMobile = true
+			// await graphics.setup {referenceSizeX, referenceSizeY}
+			await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
 			graphics.onResize
 			// graphics.drawStatus "Loading media"
 			if mode >= Play: mode = Pause
