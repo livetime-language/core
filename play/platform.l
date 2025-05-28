@@ -55,7 +55,6 @@ transient skipInit unit Platform
 		ServerNetwork.init();
 		PeerNetwork.init();
 		if(typeof(pocketBase) != "undefined") pocketBase.init();
-		core.log("Loading...")
 		Platform.isMobile = false;
 		Platform.isBrowser = !window.require;
 		Platform.isNode = window.process && process.versions.node

@@ -253,7 +253,6 @@ internal IndexedDBStore
 	
 	IndexedDBStore
 		IndexedDB.stores.add this
-		print "Adding store {name} {IndexedDB.stores.length}"
 		
 	js void put: any data, void() then = null, void(Error error) else = null
 		try {
@@ -347,7 +346,6 @@ internal transient skipInit unit IndexedDB
 	js async void start: string databaseName, int version = 1
 		return new Promise((resolve, reject) => {
 			try {
-				System.print("IndexedDB: start stores:"+IndexedDB.stores.length);
 				var request = indexedDB.open(databaseName, version)
 				request.onupgradeneeded = e => {
 					core.log("IndexedDB: upgradeneeded");
@@ -375,7 +373,6 @@ internal transient skipInit unit IndexedDB
 					core.onError(request.error);
 					reject(request.error);
 				}
-				core.log("IndexedDB: finished");
 			} catch(e) {
 				core.onError(e);
 				reject(e);
@@ -384,7 +381,6 @@ internal transient skipInit unit IndexedDB
 		
 	js void start: string databaseName, int version = 1, void() success = null, void(Error error) else = null
 		try {
-			System.print("IndexedDB: start stores:"+IndexedDB.stores.length);
 			var request = indexedDB.open(databaseName, version)
 			request.onupgradeneeded = e => {
 				core.log("IndexedDB: upgradeneeded");
@@ -412,7 +408,6 @@ internal transient skipInit unit IndexedDB
 				core.onError(request.error);
 				else?.(request.error);
 			}
-			core.log("IndexedDB: finished");
 		} catch(e) {
 			core.onError(e);
 			else?.(e);
