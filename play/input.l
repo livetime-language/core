@@ -670,6 +670,17 @@ skipInit global unit input
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
 		inputs.writeInt16 math.round(referencePos.y)
+
+	internal handleSynteticTouchEvent: int playerIndex, InputType inputType, float x, float y, TouchType touchType, int id
+		let inputs = internalUsers[playerIndex]?.inputs
+		if !inputs: return
+		int composite = cast(inputType)                                 // inputType: 0 -  31 (5 bit)
+		              + math.shiftLeft(touchType, 5)                    // touchType: 0 -   7 (3 bit)
+		              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
+		inputs.writeInt32 localUser.inputFrame
+		inputs.writeUnsignedInt16 composite
+		inputs.writeInt16 math.round(x)
+		inputs.writeInt16 math.round(y)
 	
 	internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 		let inputs = localUser.inputs

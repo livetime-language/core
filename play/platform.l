@@ -44,6 +44,7 @@ transient skipInit unit Platform
 		
 	private js void initPlatform
 		statistics.init();
+		debug.init();
 		IndexedDB?.init();
 		Platform.init();
 		graphics.init();

@@ -293,6 +293,7 @@ internal transient skipInit unit core
 		
 		let str = new Date().hourMinuteSecondMillisecondString() + " " + text
 		statistics.systemLogs.push(str)
+		debug.logs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
 		
