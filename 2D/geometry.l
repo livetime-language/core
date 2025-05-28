@@ -17,7 +17,7 @@ struct Vector2
 	static important inline Vector2 Zero() Vector2(0, 0, null)
 		
 	// A string representation of the vector
-	important string toString() := "{x} {y}"
+	important string toString() := "\{{x}, {y}\}"
 	
 	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
@@ -469,7 +469,7 @@ struct IntVector2
 	important IntVector2 clone := {x, y, location}
 		
 	// A string representation of the vector
-	important string toString := "({x} {y})"
+	important string toString := "\{{x}, {y}\}"
 	
 	// Returns true if the vector is not equal to IntVector2.none
 	bool toBool := (x != int.minValue || y != int.minValue)
