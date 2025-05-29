@@ -55,16 +55,18 @@ skipInit debug
 		string result
 
 		if logs
-			result += "# Printed to console:\n"
+			result += "# Debug logs:\n"
 			for logs: result += . + "\n"
 			logs.clear
 			result += "\n"
 		else
-			result += "# Nothing printed to console\n\n"
+			result += "# No debug logs\n\n"
 
 		if graphics.items
 			result += "# Currently on screen:\n"
-			for graphics.items: result += .description + "\n"
+			for graphics.items
+				if not .location.file.startsWith("lib/core/")
+					result += .description + "\n"
 		else
 			result += "# Nothing on screen\n\n"
 

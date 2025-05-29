@@ -4,12 +4,18 @@ globs: *.l
 alwaysApply: true
 ---
 We use the LiveTime programming language.
-- LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces.
-- Put all the code in the file "src/app.l".
-- Important: If you are asked to draw anything, read the file "media/availableMedia.md" first to see which images are available.
-- Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
-- Print debug messages for all actions of the user, as well as the unsuccessful actions, like a player clicking at an invalid position. This helps you testing and verifying the app.
-- When you are done, use the "LiveTime Testing and Debugging" MCP server to test the application and verify that all functionality is working correctly. AFter every step, check if the debug messages and what is shown on the screen is correct.
+
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces.
+
+Put all the code in the file "src/app.l".
+
+Important: If you are asked to draw anything, read the file "media/availableMedia.md" first to see which images are available.
+
+Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
+
+In order to test and verify the app, print debug logs for all actions of the user, as well as the unsuccessful actions, like a player clicking at an invalid position.
+
+When you are done, use the "LiveTime Testing and Debugging" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases.
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 ´´´

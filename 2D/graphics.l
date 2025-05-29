@@ -203,6 +203,7 @@ internal immutable struct ImageFrame
 
 // An image that can be drawn on the screen and can have several frames of animation
 skipInit immutable Image
+	string name
 	string file
 	Texture texture
 	Vector2 size
@@ -426,7 +427,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-				`Image "${image.file}" position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				`Image ${image.file} position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
 				f.x1, f.y1, f.w, f.h,
@@ -475,7 +476,7 @@ transient skipInit global unit graphics
 					-sizeY/2,
 					sizeX, sizeY,
 					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-					`Image "${image.file}" position:{${position.x},${position.y}} size:{${size.x},${size.y}}`,
+					`Image ${image.name} position:{${position.x},${position.y}} size:{${size.x},${size.y}} align:Center`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
 					f.x1, f.y1, f.w, f.h,
