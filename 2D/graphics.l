@@ -713,15 +713,16 @@ transient skipInit global unit graphics
 			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
 			let halfSizeX = math.round(sizeX*.5)
 			let halfSizeY = math.round(sizeY*.5)
+			let effectiveColor = color || currentColor
 			items.add new DisplayText(
 				matrix,
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
 				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
-				"Text \"{text}\" position:\{{position.x},{position.y}\} topLeft:\{{position.x-halfSizeX},{position.y-halfSizeY}\} bottomRight:\{{position.x+halfSizeX},{position.y+halfSizeY}\}",
+				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{color}",
 				location, position.location, size.location,
-				(color || currentColor).hex, 
+				effectiveColor ? effectiveColor.hex : null, 
 				outlineColor ? outlineColor.hex : null,
 				outlineWidth || currentLineWidth,
 				effectiveFont.offset.y*sizeY,
@@ -1061,7 +1062,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
-				`Rectangle position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
+				`Rectangle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:{${Math.floor(sizeX)},${Math.floor(sizeY)}} topLeft:{${Math.floor(position.x-halfSizeX)},${Math.floor(position.y-halfSizeY)}} bottomRight:{${Math.floor(position.x+halfSizeX)},${Math.floor(position.y+halfSizeY)}} color:${color?.hex}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
@@ -1148,17 +1149,18 @@ transient skipInit global unit graphics
 		                       SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x, sizeY = size.y || size.x
+			let effectiveColor = color || !outlineColor ? color || graphics.currentColor : null
 			graphics.items.push(new DisplayCircle(
 				graphics.totalMatrix, 
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
-				`Circle position:{${position.x},${position.y}} size:{${sizeX},${sizeY}}`,
+				`Circle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:${Math.floor(sizeX)} topLeft:{${Math.floor(position.x-sizeX/2)},${Math.floor(position.y-sizeY/2)}} bottomRight:{${Math.floor(position.x+sizeX/2)},${Math.floor(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
 				direction == 1,
-				color || !outlineColor ? (color || graphics.currentColor).hex : null,
+				effectiveColor ? effectiveColor.hex : null,
 				outlineColor ? outlineColor.hex : null,
 				outlineWidth || graphics.currentLineWidth
 			))
