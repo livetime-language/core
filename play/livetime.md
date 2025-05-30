@@ -5,17 +5,23 @@ alwaysApply: true
 ---
 We use the LiveTime programming language.
 
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces.
-
-Put all the code in the file "src/app.l".
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces. Put all the code in the file "src/app.l".
 
 Important: If you are asked to draw anything, read the file "media/availableMedia.md" first to see which images are available.
 
+Before you start adding anything to the screen, review what is on screen and make sure nothing you are put on screen overlaps with something it shouldn't overlap with.
+
+{currentlyOnScreen}
+
+# Check errors and fix all problems
+
 Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
 
-In order to test and verify the app, print debug logs for all actions of the user, as well as the unsuccessful actions, like a player clicking at an invalid position.
+# Run and Test
 
-When you are done, use the "LiveTime Testing and Debugging" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases.
+In order to test and verify the app, add debug logs using print statemts for all actions of the user, as well as the unsuccessful actions, like a player clicking at an invalid position.
+
+When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases. Thoroughly review the debug logs and whats on the screen after every click.
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 ´´´
@@ -48,7 +54,7 @@ app
 		// Create empty grid cells
 		for cellCount as x
 			for cellCount as y
-				cells[x,y] = Cell(player:null)
+				cells[x,y] = Cell(pos:{x,y}, player:null)
 		
 		// In LiveTime, the global variable "players" always contains a list of players
 		// We pick a random player as the start player
@@ -97,14 +103,14 @@ app
 		currentPlayer = players next currentPlayer
 		
 	captureSurroundedPieces: IntVector2 originPos, Player attacker
-		for IntVector2.primaryDirections
-			IntVector2 neighborPos = originPos + .
+		for IntVector2.primaryDirections as dir
+			IntVector2 neighborPos = originPos + dir
 			Cell neighborCell = cells[neighborPos]
 			
 			if neighborCell and neighborCell.player and neighborCell.player != attacker
 				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
 				if surroundesCells
-					print "Player {attacker} captured {surroundesCells.length} cells"
+					print "Player {attacker} surrounded {surroundesCells.length} cells: {surroundesCells.joinToString.pos.toString}"
 					surroundesCells.each.player = null
 		
 	// We write the return type in front of the function.
@@ -122,8 +128,8 @@ app
 			surroundedCells.add cell
 			cell.visited = true
 			
-			for IntVector2.primaryDirections
-				IntVector2 neighborPos = pos + .
+			for IntVector2.primaryDirections as dir
+				IntVector2 neighborPos = pos + dir
 				Cell neighborCell = cells[neighborPos]
 				if neighborCell and not neighborCell.visited
 					if neighborCell.player == null
@@ -135,10 +141,11 @@ app
 		
 	finishGame
 		Player winner = players.withMax.score
-		print "Player {winner} wins."
+		print "Player {winner} wins with {winner.score} points."
 		ParticleSystem(position:winner.pos)
 		
 class Cell
+	IntVector2 pos
 	Player player
 	int liberties
 	bool visited
@@ -183,8 +190,9 @@ app
 	Item[] items
 		
 	startGame
-		for Direction.diagonalDirections
-			boxes.add {rect:{position:{220,280}*.vector, size:{420,440}}}
+		print "Starting game"
+		for IntVector2.diagonalDirections as dir
+			boxes.add {rect:{position:{220,280} * dir, size:{420,440}}}
 		nextRound
 
 		// When assigning an enum value to a variable, the enum name must be omitted
@@ -193,6 +201,7 @@ app
 		
 	nextRound
 		round++
+		print "Starting round {round}"
 		boxes.each.itemInBox = null
 		words.shuffle
 		items.clear
@@ -218,7 +227,7 @@ app
 				// If all items are dropped into boxes, show "Next Round button"
 				if items.all.droppedInBox != null
 					drawButton "Next Round", image:Button, position:{0,0}, visibleFor:currentPlayer
-						Player playerWhoClickedTheButton = touch.by
+						print "Player {touch.by} clicked 'Next Round'."
 						phase = Reveal
 						nextRound
 			Reveal
@@ -290,7 +299,8 @@ class Item
 				// The current player can drag item around with the mouse
 				// Use "by:app.currentPlayer" to ensure only the current player can drag items
 				onTouchDown position, size, by:app.currentPlayer
-					// Start dragging item
+					// Start dragging
+					print "Player {touch.by} started dragging {word} at {touch.position}"
 					Player playerWhoClicked = touch.by
 					moveTouch = .
 					originalPosition = position
@@ -305,6 +315,7 @@ class Item
 					
 				onTouchUp moveTouch
 					// Drop item
+					print "Player {touch.by} dropped {word} at {touch.position}"
 					Box droppedInBox = app.boxes.find.rect.contains position
 					if droppedInBox and droppedInBox.itemInBox == null
 						this.droppedInBox = droppedInBox
