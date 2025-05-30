@@ -421,13 +421,15 @@ transient skipInit global unit graphics
 			let sizeY = size.y || (sizeX/f.w)*f.h
 			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 			if(factor > 1) { sizeX *= factor; sizeY *= factor }
+			let halfSizeX = Math.round(sizeX*.5)
+			let halfSizeY = Math.round(sizeY*.5)
 			graphics.items.push(new DisplayImage(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-				`Image ${image.file} position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
 				f.x1, f.y1, f.w, f.h,
@@ -470,13 +472,15 @@ transient skipInit global unit graphics
 				matrix.move(position)
 				matrix.rotate(angle)
 				if(flipX || flipY) matrix.scale(new Vector2(flipX ? -1:1, flipY ? -1:1	))
+				let halfSizeX = Math.round(sizeX*.5)
+				let halfSizeY = Math.round(sizeY*.5)
 				graphics.items.push(new DisplayImage(
 					matrix,
-					-sizeX/2,
-					-sizeY/2,
+					-halfSizeX,
+					-halfSizeY,
 					sizeX, sizeY,
 					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-					`Image ${image.name} position:{${position.x},${position.y}} size:{${size.x},${size.y}} align:Center`,
+					`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
 					f.x1, f.y1, f.w, f.h,
@@ -707,13 +711,15 @@ transient skipInit global unit graphics
 			float x, y
 			if not angle: matrix = totalMatrix; x = position.x; y = position.y
 			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
+			let halfSizeX = math.round(sizeX*.5)
+			let halfSizeY = math.round(sizeY*.5)
 			items.add new DisplayText(
 				matrix,
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
 				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
-				"Text \"{text}\" position:\{{position.x},{position.y}\} size:{size.x}{alignmentDescription(align, valign)}",
+				"Text \"{text}\" position:\{{position.x},{position.y}\} topLeft:\{{position.x-halfSizeX},{position.y-halfSizeY}\} bottomRight:\{{position.x+halfSizeX},{position.y+halfSizeY}\}",
 				location, position.location, size.location,
 				(color || currentColor).hex, 
 				outlineColor ? outlineColor.hex : null,
@@ -1047,13 +1053,15 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
+			let halfSizeX = Math.round(sizeX*.5)
+			let halfSizeY = Math.round(sizeY*.5)
 			graphics.items.push(new DisplayRectangle(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
-				`Rectangle position:{${position.x},${position.y}} size:{${size.x},${size.y}}${graphics.alignmentDescription(align, valign)}`,
+				`Rectangle position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
@@ -1146,7 +1154,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2, 
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
-				`Circle position:{${position.x},${position.y}} size:{${size.x},${size.y}}`,
+				`Circle position:{${position.x},${position.y}} size:{${sizeX},${sizeY}}`,
 				location, position.location, size.location,
 				startAngle, angle,
 				direction == 1,
@@ -1342,7 +1350,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
-				`Texture "${texture.file}" position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				0, 0, texture.size.x, texture.size.y,
@@ -1379,7 +1387,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
-				`Texture "${texture.file}" position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				sourcePosition.x+texture.size.x/2-sourceSize.x/2,
@@ -1416,7 +1424,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, 1, graphics.currentClippingPath, "Clear", 
-				`ClearRectangle position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				`ClearRectangle position:{${position.x},${position.y}} topLeft:{${position.x-sizeX*.5},${position.y-sizeY*.5}} bottomRight:{${position.x+sizeX*.5},${position.y+sizeY*.5}}`,
 				location, position.location, size.location,
 				"clear", null, 0
 			))
