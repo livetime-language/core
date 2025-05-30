@@ -62,6 +62,7 @@ skipInit debug
 		else
 			result += "# No debug logs\n\n"
 
+		result += "# Screen dimensions topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\}\n"
 		if graphics.items
 			result += "# Currently on screen:\n"
 			for graphics.items
@@ -71,5 +72,17 @@ skipInit debug
 			result += "# Nothing on screen\n\n"
 
 		Platform.sendToEditor {type:"state", value:result}
+
+	sendCurrentlyOnScreen
+		string result = "# Screen dimensions topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\}\n"
+		if graphics.items
+			result += "# Currently on screen:\n"
+			for graphics.items
+				if not .location.file.startsWith("lib/core/")
+					result += .description + "\n"
+		else
+			result += "# Nothing is currently on screen\n\n"
+
+		Platform.sendToEditor {type:"screen", value:result}
 
 			

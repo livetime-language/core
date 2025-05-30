@@ -424,6 +424,8 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.clearEvent
 		players.each.postprocessEvents
+
+		if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
 		
 		// Advance frame
 		frame++
