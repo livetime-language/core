@@ -47,7 +47,7 @@ Object Piece
 	private Angle targetAngle
 	private bool rotatedOverThreshold
 	
-	Vector2 iconPos = Vector2.none
+	Vector2 iconPos = Vector2.None
 	Vector2 clickableMargin = {50,50}
 	
 	public Board board
@@ -57,7 +57,7 @@ Object Piece
 	onBoardChanged
 		
 	// Snap
-	visible Vector2 snappedAt = Vector2.none
+	visible Vector2 snappedAt = Vector2.None
 	onSnap
 	onUnsnap
 	onRotate
@@ -303,11 +303,11 @@ Board SmartBoard
 		return []
 			
 	snap: Piece currentObject, Vector2 position
-		Vector2 closestSpotPos = Vector2.none
+		Vector2 closestSpotPos = Vector2.None
 		float minDistance = int.maxValue
 		let positions = getValidPositions currentObject
 		
-		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.none
+		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.None
 			currentObject.position = snapToPosition
 			
 		if snapToPosition != currentObject.snappedAt
@@ -331,7 +331,7 @@ Board SpotBoard
 		spots.add spot
 	
 	snap: Piece currentObject, Vector2 position
-		Vector2 closestSpotPos = Vector2.none
+		Vector2 closestSpotPos = Vector2.None
 		float minDistance = int.maxValue
 		for spots -> spot
 			let spotPos = spot.getClosestPoint position, this.position

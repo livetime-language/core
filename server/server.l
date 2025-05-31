@@ -262,7 +262,7 @@ class DirEntry
 	bool isFile()
 	bool isDirectory()
 				
-unit File
+unit file
 	js async void write: string file, string data, string encoding = null
 		require('fs').promises.writeFile(file, data, encoding)
 

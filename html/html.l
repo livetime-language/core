@@ -260,7 +260,7 @@ struct Vector2
 	// A string representation of the vector
 	toString := "{x}{unit} {y}{unit}"
 	
-	// Returns true if the vector is not equal to Vector2.none
+	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
 		
 	// Creates a copy of the vector with the same values

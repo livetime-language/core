@@ -20,11 +20,11 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", ["Microsoft Sofia", "Microsoft Catalina", "Microsoft Ximena", "Google", "Paulina", "Mónica"]}
-		German:  {"de", "de-DE", ["Microsoft", "Google"]}
+		German:  {"de", "de-DE", ["Microsoft", "Google", "Helena", "Anna"]}
 		English: {"en", "en-US", ["Microsoft", "Google"]}
 	}
 	
-	private inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
+	inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
 		
 	nextVoice
 		voiceOverride = voices[voiceIndex incrementAndWrap voices.length]
@@ -37,10 +37,11 @@ transient speech
 		utterance.voice = speech.currentVoice = voice.voice;
 		utterance.rate = speech.rate = rate;
 		speechSynthesis.speak(utterance);
-		// document.onclick = e => {
-		// 	speech.say("");
-		// 	document.onclick = null;
-		// }
+		document.onclick = e => {
+			const utterance = new SpeechSynthesisUtterance("");
+			speechSynthesis.speak(utterance);
+			document.onclick = null;
+		}
 		
 	VoicePreference getVoice: string language
 		let pref = preferences[language] or preferences["English"]
@@ -56,26 +57,31 @@ transient speech
 					break
 		return pref
 		
-	js void say: string value, string language, float rate = speech.rate, void() then = null
+	js void say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
 		if(core.isPremiere && input.isCertain) {
-			speech.lastWord = value;
-			speechSynthesis.cancel();
-			const utterance = new SpeechSynthesisUtterance(value);
-			let voice = speech.getVoice(language);
-			utterance.lang = voice.langAndCountry;
-			utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
-			utterance.rate = rate;
-			if(then != null) {
-				utterance.onend = () => {
-					System.print("say onend");
-					then();
-				}			
+			if(window.webkit) {
+				let pref = speech.preferences.get(language) || speech.preferences.get("English")
+				window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: position, duration: duration});
+			} else {
+				speech.lastWord = value;
+				speechSynthesis.cancel();
+				const utterance = new SpeechSynthesisUtterance(value);
+				let voice = speech.getVoice(language);
+				utterance.lang = voice.langAndCountry;
+				utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
+				utterance.rate = rate || 1;
+				utterance.onend = () => reader.onSpeakingFinished(value, language)
+				speechSynthesis.speak(utterance);
 			}
-			speechSynthesis.speak(utterance);	
 		}
 		
 	js inline void stop
-		speechSynthesis.cancel()
+		if(window.webkit) {
+			window.webkit.messageHandlers.speak.postMessage({action: "pause"});
+		} else {
+			speechSynthesis.cancel()
+		}
 		
 	js inline bool isSpeaking
 		speechSynthesis.speaking
+

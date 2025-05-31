@@ -10,7 +10,7 @@ immutable Color
 		
 	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
 	
-	string hex
+	important string hex
 	string name
 	
 	string toString := name or hex
@@ -24,7 +24,7 @@ immutable Color
 	inline js bool == Color other: this?.hex == other?.hex
 	inline js bool != Color other: this?.hex != other?.hex
 	
-	Color: string hex = ""
+	important Color: string hex = ""
 		this.hex = hex[0] == "#" ? hex : "#"+hex
 
 	Color: int red = 0
@@ -203,6 +203,7 @@ internal immutable struct ImageFrame
 
 // An image that can be drawn on the screen and can have several frames of animation
 skipInit immutable Image
+	string name
 	string file
 	Texture texture
 	Vector2 size
@@ -249,7 +250,7 @@ transient skipInit global unit graphics
 	private const alignmentFactor = [0, .5, 1]
 	
 	public Vector2 referenceSize = {1920, 1080}
-	public DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInFront
+	public important DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInFront
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
@@ -260,7 +261,7 @@ transient skipInit global unit graphics
 	internal Vector2 size
 	internal float pixelRatio
 	
-	internal async setup: Vector2 referenceSize
+	async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
 	
 	internal js void onResize
@@ -381,17 +382,26 @@ transient skipInit global unit graphics
 				graphics.context.fillRect(graphics.pixelSize.x-margin, 0, margin, graphics.pixelSize.y)
 			}
 		}
-		
+
+	alignmentDescription: HorizontalAlignment align, VerticalAlignment valign
+		string result
+
+		if align == Center:  result = " align:Center"; else
+		if align == Left:    result = " align:Left"; else
+		                     result = " align:Right";
+
+		if valign == Top:    result = " valign:Top"; else
+		if valign == Bottom: result = " valign:Bottom";
+
+		return result
 	// ------------------------------------------------------- Image -------------------------------------------------------
 	
 	// Draw an image. Place a PNG file in the "media" folder and it will automatically be imported.
 	// 
 	// Example: We place an image called "Idle.png" in the "media" folder. Then, we draw this image at the position {0,0}, scale it to a width of 32 pixels. Only the current player instance will see the image.
-	// ```
 	//     Player
 	//         tick
 	//             drawImage Idle, position:{0,0}, size:32, frame:0, visibleFor:me
-	// ```
 	// Image: drawImage0.png
 	global js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
 		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
@@ -411,12 +421,15 @@ transient skipInit global unit graphics
 			let sizeY = size.y || (sizeX/f.w)*f.h
 			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 			if(factor > 1) { sizeX *= factor; sizeY *= factor }
+			let halfSizeX = Math.round(sizeX*.5)
+			let halfSizeY = Math.round(sizeY*.5)
 			graphics.items.push(new DisplayImage(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
 				f.x1, f.y1, f.w, f.h,
@@ -459,12 +472,15 @@ transient skipInit global unit graphics
 				matrix.move(position)
 				matrix.rotate(angle)
 				if(flipX || flipY) matrix.scale(new Vector2(flipX ? -1:1, flipY ? -1:1	))
+				let halfSizeX = Math.round(sizeX*.5)
+				let halfSizeY = Math.round(sizeY*.5)
 				graphics.items.push(new DisplayImage(
 					matrix,
-					-sizeX/2,
-					-sizeY/2,
+					-halfSizeX,
+					-halfSizeY,
 					sizeX, sizeY,
-					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file, 
+					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+					`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
 					f.x1, f.y1, f.w, f.h,
@@ -528,7 +544,7 @@ transient skipInit global unit graphics
 	//                 print "The image was clicked at {touch.position}"
 	// ```
 	// Image: drawImage0.png
-	global void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
+	global important void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
 		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
@@ -568,7 +584,7 @@ transient skipInit global unit graphics
 	//                 drawText "You've won!", size:100, color:Black, font:OpenSans, visibleFor:me
 	// ```
 	// Image: drawText.png
-	global drawText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
+	global important drawText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
 		             Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		             implicit Vector2 size = {}           // The font size of the text
 		             Color color = null                   // The color of the text
@@ -695,14 +711,18 @@ transient skipInit global unit graphics
 			float x, y
 			if not angle: matrix = totalMatrix; x = position.x; y = position.y
 			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
+			let halfSizeX = math.round(sizeX*.5)
+			let halfSizeY = math.round(sizeY*.5)
+			let effectiveColor = color || currentColor
 			items.add new DisplayText(
 				matrix,
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, alpha * graphics.currentAlpha, currentClippingPath, text, 
+				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
+				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{color}",
 				location, position.location, size.location,
-				(color || currentColor).hex, 
+				effectiveColor ? effectiveColor.hex : null, 
 				outlineColor ? outlineColor.hex : null,
 				outlineWidth || currentLineWidth,
 				effectiveFont.offset.y*sizeY,
@@ -889,7 +909,8 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, alpha * graphics.currentAlpha, currentClippingPath, text, 
+				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
+				"Text \"{text}\" position:\{{position.x},{position.y}\} size:{size.x}",
 				location, position.location, size.location,
 				(color || currentColor).hex, 
 				outlineColor ? outlineColor.hex : null,
@@ -1019,7 +1040,7 @@ transient skipInit global unit graphics
 	//             drawRectangle size:{500,100}, color:White, outlineColor:Black, outlineWidth:8
 	// ```
 	// Image: drawRectangle.png
-	global js void drawRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global important js void drawRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                          implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                          Color color = null                  // The color of the area within the rectangle
 		                          Color outlineColor = null           // The color of the outline around the rectangle
@@ -1033,12 +1054,15 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
+			let halfSizeX = Math.round(sizeX*.5)
+			let halfSizeY = Math.round(sizeY*.5)
 			graphics.items.push(new DisplayRectangle(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle", 
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
+				`Rectangle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:{${Math.floor(sizeX)},${Math.floor(sizeY)}} topLeft:{${Math.floor(position.x-halfSizeX)},${Math.floor(position.y-halfSizeY)}} bottomRight:{${Math.floor(position.x+halfSizeX)},${Math.floor(position.y+halfSizeY)}} color:${color?.hex}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
@@ -1055,7 +1079,7 @@ transient skipInit global unit graphics
 	//             drawRoundedRectangle size:{500,100}, outlineColor:Black, outlineWidth:8, radius:20
 	// ```
 	// Image: drawRoundedRectangle.png
-	global js void drawRoundedRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global important js void drawRoundedRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                                 implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                                 radius = 32                         // The radius of the rounded corners
 		                                 Color color = null                  // The color of the area within the rectangle
@@ -1075,6 +1099,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
+				`RoundedRectangle position:${position.x},${position.y} size:${size.x},${size.y}${alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1110,7 +1135,7 @@ transient skipInit global unit graphics
 	//             drawCircle outlineColor:#118ab2, outlineWidth:24, size:100, startAngle:0°, angle:180°
 	// ```
 	// Image: drawCircle2.png
-	global js void drawCircle: position = Vector2()                    // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global important js void drawCircle: position = Vector2()                    // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                       implicit Vector2 size = {256,256}       // The size of the circle, use a float to draw a circle, use a vector draw an ellipse
 		                       Color color = null                      // The color of the area within the circle
 		                       Color outlineColor = null               // The color of the outline around the circle
@@ -1124,16 +1149,18 @@ transient skipInit global unit graphics
 		                       SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x, sizeY = size.y || size.x
+			let effectiveColor = color || !outlineColor ? color || graphics.currentColor : null
 			graphics.items.push(new DisplayCircle(
 				graphics.totalMatrix, 
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
+				`Circle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:${Math.floor(sizeX)} topLeft:{${Math.floor(position.x-sizeX/2)},${Math.floor(position.y-sizeY/2)}} bottomRight:{${Math.floor(position.x+sizeX/2)},${Math.floor(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
 				direction == 1,
-				color || !outlineColor ? (color || graphics.currentColor).hex : null,
+				effectiveColor ? effectiveColor.hex : null,
 				outlineColor ? outlineColor.hex : null,
 				outlineWidth || graphics.currentLineWidth
 			))
@@ -1150,7 +1177,7 @@ transient skipInit global unit graphics
 	//             drawLine {-100,0} to {100,0} color:Blue
 	// ```
 	// Image: drawLine.png
-	global js void drawLine: Vector2 from                        // The point to start the line from
+	global important js void drawLine: Vector2 from                        // The point to start the line from
 		                     nocolon Vector2 to                  // The point to draw the line to
 		                     Color color = null                  // The color of the line
 		                     width = 0                           // The width of the line in pixels
@@ -1163,6 +1190,7 @@ transient skipInit global unit graphics
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				`Line from:{${from.x},${from.y}} to:{${to.x},${to.y}}`,
 				location, from.location, null,
 				to,
 				(color || graphics.currentColor).hex,
@@ -1179,7 +1207,7 @@ transient skipInit global unit graphics
 	//             drawLines [{-50,0}, {0,50}, {100,-50}] color:Blue width:32
 	// ```
 	// Image: drawLines.png
-	global js void drawLines: Vector2[] points                    // A list of points for the line
+	global important js void drawLines: Vector2[] points                    // A list of points for the line
 		                      Vector2 position = {}               // The position all points are relative to 
 		                      Color color = null                  // The color of the line
 		                      width = 0                           // The width of the line in pixels
@@ -1193,6 +1221,7 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				`Line from:{${from.x},${from.y}} to:{${to.x},${to.y}}`,
 				location, position.location, null,
 				points,
 				null, // no fill color, because we want to draw a line instead of a polygon
@@ -1213,7 +1242,7 @@ transient skipInit global unit graphics
 	//             drawPolygon [{-50,50}, {0,-50}, {50,50}] color:White outlineColor:Blue
 	// ```
 	// Image: drawPolygon.png
-	global js void drawPolygon: Vector2[] points                    // A list of points for the polygon
+	global important js void drawPolygon: Vector2[] points                    // A list of points for the polygon
 		                        Vector2 position = {0,0}            // The position all polygon points are relative to
 		                        Color color = null                  // The color of the area within the polygon
 		                        Color outlineColor = null           // The color of the outline around the polygon
@@ -1227,7 +1256,8 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon", 
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
+				`Polygon position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
 				location, position.location, null,
 				points,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1248,7 +1278,7 @@ transient skipInit global unit graphics
 	//             drawVideo me, size:200
 	// ```
 	// Image: drawVideo.png
-	global drawVideo: Player player                       // Draw the video showing this player
+	global important drawVideo: Player player                       // Draw the video showing this player
 		              Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		              implicit Vector2 size = {440}       // A float scales the image to that width keeping the aspect ratio, a vector stretches the video
 		              VideoShape shape = Rectangle        // Choose whether the video should be drawn as a rectangle, a square or a circle
@@ -1322,6 +1352,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				0, 0, texture.size.x, texture.size.y,
@@ -1358,6 +1389,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
+				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				sourcePosition.x+texture.size.x/2-sourceSize.x/2,
@@ -1394,6 +1426,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, 1, graphics.currentClippingPath, "Clear", 
+				`ClearRectangle position:{${position.x},${position.y}} topLeft:{${position.x-sizeX*.5},${position.y-sizeY*.5}} bottomRight:{${position.x+sizeX*.5},${position.y+sizeY*.5}}`,
 				location, position.location, size.location,
 				"clear", null, 0
 			))
@@ -1477,7 +1510,7 @@ transient skipInit global unit graphics
 	//                 drawImage Button
 	// ```
 	// Image: graphicsTransform.png
-	transform: Vector2 move = Vector2.none  // The distance to move
+	transform: Vector2 move = Vector2.None  // The distance to move
 		       Angle rotate = 0             // The angle in turns (0: no rotation, 1: one full rotation)
 		       float scale = 1              // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
@@ -1857,13 +1890,13 @@ internal skipInit transient unit gizmo
 			// Draw handles
 			let size = max - min
 			let center = (max + min)/2 
-			for Direction.allDirections
-				drawImage ResizeHandle, center + size/2*.vector, size:handleSize, location:null, layer:int.maxValue
+			for IntVector2.allDirections
+				drawImage ResizeHandle, center + size/2 * ., size:handleSize, location:null, layer:int.maxValue
 				
 			// Draw selection
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
-	private Direction overHandleDirection
+	private IntVector2 overHandleDirection
 	private Vector2 touchDownPos = {float.infinity, float.infinity}
 	private bool touchDownInsideGizmo
 	private int locationIndex
@@ -1872,35 +1905,35 @@ internal skipInit transient unit gizmo
 	private bool isManipulating
 	
 	clear
-		overHandleDirection = null
-		touchDownPos = Vector2.none
+		overHandleDirection = IntVector2.None
+		touchDownPos = Vector2.None
 		touchDownInsideGizmo = false
 		locationIndex = 0
 		waitingForCodeId = 0
 		aspectRatio = 1
 		items.clear
-		min = Vector2.none
-		max = Vector2.none
+		min = Vector2.None
+		max = Vector2.None
 	
 	internal onTouch: InputType InputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 		if Platform.mode != Manipulator: return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if InputType == TouchDown: touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if InputType == TouchUp:   touchDownPos = Vector2.none; isManipulating = false
+		if InputType == TouchUp:   touchDownPos = Vector2.None; isManipulating = false
 			
 		// Which handle are we currently hovering over?
 		if items and not touchDownPos
 			let center = (min + max)/2
-			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = Direction.DownRight; else
-			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = Direction.UpLeft; else
-			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = Direction.UpRight; else
-			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = Direction.DownLeft; else
-			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = Direction.Right; else
-			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = Direction.Left; else
-			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = Direction.Up; else
-			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = Direction.Down; else
-				                                                                overHandleDirection = null
+			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = IntVector2.DownRight; else
+			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = IntVector2.UpLeft; else
+			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = IntVector2.UpRight; else
+			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = IntVector2.DownLeft; else
+			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = IntVector2.Right; else
+			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = IntVector2.Left; else
+			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = IntVector2.Up; else
+			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = IntVector2.Down; else
+				                                                                overHandleDirection = IntVector2.None
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
@@ -1932,7 +1965,7 @@ internal skipInit transient unit gizmo
 			GizomInfluence[] influences
 			if overHandleDirection
 				// Resize the item (we are over a handle)
-				let handle = overHandleDirection.vector
+				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0
 				let dx = (referencePos.x - touchDownPos.x) * handle.x
 				let dy = (referencePos.y - touchDownPos.y) * handle.y
@@ -2014,6 +2047,7 @@ internal transient immutable DisplayItem
 	float alpha
 	ClippingPath clippingPath
 	string name
+	string description
 	SourceCodeLocation location
 	SourceCodeLocation positionLocation
 	SourceCodeLocation sizeLocation
@@ -2052,7 +2086,7 @@ internal transient immutable DisplayItem
 		if(this.clippingPath.points.length >= 2)
 			graphics.context.restore()
 			
-internal transient DisplayItem DisplayImage
+internal transient immutable DisplayItem DisplayImage
 	object htmlImage
 	float sx, sy, sw, sh
 	Color color
@@ -2091,7 +2125,7 @@ internal transient DisplayItem DisplayImage
 		
 		if(this.clippingPath) this.endClipping()
 
-internal transient DisplayItem DisplayText
+internal transient immutable DisplayItem DisplayText
 	string fillStyle, outlineColor
 	float outlineWidth
 	float offsetY
@@ -2140,7 +2174,7 @@ internal TextSegment
 	Vector2 position
 	Vector2 size
 		
-internal transient DisplayItem DisplayTextWithHighlights
+internal transient immutable DisplayItem DisplayTextWithHighlights
 	string fillStyle, outlineColor
 	float outlineWidth
 	float offsetY
@@ -2203,7 +2237,7 @@ internal transient DisplayItem DisplayTextWithHighlights
 		
 		if(this.clippingPath) this.endClipping()
 
-internal transient DisplayItem DisplayRectangle
+internal transient immutable DisplayItem DisplayRectangle
 	string color, outlineColor
 	float outlineWidth
 	js void draw
@@ -2227,7 +2261,7 @@ internal transient DisplayItem DisplayRectangle
 		}
 		if(this.clippingPath) this.endClipping()
 		
-internal transient DisplayItem DisplayRoundedRectangle
+internal transient immutable DisplayItem DisplayRoundedRectangle
 	float radius
 	string color, outlineColor
 	float outlineWidth
@@ -2275,7 +2309,7 @@ internal transient DisplayItem DisplayRoundedRectangle
 		}
 		if(this.clippingPath) this.endClipping()
 		
-internal transient DisplayItem DisplayPolygon
+internal transient immutable DisplayItem DisplayPolygon
 	Vector2[] points
 	string color, outlineColor
 	float outlineWidth
@@ -2321,7 +2355,7 @@ internal transient DisplayItem DisplayPolygon
 		}
 		if(this.clippingPath) this.endClipping()
 		
-internal transient DisplayItem DisplayCircle
+internal transient immutable DisplayItem DisplayCircle
 	float startAngle, angle
 	RotationDirection direction
 	string color, outlineColor
@@ -2357,7 +2391,7 @@ internal transient DisplayItem DisplayCircle
 		}
 		if(this.clippingPath) this.endClipping()
 		
-internal transient DisplayItem DisplayLine
+internal transient immutable DisplayItem DisplayLine
 	Vector2 end
 	string outlineColor
 	float outlineWidth
@@ -2376,7 +2410,7 @@ internal transient DisplayItem DisplayLine
 		
 		if(this.clippingPath) this.endClipping()
 			
-internal transient DisplayItem DisplayVideo
+internal transient immutable DisplayItem DisplayVideo
 	int userId
 	VideoShape shape
 	draw
