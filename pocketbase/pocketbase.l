@@ -7,9 +7,9 @@ transient skipInit pocketBase
 		await connect
 		
 	async js void connect
-		// if(!pocketBase.url) pocketBase.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
-		// const PocketBase = (await import((pocketBase.libUrl || ".")+"/lib/pocketbase.es.mjs")).default
-		const PocketBase = (await import(_basePath+"/lib/pocketbase.es.mjs")).default
+		if(!pocketBase.url) pocketBase.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
+		const PocketBase = (await import((pocketBase.libUrl || _basePath)+"/lib/pocketbase.es.mjs")).default
+		// const PocketBase = (await import(_basePath+"/lib/pocketbase.es.mjs")).default
 		if(pocketBase.pb) pocketBase.pb.realtime.unsubscribe();
 		pocketBase.pb = new PocketBase(pocketBase.url);
 		
@@ -35,7 +35,7 @@ transient skipInit pocketBase
 		                            string password
 		return await pocketBase.pb.collection("users").authWithPassword(email, password)
 
-Collection<T>
+Collection<T> 
 	string name
 	T[] items = []
 	int totalItems
