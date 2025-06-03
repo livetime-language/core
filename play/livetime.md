@@ -15,11 +15,19 @@ Before you start adding anything to the screen, review what's currently on scree
 
 Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
 
-# Run and Test
+# Run, Test and Debug
 
-In order to test and verify the app, add debug logs using print statemts for all actions of the user, as well as the unsuccessful actions, like a player clicking at an invalid position.
+In order to test and verify the app, add debug logs using print statemts for everything that is happening in the app. For example, print debug logs for all clicks or print the position of all moving objects during every frame of an animation.
 
-When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases. Thoroughly review the debug logs and whats on the screen after every click.
+When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases. Thoroughly review the debug logs and whats currently on screen.
+
+Fix all errors and bugs you encounter.
+
+# Angles
+All angle values in LiveTime are in turns, where .5 is half a rotation and 1 is a full rotation. For example, math.sin(.25) return 1.
+
+# Time
+All time values in LiveTime are in milliseconds. For exmaple, 7 seconds returns the integer value 7000. Time.now returns the current time as an integer in milliseconds.
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 ´´´
@@ -614,9 +622,9 @@ static class math
 	static int round: float value
 	static float min: float a, float b
 	static float max: float a, float b
-	static float sin: Angle angle
-	static float cos: Angle angle
-	static float tan: Angle angle
+	static float sin: Angle angleInTurns
+	static float cos: Angle angleInTurns
+	static float tan: Angle angleInTurns
 	static Angle atan2: float y, float x
 	static float log: float value
 	static float log2: float value
@@ -624,7 +632,7 @@ static class math
 	static float pow: float base, float exponent
 	static float exp: float exponent
 	static Angle getAngleForVector: Vector2 vector
-	static Vector2 getVectorForAngle: Angle angle, float radius
+	static Vector2 getVectorForAngle: Angle angleInTurns, float radius
 	static Vector2 intersectLines: Vector2 startA, Vector2 endA, Vector2 startB, Vector2 endB, LineType typeA, LineType typeB
 
 class Time
@@ -698,8 +706,9 @@ class IntVector2
 	bool isInsideRectangle: IntVector2 center, IntVector2 size
 	Angle angleTo: IntVector2 value
 
+// An angle in turns
 class Angle
-	Angle rotateTowards: Angle value, Angle speed
+	Angle rotateTowards: Angle angleInTurns, Angle speed
 	Angle normalize:
 
 class Rect

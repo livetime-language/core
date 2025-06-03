@@ -38,6 +38,7 @@ skipInit debug
 			print "step: frames out of range"
 		else
 			for frames
+				print "# Frame {core.frame}"
 				core.step fastForward:false, draw:i == frames-1
 		sendApplicationState
 
@@ -69,19 +70,18 @@ skipInit debug
 				if not .location.file.startsWith("lib/core/")
 					result += .description + "\n"
 		else
-			result += "# Nothing on screen\n\n"
+			result += "# Nothing on screen\n\n" 
 
 		Platform.sendToEditor {type:"state", value:result}
 
 	sendCurrentlyOnScreen
-		string result = "# Screen topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\} backgroundColor:{graphics.backgroundColor ? graphics.backgroundColor.toString() : "Black"}\n"
+		string result = "# Currently on screen:\n# Screen topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\} backgroundColor:{graphics.backgroundColor ? graphics.backgroundColor.toString() : "Black"}\n"
 		if graphics.items
-			result += "# Currently on screen:\n"
 			for graphics.items
 				if not .location.file.startsWith("lib/core/")
 					result += .description + "\n"
 		else
-			result += "# Nothing is currently on screen\n\n"
+			result += "# Nothing on screen\n\n"
 
 		Platform.sendToEditor {type:"screen", value:result}
 
