@@ -37,7 +37,7 @@ transient skipInit pocketBase
 		                            string password
 		return await pocketBase.pb.collection("users").authWithPassword(email, password)
 
-Collection<T>
+Collection<T> 
 	string name
 	T[] items = []
 	int totalItems

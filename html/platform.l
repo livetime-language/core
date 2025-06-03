@@ -311,6 +311,7 @@ interface DataTransferItem
 interface DateTransfer
 	DataTransferItem[] items
 	
+	
 MenuItem
 	string label
 	string accelerator
@@ -510,6 +511,21 @@ global unit Html
 			style.position = "fixed"; style.top = 0; style.left = 0; style.width = (window.innerWidth/Platform.scale)+"px"; style.height = (document.body.scrollHeight)+"px"  
 		}
 		return style 
+
+	js async any getUserMedia
+		let userMedia = await navigator.mediaDevices.getUserMedia({
+			video:{
+				facingMode: "environment"
+			}
+		})
+		let log = ""
+		let devices = await navigator.mediaDevices.enumerateDevices()
+		for(let device of devices) {
+			log += device.label + " " + device.deviceId + "\n"
+		}
+		alert(log)
+
+		return userMedia
 	
 	private js void setStyle: Node node, dynamic style
 		// We shouldn't need this because the same line of code can't output less styles than previously
@@ -1028,6 +1044,7 @@ global unit Html
 		if multiple: data.multiple = true
 		let node = div tag:"input", data, style, location
 		node.onchange = onChange(node)
+		node.setAttribute("capture", "environment")
 		return node
 		
 	js Promise<string> getDataUrlForFile: File file
