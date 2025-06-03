@@ -3,13 +3,11 @@ description: LiveTime Programming Language Examples and Standard Library
 globs: *.l
 alwaysApply: true
 ---
-We use the LiveTime programming language.
+# We use the LiveTime programming language.
 
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces. Put all the code in the file "src/app.l".
 
-Important: If you are asked to draw anything, read the file "media/availableMedia.md" first to see which images are available.
-
-Before you start adding anything to the screen, review what is on screen and make sure nothing you are put on screen overlaps with something it shouldn't overlap with.
+Before you start adding anything to the screen, review what's currently on screen and make sure nothing you draw on screen overlaps with something it shouldn't overlap with.
 
 {currentlyOnScreen}
 

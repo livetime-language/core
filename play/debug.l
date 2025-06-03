@@ -62,7 +62,7 @@ skipInit debug
 		else
 			result += "# No debug logs\n\n"
 
-		result += "# Screen dimensions topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\}\n"
+		result += "# Screen topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\} backgroundColor:{graphics.backgroundColor ? graphics.backgroundColor.toString() : "Black"}\n"
 		if graphics.items
 			result += "# Currently on screen:\n"
 			for graphics.items
@@ -74,7 +74,7 @@ skipInit debug
 		Platform.sendToEditor {type:"state", value:result}
 
 	sendCurrentlyOnScreen
-		string result = "# Screen dimensions topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\}\n"
+		string result = "# Screen topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\} backgroundColor:{graphics.backgroundColor ? graphics.backgroundColor.toString() : "Black"}\n"
 		if graphics.items
 			result += "# Currently on screen:\n"
 			for graphics.items
