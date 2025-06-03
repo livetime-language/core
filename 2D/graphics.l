@@ -720,7 +720,7 @@ transient skipInit global unit graphics
 				y + offsetY,
 				sizeX, sizeY, 
 				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
-				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{color}",
+				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{effectiveColor}",
 				location, position.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 
 				outlineColor ? outlineColor.hex : null,
@@ -1632,7 +1632,7 @@ transient skipInit global unit graphics
 		code()
 		currentColor = prev
 		return currentColor
-	private Color currentColor = {"#ffffff"}
+	private Color currentColor = {"#ffffff", name:"White"}
 	
 	// ------------------------------------------------------- Font -------------------------------------------------------
 	
