@@ -336,10 +336,11 @@ transient skipInit global unit graphics
 	private drawItems
 		core.displayItems = items.length
 		gizmo.tick
-		items.sort b.layer - a.layer
 		if drawingOrder == ItemsDrawnFirstWillBeInFront
+			items.sort b.layer - a.layer
 			items.each <- .draw
 		else
+			items.sort a.layer - b.layer
 			items.each -> .draw
 		resetTransform
 		
