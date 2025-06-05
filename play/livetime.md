@@ -4,30 +4,15 @@ globs: *.l
 alwaysApply: true
 ---
 # We use the LiveTime programming language.
-
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces. Put all the code in the file "src/app.l".
-
-Before you start adding anything to the screen, review what's currently on screen and make sure nothing you draw on screen overlaps with something it shouldn't overlap with.
-
-{currentlyOnScreen}
-
-# Check errors and fix all problems
-
-Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
-
-# Run, Test and Debug
-
-In order to test and verify the app, add debug logs using print statemts for everything that is happening in the app. For example, print debug logs for all clicks or print the position of all moving objects during every frame of an animation.
-
-When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases. Thoroughly review the debug logs and whats currently on screen.
-
-Fix all errors and bugs you encounter.
 
 # Angles
 All angle values in LiveTime are in turns, where .5 is half a rotation and 1 is a full rotation. For example, math.sin(.25) return 1.
 
-# Time
-All time values in LiveTime are in milliseconds. For exmaple, 7 seconds returns the integer value 7000. Time.now returns the current time as an integer in milliseconds.
+# Avoid unwanted overlaps
+Before you start adding anything to the screen, review what's currently on screen and make sure nothing you draw on screen overlaps with something it shouldn't overlap with.
+
+{currentlyOnScreen}
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 ´´´
@@ -636,17 +621,8 @@ static class math
 	static Vector2 intersectLines: Vector2 startA, Vector2 endA, Vector2 startB, Vector2 endB, LineType typeA, LineType typeB
 
 class Time
-	int milliseconds:
-	int seconds:
-	int minutes:
-	int hours:
-	int totalSeconds:
-	int totalMinutes:
-	int totalHours:
-	int totalDays:
-	int totalWeeks:
-	static Time now
-	static int frame:
+	static int now // The time in milliseconds
+	static int frame // The time in frames (30 frames per second)
 
 class Vector2
 	static Vector2 None:
@@ -750,3 +726,15 @@ static class input
 	global void onTouchUp: Touch touch, bool markAsHandled, void(Touch touch) do
 
 ```
+
+
+
+# Check errors and fix all problems
+Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
+
+# MOST IMPORTANTLY: Always Run, Test and Debug
+In order to test and verify the app, add debug logs using print statemts for everything that is happening. For example, print debug logs for all user actions like clicks. Print the position of all moving objects during every frame of an animation to make sure all animations are correct and smooth.
+
+When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases. Thoroughly review the debug logs and whats currently on screen.
+
+Fix all errors and bugs you encounter.
