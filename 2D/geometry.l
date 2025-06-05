@@ -1216,7 +1216,18 @@ class Grid<T>
 		
 	important bool isValid: IntVector2 pos
 		return {0,0} <= pos < size
-			
+
+	important withMin: float(T a) selector
+		               float threshold = float.maxValue
+		float resultValue = threshold
+		T resultItem
+		for this
+			let value = selector(.)
+			if value < resultValue
+				resultValue = value
+				resultItem = .
+		return resultValue != threshold ? resultItem : null
+		
 global transient unit System
 	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
 		                       -> inline void(
