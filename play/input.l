@@ -852,6 +852,7 @@ skipInit global unit input
 						player.pointerPosition = referencePos
 						internalUser.downTouches.add touch
 						if generateIntegrationTest == Clicks: integrationTest += "\tclick window:{userId} x:{referencePos.x} y:{referencePos.y}\n"
+						appOnTouchDownIfFunctionExists(touch);
 					else
 					if inputType == TouchMove
 						let touch = player.touches.find.id == id
@@ -868,6 +869,7 @@ skipInit global unit input
 						player.pointerPosition = referencePos
 						internalUser.movingTouches.add touch
 						cursor = Auto
+						appOnTouchMoveIfFunctionExists(touch);
 					else
 					if inputType == TouchUp
 						let touch = player.touches.find.id == id
@@ -883,6 +885,7 @@ skipInit global unit input
 						
 						player.pointerPosition = referencePos
 						internalUser.upTouches.add touch
+						appOnTouchUpIfFunctionExists(touch);
 					else
 					if inputType == Scroll
 						Vector2 delta = {inputs.readInt16, inputs.readInt16}
@@ -1115,6 +1118,15 @@ skipInit global unit input
 			InternalUser user = internalUsers[.id]
 				PeerNetwork.disconnect user
 		playersToRemove.clear
+
+	inline js void appOnTouchDownIfFunctionExists: Touch touch
+		if(app.onTouchDown) app.onTouchDown(touch);
+
+	inline js void appOnTouchMoveIfFunctionExists: Touch touch
+		if(app.onTouchMove) app.onTouchMove(touch);
+
+	inline js void appOnTouchUpIfFunctionExists: Touch touch
+		if(app.onTouchUp) app.onTouchUp(touch);
 		
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
