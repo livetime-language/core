@@ -773,8 +773,8 @@ class List<T>
 		else            this.push(item)
 		
 	// Returns whether the list contains the given item
-	important inline js bool contains: T item // Check if the list contains this item
-		this.includes(item)
+	important inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
+		(typeof(item) == "object" && item.equal ? this.some(a => item.equal(a)) : this.includes(item))
 		
 	important bool containsAny: T[] list
 		for list
@@ -789,8 +789,8 @@ class List<T>
 		return true
 		
 	// The index of an item in the list
-	important inline js int indexOf: T item // Get the index of this item
-		this.indexOf(item)
+	important inline js int indexOf: ensureSingleExecution T item // Get the index of this item
+		(typeof(item) == "object" && item.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
 		
 	inline js void setList: T[] list
 		this.splice(0, this.length, ...list)
