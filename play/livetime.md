@@ -3,16 +3,10 @@ description: LiveTime Programming Language Examples and Standard Library
 globs: *.l
 alwaysApply: true
 ---
-# We use the LiveTime programming language.
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces. Put all the code in the file "src/app.l".
-
-# Angles
-All angle values in LiveTime are in turns, where .5 is half a rotation and 1 is a full rotation. For example, math.sin(.25) return 1.
-
-# Avoid unwanted overlaps
-Before you start adding anything to the screen, review what's currently on screen and make sure nothing you draw on screen overlaps with something it shouldn't overlap with.
-
-{currentlyOnScreen}
+We use the LiveTime programming language.
+- LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces.
+- Put all the code in the file "src/app.l".
+- Important: If you are asked to draw anything, read the file "media/availableMedia.md" first to see which images are available.
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 ´´´
@@ -45,7 +39,7 @@ app
 		// Create empty grid cells
 		for cellCount as x
 			for cellCount as y
-				cells[x,y] = Cell(pos:{x,y}, player:null)
+				cells[x,y] = Cell(player:null)
 		
 		// In LiveTime, the global variable "players" always contains a list of players
 		// We pick a random player as the start player
@@ -94,14 +88,14 @@ app
 		currentPlayer = players next currentPlayer
 		
 	captureSurroundedPieces: IntVector2 originPos, Player attacker
-		for IntVector2.primaryDirections as dir
-			IntVector2 neighborPos = originPos + dir
+		for IntVector2.primaryDirections
+			IntVector2 neighborPos = originPos + .
 			Cell neighborCell = cells[neighborPos]
 			
 			if neighborCell and neighborCell.player and neighborCell.player != attacker
 				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
 				if surroundesCells
-					print "Player {attacker} surrounded {surroundesCells.length} cells: {surroundesCells.joinToString.pos.toString}"
+					print "Player {attacker} captured {surroundesCells.length} cells"
 					surroundesCells.each.player = null
 		
 	// We write the return type in front of the function.
@@ -119,8 +113,8 @@ app
 			surroundedCells.add cell
 			cell.visited = true
 			
-			for IntVector2.primaryDirections as dir
-				IntVector2 neighborPos = pos + dir
+			for IntVector2.primaryDirections
+				IntVector2 neighborPos = pos + .
 				Cell neighborCell = cells[neighborPos]
 				if neighborCell and not neighborCell.visited
 					if neighborCell.player == null
@@ -132,11 +126,10 @@ app
 		
 	finishGame
 		Player winner = players.withMax.score
-		print "Player {winner} wins with {winner.score} points."
+		print "Player {winner} wins."
 		ParticleSystem(position:winner.pos)
 		
 class Cell
-	IntVector2 pos
 	Player player
 	int liberties
 	bool visited
@@ -181,9 +174,8 @@ app
 	Item[] items
 		
 	startGame
-		print "Starting game"
-		for IntVector2.diagonalDirections as dir
-			boxes.add {rect:{position:{220,280} * dir, size:{420,440}}}
+		for Direction.diagonalDirections
+			boxes.add {rect:{position:{220,280}*.vector, size:{420,440}}}
 		nextRound
 
 		// When assigning an enum value to a variable, the enum name must be omitted
@@ -192,7 +184,6 @@ app
 		
 	nextRound
 		round++
-		print "Starting round {round}"
 		boxes.each.itemInBox = null
 		words.shuffle
 		items.clear
@@ -218,7 +209,7 @@ app
 				// If all items are dropped into boxes, show "Next Round button"
 				if items.all.droppedInBox != null
 					drawButton "Next Round", image:Button, position:{0,0}, visibleFor:currentPlayer
-						print "Player {touch.by} clicked 'Next Round'."
+						Player playerWhoClickedTheButton = touch.by
 						phase = Reveal
 						nextRound
 			Reveal
@@ -290,8 +281,7 @@ class Item
 				// The current player can drag item around with the mouse
 				// Use "by:app.currentPlayer" to ensure only the current player can drag items
 				onTouchDown position, size, by:app.currentPlayer
-					// Start dragging
-					print "Player {touch.by} started dragging {word} at {touch.position}"
+					// Start dragging item
 					Player playerWhoClicked = touch.by
 					moveTouch = .
 					originalPosition = position
@@ -306,7 +296,6 @@ class Item
 					
 				onTouchUp moveTouch
 					// Drop item
-					print "Player {touch.by} dropped {word} at {touch.position}"
 					Box droppedInBox = app.boxes.find.rect.contains position
 					if droppedInBox and droppedInBox.itemInBox == null
 						this.droppedInBox = droppedInBox
@@ -607,9 +596,9 @@ static class math
 	static int round: float value
 	static float min: float a, float b
 	static float max: float a, float b
-	static float sin: Angle angleInTurns
-	static float cos: Angle angleInTurns
-	static float tan: Angle angleInTurns
+	static float sin: Angle angle
+	static float cos: Angle angle
+	static float tan: Angle angle
 	static Angle atan2: float y, float x
 	static float log: float value
 	static float log2: float value
@@ -617,12 +606,21 @@ static class math
 	static float pow: float base, float exponent
 	static float exp: float exponent
 	static Angle getAngleForVector: Vector2 vector
-	static Vector2 getVectorForAngle: Angle angleInTurns, float radius
+	static Vector2 getVectorForAngle: Angle angle, float radius
 	static Vector2 intersectLines: Vector2 startA, Vector2 endA, Vector2 startB, Vector2 endB, LineType typeA, LineType typeB
 
 class Time
-	static int now // The time in milliseconds
-	static int frame // The time in frames (30 frames per second)
+	int milliseconds:
+	int seconds:
+	int minutes:
+	int hours:
+	int totalSeconds:
+	int totalMinutes:
+	int totalHours:
+	int totalDays:
+	int totalWeeks:
+	static Time now
+	static int frame:
 
 class Vector2
 	static Vector2 None:
@@ -682,9 +680,8 @@ class IntVector2
 	bool isInsideRectangle: IntVector2 center, IntVector2 size
 	Angle angleTo: IntVector2 value
 
-// An angle in turns
 class Angle
-	Angle rotateTowards: Angle angleInTurns, Angle speed
+	Angle rotateTowards: Angle value, Angle speed
 	Angle normalize:
 
 class Rect
@@ -726,15 +723,3 @@ static class input
 	global void onTouchUp: Touch touch, bool markAsHandled, void(Touch touch) do
 
 ```
-
-
-
-# Check errors and fix all problems
-Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
-
-# MOST IMPORTANTLY: Always Run, Test and Debug
-In order to test and verify the app, add debug logs using print statemts for everything that is happening. For example, print debug logs for all user actions like clicks. Print the position of all moving objects during every frame of an animation to make sure all animations are correct and smooth.
-
-When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and and all edge cases. Thoroughly review the debug logs and whats currently on screen.
-
-Fix all errors and bugs you encounter.

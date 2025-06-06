@@ -203,7 +203,6 @@ internal immutable struct ImageFrame
 
 // An image that can be drawn on the screen and can have several frames of animation
 skipInit immutable Image
-	string name
 	string file
 	Texture texture
 	Vector2 size
@@ -250,7 +249,7 @@ transient skipInit global unit graphics
 	private const alignmentFactor = [0, .5, 1]
 	
 	public Vector2 referenceSize = {1920, 1080}
-	public important DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInFront
+	public important DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInTheBack
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
@@ -383,18 +382,7 @@ transient skipInit global unit graphics
 				graphics.context.fillRect(graphics.pixelSize.x-margin, 0, margin, graphics.pixelSize.y)
 			}
 		}
-
-	alignmentDescription: HorizontalAlignment align, VerticalAlignment valign
-		string result
-
-		if align == Center:  result = " align:Center"; else
-		if align == Left:    result = " align:Left"; else
-		                     result = " align:Right";
-
-		if valign == Top:    result = " valign:Top"; else
-		if valign == Bottom: result = " valign:Bottom";
-
-		return result
+		
 	// ------------------------------------------------------- Image -------------------------------------------------------
 	
 	// Draw an image. Place a PNG file in the "media" folder and it will automatically be imported.
@@ -422,15 +410,12 @@ transient skipInit global unit graphics
 			let sizeY = size.y || (sizeX/f.w)*f.h
 			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 			if(factor > 1) { sizeX *= factor; sizeY *= factor }
-			let halfSizeX = Math.round(sizeX*.5)
-			let halfSizeY = Math.round(sizeY*.5)
 			graphics.items.push(new DisplayImage(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-				`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
 				f.x1, f.y1, f.w, f.h,
@@ -473,15 +458,12 @@ transient skipInit global unit graphics
 				matrix.move(position)
 				matrix.rotate(angle)
 				if(flipX || flipY) matrix.scale(new Vector2(flipX ? -1:1, flipY ? -1:1	))
-				let halfSizeX = Math.round(sizeX*.5)
-				let halfSizeY = Math.round(sizeY*.5)
 				graphics.items.push(new DisplayImage(
 					matrix,
-					-halfSizeX,
-					-halfSizeY,
+					-sizeX/2,
+					-sizeY/2,
 					sizeX, sizeY,
-					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-					`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
+					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file, 
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
 					f.x1, f.y1, f.w, f.h,
@@ -712,18 +694,14 @@ transient skipInit global unit graphics
 			float x, y
 			if not angle: matrix = totalMatrix; x = position.x; y = position.y
 			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
-			let halfSizeX = math.round(sizeX*.5)
-			let halfSizeY = math.round(sizeY*.5)
-			let effectiveColor = color || currentColor
 			items.add new DisplayText(
 				matrix,
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
-				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{effectiveColor}",
+				layer, alpha * graphics.currentAlpha, currentClippingPath, text, 
 				location, position.location, size.location,
-				effectiveColor ? effectiveColor.hex : null, 
+				(color || currentColor).hex, 
 				outlineColor ? outlineColor.hex : null,
 				outlineWidth || currentLineWidth,
 				effectiveFont.offset.y*sizeY,
@@ -910,8 +888,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
-				"Text \"{text}\" position:\{{position.x},{position.y}\} size:{size.x}",
+				layer, alpha * graphics.currentAlpha, currentClippingPath, text, 
 				location, position.location, size.location,
 				(color || currentColor).hex, 
 				outlineColor ? outlineColor.hex : null,
@@ -1055,15 +1032,12 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
-			let halfSizeX = Math.round(sizeX*.5)
-			let halfSizeY = Math.round(sizeY*.5)
 			graphics.items.push(new DisplayRectangle(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
-				`Rectangle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:{${Math.floor(sizeX)},${Math.floor(sizeY)}} topLeft:{${Math.floor(position.x-halfSizeX)},${Math.floor(position.y-halfSizeY)}} bottomRight:{${Math.floor(position.x+halfSizeX)},${Math.floor(position.y+halfSizeY)}} color:${color?.hex}`,
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle", 
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
@@ -1100,7 +1074,6 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
-				`RoundedRectangle position:${position.x},${position.y} size:${size.x},${size.y}${alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1150,18 +1123,16 @@ transient skipInit global unit graphics
 		                       SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x, sizeY = size.y || size.x
-			let effectiveColor = color || !outlineColor ? color || graphics.currentColor : null
 			graphics.items.push(new DisplayCircle(
 				graphics.totalMatrix, 
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
-				`Circle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:${Math.floor(sizeX)} topLeft:{${Math.floor(position.x-sizeX/2)},${Math.floor(position.y-sizeY/2)}} bottomRight:{${Math.floor(position.x+sizeX/2)},${Math.floor(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
 				direction == 1,
-				effectiveColor ? effectiveColor.hex : null,
+				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
 				outlineWidth || graphics.currentLineWidth
 			))
@@ -1191,7 +1162,6 @@ transient skipInit global unit graphics
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
-				`Line from:{${from.x},${from.y}} to:{${to.x},${to.y}}`,
 				location, from.location, null,
 				to,
 				(color || graphics.currentColor).hex,
@@ -1222,7 +1192,6 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
-				`Line from:{${from.x},${from.y}} to:{${to.x},${to.y}}`,
 				location, position.location, null,
 				points,
 				null, // no fill color, because we want to draw a line instead of a polygon
@@ -1257,8 +1226,7 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
-				`Polygon position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon", 
 				location, position.location, null,
 				points,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1353,7 +1321,6 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
-				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				0, 0, texture.size.x, texture.size.y,
@@ -1390,7 +1357,6 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
-				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				sourcePosition.x+texture.size.x/2-sourceSize.x/2,
@@ -1427,7 +1393,6 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, 1, graphics.currentClippingPath, "Clear", 
-				`ClearRectangle position:{${position.x},${position.y}} topLeft:{${position.x-sizeX*.5},${position.y-sizeY*.5}} bottomRight:{${position.x+sizeX*.5},${position.y+sizeY*.5}}`,
 				location, position.location, size.location,
 				"clear", null, 0
 			))
@@ -1633,7 +1598,7 @@ transient skipInit global unit graphics
 		code()
 		currentColor = prev
 		return currentColor
-	private Color currentColor = {"#ffffff", name:"White"}
+	private Color currentColor = {"#ffffff"}
 	
 	// ------------------------------------------------------- Font -------------------------------------------------------
 	
@@ -2048,7 +2013,6 @@ internal transient immutable DisplayItem
 	float alpha
 	ClippingPath clippingPath
 	string name
-	string description
 	SourceCodeLocation location
 	SourceCodeLocation positionLocation
 	SourceCodeLocation sizeLocation

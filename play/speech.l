@@ -20,7 +20,7 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", ["Microsoft Sofia", "Microsoft Catalina", "Microsoft Ximena", "Google", "Paulina", "Mónica"]}
-		German:  {"de", "de-DE", ["Microsoft", "Google", "Helena", "Anna"]}
+		German:  {"de", "de-DE", ["Microsoft", "Google"]}
 		English: {"en", "en-US", ["Microsoft", "Google"]}
 	}
 	
@@ -38,8 +38,7 @@ transient speech
 		utterance.rate = speech.rate = rate;
 		speechSynthesis.speak(utterance);
 		document.onclick = e => {
-			const utterance = new SpeechSynthesisUtterance("");
-			speechSynthesis.speak(utterance);
+			speech.say("", "Spanish", 1, null);
 			document.onclick = null;
 		}
 		
@@ -57,31 +56,26 @@ transient speech
 					break
 		return pref
 		
-	js void say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
+	js void say: string value, string language, float rate = speech.rate, void() then = null
 		if(core.isPremiere && input.isCertain) {
-			if(window.webkit) {
-				let pref = speech.preferences.get(language) || speech.preferences.get("English")
-				window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: position, duration: duration});
-			} else {
-				speech.lastWord = value;
-				speechSynthesis.cancel();
-				const utterance = new SpeechSynthesisUtterance(value);
-				let voice = speech.getVoice(language);
-				utterance.lang = voice.langAndCountry;
-				utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
-				utterance.rate = rate || 1;
-				utterance.onend = () => reader.onSpeakingFinished(value, language)
-				speechSynthesis.speak(utterance);
+			speech.lastWord = value;
+			speechSynthesis.cancel();
+			const utterance = new SpeechSynthesisUtterance(value);
+			let voice = speech.getVoice(language);
+			utterance.lang = voice.langAndCountry;
+			utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
+			utterance.rate = rate || 1;
+			if(then != null) {
+				utterance.onend = () => {
+					System.print("say onend");
+					then();
+				}			
 			}
+			speechSynthesis.speak(utterance);	
 		}
 		
 	js inline void stop
-		if(window.webkit) {
-			window.webkit.messageHandlers.speak.postMessage({action: "pause"});
-		} else {
-			speechSynthesis.cancel()
-		}
+		speechSynthesis.cancel()
 		
 	js inline bool isSpeaking
 		speechSynthesis.speaking
-

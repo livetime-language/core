@@ -293,7 +293,6 @@ internal transient skipInit unit core
 		
 		let str = new Date().hourMinuteSecondMillisecondString() + " " + text
 		statistics.systemLogs.push(str)
-		debug.logs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
 		
@@ -424,8 +423,6 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.clearEvent
 		players.each.postprocessEvents
-
-		if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
 		
 		// Advance frame
 		frame++

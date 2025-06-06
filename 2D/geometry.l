@@ -17,7 +17,7 @@ struct Vector2
 	static important inline Vector2 Zero() Vector2(0, 0, null)
 		
 	// A string representation of the vector
-	important string toString() := "\{{x}, {y}\}"
+	important string toString() := "{x} {y}"
 	
 	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
@@ -469,7 +469,7 @@ struct IntVector2
 	important IntVector2 clone := {x, y, location}
 		
 	// A string representation of the vector
-	important string toString := "\{{x}, {y}\}"
+	important string toString := "({x} {y})"
 	
 	// Returns true if the vector is not equal to IntVector2.none
 	bool toBool := (x != int.minValue || y != int.minValue)
@@ -1148,12 +1148,12 @@ class Grid<T>
 	Grid
 		for size.x * size.y: items.add null
 	
-	get: IntVector2 position // The vector to get the value from
-		return {0,0} <= position < size ? items[position.y*size.x + position.x] : null
-	
 	get: int x // The column to get the value from
 		 int y // The row to get the value from
 		return items[y*size.x + x]
+	
+	get: IntVector2 position // The vector to get the value from
+		return {0,0} <= position < size ? items[position.y*size.x + position.x] : null
 	
 	set: int x   // The column of the value to set
 		 int y   // The row of the value to set
@@ -1216,7 +1216,18 @@ class Grid<T>
 		
 	important bool isValid: IntVector2 pos
 		return {0,0} <= pos < size
-			
+
+	important withMin: float(T a) selector
+		               float threshold = float.maxValue
+		float resultValue = threshold
+		T resultItem
+		for this
+			let value = selector(.)
+			if value < resultValue
+				resultValue = value
+				resultItem = .
+		return resultValue != threshold ? resultItem : null
+		
 global transient unit System
 	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
 		                       -> inline void(

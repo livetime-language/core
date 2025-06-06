@@ -1,8 +1,6 @@
 transient skipInit pocketBase
 	string url, libUrl
 	dynamic pb
-
-	Collection<User> users = {name:"users"}
 	
 	async void connect: string url
 		pocketBase.url = pocketBase.libUrl = url + "/"
@@ -37,7 +35,7 @@ transient skipInit pocketBase
 		                            string password
 		return await pocketBase.pb.collection("users").authWithPassword(email, password)
 
-Collection<T> 
+Collection<T>
 	string name
 	T[] items = []
 	int totalItems
