@@ -16,7 +16,6 @@ class Node
 	string shadowInnerHtml
 	string value
 	string src
-	any srcObject
 	Node firstChild
 	Node nextSibling
 	Node parentNode
@@ -51,7 +50,6 @@ class Node
 	inline js void scrollIntoView() this.scrollIntoView()
 	inline js void on(string eventName, void(dynamic event) listener) this.addEventListener(eventName, listener)
 	inline js dynamic getContext(string type) this.getContext(type)
-	inline js void setAttribute(string name, string value) this.setAttribute(name, value)
 		
 	native void(HtmlEvent ev) onclick
 	native void(HtmlEvent ev) oncontextmenu

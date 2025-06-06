@@ -44,7 +44,6 @@ transient skipInit unit Platform
 		
 	private js void initPlatform
 		statistics.init();
-		debug.init();
 		IndexedDB?.init();
 		Platform.init();
 		graphics.init();
@@ -56,6 +55,7 @@ transient skipInit unit Platform
 		ServerNetwork.init();
 		PeerNetwork.init();
 		if(typeof(pocketBase) != "undefined") pocketBase.init();
+		core.log("Loading...")
 		Platform.isMobile = false;
 		Platform.isBrowser = !window.require;
 		Platform.isNode = window.process && process.versions.node
@@ -93,9 +93,7 @@ transient skipInit unit Platform
 			core.simulateConnection = simulateConnection
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
-			// isMobile = true
-			// await graphics.setup {referenceSizeX, referenceSizeY}
-			await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
+			await graphics.setup {referenceSizeX, referenceSizeY}
 			graphics.onResize
 			// graphics.drawStatus "Loading media"
 			if mode >= Play: mode = Pause
