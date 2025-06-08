@@ -224,6 +224,7 @@ internal transient skipInit unit core
 	// We ensure that step is called every frameTime milliseconds.
 	internal animationFrame
 		now = currentTime
+		if debug.stepUntilFrame and frame >= debug.stepUntilFrame: debug.onStepFinished; return
 		if lastAnimationFrame: frameTimes.add now - lastAnimationFrame
 
 		ServerNetwork.tick
@@ -386,7 +387,8 @@ internal transient skipInit unit core
 		           bool draw        // We don't draw if we are stepping multiple frames in one animation frame
 		try
 			if verbose: core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
-				
+			if debug.stepUntilFrame: print "# Frame {frame}"
+
 			// Set time
 			Time.now = serverStartTime + math.round(frame * frameTime)
 			

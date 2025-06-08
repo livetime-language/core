@@ -8,8 +8,10 @@ All methods and static class names are lowercase (for example: math.sin). Place 
 
 # Angles
 All angle values in LiveTime are in turns, where .5 is half a rotation and 1 is a full rotation. For example, math.sin(.25) returns 1.
+All angle values in LiveTime are in turns, where .5 is half a rotation and 1 is a full rotation. For example, math.sin(.25) returns 1.
 
 # Avoid unwanted overlaps
+Before you start adding anything on the screen, review what's currently on screen and make sure nothing you draw overlaps with something it shouldn't overlap with.
 Before you start adding anything on the screen, review what's currently on screen and make sure nothing you draw overlaps with something it shouldn't overlap with.
 
 {currentlyOnScreen}
@@ -206,7 +208,9 @@ Always look at the linter errors and fix all problems! Don't stop until all erro
 
 # MOST IMPORTANTLY: Always Run, Test and Debug
 To test and verify the app, add debug logs using print statements for everything that is happening in the app. For example, print debug logs for all user actions like clicks. Print the position of all moving objects during every frame of an animation to make sure all animations are correct and smooth.
+To test and verify the app, add debug logs using print statements for everything that is happening in the app. For example, print debug logs for all user actions like clicks. Print the position of all moving objects during every frame of an animation to make sure all animations are correct and smooth.
 
+When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and all edge cases. Thoroughly review the debug logs and what is currently on screen.
 When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and all edge cases. Thoroughly review the debug logs and what is currently on screen.
 
 Fix all errors and bugs you encounter.
