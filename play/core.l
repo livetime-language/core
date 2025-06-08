@@ -80,7 +80,7 @@ internal transient skipInit unit core
 		stop
 		
 	// Clear all inputs and reset the application to the first frame
-	stop
+	void stop
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
@@ -224,7 +224,7 @@ internal transient skipInit unit core
 	// We ensure that step is called every frameTime milliseconds.
 	internal animationFrame
 		now = currentTime
-		if debug.stepUntilFrame and frame >= debug.stepUntilFrame: debug.onStepFinished; return
+		if debug.waitUntilFrame and frame >= debug.waitUntilFrame: debug.onWaitFinished; return
 		if lastAnimationFrame: frameTimes.add now - lastAnimationFrame
 
 		ServerNetwork.tick
@@ -387,7 +387,7 @@ internal transient skipInit unit core
 		           bool draw        // We don't draw if we are stepping multiple frames in one animation frame
 		try
 			if verbose: core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
-			if debug.stepUntilFrame: print "# Frame {frame}"
+			if debug.waitUntilFrame: print "# Frame {frame}"
 
 			// Set time
 			Time.now = serverStartTime + math.round(frame * frameTime)

@@ -1,6 +1,6 @@
 skipInit debug
 	string[] logs
-	internal int stepUntilFrame
+	internal int waitUntilFrame
 
 	start
 		try
@@ -9,15 +9,20 @@ skipInit debug
 		catch
 			Platform.sendErrorToEditor .
 
-	click: int playerIndex, int x, int y
+	click: int playerIndex, int x, int y, int framesToWaitAfterwards
 		if playerIndex == int.undefined: playerIndex = 0
+		if not framesToWaitAfterwards: framesToWaitAfterwards = 30
+
 		if playerIndex < 0 or playerIndex >= input.internalUsers.length
 			print "click: playerIndex out of range"
 		else
 			input.handleSynteticTouchEvent playerIndex, TouchDown, x, y, TouchType.Left, id:0
 			input.handleSynteticTouchEvent playerIndex, TouchUp, x, y, TouchType.Left, id:0
-			core.step fastForward:false, draw:true
-			sendApplicationState
+			if framesToWaitAfterwards <= 1
+				core.step fastForward:false, draw:true
+				sendApplicationState
+			else
+				wait framesToWaitAfterwards
 
 	drag: int playerIndex, int x, int y, int dragToX, int dragToY
 		if playerIndex == int.undefined: playerIndex = 0
@@ -34,17 +39,17 @@ skipInit debug
 			core.step fastForward:false, draw:true
 			sendApplicationState
 
-	step: int frames
-		if frames <= 1
-			print "step: frames out of range"
+	wait: int frames
+		if frames < 1
+			print "wait: frames out of range"
 			sendApplicationState
 		else
-			stepUntilFrame = core.frame + frames
+			waitUntilFrame = core.frame + frames
 			Platform.play
 
-	onStepFinished
-		stepUntilFrame = 0
-		Platform.stop
+	onWaitFinished
+		waitUntilFrame = 0
+		Platform.pause
 		sendApplicationState
 
 	evaluateExpression: string expression
