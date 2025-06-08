@@ -1,5 +1,6 @@
 skipInit debug
 	string[] logs
+	internal int stepUntilFrame
 
 	start
 		try
@@ -36,10 +37,14 @@ skipInit debug
 	step: int frames
 		if frames <= 1
 			print "step: frames out of range"
+			sendApplicationState
 		else
-			for frames
-				print "# Frame {core.frame}"
-				core.step fastForward:false, draw:i == frames-1
+			stepUntilFrame = core.frame + frames
+			Platform.play
+
+	onStepFinished
+		stepUntilFrame = 0
+		Platform.stop
 		sendApplicationState
 
 	evaluateExpression: string expression
