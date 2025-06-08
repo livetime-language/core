@@ -4,8 +4,15 @@ globs: *.l
 alwaysApply: true
 ---
 # We use the LiveTime programming language.
-- All code is the file "src/app.l".
-- All method names are lowercase.
+All methods and static class names are lowercase (for example: math.sin). Place all the code in the file "src/app.l".
+
+# Angles
+All angle values in LiveTime are in turns, where .5 is half a rotation and 1 is a full rotation. For example, math.sin(.25) returns 1.
+
+# Avoid unwanted overlaps
+Before you start adding anything on the screen, review what's currently on screen and make sure nothing you draw overlaps with something it shouldn't overlap with.
+
+{currentlyOnScreen}
 
 # Example game in the LiveTime programming language
 ```
@@ -194,47 +201,12 @@ class Piece {
 }	
 ```
 
-# The following images are available in the current project
-```
-// Draw a white pawn
-drawImage(Pawn, frame:0)
+# Check errors and fix all problems
+Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
 
-// Draw a black pawn
-drawImage(Pawn, frame:1)
+# MOST IMPORTANTLY: Always Run, Test and Debug
+To test and verify the app, add debug logs using print statements for everything that is happening in the app. For example, print debug logs for all user actions like clicks. Print the position of all moving objects during every frame of an animation to make sure all animations are correct and smooth.
 
-// Draw a white rook
-drawImage(Rook, frame:0)
+When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and all edge cases. Thoroughly review the debug logs and what is currently on screen.
 
-// Draw a black rook
-drawImage(Rook, frame:1)
-
-// Draw a white bishop
-drawImage(Bishop, frame:0)
-
-// Draw a black bishop
-drawImage(Bishop, frame:1)
-
-// Draw a white knight
-drawImage(Knight, frame:0)
-
-// Draw a black knight
-drawImage(Knight, frame:1)
-
-// Draw a white queen
-drawImage(Queen, frame:0)
-
-// Draw a black queen
-drawImage(Queen, frame:1)
-
-// Draw a white king
-drawImage(King, frame:0)
-
-// Draw a black king
-drawImage(King, frame:1)
-
-// Draw a light cell
-drawImage(Cell, frame:0)
-
-// Draw a dark cell
-drawImage(Cell, frame:1)
-```
+Fix all errors and bugs you encounter.
