@@ -1258,7 +1258,7 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
-				`Polygon position:${position.x},${position.y} size:${size.x},${size.y}${graphics.alignmentDescription(align, valign)}`,
+				`Polygon {points.joinToString(a => "{"+a.x+","+a.y+"}",",")}`,
 				location, position.location, null,
 				points,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
