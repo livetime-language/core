@@ -145,7 +145,8 @@ class Node
 		this.onwheel = ev => {
 			ev.preventDefault();
 			ev.stopPropagation();
-			do(new Vector2(ev.clientX/Platform.scale, ev.clientY/Platform.scale, "px"), new Vector2(-ev.deltaX, ev.deltaY, "px"), ev.ctrlKey);
+			let isPinch = ev.ctrlKey || ev.deltaX === -0		
+			do(new Vector2(ev.clientX/Platform.scale, ev.clientY/Platform.scale, "px"), new Vector2(-ev.deltaX, ev.deltaY, "px"), isPinch);
 		}
 		
 	inline js void captureTouch(Touch touch) this.setPointerCapture(touch.id)
