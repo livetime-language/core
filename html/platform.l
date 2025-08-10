@@ -613,7 +613,8 @@ global unit Html
 		// 	body.parentNode.appendChild overlayNode
 		
 	script: string src
-		let node = div tag:"script"
+			dynamic data = {}
+		let node = div tag:"script", data
 		if !node.src.endsWith(src): node.src = src
 		node.onload = refresh
 		
