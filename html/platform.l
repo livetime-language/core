@@ -46,7 +46,7 @@ skipInit global unit Platform
 		app.init?.()
 		
 	private async inline js void initDatabase
-		if(typeof(pocketBase) != "undefined") await pocketBase.connect()
+		if(typeof(pocketBase) != "undefined") await pocketBase.connect2()
 			
 	async start: bool isDebug
 		try
@@ -613,7 +613,8 @@ global unit Html
 		// 	body.parentNode.appendChild overlayNode
 		
 	script: string src
-		let node = div tag:"script"
+			dynamic data = {}
+		let node = div tag:"script", data
 		if !node.src.endsWith(src): node.src = src
 		node.onload = refresh
 		
