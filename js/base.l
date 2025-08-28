@@ -415,6 +415,16 @@ immutable class string
 		if(start > 0)   return this.substring(start);
 		                return this
 		
+	js string getUntilUnescaped: string character
+		                         int start = 0
+								 string escapeCharacter = "\\"
+		for(let i=start; i<this.length; i++) {
+			if(this[i] == character && (i==0 || this[i-1] != escapeCharacter)) {
+				return this.substring(start, i); 
+			}
+		}
+		return start > 0 ? this.substring(start) : this
+		
 	js string getUntilLast: string value
 		                    int start = 0
 		let index = this.lastIndexOf(value, start)
@@ -790,7 +800,7 @@ class List<T>
 		
 	// The index of an item in the list
 	important inline js int indexOf: ensureSingleExecution T item // Get the index of this item
-		(typeof(item) == "object" && item.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
+		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
 		
 	inline js void setList: T[] list
 		this.splice(0, this.length, ...list)
