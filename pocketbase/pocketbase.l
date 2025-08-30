@@ -56,7 +56,8 @@ Collection<T>
 		             string expand = null
 		             int page = 1
 		             int perPage = 1000
-		let result = await pocketBase.pb.collection(this.name).getList(page, perPage, {filter, sort, expand})
+					 bool skipTotal = true
+		let result = await pocketBase.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal})
 		items = cast result.items
 		totalItems = result.totalItems
 		return items
@@ -65,7 +66,7 @@ Collection<T>
 		              string sort = null
 		              string expand = null
 		// return await pocketBase.pb.collection(this.name).getFirstListItem(filter, {sort, expand})
-		let result = await pocketBase.pb.collection(this.name).getList(1, 1, {filter, sort, expand})
+		let result = await pocketBase.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
 		return result.items[0]
 		
 	async inline js T get: string id
