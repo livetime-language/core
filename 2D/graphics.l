@@ -783,6 +783,7 @@ transient skipInit global unit graphics
 		float sizeX, sizeY
 		float effectiveLineHeight = lineHeight or fontSize*1.3
 		float offsetX, offsetY
+		text = text.trim
 	
 		// Split text into words
 		string word
@@ -889,10 +890,11 @@ transient skipInit global unit graphics
 		float lineWidth
 		for segments.length + 1 as index
 			let s = segments[index]
-			if not s or segment.position.x == 0
+			if not s or s.position.x == 0
 				for lineStartIndex to index
 					segments[.].position.x -= lineWidth * factor
 				lineStartIndex = index
+				lineWidth = 0
 			if index < segments.length
 				lineWidth += s.size.x
 				
