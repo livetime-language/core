@@ -106,6 +106,15 @@ transient skipInit unit Platform
 		
 	inline js void reload
 		if(!Platform.isDebug) location.reload();
+
+	js void openScript: string url
+		return new Promise((resolve, reject) => {
+			let script = document.createElement("script")
+			script.src = url
+			script.onload = resolve
+			script.onerror = reject
+			document.body.appendChild(script)
+		})
 	
 unit file
 	js void saveText: string filename, string text
