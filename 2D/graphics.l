@@ -572,6 +572,70 @@ transient skipInit global unit graphics
 			if hotkey
 				input.onKeyDown hotkey, by:effectiveClickableBy
 					onClick null
+
+	global js void drawSlicedImage: Image image
+		                         Vector2 position = {}
+		                         implicit Vector2 size = {}
+		                         implicit Player[] visibleFor = null
+								 implicit frame = 0
+		                         implicit layer = 0
+		                         alpha = 1.0
+		                         Color color = White
+								 float leftSlice = 0
+								 float rightSlice = 0
+		                         HorizontalAlignment align = Center  // The horizontal alignment of the image
+		                         VerticalAlignment valign = Middle   // The vertical alignment of the image
+		                         SourceCodeLocation location
+		if(!image?.texture?.ensureIsAvailable()) return
+		if(graphics.isVisibleFor(visibleFor)) {
+			let f = image.frames[frame % image.frames.length]
+			let factor = size.y ? size.y / f.h : 1
+			let scaledLeftSlice = leftSlice * factor
+			let scaledRightSlice = rightSlice * factor
+			let sizeX = Math.max(size.x, scaledLeftSlice + scaledRightSlice)
+			let sizeY = size.y || f.h
+			let x = align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX
+			let y = valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
+				x,
+				y,
+				scaledLeftSlice, 
+				sizeY,
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				`Image ${image.name} Left Slice`,
+				location, position.location, size.location,
+				image.texture.imageOrCanvas,
+				f.x1, f.y1, leftSlice, f.h,
+				color
+			))
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
+				x + scaledLeftSlice,
+				y,
+				sizeX - scaledLeftSlice - scaledRightSlice, 
+				sizeY,
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				`Image ${image.name} Middle Slice`,
+				location, position.location, size.location,
+				image.texture.imageOrCanvas,
+				f.x1+leftSlice, f.y1, f.w-leftSlice-rightSlice, f.h,
+				color
+			))
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
+				x + (sizeX-scaledRightSlice),
+				y,
+				scaledRightSlice, 
+				sizeY,
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				`Image ${image.name} Right Slice`,
+				location, position.location, size.location,
+				image.texture.imageOrCanvas,
+				f.x1+f.w-rightSlice, f.y1, rightSlice, f.h,
+				color
+			))
+		}
 		
 	// ------------------------------------------------------- Text -------------------------------------------------------
 	
