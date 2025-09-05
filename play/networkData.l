@@ -68,30 +68,35 @@ http
 			}
 		}
 		
-	js void postStreamDirectly: string url
+	js async void postStreamDirectly: string url
 		                        dynamic body
-		                        void(string result, void() cancel) onData
+		                        void(string result, bool done, void() cancel) onData
 		                        void() onEnd = null
 		if(!core.isPremiere || !input.isCertain) return
-		try {
-			let response = await fetch(url, {method:"POST", body:JSON.stringify(body)})
-			let reader = response.body.getReader();
-			let decoder = new TextDecoder();
-			let cancelled = false
-			function cancel() { cancelled = true; }
-			for(;;) {
-				const { value, done } = await reader.read();
-				if (value) {
-					let chunk = decoder.decode(value, { stream: true });
-					onData(chunk, cancel);
-					if(cancelled) return;
+		return new Promise(async (resolve, reject) => {
+			try {
+				let response = await fetch(url, {method:"POST", body:JSON.stringify(body)})
+				let reader = response.body.getReader();
+				let decoder = new TextDecoder();
+				let cancelled = false
+				function cancel() { cancelled = true; }
+				for(;;) {
+					const { value, done } = await reader.read();
+					if (value) {
+						let chunk = decoder.decode(value, { stream: true });
+						onData(chunk, done, cancel);
+						if(cancelled) return;
+					}
+					if(done) break;
 				}
-				if(done) break;
+				onEnd?.();
+				resolve();
+			} catch (error) {
+				console.error('Error during fetch or stream processing:', error);
+				reject(error);
 			}
-			onEnd?.();
-		} catch (error) {
-			console.error('Error during fetch or stream processing:', error);
-		}
+		})
+
 		
 	internal js async string getStringDirectly string url
 		return await (await fetch(url)).text()
