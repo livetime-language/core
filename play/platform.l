@@ -275,6 +275,9 @@ transient skipInit unit Platform
 		
 	js void openDevTools
 		require('@electron/remote/main').remote.getCurrentWindow().toggleDevTools()
+
+	inline js string getHostnameFromUrl: string url
+		new URL(url).hostname
 				
 skipInit transient immutable float Time
 	// The number of milliseconds elapsed since January 1, 1970
