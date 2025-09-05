@@ -682,7 +682,8 @@ transient skipInit global unit graphics
 		float effectiveLineHeight
 		float offsetX, offsetY
 		
-		if (overflow == Wrap or overflow == WrapAndScale) and maxWidth
+		if ((overflow == Wrap or overflow == WrapAndScale) and maxWidth)
+		or text.contains("\n")
 			// Split text into words
 			string word
 			string[] words
