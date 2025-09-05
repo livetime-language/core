@@ -25,9 +25,9 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", [
-			{"Microsoft Sofia", minSpeed:0.75}
-			{"Microsoft Catalina", minSpeed:0.75}
-			{"Microsoft Ximena", minSpeed:0.75}
+			{"Microsoft Sofia", minSpeed:0.7}
+			{"Microsoft Catalina", minSpeed:0.7}
+			{"Microsoft Ximena", minSpeed:0.7}
 			{"Google", minSpeed:0.9}
 			{"Google español de Estados Unidos", minSpeed:1.0}
 			{"Paulina", minSpeed:0.7}
