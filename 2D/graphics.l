@@ -45,7 +45,7 @@ immutable Color
 	Color withAlpha: float alpha
 		return {hex[1..7]+componentToHex(math.floor(alpha*255))}
 		
-enum TextOverflow: Visible, Wrap, Scale, WrapAndScale
+enum TextOverflow: Visible, Wrap, Scale, WrapAndScale, CutOff, Ellipsis
 
 // A texture that can be loaded into video memory
 immutable Texture
@@ -682,8 +682,9 @@ transient skipInit global unit graphics
 		float effectiveLineHeight
 		float offsetX, offsetY
 		
-		if ((overflow == Wrap or overflow == WrapAndScale) and maxWidth)
+		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
 		or text.contains("\n")
+			if overflow == Ellipsis: maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
 			// Split text into words
 			string word
 			string[] words
@@ -708,6 +709,8 @@ transient skipInit global unit graphics
 			for words as word
 				float wordWidth = getTextWidth(word, {x:fontSize}, effectiveFont, style)
 				if totalWidth + wordWidth > maxWidth
+					if overflow == Ellipsis: line += "..."
+						
 					if line
 						// Finish the line and start a new line with the current word
 						lines.add line
@@ -719,6 +722,10 @@ transient skipInit global unit graphics
 						lines.add word
 						line = ""
 						totalWidth = 0
+
+					if overflow == Ellipsis or overflow == CutOff
+						line = ""
+						break
 				else
 					line += word + " "
 					totalWidth += wordWidth + spaceWidth
