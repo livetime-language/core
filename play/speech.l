@@ -5,11 +5,16 @@ internal interface SpeechSynthesisVoice
 	string name // Returns a human-readable name that represents the voice.
 	string voiceURI // Returns the type of URI and location of the speech synthesis service for this voice.
 	
+VoiceNameAndSpeed
+	string name
+	float minSpeed
+
 internal VoicePreference
 	string lang
 	string langAndCountry
-	string[] names
+	VoiceNameAndSpeed[] voices
 	SpeechSynthesisVoice voice
+	float minSpeed
 	
 transient speech
 	int voiceIndex
@@ -19,9 +24,25 @@ transient speech
 	string lastWord = ""
 	
 	VoicePreference[string] preferences = {
-		Spanish: {"es", "es-ES", ["Microsoft Sofia", "Microsoft Catalina", "Microsoft Ximena", "Google", "Paulina", "Mónica"]}
-		German:  {"de", "de-DE", ["Microsoft", "Google", "Helena", "Anna"]}
-		English: {"en", "en-US", ["Microsoft", "Google"]}
+		Spanish: {"es", "es-ES", [
+			{"Microsoft Sofia", minSpeed:0.75}
+			{"Microsoft Catalina", minSpeed:0.75}
+			{"Microsoft Ximena", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
+			{"Google español de Estados Unidos", minSpeed:1.0}
+			{"Paulina", minSpeed:0.7}
+			{"Mónica", minSpeed:0.7}]
+		}
+		German:  {"de", "de-DE", [
+			{"Microsoft", minSpeed:0.7}
+			{"Google", minSpeed:0.7}
+			{"Helena", minSpeed:0.7}
+			{"Anna", minSpeed:0.7}]
+		}
+		English: {"en", "en-US", [
+			{"Microsoft", minSpeed:0.7}
+			{"Google", minSpeed:0.7}
+		]}
 	}
 	
 	inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
@@ -47,13 +68,12 @@ transient speech
 		let pref = preferences[language] or preferences["English"]
 		if pref.voice == null
 			let allVoices = getVoices
-			// for allVoices
-			// 	print "{.lang} {.name}"
 			voices = allVoices.where.lang.startsWith(pref.lang)
-			for pref.names as name
-				let voice = voices.find.name.contains(name)
+			// for voices: print "{.lang} {.name}"
+			for pref.voices as voicePreference
+				let voice = voices.find.name.contains(voicePreference.name)
 					pref.voice = voice
-					// print "--> {voice.name}"
+					pref.minSpeed = voicePreference.minSpeed
 					break
 		return pref
 		
@@ -69,7 +89,8 @@ transient speech
 				let voice = speech.getVoice(language);
 				utterance.lang = voice.langAndCountry;
 				utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
-				utterance.rate = rate || 1;
+				utterance.rate = Math.max(rate, voice.minSpeed);
+				console.log("rate", utterance.rate);
 				utterance.onend = () => reader.onSpeakingFinished(value, language)
 				speechSynthesis.speak(utterance);
 			}
