@@ -69,7 +69,7 @@ Collection<T>
 		let result = await pocketBase.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
 		return result.items[0]
 		
-	async inline js T get: string id
+	async inline js async T get: string id
 		pocketBase.pb.collection(this.name).getOne(id)
 		
 	async string add: any item
