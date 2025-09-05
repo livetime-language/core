@@ -62,6 +62,9 @@ immutable Texture
 			this.imageOrCanvas = _htmlImageCache[this.file]
 		}
 		return this.imageOrCanvas != null
+
+	js bool isAvailable
+		return this.imageOrCanvas != null
 	
 	internal js void open
 		if(!window._htmlImageCache) _htmlImageCache = {}
@@ -74,6 +77,10 @@ immutable Texture
 					window._htmlImageCache[this.file] = image
 					this.size = new Vector2(image.width, image.height, null)
 					resolve(this);
+				}
+				image.onerror = e => {
+					console.log("Error loading image: ", this.file, e)
+					reject(e)
 				}
 				image.src = Platform.getAbsoluteUrl(this.file)
 			})
@@ -1474,7 +1481,41 @@ transient skipInit global unit graphics
 				color
 			))
 		}
+
+	Texture[string] imagesFromUrl = null
 		
+	global js void drawImageFromUrl: string url                          // The texture to draw
+		                             Vector2 position = {}               // The target position to draw to
+		                             Vector2 size = {}                   // The size of the target area to draw to
+		                             Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
+		                             Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
+		                             implicit Player[] visibleFor = null // Only this player or list of players will see the texture
+		                             implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
+		                             Color color = White                 // Tint the texture with this color
+		if(!graphics.imagesFromUrl) graphics.imagesFromUrl = new Map()
+		let texture = graphics.imagesFromUrl.get(url)
+		if(!texture) {
+			texture = new Texture(url)
+			graphics.imagesFromUrl.set(url, texture)
+		}
+		if(texture?.isAvailable() && graphics.isVisibleFor(visibleFor)) {
+			let sizeX = size.x || texture.size.x
+			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
+			graphics.items.push(new DisplayImage(
+				graphics.totalMatrix,
+				position.x - sizeX/2,
+				position.y - sizeY/2,
+				sizeX, sizeY,
+				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+				`ImageFromUrl "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
+				location, position.location, size.location,
+				texture.imageOrCanvas,
+				0, 0, texture.size.x, texture.size.y,
+				color
+			))
+		}
+
 	// ------------------------------------------------------- Clear -------------------------------------------------------
 	
 	// Clear all pixels within a rectangle.
