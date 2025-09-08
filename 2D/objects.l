@@ -140,6 +140,22 @@ class Object
 		fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:position, delta
 		return this
 		
+	moveAlongCurveTo: Vector2 targetPosition
+		              float curvature = 1.0
+					  implicit Vector2 targetSize = Vector2.None
+					  float duration = 1000
+		              Time delay = 0
+					  bool removeWhenDone = false
+		Vector2 startPosition = this.position
+		Vector2 startSize = this.size
+		Vector2 middlePoint = (targetPosition + startPosition) * .5
+		Vector2 orthogonal = (targetPosition - startPosition).orthogonal
+		Vector2 curvePoint = middlePoint + orthogonal * curvature
+		float startTime = fx.endOfPrevAnimation(this)+delay
+		fx.add BezierAnimation startTime, duration, this, points:[startPosition, curvePoint, targetPosition], removeWhenDone
+		if targetSize: fx.add ScaleAnimation startTime, duration, this, startValue:size, delta:targetSize-size
+		return this
+		
 	fadeIn: Time duration = 100
 		    Time delay = 0
 		alpha = 0
@@ -167,7 +183,7 @@ class Object
 		fx.add ScaleAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:this.size, delta:size-this.size
 		return this
 		
-	do:   stored void() do
+	do:   stored void(Object object) do
 		  Time delay = 0
 		fx.add DelayAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration:0, this, do
 		

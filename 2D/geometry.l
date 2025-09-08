@@ -163,10 +163,7 @@ struct Vector2
 	important lengthSquared := x * x + y * y
 		
 	// Make the vector orthogonal to the existing vector
-	important orthogonal
-		x = -y
-		y = x
-		return this
+	important orthogonal := {-y, x}
 		
 	// Flip the sign of each coordinate
 	important invert

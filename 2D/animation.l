@@ -202,10 +202,100 @@ internal Animation PlaySoundAnimation
 	tick(float progress) sound.play
 	
 internal Animation DelayAnimation
-	void() do
-	tick(float progress) do()
+	void(Object object) do
+	tick(float progress) do(object)
 	
 internal Animation InterpolateAnimation
 	void(float progress) do
 	tick(float progress) do(progress)
 
+internal Animation BezierAnimation
+	Vector2[] points
+	float smoothness = 1.0
+	bool removeWhenDone
+	tick(float progress) 
+		object.position = getPointOnBezierCurve(points, progress, smoothness)
+		if progress >= 1 and removeWhenDone: Framework.objects.remove object
+
+	static getPointOnBezierCurve: Vector2[] points, float progress, float smoothness = 1.0
+		// Handle edge cases
+		if points.length == 0: return Vector2.Zero
+		if points.length == 1: return points[0]
+		if progress <= 0: return points[0]
+		if progress >= 1: return points.last
+		
+		// For 2 points, just use linear interpolation
+		if points.length == 2
+			return points[0] + (points[1] - points[0]) * progress
+		
+		// Calculate tangent vectors for each point
+		Vector2[] tangents
+		for points.length as i
+			Vector2 tangent
+			if i == 0
+				// First point: tangent points straight toward the next point (no twist at start)
+				tangent = (points[1] - points[0]).normalize
+			else if i == points.length - 1
+				// Last point: tangent points straight from the previous point (no twist at end)
+				tangent = (points[i] - points[i-1]).normalize
+			else
+				// Interior points: use direction from previous to next point for smoothness
+				tangent = (points[i+1] - points[i-1]).normalize
+			tangents.add tangent
+		
+		// Calculate control point distances based on smoothness and segment lengths
+		float[] distances
+		for points.length - 1 as i
+			float segmentLength = points[i].distanceTo(points[i+1])
+			float controlDistance = segmentLength * smoothness * 0.3 // Scale factor for control point distance
+			distances.add controlDistance
+		
+		// Find which segment the progress falls into
+		float totalProgress = progress * (points.length - 1)
+		int segmentIndex = math.floor(totalProgress)
+		if segmentIndex >= points.length - 1: segmentIndex = points.length - 2
+		
+		float localProgress = totalProgress - segmentIndex
+		
+		// Get the four control points for the cubic Bézier segment
+		Vector2 p0 = points[segmentIndex]
+		Vector2 p3 = points[segmentIndex + 1]
+		
+		// Special handling for first and last segments to ensure perfectly straight starts/ends
+		Vector2 p1, p2
+		
+		if segmentIndex == 0
+			// First segment: ensure perfectly straight start
+			// p1 should be close to p0 along the straight line direction
+			Vector2 straightDirection = (p3 - p0).normalize
+			p1 = p0 + straightDirection * (distances[segmentIndex] * 0.5) // Reduced distance for straighter start
+			
+			// p2 uses normal calculation but with the correct tangent
+			p2 = p3 - tangents[segmentIndex + 1] * distances[segmentIndex]
+		else if segmentIndex == points.length - 2
+			// Last segment: ensure perfectly straight end
+			// p1 uses normal calculation
+			p1 = p0 + tangents[segmentIndex] * distances[segmentIndex]
+			
+			// p2 should be close to p3 along the straight line direction  
+			Vector2 straightDirection = (p0 - p3).normalize
+			p2 = p3 + straightDirection * (distances[segmentIndex] * 0.5) // Reduced distance for straighter end
+		else
+			// Interior segments use normal calculation
+			p1 = p0 + tangents[segmentIndex] * distances[segmentIndex]
+			p2 = p3 - tangents[segmentIndex + 1] * distances[segmentIndex]
+		
+		// Evaluate cubic Bézier curve: B(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+		float t = localProgress
+		float oneMinusT = 1.0 - t
+		float oneMinusT2 = oneMinusT * oneMinusT
+		float oneMinusT3 = oneMinusT2 * oneMinusT
+		float t2 = t * t
+		float t3 = t2 * t
+		
+		Vector2 result = p0 * oneMinusT3 + 
+		                 p1 * (3.0 * oneMinusT2 * t) + 
+		                 p2 * (3.0 * oneMinusT * t2) + 
+		                 p3 * t3
+		
+		return result
