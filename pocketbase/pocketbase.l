@@ -42,10 +42,26 @@ Collection<T>
 	T[] items = []
 	int totalItems
 	
-	async inline js void subscribe: string topic
-		                            any options = {}
-		                            void(any e) do
-		pocketBase.pb.collection(this.name).subscribe(topic, do, options)
+	async inline js void subscribe: string topic = "*"
+		                            string filter = null
+					                string fields = null
+		                            string expand = null
+		pocketBase.pb.collection(this.name).subscribe(topic, e => {
+			console.log(e.action, e.record);
+			if(e.action == "create") {
+				this.items.push(e.record);
+			} else if(e.action == "update") {
+				let item = this.items.find(i => i.id == e.record.id);
+				if(item) {
+					Object.assign(item, e.record);
+				}
+			} else if(e.action == "delete") {
+				let item = this.items.find(i => i.id == e.record.id);
+				if(item) {
+					this.items.remove(item);
+				}
+			}
+		}, {@filter:filter, @fields:fields, @expand:expand})
 		
 	async T[] fetchAll
 		items = cast await pocketBase.pb.collection(this.name).getFullList()
@@ -53,11 +69,12 @@ Collection<T>
 		
 	async T[] fetch: string filter = null
 		             string sort = null
+					 string fields = null
 		             string expand = null
 		             int page = 1
 		             int perPage = 1000
 					 bool skipTotal = true
-		let result = await pocketBase.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal})
+		let result = await pocketBase.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
 		items = cast result.items
 		totalItems = result.totalItems
 		return items
