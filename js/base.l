@@ -307,6 +307,8 @@ immutable struct float
 	inline js float incrementBy: float value
 		                         nocolon float to
 		(this+value < to ? (this += value) : to)
+
+	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
 		
 	// ------------------------------------------- Time -------------------------------------------
 	

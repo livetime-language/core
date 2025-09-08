@@ -691,6 +691,7 @@ transient skipInit global unit graphics
 		
 		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
 		or text.contains("\n")
+			if maxWidth == 0: maxWidth = float.maxValue
 			if overflow == Ellipsis: maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
 			// Split text into words
 			string word

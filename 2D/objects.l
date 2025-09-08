@@ -142,6 +142,7 @@ class Object
 		
 	moveAlongCurveTo: Vector2 targetPosition
 		              float curvature = 1.0
+					  float smoothness = 1.0
 					  implicit Vector2 targetSize = Vector2.None
 					  float duration = 1000
 		              Time delay = 0
@@ -152,7 +153,7 @@ class Object
 		Vector2 orthogonal = (targetPosition - startPosition).orthogonal
 		Vector2 curvePoint = middlePoint + orthogonal * curvature
 		float startTime = fx.endOfPrevAnimation(this)+delay
-		fx.add BezierAnimation startTime, duration, this, points:[startPosition, curvePoint, targetPosition], removeWhenDone
+		fx.add BezierAnimation startTime, duration, this, points:[startPosition, curvePoint, targetPosition], smoothness, removeWhenDone
 		if targetSize: fx.add ScaleAnimation startTime, duration, this, startValue:size, delta:targetSize-size
 		return this
 		
