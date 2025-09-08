@@ -263,27 +263,9 @@ internal Animation BezierAnimation
 		
 		// Special handling for first and last segments to ensure perfectly straight starts/ends
 		Vector2 p1, p2
-		
-		if segmentIndex == 0
-			// First segment: ensure perfectly straight start
-			// p1 should be close to p0 along the straight line direction
-			Vector2 straightDirection = (p3 - p0).normalize
-			p1 = p0 + straightDirection * (distances[segmentIndex] * 0.5) // Reduced distance for straighter start
-			
-			// p2 uses normal calculation but with the correct tangent
-			p2 = p3 - tangents[segmentIndex + 1] * distances[segmentIndex]
-		else if segmentIndex == points.length - 2
-			// Last segment: ensure perfectly straight end
-			// p1 uses normal calculation
-			p1 = p0 + tangents[segmentIndex] * distances[segmentIndex]
-			
-			// p2 should be close to p3 along the straight line direction  
-			Vector2 straightDirection = (p0 - p3).normalize
-			p2 = p3 + straightDirection * (distances[segmentIndex] * 0.5) // Reduced distance for straighter end
-		else
-			// Interior segments use normal calculation
-			p1 = p0 + tangents[segmentIndex] * distances[segmentIndex]
-			p2 = p3 - tangents[segmentIndex + 1] * distances[segmentIndex]
+		float distanceFactor = segmentIndex == 0  ? .01 : 1
+		p1 = p0 + tangents[segmentIndex] * distances[segmentIndex] * (segmentIndex == 0  ? .1 : 1)
+		p2 = p3 - tangents[segmentIndex + 1] * distances[segmentIndex] * (segmentIndex == points.length - 2 ? .1 : 1)
 		
 		// Evaluate cubic Bézier curve: B(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
 		float t = localProgress
