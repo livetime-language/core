@@ -542,6 +542,33 @@ transient skipInit global unit graphics
 		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) % image.frames.length;
 		drawImage image, position, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
 	
+	global important void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
+		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
+		                   implicit Player[] clickableBy = null // Only this player or list of players can touch or click the image
+		                   implicit frame = 0                   // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                   implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
+		                   Color color = White                  // Tint the image with this color
+	                       HorizontalAlignment align = Center   // The horizontal alignment of the image
+		                   VerticalAlignment valign = Middle    // The vertical alignment of the image
+			               clickableMargin = Vector2(16,16)     // The margin around the image within which it is clickable
+		                   showClickableArea = false            // Highlight the clickable area for debugging
+		                   hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		                   void(Touch touch) onClick            // Execute this code when the user touches or clicks the image or presses the hotkey
+		                   SourceCodeLocation location
+		drawImage image, position, frame, size, visibleFor, layer, alpha, color, align, valign, location
+			
+		// Handle click (only visible buttons are clickable)
+		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
+			if size.x == 0 and size.y == 0: size = image.size; else
+			if size.y == 0: size.y = size.x * image.size.y / image.size.x
+			input.onTouchDown position, size + clickableMargin, align, valign, by:effectiveClickableBy, showClickableArea, do:onClick
+			if hotkey
+				input.onKeyDown hotkey, by:effectiveClickableBy
+					onClick null
+
 	// Draw an image and execute code when the player touches or clicks the image.
 	//
 	// Example: If the current player instance clicks the image or 16 pixels around it, we print the exact position that was clicked. If other players will click the image, nothing will happen.
