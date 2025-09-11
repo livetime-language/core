@@ -259,7 +259,7 @@ unit websocket
 					onMessage(ws, new Buffer(message, 0, 0, 0))
 				}
 				else {
-					onStringMessage(ws, new TextDecoder("utf-8").decode(buffer));
+					onStringMessage(ws, new TextDecoder("utf-8").decode(message));
 				}
 				
 			},
