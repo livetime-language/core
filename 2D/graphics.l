@@ -626,7 +626,7 @@ transient skipInit global unit graphics
 			let factor = size.y ? size.y / f.h : 1
 			let scaledLeftSlice = leftSlice * factor
 			let scaledRightSlice = rightSlice * factor
-			let sizeX = Math.max(size.x, scaledLeftSlice + scaledRightSlice)
+			let sizeX = size.x >= scaledLeftSlice + scaledRightSlice + 1 ? size.x : scaledLeftSlice + scaledRightSlice
 			let sizeY = size.y || f.h
 			let x = align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX
 			let y = valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY
