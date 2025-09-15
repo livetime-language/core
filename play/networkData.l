@@ -85,9 +85,8 @@ http
 					if (value) {
 						let chunk = decoder.decode(value, { stream: true });
 						onData(chunk, done, cancel);
-						if(cancelled) return;
 					}
-					if(done) break;
+					if(done || cancelled) break;
 				}
 				onEnd?.();
 				resolve();
