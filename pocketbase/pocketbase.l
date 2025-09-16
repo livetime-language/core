@@ -21,7 +21,7 @@ transient skipInit pocketBase
 	inline js void onAuthChanged: inline void(any user) code
 		pocketBase.pb.authStore.onChange((token, record) => code(record))
 		
-	js void authRefresh: void() onNotLoggedIn
+	js void authRefresh: void() ifNotLoggedIn
 		try {
 			await pocketBase.pb.collection("users").authRefresh();
 		} catch(e) {
