@@ -21,11 +21,12 @@ transient skipInit pocketBase
 	inline js void onAuthChanged: inline void(any user) code
 		pocketBase.pb.authStore.onChange((token, record) => code(record))
 		
-	js void authRefresh()
+	js void authRefresh: void() onNotLoggedIn
 		try {
 			await pocketBase.pb.collection("users").authRefresh();
 		} catch(e) {
 			console.log(e);
+			onNotLoggedIn();
 		}
 		
 	inline js dynamic get: string collectionName
@@ -36,6 +37,10 @@ transient skipInit pocketBase
 	async dynamic authWithPassword: string email
 		                            string password
 		return await pocketBase.pb.collection("users").authWithPassword(email, password)
+
+	js void logout
+		pocketBase.pb.authStore.clear();
+		localStorage.removeItem('pocketbase_auth');
 
 Collection<T> 
 	string name
