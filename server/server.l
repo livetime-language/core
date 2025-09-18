@@ -194,6 +194,7 @@ class Request
 		
 class Response
 	inline js void sendText(string result, int code = 200, filename = "") this.writeHead(code, {'Content-Type': http.contentTypeMap[filename.getExtension()] || "text/plain; charset=utf-8"}); response.end(result);
+	inline js void sendHtml(ensureSingleExecution any result, int code = 200, filename = "") this.writeHead(code, {'Content-Type': "text/html; charset=utf-8"}); response.end(result);
 	inline js void send(ensureSingleExecution any result, int code = 200) if(result) { if(typeof result == "string") {this.writeHead(code, {"Content-Type": "text/plain; charset=utf-8"}); response.end(result);} else {this.writeHead(code, {"Content-Type": "application/json; charset=utf-8"}); response.end(JSON.stringify(result)); }}
 	inline js void redirect(string url, int code = 302) this.writeHead(code, {Location: url}); response.end();
 	
