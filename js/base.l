@@ -194,6 +194,9 @@ immutable struct float
 	inline js float ** float value
 		Math.pow(this, value)
 		
+	inline js bool isNumber
+		!isNaN(this)
+		
 	inline js float % ensureSingleExecution float value
 		(((this % value) + value) % value)
 		
