@@ -382,7 +382,11 @@ immutable class DateTime
 			return {time: milliseconds + inputTimezone, year, month, day, dayOfWeek: (days + 4) % 7, hour, minute, second, timezoneOffset:outputTimezone}
 		else
 			return DateTime.fromTime(milliseconds + inputTimezone, outputTimezone)
-		
+
+	static getDaysInMonth: int month, int year
+		let daysInMonth = ((year remainder 4) == 0 && (year remainder 100) != 0) || (year remainder 400 == 0) ? daysInMonthLeap : daysInMonthCommon
+		return daysInMonth[month-1]
+
 	// (31.12.)
 	dayMonthString: language = Loca.language
 		if language == German return "{day}.{month}."
