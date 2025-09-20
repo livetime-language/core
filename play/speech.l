@@ -77,22 +77,24 @@ transient speech
 					break
 		return pref
 		
-	js void say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
+	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
 		if(core.isPremiere && input.isCertain) {
 			if(window.webkit) {
 				let pref = speech.preferences.get(language) || speech.preferences.get("English")
 				window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: position, duration: duration});
 			} else {
-				speech.lastWord = value;
-				speechSynthesis.cancel();
-				const utterance = new SpeechSynthesisUtterance(value);
-				let voice = speech.getVoice(language);
-				utterance.lang = voice.langAndCountry;
-				utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
-				utterance.rate = Math.max(rate, voice.minSpeed);
-				console.log("rate", utterance.rate);
-				utterance.onend = () => reader.onSpeakingFinished(value, language)
-				speechSynthesis.speak(utterance);
+				return new Promise((resolve, reject) => {
+					speech.lastWord = value;
+					speechSynthesis.cancel();
+					const utterance = new SpeechSynthesisUtterance(value);
+					let voice = speech.getVoice(language);
+					utterance.lang = voice.langAndCountry;
+					utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
+					utterance.rate = Math.max(rate, voice.minSpeed);
+					console.log("rate", utterance.rate);
+					utterance.onend = () => resolve()
+					speechSynthesis.speak(utterance);
+				});
 			}
 		}
 		

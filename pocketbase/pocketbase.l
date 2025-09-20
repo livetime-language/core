@@ -26,7 +26,7 @@ transient skipInit pocketBase
 			await pocketBase.pb.collection("users").authRefresh();
 		} catch(e) {
 			console.log(e);
-			onNotLoggedIn();
+			ifNotLoggedIn();
 		}
 		
 	inline js dynamic get: string collectionName
