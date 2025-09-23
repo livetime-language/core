@@ -28,6 +28,8 @@ transient skipInit pocketBase
 			console.log(e);
 			ifNotLoggedIn();
 		}
+
+	inline js string token() pocketBase.pb.authStore.token
 		
 	inline js dynamic get: string collectionName
 		await pocketBase.pb.collection(collectionName).getFirstListItem("")

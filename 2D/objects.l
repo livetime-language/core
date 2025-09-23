@@ -272,12 +272,13 @@ Object CircularTextObject
 		
 Object ImageObject
 	Image image
+	int frame
 	
 	ImageObject
 		if size.x == 0 and size.y == 0: size = image.size
 	
 	internal override tick
-		if alpha: drawImage image, position, size, angle, alpha, visibleFor, layer
+		if alpha: drawImage image, position, size, frame, angle, alpha, visibleFor, layer
 		
 Object Effect
 	Image image

@@ -69,13 +69,14 @@ http
 		}
 		
 	js async void postStreamDirectly: string url
-		                        dynamic body
-		                        void(string result, bool done, void() cancel) onData
-		                        void() onEnd = null
+		                              dynamic body
+								      dynamic headers = null
+		                              void(string result, bool done, void() cancel) onData
+		                              void() onEnd = null
 		if(!core.isPremiere || !input.isCertain) return
 		return new Promise(async (resolve, reject) => {
 			try {
-				let response = await fetch(url, {method:"POST", body:JSON.stringify(body)})
+				let response = await fetch(url, {method:"POST", body:JSON.stringify(body), headers})
 				let reader = response.body.getReader();
 				let decoder = new TextDecoder();
 				let cancelled = false
