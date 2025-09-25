@@ -605,6 +605,8 @@ internal transient skipInit unit core
 	const chunkSize = 256
 	
 	storeRoomToDB
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		roomStore.put {
 			id: roomId
 			frame
@@ -617,6 +619,8 @@ internal transient skipInit unit core
 		}
 	
 	storeInputsToDB: InternalUser user
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		let inputs = user.inputs
 		if inputs.writePos > user.storedInputsUpTo
 			// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
@@ -630,6 +634,8 @@ internal transient skipInit unit core
 			user.storedInputsUpTo = inputs.writePos
 			
 	openFromDB
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		await IndexedDB.start Platform.isStaging ? "up4playing-{localUserId}" : "up4playing", version:2
 		
 		let room = await roomStore.get roomId
@@ -732,10 +738,12 @@ internal transient skipInit unit core
 		this.localUserId = userId
 		this.frame = 0
 		this.frames = 0
-		try
-			await openFromDB
-		catch 
-			input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		// TEMP: Storing event stream in database is disabled for now
+		// try
+		// 	await openFromDB
+		// catch 
+		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		await PeerNetwork.setupLocalMedia 
 			enableVideo:not Platform.isStaging || core.enableVideoForStaging
 			enableAudio:not Platform.isStaging || core.enableAudioForStaging
