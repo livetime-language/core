@@ -226,18 +226,6 @@ internal transient skipInit unit core
 		now = currentTime
 		if debug.waitUntilFrame and frame >= debug.waitUntilFrame: debug.onWaitFinished; return
 		if lastAnimationFrame: frameTimes.add now - lastAnimationFrame
-			
-		// Debug: Check if there are holes in internalUsers
-		for input.internalUsers.length
-			let user = input.internalUsers[.]
-			if not user or true
-				string errorString = "Error: Hole in internalUsers "
-				for input.internalUsers.length
-					let user2 = input.internalUsers[.]
-					errorString += (user2 ? user2.id.toString : "null") + ","
-				errorMessage = errorString
-				hasErrors = true
-				log errorString
 
 		ServerNetwork.tick
 		PeerNetwork.tick
