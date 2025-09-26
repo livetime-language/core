@@ -126,7 +126,7 @@ internal transient skipInit unit ServerNetwork
 				// We don't send inputs from server any more
 				// buffer.readBuffer user.inputs
 				
-				core.log "#onJoinResponse", id, user.local, user.inputs
+				core.log "#onJoinResponse", id, user.local, input.internalUsers.joinToString(.id.toString), user.inputs
 				
 			// TEMP
 			// for input.internalUsers
