@@ -498,7 +498,8 @@ internal transient skipInit unit core
 			
 			let userCount = snapshot.readInt
 			for userCount
-				let user = input.internalUsers[.]
+				let userId = snapshot.readInt
+				let user = input.internalUsers[userId]
 					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
@@ -536,9 +537,11 @@ internal transient skipInit unit core
 			if(snapshot != secondSnapshotForTesting)
 				onError {"Inconsistent serialization"}
 												
-		snapshot.writeInt input.internalUsers.length
+		snapshot.writeInt input.internalUsers.count . != null
 		for input.internalUsers
-			snapshot.writeInt .inputs.readPos
+			if .
+				snapshot.writeInt .id
+				snapshot.writeInt .inputs.readPos
 				
 		// Checksum
 		if players.length >= 2 and input.isCertain
