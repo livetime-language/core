@@ -226,6 +226,18 @@ internal transient skipInit unit core
 		now = currentTime
 		if debug.waitUntilFrame and frame >= debug.waitUntilFrame: debug.onWaitFinished; return
 		if lastAnimationFrame: frameTimes.add now - lastAnimationFrame
+			
+		// Debug: Check if there are holes in internalUsers
+		for input.internalUsers.length
+			let user = input.internalUsers[.]
+			if not user or true
+				string errorString = "Error: Hole in internalUsers "
+				for input.internalUsers.length
+					let user2 = input.internalUsers[.]
+					errorString += (user2 ? user2.id.toString : "null") + ","
+				errorMessage = errorString
+				hasErrors = true
+				log errorString
 
 		ServerNetwork.tick
 		PeerNetwork.tick
@@ -308,6 +320,7 @@ internal transient skipInit unit core
 		// }
 			
 	internal string logs
+	internal bool hasErrors
 	private float lastNetworkFrame, lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
 	internal int displayItems
 	int tickMessageSize
@@ -498,8 +511,9 @@ internal transient skipInit unit core
 			
 			let userCount = snapshot.readInt
 			for userCount
-				let user = input.internalUsers[.]
-				user.inputs.readPos = snapshot.readInt
+				let userId = snapshot.readInt
+				let user = input.internalUsers[userId]
+					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
 		replayTime = Time.measure
@@ -536,9 +550,11 @@ internal transient skipInit unit core
 			if(snapshot != secondSnapshotForTesting)
 				onError {"Inconsistent serialization"}
 												
-		snapshot.writeInt input.internalUsers.length
+		snapshot.writeInt input.internalUsers.count . != null
 		for input.internalUsers
-			snapshot.writeInt .inputs.readPos
+			if .
+				snapshot.writeInt .id
+				snapshot.writeInt .inputs.readPos
 				
 		// Checksum
 		if players.length >= 2 and input.isCertain
@@ -771,6 +787,7 @@ internal transient skipInit unit core
 		
 	onError: Error error
 		errorMessage = error.stack
+		hasErrors = true
 		log "{errorMessage}"
 		Platform.sendErrorToEditor error
 		
