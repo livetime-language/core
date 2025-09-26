@@ -499,7 +499,7 @@ internal transient skipInit unit core
 			let userCount = snapshot.readInt
 			for userCount
 				let user = input.internalUsers[.]
-				user.inputs.readPos = snapshot.readInt
+					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
 		replayTime = Time.measure
