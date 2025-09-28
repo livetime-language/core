@@ -70,7 +70,7 @@ http
 		
 	js async void postStreamDirectly: string url
 		                              dynamic body
-								      dynamic headers = null
+								      dynamic headers = object.undefined
 		                              void(string result, bool done, void() cancel) onData
 		                              void() onEnd = null
 		if(!core.isPremiere || !input.isCertain) return
