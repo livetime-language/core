@@ -1,8 +1,6 @@
 transient skipInit pocketBase
 	string url, libUrl
 	dynamic pb
-
-	Collection<User> users = {name:"users"}
 	
 	async void connect: string url
 		pocketBase.url = pocketBase.libUrl = url + "/"

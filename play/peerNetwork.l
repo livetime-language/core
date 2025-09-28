@@ -5,7 +5,7 @@
 //     setup
 //     onConnectedToServer
 //     sendJoinMessage
-//     onJoinResponse     ->  PeerNetwork.initiate for each user already in the room
+//     onJoinResponse            ->    PeerNetwork.initiate for each user already in the room
 //     ping
 //     onPong
 //     startConnected 
@@ -16,8 +16,9 @@
 //     setupRemoteMedia
 //     setupDataChannel
 //     onNegotiationNeeded
-//     createOffer
-//     onAnwserReceived
+//     createOffer               ->    onReceivedOffer called on the peer we are connection to
+//                                         \/
+//     onReceivedAnswer          <-    createAnswer
 //     onConnectionStateChange
 
 internal transient immutable Signal
@@ -312,6 +313,7 @@ internal transient skipInit unit PeerNetwork
 				core.log "#peer All my offers are connected after {statistics.connectTime} ms and {retries} retries"
 			
 	disconnect: InternalUser user
+		core.log "####### disconnect"
 		user.dataChannels.each.close()
 		if user.peerConnection != null: user.peerConnection.close
 		input.internalUsers[user.id] = null

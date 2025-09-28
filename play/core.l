@@ -308,6 +308,7 @@ internal transient skipInit unit core
 		// }
 			
 	internal string logs
+	internal bool hasErrors
 	private float lastNetworkFrame, lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
 	internal int displayItems
 	int tickMessageSize
@@ -498,8 +499,9 @@ internal transient skipInit unit core
 			
 			let userCount = snapshot.readInt
 			for userCount
-				let user = input.internalUsers[.]
-				user.inputs.readPos = snapshot.readInt
+				let userId = snapshot.readInt
+				let user = input.internalUsers[userId]
+					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
 		replayTime = Time.measure
@@ -536,9 +538,11 @@ internal transient skipInit unit core
 			if(snapshot != secondSnapshotForTesting)
 				onError {"Inconsistent serialization"}
 												
-		snapshot.writeInt input.internalUsers.length
+		snapshot.writeInt input.internalUsers.count . != null
 		for input.internalUsers
-			snapshot.writeInt .inputs.readPos
+			if .
+				snapshot.writeInt .id
+				snapshot.writeInt .inputs.readPos
 				
 		// Checksum
 		if players.length >= 2 and input.isCertain
@@ -605,6 +609,8 @@ internal transient skipInit unit core
 	const chunkSize = 256
 	
 	storeRoomToDB
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		roomStore.put {
 			id: roomId
 			frame
@@ -617,6 +623,8 @@ internal transient skipInit unit core
 		}
 	
 	storeInputsToDB: InternalUser user
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		let inputs = user.inputs
 		if inputs.writePos > user.storedInputsUpTo
 			// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
@@ -630,6 +638,8 @@ internal transient skipInit unit core
 			user.storedInputsUpTo = inputs.writePos
 			
 	openFromDB
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		await IndexedDB.start Platform.isStaging ? "up4playing-{localUserId}" : "up4playing", version:2
 		
 		let room = await roomStore.get roomId
@@ -732,10 +742,12 @@ internal transient skipInit unit core
 		this.localUserId = userId
 		this.frame = 0
 		this.frames = 0
-		try
-			await openFromDB
-		catch 
-			input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		// TEMP: Storing event stream in database is disabled for now
+		// try
+		// 	await openFromDB
+		// catch 
+		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		await PeerNetwork.setupLocalMedia 
 			enableVideo:not Platform.isStaging || core.enableVideoForStaging
 			enableAudio:not Platform.isStaging || core.enableAudioForStaging
@@ -763,6 +775,7 @@ internal transient skipInit unit core
 		
 	onError: Error error
 		errorMessage = error.stack
+		hasErrors = true
 		log "{errorMessage}"
 		Platform.sendErrorToEditor error
 		
