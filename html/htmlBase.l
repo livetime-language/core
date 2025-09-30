@@ -3,48 +3,48 @@ struct float
 	inline Dimension toDimension() Dimension(this, Html.defaultUnit)
 		
 	// Pixels
-	inline Dimension px()          Dimension(this, Pixels)
+	inline Dimension px()          Dimension(this, pixels)
 		
 	// Makes the value relative to its parent's value
-	inline Dimension percent()     Dimension(this, Percent)
+	inline Dimension percent()     Dimension(this, percent)
 		
 	// A fraction of the available space
-	inline Dimension fr()          Dimension(this, Fraction)
+	inline Dimension fr()          Dimension(this, fraction)
 		
 	// Font size of the parent (for font-size), font size of the element itself (for other properties)
-	inline Dimension em()          Dimension(this, Em)
+	inline Dimension em()          Dimension(this, em)
 		
 	// Font size of the root element
-	inline Dimension rem()         Dimension(this, Rem)
+	inline Dimension rem()         Dimension(this, rem)
 		
 	// Percentage of the viewport's width
-	inline Dimension vw()          Dimension(this, ViewportWidth)
+	inline Dimension vw()          Dimension(this, viewportWidth)
 		
 	// Percentage of the viewport's height
-	inline Dimension vh()          Dimension(this, ViewportHeigh)
+	inline Dimension vh()          Dimension(this, viewportHeigh)
 		
 	// Percentage of the small viewport's width (without the address bar on mobile)
-	inline Dimension svw()         Dimension(this, SmallViewportWidth)
+	inline Dimension svw()         Dimension(this, smallViewportWidth)
 		
 	// Percentage of the small viewport's height (without the address bar on mobile)
-	inline Dimension svh()         Dimension(this, SmallViewportHeight)
+	inline Dimension svh()         Dimension(this, smallViewportHeight)
 		
 immutable priority low struct float
-	inline Dimension toAngle() Angle(this, Turns)
+	inline Dimension toAngle() Angle(this, turns)
 
-	inline Angle operator °(float value) Angle(value, Degrees)
+	inline Angle operator °(float value) Angle(value, degrees)
 	
 	// One full rotation is 1
-	inline Angle turns := Angle(this, Turns)
+	inline Angle turns := Angle(this, turns)
 	
 	// One full rotation is 2π (about 6.2832)
-	inline Angle radians := Angle(this, Radians)
+	inline Angle radians := Angle(this, radians)
 		
 	// One full rotation is 360
-	inline Angle degrees := Angle(this, Degrees)
+	inline Angle degrees := Angle(this, degrees)
 		
 	// One full rotation is 400
-	inline Angle gradians := Angle(this, Gradians)
+	inline Angle gradians := Angle(this, gradians)
 
 js Array
 priority low class List<T>
@@ -88,7 +88,7 @@ global skipInit priority low unit math
 	
 	moveTowards: Angle value
 		         Angle targetValue
-		         Angle speed = {.1 Turns}
+		         Angle speed = {.1, turns}
 		if targetValue > value: return math.min(value + speed, targetValue) else
 		if targetValue < value: return math.max(value - speed, targetValue)
 			
@@ -103,7 +103,7 @@ global skipInit unit math
 
 struct Angle
 	float value       // The value in the specified unit
-	Unit unit = Turns // The unit of the value (Turns, Degrees, Gradians, or Radians)
+	Unit unit = turns // The unit of the value (Turns, Degrees, Gradians, or Radians)
 	
 	float toFloat()   return this.value
 	string toString() return "{this.value}{this.unit}"

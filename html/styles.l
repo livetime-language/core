@@ -1,72 +1,72 @@
 enum Unit
-	Pixels = "px" // Pixels
-	Percent = "%" // Makes the value relative to its parent's value
-	Fraction = "fr" // A fraction of the available space
+	pixels = "px" // pixels
+	percent = "%" // Makes the value relative to its parent's value
+	fraction = "fr" // A fraction of the available space
 	
-	Centimeters = "cm" // Centimeters
-	Millimeters = "mm" // Millimeters
-	QuarterMillimeters = "Q" // Quarter-Millimeters
-	Inches = "in" // Inches
-	Picas = "pc" // Picas
-	Points = "pt" // Points
+	centimeters = "cm" // Centimeters
+	millimeters = "mm" // Millimeters
+	quarterMillimeters = "Q" // Quarter-Millimeters
+	inches = "in" // Inches
+	picas = "pc" // Picas
+	points = "pt" // Points
 	
-	Em = "em" // Font size of the parent (for font-size), font size of the element itself (for other properties)
-	Ex = "ex" // x-height of the element's font.
-	Ch = "ch" // The advance measure (width) of the glyph "0" of the element's font
-	Rem = "rem" // Font size of the root element
+	em = "em" // Font size of the parent (for font-size), font size of the element itself (for other properties)
+	ex = "ex" // x-height of the element's font.
+	ch = "ch" // The advance measure (width) of the glyph "0" of the element's font
+	rem = "rem" // Font size of the root element
 	
-	LineHeight = "lh" // Line height of the element
-	RootLineHeight = "rlh" // Line height of the root element
+	lineHeight = "lh" // Line height of the element
+	rootLineHeight = "rlh" // Line height of the root element
 	
-	ViewportWidth = "vw" // 1% of the viewport's width
-	ViewportHeigh = "vh" // 1% of the viewport's height
-	ViewportMin = "vmin" // 1% of the viewport's smaller dimension
-	ViewportMax = "vmax" // 1% of the viewport's larger dimension
-	ViewportBlock = "vb" // 1% of the size of the initial block in the direction of the root element's block axis
-	ViewportInline = "vi" // 1% of the size of the initial block in the direction of the root element's inline axis
+	viewportWidth = "vw" // 1% of the viewport's width
+	viewportHeigh = "vh" // 1% of the viewport's height
+	viewportMin = "vmin" // 1% of the viewport's smaller dimension
+	viewportMax = "vmax" // 1% of the viewport's larger dimension
+	viewportBlock = "vb" // 1% of the size of the initial block in the direction of the root element's block axis
+	viewportInline = "vi" // 1% of the size of the initial block in the direction of the root element's inline axis
 	
-	SmallViewportWidth = "svw" // 1% of the small viewport's width (without the address bar on mobile)
-	SmallViewportHeight = "svh" // 1% of the small viewport's height (without the address bar on mobile)
-	LargeViewportWidth = "lvw" // 1% of the large viewport's width (with the address bar on mobile)
-	LargeViewportHeight = "lvh" // 1% of the large viewport's height (with the address bar on mobile)
-	DynamicViewportWidth = "dvw" // 1% of the dynamic viewport's width (with the address bar on mobile if visible)
-	DynamicViewportHeight = "dvh" // 1% of the dynamic viewport's height (with the address bar on mobile if visible)
+	smallViewportWidth = "svw" // 1% of the small viewport's width (without the address bar on mobile)
+	smallViewportHeight = "svh" // 1% of the small viewport's height (without the address bar on mobile)
+	largeViewportWidth = "lvw" // 1% of the large viewport's width (with the address bar on mobile)
+	largeViewportHeight = "lvh" // 1% of the large viewport's height (with the address bar on mobile)
+	dynamicViewportWidth = "dvw" // 1% of the dynamic viewport's width (with the address bar on mobile if visible)
+	dynamicViewportHeight = "dvh" // 1% of the dynamic viewport's height (with the address bar on mobile if visible)
 		
-	GeoLocation = "geo" // A geographic location on earth (x:longitude, y:latitude)
+	geoLocation = "geo" // A geographic location on earth (x:longitude, y:latitude)
 	
-	Turns = "turn"    // Turns (one full rotation is 1)
-	Radians = "rad"   // Radians (one full rotation is 2π)
-	Degrees = "deg"   // Degrees (one full rotation is 360)
-	Gradians = "grad" // Gradiants (one full rotation is 400)
+	turns = "turn"    // Turns (one full rotation is 1)
+	radians = "rad"   // Radians (one full rotation is 2π)
+	degrees = "deg"   // Degrees (one full rotation is 360)
+	gradians = "grad" // Gradiants (one full rotation is 400)
 	
-	Auto = "auto"
-	None = "none"
+	auto = "auto"
+	none = "none"
 	
 struct Dimension
-	global const Dimension auto = {unit:Auto} // Automatically adjust the value to distribute the space evenly
+	global const Dimension auto = {unit:auto} // Automatically adjust the value to distribute the space evenly
 		
 	float value        // The value in the specified unit
-	Unit unit = Pixels // The unit of the value (Pixels, Percent, Centimeters, Points, ViewportHeight, ViewportWidth, ...)
+	Unit unit = pixels // The unit of the value (pixels, percent, Centimeters, Points, ViewportHeight, ViewportWidth, ...)
 	
-	string toString := unit == Auto ? "auto" : "{value}{unit}"
+	string toString := unit == auto ? "auto" : "{value}{unit}"
 	bool toBool := value != 0
 	
 struct Vector2
 	float x // The x coordinate of the vector
 	float y // The y coordinate of the vector
-	Unit unit = Pixels // The unit of the vector (Pixels, Percent, Centimeters, Points, ViewportHeight, ...)
+	Unit unit = pixels // The unit of the vector (pixels, percent, Centimeters, Points, ViewportHeight, ...)
 	
 	// Used to specify that the vector is not set or invalid
-	static inline Vector2 none() Vector2(float.infinity, float.infinity, None)
+	static inline Vector2 none() Vector2(float.infinity, float.infinity, none)
 	
 	// {float.minValue, float.minValue}
-	static inline Vector2 minValue() Vector2(float.minValue, float.minValue, Pixels)
+	static inline Vector2 minValue() Vector2(float.minValue, float.minValue, pixels)
 	
 	// {float.maxValue, float.maxValue}
-	static inline Vector2 maxValue() Vector2(float.maxValue, float.maxValue, Pixels)
+	static inline Vector2 maxValue() Vector2(float.maxValue, float.maxValue, pixels)
 	
 	// {0,0}
-	static inline Vector2 zero() Vector2(0, 0, Pixels)
+	static inline Vector2 zero() Vector2(0, 0, pixels)
 		
 	// A string representation of the vector
 	toString := "{x}{unit} {y}{unit}"
@@ -223,6 +223,10 @@ class Margin
 	implicit Dimension bottom // The margin on the bottom of the element
 	implicit Dimension left   // The margin on the left side of the element
 	string toString := "{top} {right} {bottom} {left}"
+
+struct float
+	inline Padding toPadding() Padding(this, this, this, this)
+	inline Margin toMargin() Margin(this, this, this, this)
 	
 enum Cursor
 	Pointer = "pointer" // The cursor is a pointer that indicates a link, typically an image of a pointing hand
@@ -317,7 +321,14 @@ enum BorderStyle
 	Outset = "outset" // Displays a border that makes the element appear embossed (the opposite of inset)
 	Hidden = "hidden" // Displays no border
 	None = "none" // Displays no border
-	
+
+enum ObjectFit
+	Contain = "contain" // The replaced content is scaled to maintain its aspect ratio while fitting within the element's content box. The entire object is made to fill the box, while preserving its aspect ratio, so the object will be "letterboxed" or "pillarboxed" if its aspect ratio does not match the aspect ratio of the box.
+	Cover = "cover" // The replaced content is sized to maintain its aspect ratio while filling the element's entire content box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be clipped to fit.
+	Fill = "fill" // The replaced content is sized to fill the element's content box. The entire object will completely fill the box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be stretched to fit.
+	None = "none" // The replaced content is not resized.
+	ScaleDown = "scale-down" // The content is sized as if none or contain were specified, whichever would result in a smaller concrete object size.
+
 class Border
 	global const Border None = {0} // Display no border
 		
@@ -454,8 +465,8 @@ dynamic Style
 	string listStyleImage // An image as the list-item marker
 	string listStylePosition // The position of the list-item marker
 	string listStyleType // The list-item marker type
-	Margin margin // The margins of an element (can have up to four values)
-	Margin inset // A shorthand for the top, right, bottom, left properties
+	implicit Margin margin // Can be single float like 8 an object like {top:8, right:8, bottom:8, left:8}
+	implicit Margin inset // A shorthand for the top, right, bottom, left properties
 	implicit Dimension marginBottom // The bottom margin of an element
 	implicit Dimension marginLeft // The left margin of an element
 	implicit Dimension marginRight // The right margin of an element
@@ -469,7 +480,7 @@ dynamic Style
 	string navLeft // Where to navigate when using the arrow-left navigation key
 	string navRight // Where to navigate when using the arrow-right navigation key
 	string navUp // Where to navigate when using the arrow-up navigation key
-	string objectFit // Specifies how the contents of a replaced element should be fitted its box
+	ObjectFit objectFit // Specifies how the contents of a replaced element should be fitted its box
 	string objectPosition // Specifies the alignment of the replaced element inside its box
 	float opacity // The opacity level for an element
 	string order // The order of the flexible item, relative to the rest
@@ -482,7 +493,7 @@ dynamic Style
 	Overflow overflow // What to do with content that renders outside the element box
 	Overflow overflowX // Specifies what to do with the left/right edges of content rendering outside the element box
 	Overflow overflowY // Specifies what to do with the top/bottom edges of content rendering outside the element box
-	Padding padding // The padding of an element (can have up to four values)
+	implicit Padding padding // Can be single float like 8 an object like {top:8, right:8, bottom:8, left:8}
 	implicit Dimension paddingBottom // The bottom padding of an element
 	implicit Dimension paddingLeft // The left padding of an element
 	implicit Dimension paddingRight // The right padding of an element

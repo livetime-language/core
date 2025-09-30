@@ -91,7 +91,7 @@ class Node
 			if ev.pointerType == Mouse: type = cast ev.button.limit(0..2); else
 			if ev.pointerType == Touch: type = Touch; else
 				                        type = Pen
-			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, Pixels)}
+			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, pixels)}
 			touch.shiftKey = ev.shiftKey
 			touch.ctrlKey = ev.ctrlKey
 			touch.altKey = ev.altKey
@@ -223,7 +223,7 @@ Node WebView
 	inline js void goBack() this.goBack()
 	
 global unit Html
-	Unit defaultUnit = Pixels
+	Unit defaultUnit = pixels
 	
 	private Node parentNode
 	private Node currentNode

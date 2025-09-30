@@ -128,7 +128,7 @@ static class app
 
 		// Div with children
 		let doneItems = helpers.getAllDoneItems
-		div display:Flex border:{width:1px, style:Solid, color:Black} margin:{top:8, right:8, bottom:8, left:8}
+		div display:Flex border:{width:1px, style:Solid, color:Black} margin:{top:10percent, right:auto, bottom:10percent, left:auto}
 			for doneItems as item
 				div item.text
 
