@@ -67,7 +67,7 @@ transient skipInit unit Platform
 		alert(message)
 		log(message)
 		
-	inline js void delay: Time time
+	inline js void delay: float time // The delay in milliseconds
 		                  void() then
 		setTimeout(then, time)
 		
@@ -82,11 +82,11 @@ transient skipInit unit Platform
 	inline js void openLink: string url
 		window.open(url)
 		
-	js void setInterval: Time interval
+	js void setInterval: float interval // The interval in milliseconds
 		                 void() code
 		setInterval(code, interval)
 		
-	inline js int setTimeout: Time time
+	inline js int setTimeout: float time // The delay in milliseconds
 		                      void() code
 		setTimeout(code, time)
 		

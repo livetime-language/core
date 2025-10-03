@@ -239,7 +239,7 @@ internal Object LobbyTextField
 	void(string text) onChanged
 	
 	visible bool isFocused
-	private Time lastTypeTime
+	private float lastTypeTime
 	
 	clear
 		text = ""
@@ -247,25 +247,25 @@ internal Object LobbyTextField
 		
 	focus: bool isFocused = true
 		this.isFocused = isFocused
-		lastTypeTime = Time.now
+		lastTypeTime = DateTime.now
 		
 	tick
-		let c = isFocused and ((Time.now%1000) < 500)
+		let c = isFocused and ((DateTime.now%1000) < 500)
 		onTouchDownAny by editableBy
 			focus false
 		onTouchDown position+{0,size.x/2}, {width,size.x*2}, by:editableBy
 			focus true
 		if isFocused
 			onType by editableBy
-				text += .; lastTypeTime = Time.now
+				text += .; lastTypeTime = DateTime.now
 				if onChanged != null: onChanged text
 			onKeyDown Backspace by editableBy
 				if text: text = text.substring(0, text.length-1)
-				lastTypeTime = Time.now
+				lastTypeTime = DateTime.now
 				if onChanged != null: onChanged text
 					
 		drawText text, position+{0, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor
 		
-		if isFocused and (((Time.now - lastTypeTime)%1500) < 750)
+		if isFocused and (((DateTime.now - lastTypeTime)%1500) < 750)
 			let textWidth = graphics.getTextWidth text, size, font:ByTheWay
 			drawText "|", position+{textWidth/2, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor:editableBy

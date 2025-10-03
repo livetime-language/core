@@ -686,7 +686,7 @@ skipInit global unit input
 		
 		let controllerButton = controllerButtonMap[keyCode]
 			let player = players.find.id == controllerButton.userId
-			player.controllerKeyDownFrame[controllerButton.buttonIndex] = inputType == KeyDown ? Time.frame : 0
+			player.controllerKeyDownFrame[controllerButton.buttonIndex] = inputType == KeyDown ? DateTime.frame : 0
 			
 		// 	composite += (controllerButton.buttonIndex + 1) shiftLeft 5 // buttonIndex: 0 - 15 (4 bit)
 		// 	if core.mode == Local and not core.simulateConnection

@@ -1307,7 +1307,6 @@ struct Vector2
 	
 	Vector2 operator * (Vector2 a, Vector2 b) return {a.x*b.x, a.y*b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
 	Vector2 operator * (Vector2 a, float b)   return {a.x*b, a.y*b, a.location}
-	Vector2 operator * (Vector2 a, Time b)    return {cast a.x*b, cast a.y*b, a.location}
 	Vector2 operator * (float a, Vector2 b)   return {a*b.x, a*b.y, b.location}
 	Vector2 operator * (Vector2 vector, Matrix2D matrix)
 		return {

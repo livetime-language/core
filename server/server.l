@@ -4,7 +4,7 @@ skipInit unit Platform
 		
 	inline js void initPlatform
 		Platform.init()
-		Time.timezoneOffset = new Date().getTimezoneOffset() * 60000
+		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
 		
 	inline js void initApplication
 		init()
@@ -28,7 +28,7 @@ skipInit unit Platform
 	
 	inline js string basePath := __dirname + "/"
 	
-	js void setupInterval: Time interval
+	js void setupInterval: float interval // The interval in milliseconds
 		                   string name = "interval"
 		                   void() code
 		if(window[name]) clearInterval(window[name]);
@@ -76,7 +76,7 @@ global skipInit unit math
 			return math.floor(math.random() * 16).toString(16);  
 		}); 
 	
-skipInit transient float Time
+DateTime
 	// The number of milliseconds elapsed since January 1, 1970
 	static inline js Time now := Date.now()
 	

@@ -191,25 +191,23 @@ struct float
 		
 	// ------------------------------------------- Time -------------------------------------------
 	
-	implicit inline cs Time toTime() this
-	
 	// Milliseconds
-	inline cs Time ms := this
+	inline cs float ms := this
 	
 	// Seconds
-	inline cs Time s := (this*1000)
+	inline cs float s := (this*1000)
 		
 	// Minutes
-	inline cs Time min := (this*60000)
+	inline cs float min := (this*60000)
 		
 	// Hours
-	inline cs Time h := (this*3600000)
+	inline cs float h := (this*3600000)
 	
 	// Days
-	inline cs Time days := (this*86400000)
+	inline cs float days := (this*86400000)
 	
 	// Weeks	
-	inline cs Time weeks := (this*604800000)
+	inline cs float weeks := (this*604800000)
 		
 	inline cs float operator °(float angle) (angle/180*pi)
 	
@@ -583,9 +581,6 @@ class List<T>
 	// inline cs T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 	// 	this.sort(comparer)
 	
-	// inline cs T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-	
 	// // Sort the list by a given expression
 	// T[] orderBy: float(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) - expression(b))
@@ -593,9 +588,6 @@ class List<T>
 	// T[] orderBy: float(T it) expression           // First order by this expression
 	// 	         label nocolon float(T it) thenBy // Then order by this expression
 	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
-		
-	// T[] orderBy: Time(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
 		
 	// T[] orderBy: string(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) compareTo expression(b))
@@ -743,15 +735,6 @@ class List<T>
 	// 		if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
 		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
 	// max: int(T a) selector
 	// 	 int threshold = int.minValue
 	// 	 int default = 0
@@ -768,17 +751,6 @@ class List<T>
 	// 	 float default = 0
 	// 	 label bool(T a) where
 	// 	float resultValue = threshold
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	 label bool(T a) where
-	// 	Time resultValue = threshold
 	// 	for this
 	// 		if where(.)
 	// 			let value = selector(.)
@@ -829,17 +801,6 @@ class List<T>
 	// 			resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
 		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
 	// withMin: int(T a) selector
 	// 	     int threshold = int.maxValue
 	// 	     label bool(T a) where
@@ -866,19 +827,6 @@ class List<T>
 	// 				resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
 		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	     label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value < resultValue
-	// 				resultValue = value
-	// 				resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
 	// withMax: int(T a) selector
 	// 	     int threshold = int.minValue
 	// 	int resultValue = threshold
@@ -893,17 +841,6 @@ class List<T>
 	// withMax: float(T a) selector
 	// 	     float threshold = float.minValue
 	// 	float resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMax: Time(T a) selector
-	// 	     Time threshold = float.minValue
-	// 	Time resultValue = threshold
 	// 	T resultItem
 	// 	for this
 	// 		let value = selector(.)
@@ -1449,26 +1386,14 @@ global skipInit unit Math
 	inline cs(System) int ceil: float value // The value to round up
 		(int)Math.Ceil(value)
 		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline cs(System) Time ceil: Time value // The value to round up
-		(int)Math.Ceil(value)
-		
 	// Returns the largest integer less than or equal to the given value
 	inline cs(System) int floor: float value // The value to round down
 		(int)Math.Floor(value)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline cs(System) Time floor: Time value // The value to round down
-		(int)Math.Floor(value)
-		
+				
 	// Returns the given value rounded to the nearest integer
 	inline cs(System) int round: float value // The value to round
 		(int)Math.Round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cs(System) Time round: Time value // The angle to round
-		(int)Math.Round(value)
-		
+				
 	inline cs(System) int min: int a // The first value
 		               int b // The second value
 		Math.Min(a, b)
@@ -1486,11 +1411,6 @@ global skipInit unit Math
 	// Returns the largest of the given values
 	inline cs(System) float max: float a // The first value
 		                 float b // The second value
-		Math.Max(a, b)
-		
-	// Returns the largest of the given values
-	inline cs(System) Time max: Time a // The first time
-		                Time b // The second time
 		Math.Max(a, b)
 		
 	// Returns the positive square root of the given value
@@ -1733,17 +1653,6 @@ global skipInit unit Math
 			            return value
 			
 	// Maps a value from an input range to an output range
-	map: Time value        // The input value 
-		 Time from = 0     // The beginning of the input range
-		 Time to = 1       // The end of the input range
-		 float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
-		 float target = 1  // The highest possible output value, will be returned for values larger than "to".
-		if value <= from: return start
-		if value >= to:   return target
-		let factor = (value-from) / (to-from)
-		return start + (target-start) * factor
-			
-	// Maps a value from an input range to an output range
 	map: float value       // The input value 
 		 float from = 0    // The beginning of the input range
 		 float to = 1      // The end of the input range
@@ -1774,14 +1683,8 @@ global skipInit unit Math
 // 		count++
 // 	average := total / count		
 	
-skipInit transient float Time
-	// // The largest possible time value
-	// const inline cs Time maxValue := Number.MAX_VALUE
-	
-	// // The smallest possible time value
-	// const inline cs Time minValue := Number.MIN_VALUE
-	
-	static inline cs(UnityEngine) float deltaTime() UnityEngine.Time.deltaTime
+struct float	
+	static inline cs(UnityEngine) float deltaTime() UnityEngine.float.deltaTime
 	
 	// // The number of milliseconds elapsed since January 1, 1970
 	static float now
@@ -1791,8 +1694,8 @@ skipInit transient float Time
 	// // The current frame
 	static int frame
 	
-	// static Time fromTimeString(string timeString)
-	// 	Time value = 0
+	// static float fromTimeString(string timeString)
+	// 	float value = 0
 	// 	int colon1 = timeString.indexOf(":")
 	// 	if(colon1 == -1)
 	// 		value += int(timeString)*3600000
@@ -1806,7 +1709,7 @@ skipInit transient float Time
 	// 			value += int(timeString.substring(colon2+1))*1000
 	// 	return value
 		
-	// static inline cs Time fromIsoString: string isoString
+	// static inline cs float fromIsoString: string isoString
 	// 	new Date(isoString).getTime()
 		
 	// inline cs float toFloat() this
@@ -1853,31 +1756,6 @@ skipInit transient float Time
 	
 	// // (31-12-2000 23-59-59)
 	// inline cs string invariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
-			
-	inline cs Time  operator +  (Time a, Time b) a+b
-	inline cs Time  operator +  (Time a, int b) a+b
-	inline cs Time  operator +  (Time a, float b) a+b
-	
-	inline cs Time  operator -  (Time a, Time b) a-b
-	inline cs Time  operator -  (Time a, int b) a-b
-	inline cs Time  operator -  (Time a, float b) a-b
-	
-	inline cs float operator /  (Time a, Time b) a/b
-	inline cs Time  operator /  (Time a, int b) a/b
-	inline cs Time  operator /  (Time a, float b) a/b
-	
-	inline cs Time  operator *  (Time a, int b) a*b
-	inline cs Time  operator *  (Time a, float b) a*b
-	inline cs Time  operator *  (int a, Time b) a*b
-	inline cs Time  operator *  (float a, Time b) a*b
-	
-	inline cs Time  operator %  (Time a, int b) a%b
-	inline cs Time  operator %  (Time a, Time b) a%b
-	
-	inline cs bool  operator <  (Time a, Time b) a<b
-	inline cs bool  operator <= (Time a, Time b) a<=b
-	inline cs bool  operator >  (Time a, Time b) a>b
-	inline cs bool  operator >= (Time a, Time b) a>=b
 	
 	// static measure: void() do
 	// 	let startTime = preciseTime
@@ -1927,7 +1805,7 @@ enum TimeUnit
 	// inline cs string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
 	// inline cs string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 		
-	// inline cs Time timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	// inline cs float timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
 	
 	// private static string toTwoDigitString: int value
 	// 	return value < 10 ? "0"+value.toString : value.toString
@@ -1986,7 +1864,7 @@ enum TimeUnit
 	// 	return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	// // The number of milliseconds elapsed since January 1, 1970
-	// inline cs Time time := this.getTime()
+	// inline cs float time := this.getTime()
 		
 	// // The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	// cs string isoString()
@@ -2007,7 +1885,7 @@ enum TimeUnit
 	// 		':' + pad(Math.abs(tzo) % 60);
 
 	// static inline cs Date now := new Date(Time_now)
-	// static inline cs Date fromTime(Time time) new Date(time)
+	// static inline cs Date fromTime(float time) new Date(time)
 	// static inline cs Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
 	
 	// // Returns the real time, even during replay. Be careful: This can break the replay.

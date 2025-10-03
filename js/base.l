@@ -40,8 +40,6 @@ immutable struct int
 	
 	important inline js string toString := this?.toString()
 		
-	implicit inline js Time toTime() this
-		
 	inline js int fromHex(string value) parseInt(value, 16)
 		
 	inline js string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
@@ -310,26 +308,24 @@ immutable struct float
 	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
 		
 	// ------------------------------------------- Time -------------------------------------------
-	
-	implicit inline js Time toTime() this
-	
+		
 	// Milliseconds
-	inline js Time milliseconds := this
+	inline js float milliseconds := this
 	
 	// Seconds
-	inline js Time seconds := (this*1000)
+	inline js float seconds := (this*1000)
 		
 	// Minutes
-	inline js Time minutes := (this*60000)
+	inline js float minutes := (this*60000)
 		
 	// Hours
-	inline js Time hours := (this*3600000)
+	inline js float hours := (this*3600000)
 	
 	// Days
-	inline js Time days := (this*86400000)
+	inline js float days := (this*86400000)
 	
 	// Weeks	
-	inline js Time weeks := (this*604800000)
+	inline js float weeks := (this*604800000)
 	
 // A sequence of characters
 js String
@@ -988,9 +984,6 @@ class List<T>
 	inline js T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		this.sort(comparer)
 	
-	inline js T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-		this.sort(comparer)
-	
 	// Sort the list by a given expression
 	important T[] orderBy: float(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
@@ -1015,16 +1008,7 @@ class List<T>
 		         SortingOrder order    // Specifies if you want to sort in ascending or descending order
 		if order == Ascending: return this.sort(expression(a) - expression(b))
 		else                   return this.sort(expression(b) - expression(a))
-		
-	T[] orderBy: Time(T a) expression // First order by this expression
-		return this.sort(expression(a) - expression(b))
-		
-	// Sort the list by a given expression
-	T[] orderBy: Time(T a) expression // First order by this expression
-		         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-		if order == Ascending: return this.sort(expression(a) - expression(b))
-		else                   return this.sort(expression(b) - expression(a))
-		
+				
 	// Returns true if the given condition is true for any item in the list
 	important inline js bool any: bool(T a) predicate // The condition to check
 		this.some(predicate)
@@ -1232,15 +1216,6 @@ class List<T>
 				if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	Time min: Time(T a) selector 
-		      Time threshold = Time.maxValue
-		      Time default = 0
-		Time resultValue = threshold
-		for this
-			let value = selector(.)
-			if value < resultValue: resultValue = value
-		return resultValue != threshold ? resultValue : default
-		
 	max: int(T a) selector
 		 int threshold = int.minValue
 		 int default = 0
@@ -1275,26 +1250,6 @@ class List<T>
 		 float default = 0
 		 label bool(T a) where
 		float resultValue = threshold
-		for this
-			if where(.)
-				let value = selector(.)
-				if value > resultValue: resultValue = value
-		return resultValue != threshold ? resultValue : default
-		
-	Time max: Time(T a) selector
-		      Time threshold = float.minValue
-		      Time default = 0
-		Time resultValue = threshold
-		for this
-			let value = selector(.)
-			if value > resultValue: resultValue = value
-		return resultValue != threshold ? resultValue : default
-		
-	Time max: Time(T a) selector
-		      Time threshold = float.minValue
-		      Time default = 0
-		 label bool(T a) where
-		Time resultValue = threshold
 		for this
 			if where(.)
 				let value = selector(.)
@@ -1382,31 +1337,7 @@ class List<T>
 					resultValue = value
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
-		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	     label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value < resultValue
-	// 				resultValue = value
-	// 				resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
+				
 	withMax: int(T a) selector
 		     int threshold = int.minValue
 		int resultValue = threshold
@@ -1428,17 +1359,6 @@ class List<T>
 				resultValue = value
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
-		
-	// withMax: Time(T a) selector
-	// 	     Time threshold = float.minValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
 		
 	popMax: int(T a) selector
 		    int threshold = int.minValue
@@ -2146,27 +2066,15 @@ global skipInit unit math
 	// Returns the largest integer less than or equal to the given value
 	important inline js int floor: float value // The value to round down
 		Math.floor(value)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline js Time floor: Time value // The value to round down
-		Math.floor(value)
-		
+				
 	// Returns the smallest integer greater than or equal to the given value 
 	important inline js int ceil: float value // The value to round up
-		Math.ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline js Time ceil: Time value // The value to round up
 		Math.ceil(value)
 		
 	// Returns the given value rounded to the nearest integer
 	important inline js int round: float value // The value to round
 		Math.round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline js Time round: Time value // The angle to round
-		Math.round(value)
-		
+				
 	// ------------------------------------------------------- min, max -------------------------------------------------------
 	
 	inline js int min: int a // The first value
@@ -2186,11 +2094,6 @@ global skipInit unit math
 	// Returns the largest of the given values
 	important inline js float max: float a // The first value
 		                 float b // The second value
-		Math.max(a, b)
-		
-	// Returns the largest of the given values
-	inline js Time max: Time a // The first time
-		                Time b // The second time
 		Math.max(a, b)
 		
 	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
@@ -2366,9 +2269,9 @@ struct RollingList
 		values[index++ % length] = value
 		
 	measure: void() do
-		let startTime = Time.preciseTime
+		let startTime = DateTime.preciseTime
 		do
-		values[index++ % length] = Time.preciseTime - startTime
+		values[index++ % length] = DateTime.preciseTime - startTime
 	
 	average
 		if values.length == 0: return 0.0
@@ -2405,7 +2308,7 @@ immutable Range
 		(value >= this.from && value <= this.from)
 		
 class File
-	Time lastModified
+	float lastModified // The time the file was last modified in milliseconds
 	string lastModifiedDate
 	string name
 	string path

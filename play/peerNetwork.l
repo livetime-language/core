@@ -59,7 +59,7 @@ internal transient skipInit unit PeerNetwork
 		setupRemoteMedia user
 		
 	tick
-		let now = Time.realTime
+		let now = DateTime.realTime
 		
 		for input.internalUsers as user
 			if . and not .local
@@ -80,8 +80,8 @@ internal transient skipInit unit PeerNetwork
 				// !!! EVALUATE Reconned immediately when failed
 				// or .connectionState == "failed"
 					
-					core.log "[{Time.frame}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
-					.startToConnectTime = user.lastIncomingMessageTime = Time.realTime
+					core.log "[{DateTime.frame}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
+					.startToConnectTime = user.lastIncomingMessageTime = DateTime.realTime
 					statistics.scheduleSendIn 3 seconds
 					
 					if user.offerByMe
@@ -297,7 +297,7 @@ internal transient skipInit unit PeerNetwork
 		}
 		
 	onConnected: InternalUser user
-		user.startDataChannelTime = user.lastIncomingMessageTime = Time.realTime
+		user.startDataChannelTime = user.lastIncomingMessageTime = DateTime.realTime
 		logConnectionType user
 		
 		if user.offerByMe
@@ -309,7 +309,7 @@ internal transient skipInit unit PeerNetwork
 			core.log "#peer Connected on try {user.connectionTries}, {connectedCount} of {offerCount} my offers are connected"
 			
 			if input.internalUsers.none.offerByMe and not .connected
-				statistics.connectTime = Time.preciseTime - statistics.startTime
+				statistics.connectTime = DateTime.preciseTime - statistics.startTime
 				core.log "#peer All my offers are connected after {statistics.connectTime} ms and {retries} retries"
 			
 	disconnect: InternalUser user
@@ -438,7 +438,7 @@ internal transient skipInit unit PeerNetwork
 		}
 	
 	private onMessage: InternalUser user, Buffer buffer
-		user.lastIncomingMessageTime = Time.realTime
+		user.lastIncomingMessageTime = DateTime.realTime
 		NetworkMessageType type = cast buffer.readInt8
 		if type == Tick:         onTick user, buffer; else
 		if type == Ping:         onPing user, buffer; else

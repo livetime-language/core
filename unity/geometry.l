@@ -32,7 +32,6 @@ cs(UnityEngine) struct Vector3
 	
 	inline cs Vector3 operator * (Vector3 a, Vector3 b) a * b
 	inline cs Vector3 operator * (Vector3 a, float b) a * b
-	inline cs Vector3 operator * (Vector3 a, Time b) a * b
 	// Vector2 operator * (float a, Vector2 b)   return {a*b.x, a*b.y, b.location}
 	// Vector2 operator * (Vector2 vector, Matrix2D matrix)
 	// 	return {
@@ -175,7 +174,7 @@ cs(UnityEngine) struct Vector3
 		         float speed = 1        // The distance to move by
 		var delta = targetPosition - this
 		if delta.x != 0 || delta.y != 0 || delta.z != 0
-			delta = delta.normalized * (speed * Time.deltaTime)
+			delta = delta.normalized * (speed * DateTime.deltaTime)
 			if delta.x > 0: x = Math.min(x + delta.x, targetPosition.x)
 			else            x = Math.max(x + delta.x, targetPosition.x)
 			if delta.y > 0: y = Math.min(y + delta.y, targetPosition.y)
@@ -278,8 +277,6 @@ cs(UnityEngine Vector2Int) struct IntVector2
 	
 	inline cs IntVector2 operator * (IntVector2 a, IntVector2 b) a * b
 	inline cs IntVector2 operator * (IntVector2 a, float b) a * b
-	inline cs IntVector2 operator * (IntVector2 a, Time b) a * b
-	
 	// IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; return a
 	
 	// IntVector2 operator +  (IntVector2 a, IntVector2 b) return IntVector2(a.x+b.x, a.y+b.y)
@@ -408,7 +405,6 @@ cs(UnityEngine Vector3Int) struct IntVector3
 	
 	inline cs IntVector3 operator * (IntVector3 a, IntVector3 b) a * b
 	inline cs IntVector3 operator * (IntVector3 a, float b) a * b
-	inline cs IntVector3 operator * (IntVector3 a, Time b) a * b
 	
 // 	// IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; return a
 	

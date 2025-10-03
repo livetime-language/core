@@ -38,9 +38,9 @@ internal transient class InternalUser
 	int connectionTries
 	string connectionState
 	
-	Time startToConnectTime = Time.maxValue
-	Time startDataChannelTime = Time.maxValue
-	Time lastIncomingMessageTime = Time.maxValue
+	float startToConnectTime = float.maxValue
+	float startDataChannelTime = float.maxValue
+	float lastIncomingMessageTime = float.maxValue
 	
 	// Statistics
 	private int[] aheadHistory    // Rolling buffer of ahead values, used to calculate bufferFrames

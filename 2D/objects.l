@@ -103,8 +103,8 @@ class Object
 	moveToBack()  siblings.moveToBack this
 		
 	moveTo: Vector2 pos
-		    Time duration = 1000
-		    Time delay = 0
+		    float duration = 1000 // After the this time in milliseconds, the object should reach the target position
+		    float delay = 0       // After this time in milliseconds, the object should start moving
 		Vector2 startPosition = position
 		
 		// When chaining serveral move animations together, continue where the last one left off
@@ -117,8 +117,8 @@ class Object
 		
 	moveAndScaleTo: Vector2 position
 		            implicit Vector2 size
-		            Time duration = 1000
-		            Time delay = 0
+		            float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
+		            float delay = 0       // After this time in milliseconds, the object should start moving
 		Vector2 startPosition = this.position
 		Vector2 startSize = this.size
 		Vector2 endSize = size.y ? size : {size.x, size.x * startSize.y/startSize.x}
@@ -133,8 +133,8 @@ class Object
 		return this
 		
 	moveTo: Vector2 pos
-		    float speed = 1
-		    Time delay = 0
+		    float speed = 1 // The speed in pixels per millisecond
+		    float delay = 0 // After this time in milliseconds, the object should start moving
 		let delta = pos - position
 		let duration = math.floor(delta.length / speed)
 		fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:position, delta
@@ -144,8 +144,8 @@ class Object
 		              float curvature = 1.0
 					  float smoothness = 1.0
 					  implicit Vector2 targetSize = Vector2.None
-					  float duration = 1000
-		              Time delay = 0
+					  float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
+		              float delay = 0       // After this time in milliseconds, the object should start moving
 					  bool removeWhenDone = false
 		Vector2 startPosition = this.position
 		Vector2 startSize = this.size
@@ -157,16 +157,11 @@ class Object
 		if targetSize: fx.add ScaleAnimation startTime, duration, this, startValue:size, delta:targetSize-size
 		return this
 		
-	fadeIn: Time duration = 100
-		    Time delay = 0
+	fadeIn: float duration = 100 // After the this time in milliseconds, the object should be fully visible
+		    float delay = 0      // After this time in milliseconds, the object should start fading in
 		alpha = 0
 		fx.add FadeAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:0, delta:1
 		return this
-		
-	// fadeOut: Time duration = 100
-	// 	     Time delay = -100
-	// 	     bool removeWhenDone = true
-	// 	float startValue = alpha
 		
 	// 	// When chaining serveral fade animations together, continue where the last one left off
 	// 	// If the last fade animation is already a fade out, don't do anything
@@ -179,22 +174,22 @@ class Object
 	// 	return this
 		
 	scaleTo: implicit Vector2 size
-		     Time duration = 1000
-		     Time delay = 0
+		     float duration = 1000 // After the this time in milliseconds, the object should reach the target size
+		     float delay = 0       // After this time in milliseconds, the object should start scaling
 		fx.add ScaleAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:this.size, delta:size-this.size
 		return this
 		
 	do:   stored void(Object object) do
-		  Time delay = 0
+		  float delay = 0 // Execute the given code after this time in milliseconds
 		fx.add DelayAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration:0, this, do
 		
 	playSound: Sound sound
-		       Time delay = 0
+		       float delay = 0 // Play a spound after this time in milliseconds
 		fx.add PlaySoundAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration:0, this, sound
 
 	fadeAndScaleIn: float startScale = 3
-		            Time duration = 200
-		            Time delay = 0
+		            float duration = 200 // After the this time in milliseconds, the object should reach the target size and be fully visible
+		            float delay = 0      // After this time in milliseconds, the object should start scaling and fading in
 		alpha = 0
 		let startTime = fx.endOfPrevAnimation(this)+delay
 		fx.add ScaleAnimation startTime, duration, this, startValue:startScale*size, delta:(1-startScale)*size
@@ -204,8 +199,8 @@ class Object
 	fadeScaleAndRotateIn: float startScale = 3
 		                  float startAngle = -.0625
 		                  float endAngle = 0.0
-		                  Time duration = 200
-		                  Time delay = 0
+		                  float duration = 200 // After the this time in milliseconds, the object should reach the target size and be fully visible
+		                  float delay = 0      // After this time in milliseconds, the object should start scaling and fading in
 		alpha = 0
 		let startTime = fx.endOfPrevAnimation(this)+delay
 		fx.add RotateAnimation startTime, duration, this, startValue:startAngle, delta:endAngle-startAngle
@@ -282,13 +277,13 @@ Object ImageObject
 Object Effect
 	Image image
 	int framesPerSecond = 15
-	private startFrame = Time.frame
+	private startFrame = DateTime.frame
 	
 	Effect
 		if size.x == 0 and size.y == 0: size = image.size
 	
 	internal override tick
-		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
+		var frame = math.floor((DateTime.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
 		if alpha and frame < image.frames.length
 			drawImage image, position, size, alpha, visibleFor, layer, frame, location
 		else
@@ -356,7 +351,7 @@ Object ParticleSystem
 	maxSpeed = 25.0
 	particlesPerBurst = 30
 	burstInterval = 500
-	Time nextBurst = -1
+	float nextBurst = -1
 	bursts = 10
 	gravity = 1.0
 	maxRotationSpeed  = .05
@@ -367,7 +362,7 @@ Object ParticleSystem
 	internal debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
 	
 	internal override tick
-		if Time.now > nextBurst
+		if DateTime.now > nextBurst
 			if mode == OneParticlePerImageFrame
 				for image.frames.length
 					let angle = -math.randomFloat .5
@@ -378,7 +373,7 @@ Object ParticleSystem
 						angle: 0
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
 						frame: .
-				nextBurst = Time.maxValue
+				nextBurst = float.maxValue
 			else
 				for particlesPerBurst
 					let angle = -math.randomFloat angleSpread
@@ -389,7 +384,7 @@ Object ParticleSystem
 						angle
 						frame: math.randomInteger(image.frames.length)
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
-				nextBurst = ++burst < bursts ? Time.now + burstInterval : Time.maxValue
+				nextBurst = ++burst < bursts ? DateTime.now + burstInterval : float.maxValue
 
 		for particles <-
 			graphics.move .pos

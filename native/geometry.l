@@ -35,67 +35,7 @@ struct Vector2
 		
 	+= Vector2 value: x += value.x; y += value.y; return this
 	-= Vector2 value: x -= value.x; y -= value.y; return this
-		
-	// Vector2 operator = (Vector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
-	
-	// Vector2 operator + (Vector2 a, Vector2 b) return {a.x+b.x, a.y+b.y}
-	// Vector2 operator - (Vector2 a, Vector2 b) return {a.x-b.x, a.y-b.y}
-	
-	// Vector2 operator * (Vector2 a, Vector2 b) return {a.x*b.x, a.y*b.y}
-	// Vector2 operator * (Vector2 a, float b)   return {a.x*b, a.y*b}
-	// Vector2 operator * (Vector2 a, Time b)    return {cast a.x*b, cast a.y*b}
-	// Vector2 operator * (float a, Vector2 b)   return {a*b.x, a*b.y}
-	// Vector2 operator * (Vector2 vector, Matrix2D matrix)
-	// 	return {
-	// 		matrix.m0 * vector.x + matrix.m2 * vector.y + matrix.m4,
-	// 		matrix.m1 * vector.x + matrix.m3 * vector.y + matrix.m5,
-	// 		vector.location
-	// 	}
-		
-	// Vector2 operator / (Vector2 a, Vector2 b) return {a.x/b.x, a.y/b.y}
-	// Vector2 operator / (Vector2 a, float b)   return {a.x/b, a.y/b}
-	// Vector2 operator / (Vector2 vector, Matrix2D matrix)
-	// 	var aa = matrix.m0, ab = matrix.m1, ac = matrix.m2, ad = matrix.m3, atx = matrix.m4, aty = matrix.m5
 
-	// 	var det = aa * ad - ab * ac
-	// 	if(det == 0) return {0,0,null}
-	// 	det = 1.0 / det
-		
-	// 	return {
-	// 		( ad * det) * vector.x + (-ac * det) * vector.y + ((ac * aty - ad * atx) * det),
-	// 		(-ab * det) * vector.x + ( aa * det) * vector.y + ((ab * atx - aa * aty) * det),
-	// 		vector.location
-	// 	}			
-	
-	// Vector2 operator % (Vector2 a, Vector2 b) return {((a.x % b.x) + b.x) % b.x, ((a.y % b.y) + b.y) % b.y}
-	// Vector2 operator % (Vector2 a, float b)   return {((a.x % b) + b) % b, ((a.y % b) + b) % b}
-	
-	// Vector2 operator += (Vector2 a, Vector2 b) a.x += b.x; a.y += b.y; return a
-	// Vector2 operator -= (Vector2 a, Vector2 b) a.x -= b.x; a.y -= b.y; return a
-	// Vector2 operator *= (Vector2 a, Vector2 b) a.x *= b.x; a.y *= b.y; return a
-	// Vector2 operator /= (Vector2 a, Vector2 b) a.x /= b.x; a.y /= b.y; return a
-	
-	// bool operator == (Vector2 a, Vector2 b) return a.x == b.x && a.y == b.y
-	// bool operator != (Vector2 a, Vector2 b) return a.x != b.x || a.y != b.y
-	
-	// bool operator == (Vector2 a, IntVector2 b) return a.x == b.x && a.y == b.y
-	// bool operator != (Vector2 a, IntVector2 b) return a.x != b.x || a.y != b.y
-	
-	// bool operator == (IntVector2 a, Vector2 b) return b.x == a.x && b.y == a.y
-	// bool operator != (IntVector2 a, Vector2 b) return b.x != a.x || b.y != a.y
-	
-	// bool operator >  (Vector2 a, Vector2 b) return a.x >  b.x && a.y >  b.y
-	// bool operator >= (Vector2 a, Vector2 b) return a.x >= b.x && a.y >= b.y
-	// bool operator <  (Vector2 a, Vector2 b) return a.x <  b.x && a.y <  b.y
-	// bool operator <= (Vector2 a, Vector2 b) return a.x <= b.x && a.y <= b.y
-	
-	// bool operator == (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) == length
-	// bool operator != (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) != length
-	// bool operator >  (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) >  length
-	// bool operator >= (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) >= length
-	// bool operator <  (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) <  length
-	// bool operator <= (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) <= length
-	
 	// The length of the vector
 	length := math.sqrt(x * x + y * y)
 		

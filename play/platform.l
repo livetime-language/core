@@ -40,7 +40,7 @@ transient skipInit unit Platform
 		$Image.init?.();
 		Font.init?.();
 		Sound.init?.();
-		Time.timezoneOffset = new Date().getTimezoneOffset() * 60000
+		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
 		
 	private js void initPlatform
 		statistics.init();
@@ -79,7 +79,7 @@ transient skipInit unit Platform
 	// This is called when the application starts for the first time	
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
 		try
-			let now = Time.preciseTime
+			let now = DateTime.preciseTime
 			this.nextHeartbeatTime = 0
 			heartbeat "start"
 			
@@ -122,7 +122,7 @@ transient skipInit unit Platform
 			openMedia
 				try
 					this.engineStarted = true
-					statistics.loadTime = Time.preciseTime - statistics.startTime
+					statistics.loadTime = DateTime.preciseTime - statistics.startTime
 					startInterval
 					if isDebug || isLocal || roomId == "local" || url.startsWith("file"): core.startLocal
 					else                                                                  core.join gameId, roomId, userId
@@ -238,7 +238,7 @@ transient skipInit unit Platform
 		console.log("[app] Finished initializing")
 		if(Platform.isDebug) _sendToEditor({type:"finished"})
 	
-	private Time nextHeartbeatTime
+	private float nextHeartbeatTime
 	
 	private js void heartbeat: string context
 		if(!Platform.isDebug) return
@@ -280,9 +280,9 @@ transient skipInit unit Platform
 	js void navigate: string url
 		window.location.href = url
 				
-skipInit transient immutable float Time
+DateTime
 	// The number of milliseconds elapsed since January 1, 1970
-	static important Time now
+	static important float now
 	
-	// The current frame
+	// The current frame (by default, there are 30 frames per second)
 	static important inline js int frame := core.frame

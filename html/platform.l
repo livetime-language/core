@@ -42,7 +42,7 @@ skipInit global unit Platform
 		Font.init?.();
 		Sound.init?.();
 		audio.init();
-		Time.timezoneOffset = new Date().getTimezoneOffset() * 60000
+		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
 		app.init?.()
 		
 	private async inline js void initDatabase
@@ -112,7 +112,7 @@ skipInit global unit Platform
 	private js void tick
 		Platform.heartbeat("tick")
 		if(app.tick) app.tick()
-		Time.frame++
+		DateTime.frame++
 		
 	private js void startTickInterval
 		if(window._tickInterval) {
@@ -138,7 +138,7 @@ skipInit global unit Platform
 		console.log("[app] ----- Finished -----")
 		if(Platform.isDebug) _sendToEditor({type:"finished"})
 			
-	Time nextHeartbeatTime = 0
+	float nextHeartbeatTime = 0
 	
 	private js void heartbeat: string context
 		if(!Platform.isDebug) return
@@ -196,11 +196,11 @@ skipInit global unit Platform
 	inline js void copyToClipboard: string text
 		navigator.clipboard.writeText(text)
 		
-	global inline js int delay: Time time
+	global inline js int delay: float time // The delay in milliseconds
 		                        void() do
 		setTimeout(do, time)
 		
-	global inline js async void delay: Time time
+	global inline js async void delay: float time // The delay in milliseconds
 		new Promise(resolve => setTimeout(resolve, time))
 		
 	global inline js int clearDelay: int handle
@@ -212,7 +212,7 @@ skipInit global unit Platform
 	inline js void onFocus: void() do
 		window.onfocus = do
 		
-	global inline js int interval: Time time
+	global inline js int interval: float time // The interval in milliseconds
 		                           void() do
 		setInterval(do, time)
 		
@@ -344,10 +344,6 @@ global skipInit unit math
 	global inline js int randomFloat
 		Math.random()
 
-skipInit transient float Time
-	// The number of milliseconds elapsed since January 1, 1970
-	static inline js Time now := Date.now()
-	
 // A color comprised of a red, green, blue and alpha component
 class Color
 	global const Color White       = {"#ffffff", "White"}

@@ -1,68 +1,56 @@
-skipInit transient float Time
-	static int timezoneOffset
-	
+struct float
 	// (31.12.)
-	inline string dayMonthString(language = Loca.language) DateTime.fromTime(this).dayMonthString(language)
+	inline string toDayMonthString(language = Loca.language) DateTime.fromTime(this).dayMonthString(language)
 		
 	// (31.12.2000)
-	inline string dayMonthYearString(language = Loca.language) DateTime.fromTime(this).dayMonthYearString(language)
+	inline string toDayMonthYearString(language = Loca.language) DateTime.fromTime(this).dayMonthYearString(language)
 	
 	// (31 December 2000)
-	inline string dayMonthNameYearString(language = Loca.language) DateTime.fromTime(this).dayMonthNameYearString(language)
+	inline string toDayMonthNameYearString(language = Loca.language) DateTime.fromTime(this).dayMonthNameYearString(language)
 	
 	// (Monday, December 31)
-	inline string dayOfWeekDayMonthString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthString(language)
+	inline string toDayOfWeekDayMonthString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthString(language)
 	
 	// (Monday)
-	inline string dayOfWeekString(language = Loca.language) DateTime.fromTime(this).dayOfWeekString(language)
+	inline string toDayOfWeekString(language = Loca.language) DateTime.fromTime(this).dayOfWeekString(language)
 	
 	// (Monday, December 31 at 12:59 pm)
-	inline string dayOfWeekDayMonthAtHourMinuteString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthAtHourMinuteString(language)
+	inline string toDayOfWeekDayMonthAtHourMinuteString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthAtHourMinuteString(language)
 	
 	// (23:59) The time is assumed to be local time, doesn't account for timezone offset
-	inline string hourMinuteString(language = Loca.language) Time.toHourMinuteString(this, language)
+	// inline string toHourMinuteString(language = Loca.language) Time.toHourMinuteString(this, language)
 		
-	// (23:59) The time is assumed to be local time, doesn't account for timezone offset
-	static string toHourMinuteString: Time value, language = Loca.language
-		let hour = math.floor (value % 86400000) / 3600000
-		let minute = math.floor (value % 3600000) / 60000
-		if language == English: return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
-		else                    return ""+hour+":"+(minute < 10 ? "0":"")+minute
+	// // (23:59) The time is assumed to be local time, doesn't account for timezone offset
+	// static string toHourMinuteString: Time value, language = Loca.language
+	// 	let hour = math.floor (value % 86400000) / 3600000
+	// 	let minute = math.floor (value % 3600000) / 60000
+	// 	if language == English: return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
+	// 	else                    return ""+hour+":"+(minute < 10 ? "0":"")+minute
 	
  	// (59:59) The time is assumed to be local time, doesn't account for timezone offset
-	inline js string minuteSecondString() (Math.floor((this % 3600000) / 60000) + (this % 60000 < 10000 ? ":0":":") + Math.floor((this % 60000) / 1000))
+	inline js string toMinuteSecondString() (Math.floor((this % 3600000) / 60000) + (this % 60000 < 10000 ? ":0":":") + Math.floor((this % 60000) / 1000))
 	
 	// (23:59:59)
-	inline js string hourMinuteSecondString(language = Loca.language) new Date(this).hourMinuteSecondString(language)
+	inline js string toHourMinuteSecondString(language = Loca.language) new Date(this).hourMinuteSecondString(language)
 	
 	// (31.12.2000 23:59)
-	inline js string dayMonthYearHourMinuteString(language = Loca.language) new Date(this).dayMonthYearHourMinuteString(language)
+	inline js string toDayMonthYearHourMinuteString(language = Loca.language) new Date(this).dayMonthYearHourMinuteString(language)
 	
 	// (31.12.2000 23:59:59)
-	inline js string dayMonthYearHourMinuteSecondString(language = Loca.language) new Date(this).dayMonthYearHourMinuteSecondString(language)
+	inline js string toDayMonthYearHourMinuteSecondString(language = Loca.language) new Date(this).dayMonthYearHourMinuteSecondString(language)
 	
 	// (31-12-2000 23-59-59)
-	inline js string invariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
+	inline js string toInvariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
 			
 	// (20001231235959+02:00)
-	inline js string compactString() DateTime.fromTime(this).compactString()
+	inline js string toCompactTimeString() DateTime.fromTime(this).compactString()
 		
 	// (7 weeks)
-	inline string minutesHoursDaysOrWeeksString(showWeeksAfterDays = 31) toMinutesHoursDaysOrWeeksString(this, showWeeksAfterDays)
-		
-	// The largest possible time value
-	const inline js Time maxValue := Number.MAX_VALUE
+	// inline string toMinutesHoursDaysOrWeeksString(showWeeksAfterDays = 31) toMinutesHoursDaysOrWeeksString(this, showWeeksAfterDays)
 	
-	// The smallest possible time value
-	const inline js Time minValue := Number.MIN_VALUE
-	
-	static internal inline js float realTime := Date.now()
-
-	inline js Time += float value: this += value
-
-	static Time fromTimeString(string timeString)
+	static float fromTimeString(string timeString)
 		if !timeString: return 0 milliseconds
-		Time value = 0
+		float value = 0
 		int colon1 = timeString.indexOf(":")
 		if(colon1 == -1)
 			value += int(timeString)*3600000
@@ -76,31 +64,15 @@ skipInit transient float Time
 				value += int(timeString.substring(colon2+1))*1000
 		return value
 		
-	static inline js Time fromIsoString: string isoString
+	static inline js float fromIsoString: string isoString
 		new Date(isoString).getTime()
 		
-	static inline js Time fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second).getTime()
+	// static inline js float fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second).getTime()
 		
-	inline js implicit float toFloat() this
-	inline js int toInt() Math.floor(this)
-	inline js string toString() this.toString()
-		
-	// Returns true if the time is not zero
-	inline js bool toBool := this
-	
-	inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	inline js string format: int fractionDigits, bool grouping = false
-		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
-		
-	inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString('en-US', {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-	
-	important inline js int milliseconds := Math.floor((this %    1000)          ) 
-	important inline js int seconds      := Math.floor((this %   60000) /    1000) 
-	important inline js int minutes      := Math.floor((this % 3600000) /   60000) 
-	important inline js int hours        := Math.floor((this          ) / 3600000)
+	important inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
+	important inline js int timeSeconds      := Math.floor((this %   60000) /    1000) 
+	important inline js int timeMinutes      := Math.floor((this % 3600000) /   60000) 
+	important inline js int timeHours        := Math.floor((this          ) / 3600000)
 		
 	important inline js int totalSeconds      := Math.floor(this /      1000) 
 	important inline js int totalMinutes      := Math.floor(this /     60000) 
@@ -108,7 +80,7 @@ skipInit transient float Time
 	important inline js int totalDays         := Math.floor(this /  86400000)
 	important inline js int totalWeeks        := Math.floor(this / 604800000)
 		
-	private static string toMinutesHoursDaysOrWeeksString: Time time, showWeeksAfterDays = 31
+	private static string toMinutesHoursDaysOrWeeksString: float time, showWeeksAfterDays = 31
 		if time < 2 minutes: return "1 minute"
 		if time < 1 hours:   return "{time.totalMinutes} minutes"
 		if time < 2 hours:   return "1 hour"
@@ -117,31 +89,7 @@ skipInit transient float Time
 		if time < showWeeksAfterDays days: return "{time.totalDays} days"
 		if time < 2 weeks:   return "1 week"
 		                     return "{time.totalWeeks} weeks"
-	inline Time + Time value
-	inline Time - Time value
-	inline float / Time value
-	inline float * Time value
-	
-	inline Time += Time value
-	inline Time -= Time value
-	inline Time /= Time value
-	inline Time *= Time value
-	
-	inline bool == Time value
-	inline bool != Time value
-	inline bool < Time value
-	inline bool <= Time value
-	inline bool > Time value
-	inline bool >= Time value
-	
-	inline js Time % ensureSingleExecution Time value
-		((this % value) + value) % value
-	
-	static measure: void() do
-		let startTime = preciseTime
-		do
-		return preciseTime - startTime
-		
+
 	inline js float in: TimeUnit unit // Convert the time to this unit
 		(unit==1 ? this/1000 : unit==2 ? this/60000 : unit==3 ? this/3600000 : unit==4 ? this/86400000 : this)
 		
@@ -157,8 +105,8 @@ enum TimeUnit
 	days         // Days
 	
 string TimeString
-	static TimeString now := cast DateTime.fromTime(Time.now, outputTimezone:0).toTimeString
-	static TimeString fromTime(Time value) := cast DateTime.fromTime(value, outputTimezone:0).toTimeString
+	static TimeString now := cast DateTime.fromTime(DateTime.now, outputTimezone:0).toTimeString
+	static TimeString fromTime(float value) := cast DateTime.fromTime(value, outputTimezone:0).toTimeString
 	
 	inline js bool toBool := this
 	inline string toString() this
@@ -208,7 +156,7 @@ string TimeString
 		DateTime.fromTimeString(this).dayOfWeekDayMonthYearHourMinuteString
 	
 string PlainTimeString
-	static PlainTimeString now := DateTime.fromTime(Time.now - Time.timezoneOffset, outputTimezone:0).toPlainTimeString
+	static PlainTimeString now := DateTime.fromTime(DateTime.now - DateTime.localTimezoneOffset, outputTimezone:0).toPlainTimeString
 	
 	inline js bool toBool := this
 	inline string toString() this
@@ -263,6 +211,12 @@ class string
 		
 // Calculate dates using pure math for better performance without using the Date class
 immutable class DateTime
+	static inline js float preciseTime := performance.now()
+
+	static internal inline js float realTime := Date.now()
+
+	static int localTimezoneOffset
+
 	const dayNames = [
 		["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 		["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
@@ -285,7 +239,7 @@ immutable class DateTime
 	const daysInMonthCommon = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 	const daysInMonthLeap = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-	Time time
+	float time
 	int year
 	int month
 	int day
@@ -301,14 +255,12 @@ immutable class DateTime
 	string twoDigitMinute := (this.minute < 10 ? "0"+this.minute : this.minute.toString())
 	string twoDigitSecond := (this.second < 10 ? "0"+this.second : this.second.toString())
 		
-	static DateTime now := DateTime.fromTime(Time.now)
-	
 	static DateTime fromTimeInSeconds: float timeInSeconds
-		                               int outputTimezone = Time.timezoneOffset
+		                               int outputTimezone = DateTime.localTimezoneOffset
 		return fromTime(timeInSeconds*1000, outputTimezone)
 		
-	static DateTime fromTime: Time time
-		                      int outputTimezone = Time.timezoneOffset
+	static DateTime fromTime: float time
+		                      int outputTimezone = DateTime.localTimezoneOffset
 		if not time: return {0, 1970, 1, 1, 4, 0, 0, 0}
 		const outputTime = time - outputTimezone
 		const daysSinceEpoch = math.floor(outputTime / 86400000)
@@ -350,8 +302,8 @@ immutable class DateTime
 		                        int minute
 		                        int second = 0
 		                        int milliseconds = 0
-		                        int inputTimezone = Time.timezoneOffset
-		                        int outputTimezone = Time.timezoneOffset
+		                        int inputTimezone = DateTime.localTimezoneOffset
+		                        int outputTimezone = DateTime.localTimezoneOffset
 		const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 		
 		// Calculate the number of days since the epoch for full years
@@ -457,7 +409,7 @@ immutable class DateTime
 	// 2024-10-17 15:23:30+02:00
 	// 2024-10-17 15:23:30Z
 	static DateTime fromIsoString: string str
-		                           int outputTimezone = Time.timezoneOffset
+		                           int outputTimezone = DateTime.localTimezoneOffset
 		if not str or str.length < 19: return null
 		let hasMilliseconds = str[19] == "."
 		let timezoneIndex = hasMilliseconds ? 24 : 20
@@ -479,6 +431,11 @@ immutable class DateTime
 	
 	implicit TimeString toTimeString
 		return cast "{year}-{twoDigitMonth}-{twoDigitDay} {twoDigitHour}:{twoDigitMinute}:{twoDigitSecond}"
+	
+	static measure: void() do
+		let startTime = preciseTime
+		do
+		return preciseTime - startTime
 		
 // Calculate dates using the JavaScript Date class
 js(Date) internal transient class Date
@@ -511,7 +468,7 @@ js(Date) internal transient class Date
 	inline js string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
 	inline js string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 		
-	inline js Time timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	inline js float timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
 	
 	private static string toTwoDigitString: int value
 		return value < 10 ? "0"+value.toString : value.toString
@@ -574,7 +531,7 @@ js(Date) internal transient class Date
 		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	// The number of milliseconds elapsed since January 1, 1970
-	inline js Time time := this.getTime()
+	inline js float time := this.getTime()
 		
 	// The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	js string isoString()
@@ -594,7 +551,7 @@ js(Date) internal transient class Date
 			dif + pad(Math.floor(Math.abs(tzo) / 60)) +
 			":" + pad(Math.abs(tzo) % 60);
 
-	static inline js Date fromTime(Time time) new Date(time)
+	static inline js Date fromTime(float time) new Date(time)
 	static inline js Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second)
 	
 	// Returns the real time, even during replay. Be careful: This can break the replay.

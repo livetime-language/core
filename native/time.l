@@ -1,45 +1,4 @@
-skipInit transient float Time
-	// // The number of milliseconds elapsed since January 1, 1970
-	static Time now = 0
-	
-	// // The largest possible time value
-	// const inline cpp Time maxValue := Number.MAX_VALUE
-	
-	// // The smallest possible time value
-	// const inline cpp Time minValue := Number.MIN_VALUE
-	
-	static internal cpp(chrono) int realTime
-		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-	
-	// The current frame
-	static inline cpp int frame := core::frame
-
-	// static Time fromTimeString(string timeString)
-	// 	if !timeString: return 0 milliseconds
-	// 	Time value = 0
-	// 	int colon1 = timeString.indexOf(":")
-	// 	if(colon1 == -1)
-	// 		value += int(timeString)*3600000
-	// 	else
-	// 		value += int(timeString.substring(0, colon1))*3600000
-	// 		int colon2 = timeString.indexOf(":", colon1+1)
-	// 		if(colon2 == -1)
-	// 			value += int(timeString.substring(colon1+1))*60000
-	// 		else
-	// 			value += int(timeString.substring(colon1+1, colon2))*60000
-	// 			value += int(timeString.substring(colon2+1))*1000
-	// 	return value
-		
-	// static inline cpp Time fromIsoString: string isoString
-	// 	new Date(isoString).getTime()
-		
-	inline cpp float toFloat() ((doubel)this)
-	
-	inline cpp(string) string toString := std::to_string(this)
-		
-	// Returns true if the time is not zero
-	inline cpp bool toBool := this
-	
+struct float
 	// inline cpp string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
 	// 	this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
 		
@@ -86,31 +45,6 @@ skipInit transient float Time
 	
 	// // (31-12-2000 23-59-59)
 	// inline cpp string invariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
-			
-	inline cpp Time  operator +  (Time a, Time b) a+b
-	inline cpp Time  operator +  (Time a, int b) a+b
-	inline cpp Time  operator +  (Time a, float b) a+b
-	
-	inline cpp Time  operator -  (Time a, Time b) a-b
-	inline cpp Time  operator -  (Time a, int b) a-b
-	inline cpp Time  operator -  (Time a, float b) a-b
-	
-	inline cpp float operator /  (Time a, Time b) a/b
-	inline cpp Time  operator /  (Time a, int b) a/b
-	inline cpp Time  operator /  (Time a, float b) a/b
-	
-	inline cpp Time  operator *  (Time a, int b) a*b
-	inline cpp Time  operator *  (Time a, float b) a*b
-	inline cpp Time  operator *  (int a, Time b) a*b
-	inline cpp Time  operator *  (float a, Time b) a*b
-	
-	inline cpp Time  operator %  (Time a, int b) a%b
-	inline cpp Time  operator %  (Time a, Time b) a%b
-	
-	inline cpp bool  operator <  (Time a, Time b) a<b
-	inline cpp bool  operator <= (Time a, Time b) a<=b
-	inline cpp bool  operator >  (Time a, Time b) a>b
-	inline cpp bool  operator >= (Time a, Time b) a>=b
 	
 	// static measure: void() do
 	// 	let startTime = preciseTime
@@ -129,18 +63,18 @@ skipInit transient float Time
 	// 	window._timerStart = now;
 		
 	// static inline cpp float preciseTime := performance.now()
-		
-enum TimeUnit
-	ms   // Milliseconds
-	s    // Seconds
-	min  // Minutes
-	h    // Hours
-	days // Days
-		
+
+DateTime
+	static inline cpp float now := new Date()
+
+	static internal cpp(chrono) int realTime
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+	
+	// The current frame
+	static inline cpp int frame := core::frame
+
 cpp(Date) transient struct Date
-	// inline cpp Date() new Date()
-	// static inline cpp Date now := new Date()
-		
+
 	// const dayStrings = [
 	// 	["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 	// 	["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
@@ -166,7 +100,7 @@ cpp(Date) transient struct Date
 	// inline cpp string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
 	// inline cpp string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 		
-	// inline cpp Time timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	// inline cpp float timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
 	
 	// private static string toTwoDigitString: int value
 	// 	return value < 10 ? "0"+value.toString : value.toString
@@ -225,7 +159,7 @@ cpp(Date) transient struct Date
 	// 	return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	// // The number of milliseconds elapsed since January 1, 1970
-	// inline cpp Time time := this.getTime()
+	// inline cpp float time := this.getTime()
 		
 	// // The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	// cpp string isoString()
@@ -245,7 +179,7 @@ cpp(Date) transient struct Date
 	// 		dif + pad(Math.floor(Math.abs(tzo) / 60)) +
 	// 		':' + pad(Math.abs(tzo) % 60);
 
-	// static inline cpp Date fromTime(Time time) new Date(time)
+	// static inline cpp Date fromTime(float time) new Date(time)
 	// static inline cpp Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
 	
 	// // Returns the real time, even during replay. Be careful: This can break the replay.

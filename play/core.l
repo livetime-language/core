@@ -14,7 +14,7 @@ internal transient skipInit unit core
 	bool simulateInputsForTesting = false
 	bool simulateRollback = false
 	bool drawPointsForTesting = false
-	Time sendStatisticsEvery = 2 minutes
+	float sendStatisticsEvery = 2 minutes
 	bool muteInvisibleUsers = false
 	bool testLobby = false                // Start in the lobby for testing
 	
@@ -28,7 +28,7 @@ internal transient skipInit unit core
 	NetworkMode mode                // Whether we are in local or connected mode
 	visible string errorMessage     // The error message if we caught any exceptions in the main loop
 	public float startTime          // The time the room was created, syncroniced between all clients
-	public float serverStartTime    // Used to calculate the same Time.now from core.frame for all users in core.step
+	public float serverStartTime     // Used to calculate the same DateTime.now from core.frame for all users in core.step
 	visible int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
 	internal int frames             // Total number of frames we have inputs for
 	internal int frameWithNewWatches// First frame with new watches, do not send watches for frames below this
@@ -120,7 +120,7 @@ internal transient skipInit unit core
 		watchIndex = 0
 		input.isCertain = true
 		lobby.inLobby = startInLobby
-		Time.now = serverStartTime
+		DateTime.now = serverStartTime
 		snapshotFrame = -1
 		checksums.clear
 		lastChecksumFrame = -1
@@ -211,7 +211,7 @@ internal transient skipInit unit core
 		let user = input.internalUsers[player.id]
 		if user and (user.local or frame <= user.smoothFrame): do
 			
-	Time lastPingTime
+	float lastPingTime
 
 	// animationFrame --> step --> tick
 
@@ -285,12 +285,12 @@ internal transient skipInit unit core
 	private int animationStartFrame // The frame at the beginning of animationFrame, used to calculate iteration
 	private float now               // The time at the beginning of animationFrame
 	
-	private Time prevLogTime
+	private float prevLogTime
 	
 	// Logs
 	js void log: logstring text
-		if(Time.now > core.prevLog + 3000) core.logs += "\n"
-		core.prevLog = Time.now
+		if(DateTime.now > core.prevLog + 3000) core.logs += "\n"
+		core.prevLog = DateTime.now
 		
 		let str = new Date().hourMinuteSecondMillisecondString() + " " + text
 		statistics.systemLogs.push(str)
@@ -391,7 +391,7 @@ internal transient skipInit unit core
 			if debug.waitUntilFrame: print "# Frame {frame}"
 
 			// Set time
-			Time.now = serverStartTime + math.round(frame * frameTime)
+			DateTime.now = serverStartTime + math.round(frame * frameTime)
 			
 			// Flags
 			Platform.fastForward = fastForward
@@ -451,7 +451,7 @@ internal transient skipInit unit core
 			
 		try
 			Framework.tick
-			tickTimes.add tickTime = Time.measure
+			tickTimes.add tickTime = DateTime.measure
 				if lobby.inLobby:      lobby.tick; else
 				if awardScreen.active: awardScreen.tick; else
 				                       appTick
@@ -459,7 +459,7 @@ internal transient skipInit unit core
 			onError error
 			
 		if draw and not Platform.waitingForInitialData
-			drawTimes.add drawTime = Time.measure
+			drawTimes.add drawTime = DateTime.measure
 				graphics.finishFrame
 			if Platform.mode != Manipulator: input.updateCursor
 		audio.finishFrame
@@ -493,7 +493,7 @@ internal transient skipInit unit core
 			replay prevSnapshotFrame to frame
 
 	private rewind: Buffer snapshot
-		restoreTime = Time.measure
+		restoreTime = DateTime.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
 			
@@ -504,7 +504,7 @@ internal transient skipInit unit core
 					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
-		replayTime = Time.measure
+		replayTime = DateTime.measure
 			frame = replayFrom = from
 			while frame < to
 				step fastForward:true, draw:false			
@@ -526,7 +526,7 @@ internal transient skipInit unit core
 			
 	private saveState: Buffer snapshot
 		snapshot.reset
-		saveTime = Time.measure
+		saveTime = DateTime.measure
 			Snapshot.serialize snapshot
 			if Platform.logSerialize
 				serializeLogs[frame % 100] = Snapshot.serializeLog
@@ -882,7 +882,7 @@ skipInit transient unit statistics
 	int successfullySentGameLogs
 	int successfullySentSystemLogs
 	
-	Time startTime, loadTime, cameraTime, connectTime
+	float startTime, loadTime, cameraTime, connectTime
 	internal float maxValue
 	int currentSet
 	int sets = 1
@@ -893,20 +893,20 @@ skipInit transient unit statistics
 	private bool currentlySendingStatistics
 	
 	bool sessionStarted
-	Time nextSendTime = Time.maxValue
+	float nextSendTime = float.maxValue
 	
-	scheduleSendIn: Time delay
-		nextSendTime = math.min(nextSendTime, Time.realTime + delay)
+	scheduleSendIn: float delay
+		nextSendTime = math.min(nextSendTime, DateTime.realTime + delay)
 	
 	tick
-		if Time.realTime > nextSendTime
+		if DateTime.realTime > nextSendTime
 			if not sessionStarted: startSession
 			else                   saveStatistics
-			nextSendTime = Time.realTime + core.sendStatisticsEvery
+			nextSendTime = DateTime.realTime + core.sendStatisticsEvery
 	
 	// Log game events (like scores, playtimes, etc)
 	log: any value
-		value.frame = Time.frame
+		value.frame = DateTime.frame
 		this.gameLogs.add value
 	
 	private startSession

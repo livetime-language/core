@@ -273,25 +273,23 @@ immutable struct float
 		
 	// ------------------------------------------- Time -------------------------------------------
 	
-	implicit inline cpp Time toTime() this
-	
 	// Milliseconds
-	inline cpp Time milliseconds := this
+	inline cpp float milliseconds := this
 	
 	// Seconds
-	inline cpp Time seconds := (this*1000)
+	inline cpp float seconds := (this*1000)
 		
 	// Minutes
-	inline cpp Time minutes := (this*60000)
+	inline cpp float minutes := (this*60000)
 		
 	// Hours
-	inline cpp Time hours := (this*3600000)
+	inline cpp float hours := (this*3600000)
 	
 	// Days
-	inline cpp Time days := (this*86400000)
+	inline cpp float days := (this*86400000)
 	
 	// Weeks
-	inline cpp Time weeks := (this*604800000)
+	inline cpp float weeks := (this*604800000)
 		
 immutable EaseFunction
 	float(float value) function
@@ -790,9 +788,6 @@ struct List<T>
 	inline cpp(algorithm) T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		std::stable_sort(this.begin(), this.end(), comparer)
 	
-	// inline cpp T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-	
 	// Sort the list by a given expression
 	inline cpp(algorithm) void orderBy: float(T a) expression // First order by this expression
 		std::stable_sort(this.begin(), this.end(), [=](auto a, auto b) { return expression(a) < expression(b); });
@@ -800,9 +795,6 @@ struct List<T>
 	// T[] orderBy: float(T it) expression           // First order by this expression
 	// 	         label nocolon float(T it) thenBy // Then order by this expression
 	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
-		
-	// T[] orderBy: Time(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
 		
 	// T[] orderBy: string(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) compareTo expression(b))
@@ -941,15 +933,6 @@ struct List<T>
 	// 		if value < resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
 		
-	// min: Time(T a) selector
-	// 	 Time threshold = Time.maxValue
-	// 	 Time default = 0
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
 	// min: int(T a) selector
 	// 	 int threshold = int.maxValue
 	// 	 int default = 0
@@ -990,15 +973,6 @@ struct List<T>
 	// 		if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
 		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
 	// max: int(T a) selector
 	// 	 int threshold = int.minValue
 	// 	 int default = 0
@@ -1020,18 +994,7 @@ struct List<T>
 	// 			let value = selector(.)
 	// 			if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
-		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	 label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
+
 	// minIndex: int(T a) selector
 	// 	      int threshold = int.maxValue
 	// 	int resultValue = threshold
@@ -1076,17 +1039,6 @@ struct List<T>
 	// 			resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
 		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
 	// withMin: int(T a) selector
 	// 	     int threshold = int.maxValue
 	// 	     label bool(T a) where
@@ -1112,20 +1064,7 @@ struct List<T>
 	// 				resultValue = value
 	// 				resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	     label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value < resultValue
-	// 				resultValue = value
-	// 				resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
+				
 	// withMax: int(T a) selector
 	// 	     int threshold = int.minValue
 	// 	int resultValue = threshold
@@ -1140,17 +1079,6 @@ struct List<T>
 	// withMax: float(T a) selector
 	// 	     float threshold = float.minValue
 	// 	float resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMax: Time(T a) selector
-	// 	     Time threshold = float.minValue
-	// 	Time resultValue = threshold
 	// 	T resultItem
 	// 	for this
 	// 		let value = selector(.)
@@ -1648,7 +1576,7 @@ global transient priority unit system
 		logs += text + "\n"
 		
 	saveLogEvery: int frames = 60
-		if logs != "" and Time.frame % frames == 0
+		if logs != "" and DateTime.frame % frames == 0
 			print logs
 			logs = ""
 		
@@ -1727,25 +1655,13 @@ unit math
 	// Returns the smallest integer greater than or equal to the given value
 	inline cpp(cmath) int ceil: float value // The value to round up
 		std::ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value
-	inline cpp(cmath) Time ceil: Time value // The value to round up
-		std::ceil(value)
-		
+				
 	// Returns the largest integer less than or equal to the given value
 	inline cpp(cmath) int floor: float value // The value to round down
 		std::floor(value)
 		
-	// Returns the largest integer less than or equal to the given value
-	inline cpp(cmath) Time floor: Time value // The value to round down
-		std::floor(value)
-		
 	// Returns the given value rounded to the nearest integer
 	inline cpp(cmath) int round: float value // The value to round
-		std::round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cpp(cmath) Time round: Time value // The angle to round
 		std::round(value)
 		
 	inline cpp(algorithm) int min: int a // The first value
@@ -1765,11 +1681,6 @@ unit math
 	// Returns the largest of the given values
 	inline cpp(cmath) float max: float a // The first value
 		                         float b // The second value
-		std::max(a, b)
-		
-	// Returns the largest of the given values
-	inline cpp(cmath) Time max: Time a // The first time
-		                        Time b // The second time
 		std::max(a, b)
 		
 	// Returns the positive square root of the given value
@@ -1821,17 +1732,6 @@ unit math
 		   float min
 		if value < min: return min
 						return value
-			
-	// // Maps a value from an input range to an output range
-	map: Time value        // The input value
-		Time from = 0     // The beginning of the input range
-		Time to = 1       // The end of the input range
-		float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
-		float target = 1  // The highest possible output value, will be returned for values larger than "to".
-		if value <= from: return start
-		if value >= to:   return target
-		let factor = (value-from) / (to-from)
-		return start + (target-start) * factor
 			
 	// Maps a value from an input range to an output range
 	map: float value       // The input value

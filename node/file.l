@@ -107,11 +107,11 @@ interface FileInfo
 	int size
 	int blksize
 	int blocks
-	Time atimeMs
-	Time mtimeMs
-	Time ctimeMs
-	Time birthtimeMs
-	string atime
-	string mtime
-	string ctime
-	string birthtime
+	float atimeMs     // The time the file was last accessed in milliseconds
+	float mtimeMs     // The time the file was last modified in milliseconds
+	float ctimeMs     // The time the file was last changed in milliseconds
+	float birthtimeMs // The time the file was created in milliseconds
+	string atime     // The time the file was last accessed as a string
+	string mtime     // The time the file was last modified as a string
+	string ctime     // The time the file was last changed as a string
+	string birthtime // The time the file was created as a string

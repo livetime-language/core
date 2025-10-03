@@ -1,7 +1,7 @@
 // A sound
 skipInit immutable Sound
-	string file
-	Time duration
+	string file    // The file path of the sound
+	float duration // The duration of the sound in milliseconds
 	
 	float fadeVolume = 1
 	transient dynamic audioElement
@@ -35,9 +35,9 @@ skipInit immutable Sound
 			
 		// We can play sounds immediately to ensure there is no lag
 		// If a sound turns out to be wrong after receiving new inputs, we stop it
-		let playingSound = audio.playingSounds.find(.sound == this and .frame == Time.frame)
+		let playingSound = audio.playingSounds.find(.sound == this and .frame == DateTime.frame)
 		if !playingSound
-			audio.playingSounds.add playingSound = {this, frame:Time.frame, isConfirmed:true}
+			audio.playingSounds.add playingSound = {this, frame:DateTime.frame, isConfirmed:true}
 			if core.isPremiere: doPlay playingSound
 		else
 			playingSound.isConfirmed = true
@@ -64,12 +64,12 @@ skipInit immutable Sound
 		this.nextAudioElement.src = _basePath+this.file;
 		
 	isPlaying
-		return audio.playingSounds.any.sound == this and .frame < Time.frame
+		return audio.playingSounds.any.sound == this and .frame < DateTime.frame
 
-	fadeOut: Time duration = 3000
-		     Time delay = 0
+	fadeOut: float duration = 3000 // The duration of the fade out in milliseconds
+		     float delay = 0       // The delay before the fade out starts in milliseconds
 		// Migrate to 3D
-		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
+		fx.add FadeSoundAnimation startTime:DateTime.now+delay, duration, sound:this, startValue:1, delta:-1
 		return this
 
 internal transient PlayingSound
@@ -92,7 +92,7 @@ transient global skipInit unit audio
 	internal finishFrame
 		// Stop sounds that turned out to be wrong after receiving new inputs
 		playingSounds.each
-			if .frame == Time.frame and !.isConfirmed
+			if .frame == DateTime.frame and !.isConfirmed
 				.sound.stop
 		
 	internal reload
