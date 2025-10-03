@@ -78,7 +78,7 @@ global skipInit unit math
 	
 DateTime
 	// The number of milliseconds elapsed since January 1, 1970
-	static inline js Time now := Date.now()
+	static inline js float now := Date.now()
 	
 enum HttpMethod: Get, Post, Put, Delete
 			
