@@ -169,7 +169,7 @@ struct float
 		
 	inline cs bool isAngleApproximately: float value
 		                                 float epsilon = 0.0175
-		(Math.abs((((this % Math.TwoPI) + Math.TwoPI) % Math.TwoPI) - (((value % Math.TwoPI) + Math.TwoPI) % Math.TwoPI)) < epsilon)
+		(Math.abs((((this % Math.twoPi) + Math.twoPi) % Math.twoPi) - (((value % Math.twoPi) + Math.twoPi) % Math.twoPi)) < epsilon)
 		
 	inline cs void moveTowards: float value
 		                        float speed
@@ -211,23 +211,20 @@ struct float
 	// Weeks	
 	inline cs Time weeks := (this*604800000)
 		
-	// ------------------------------------------- Angle -------------------------------------------
+	inline cs float operator °(float angle) (angle/180*pi)
 	
-	implicit inline cs Angle toAngle() this
+	// One full rotation is 1
+	inline cs float turns := (this*math.twoPi)
 	
-	inline cs Angle operator °(float angle) (angle/360)
-	
-	// Turns (one full rotation is 1)
-	inline cs Angle turns() this
-	
-	// Radians (one full rotation is 1π) 
-	inline cs Angle rad() (this/Math.TwoPI)
+	// One full rotation is 2π (about 6.2832)
+	inline cs float radians := this
 		
-	// Degrees (one full rotation is 360)
-	inline cs Angle deg() (this/360)
+	// One full rotation is 360
+	inline cs float degrees := (this/180*pi)
 		
-	// Gradians (one full rotation is 360)
-	inline cs Angle grad() (this/400)
+	// One full rotation is 400
+	inline cs float gradians := (this/200*pi)
+
 		
 class EaseFunction
 	// float(float value) function
@@ -589,9 +586,6 @@ class List<T>
 	// inline cs T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 	// 	this.sort(comparer)
 	
-	// inline cs T[] sort: Angle(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-	
 	// // Sort the list by a given expression
 	// T[] orderBy: float(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) - expression(b))
@@ -601,9 +595,6 @@ class List<T>
 	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
 	// T[] orderBy: Time(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
-		
-	// T[] orderBy: Angle(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) - expression(b))
 		
 	// T[] orderBy: string(T a) expression // First order by this expression
@@ -1454,20 +1445,12 @@ global skipInit unit Math
 	inline cs(System) float abs: float value // The value to return the absolute value of
 		Math.Abs(value)
 		
-	// Returns the absolute value
-	inline cs(System) Angle abs: Angle value // The angle to return the absolute value of
-		Math.Abs(value)
-		
 	// Returns the smallest integer greater than or equal to the given value 
 	inline cs(System) int ceil: float value // The value to round up
 		(int)Math.Ceil(value)
 		
 	// Returns the smallest integer greater than or equal to the given value 
 	inline cs(System) Time ceil: Time value // The value to round up
-		(int)Math.Ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline cs(System) Angle ceil: Angle value // The angle to round up
 		(int)Math.Ceil(value)
 		
 	// Returns the largest integer less than or equal to the given value
@@ -1478,16 +1461,8 @@ global skipInit unit Math
 	inline cs(System) Time floor: Time value // The value to round down
 		(int)Math.Floor(value)
 		
-	// Returns the largest integer less than or equal to the given value
-	inline cs(System) Angle floor: Angle value // The angle to round down
-		(int)Math.Floor(value)
-		
 	// Returns the given value rounded to the nearest integer
 	inline cs(System) int round: float value // The value to round
-		(int)Math.Round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cs(System) Angle round: Angle value // The angle to round
 		(int)Math.Round(value)
 		
 	// Returns the given value rounded to the nearest integer
@@ -1503,11 +1478,6 @@ global skipInit unit Math
 		                 float b // The second value
 		Math.Min(a, b)
 		
-	// Returns the smallest of the given values
-	inline cs(System) Angle min: Angle a // The first angle
-		                 Angle b // The second angle
-		Math.Min(a, b)
-		
 	// Returns the largest of the given values
 	inline cs(System) int max: int a // The first value
 		               int b // The second value
@@ -1516,11 +1486,6 @@ global skipInit unit Math
 	// Returns the largest of the given values
 	inline cs(System) float max: float a // The first value
 		                 float b // The second value
-		Math.Max(a, b)
-		
-	// Returns the largest of the given values
-	inline cs(System) Angle max: Angle a // The first angle
-		                 Angle b // The second angle
 		Math.Max(a, b)
 		
 	// Returns the largest of the given values
@@ -1536,11 +1501,28 @@ global skipInit unit Math
 		                 float exponent
 		Math.Pow(base, exponent)
 		
-	// The ratio of a circle's circumference to its diameter
-	inline cs float PI() 3.141592653589793f
+	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
 	
-	// The ratio of a circle's radius to its diameter
-	inline cs float TwoPI() 6.283185307179586f
+	// The angle of a half rotation (the ratio of a circle's circumference to its diameter)
+	global const float pi = 3.141592653589793
+
+	// The angle of a half rotation (pi)
+	const float halfCircle = 3.141592653589793
+	
+	// The angle of a full rotation (the ratio of a circle's radius to its diameter)
+	const float twoPi = 6.283185307179586
+
+	// The angle of a full rotation (2*pi)
+	const float fullCircle = 6.283185307179586
+
+	// The angle of a quarter rotation
+	const float halfPi = 1.5707963267948966
+
+	// The angle of a quarter rotation (pi/2)
+	const float quarterCircle = 1.5707963267948966
+	
+	// The angle of a eighth rotation
+	const float quarterPi = 0.7853981633974483
 	
 	internal inline cs(System) float nativeSin: float angle // The angle in radians
 		Math.Sin(angle)
@@ -1551,26 +1533,28 @@ global skipInit unit Math
 	internal inline cs(System) float nativeTan: float angle // The angle in radians
 		Math.Tan(angle)
 		
-	// Returns the sine of an angle in turns
-	sin: Angle angle // The angle in turns (one full rotation is 1)
+	// Returns the sine of an angle in radians
+	sin: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= twoPi
 	    float result = cast(angle - .5 - Math.floor(angle));
 	    result *= 16 * (Math.abs(result) - .5);
 	    result += .225 * result * (Math.abs(result) - 1);
 	    return result;
 
-	// Returns the cosine of an angle in turns
-	cos: Angle angle // The angle in turns (one full rotation is 1)
+	// Returns the cosine of an angle in radians
+	cos: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= twoPi
 	    float result = cast(angle - .25 - Math.floor(angle + .25))
 	    result *= 16 * (Math.abs(result) - .5)
 	    result += .225 * result * (Math.abs(result) - 1)
 	    return result
 	
-	// Returns the tangent of an angle in turns
-	tan: Angle angle
+	// Returns the tangent of an angle in radians
+	tan: float angle
 		return sin(angle) / cos(angle)
 		
-	// Returns the inverse tangent in turns
-	Angle atan2: float y, float x
+	// Returns the inverse tangent in radians
+	float atan2: float y, float x
 		float r, angle;
 		float abs_y = Math.abs(y) + .00000000001
 		if x < 0.0
@@ -1707,9 +1691,9 @@ global skipInit unit Math
 		if targetValue < value: return Math.max(value - speed, targetValue)
 			                    return value
 			
-	moveTowards: Angle value
-		         Angle targetValue
-		         Angle speed = 1
+	moveTowardsAngle: float value
+		              float targetValue
+		              float speed = 1
 		if targetValue > value: return Math.min(value + speed, targetValue)
 		if targetValue < value: return Math.max(value - speed, targetValue)
 			                    return value
@@ -1789,57 +1773,7 @@ global skipInit unit Math
 // 		total += value
 // 		count++
 // 	average := total / count		
-
-transient float Angle
-	inline cs float toFloat() this
-	inline cs string toString() this.toString()
-		
-	// Returns true if the angle is not zero
-	inline cs bool toBool := this
 	
-	inline cs Angle operator +  (Angle a, Angle b) a+b
-	inline cs Angle operator +  (Angle a, int b) a+b
-	inline cs Angle operator +  (Angle a, float b) a+b
-	
-	inline cs Angle operator -  (Angle a, Angle b) a-b
-	inline cs Angle operator -  (Angle a, int b) a-b
-	inline cs Angle operator -  (Angle a, float b) a-b
-	inline cs Angle operator -  (Angle a) -a
-	
-	inline cs float operator /  (Angle a, Angle b) a/b
-	inline cs Angle operator /  (Angle a, int b) a/b
-	inline cs Angle operator /  (Angle a, float b) a/b
-	
-	inline cs Angle operator *  (Angle a, int b) a*b
-	inline cs Angle operator *  (Angle a, float b) a*b
-	inline cs Angle operator *  (int a, Angle b) a*b
-	inline cs Angle operator *  (float a, Angle b) a*b
-	
-	inline cs Angle operator %  (Angle a, int b) a%b
-	inline cs Angle operator %  (Angle a, Angle b) a%b
-	
-	inline cs bool  operator <  (Angle a, Angle b) a<b
-	inline cs bool  operator <= (Angle a, Angle b) a<=b
-	inline cs bool  operator >  (Angle a, Angle b) a>b
-	inline cs bool  operator >= (Angle a, Angle b) a>=b
-	
-	inline cs bool  operator == (Angle a, Angle b) a==b
-	inline cs bool  operator == (Angle a, int b) a==b
-	inline cs bool  operator == (Angle a, float b) a==b
-	
-	inline cs bool  operator != (Angle a, Angle b) a!=b
-	inline cs bool  operator != (Angle a, int b) a!=b
-	inline cs bool  operator != (Angle a, float b) a!=b
-	
-	inline cs float in: AngleUnit unit
-		(unit==1 ? this*Math.TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
-		
-enum AngleUnit
-	turns // Turn (one full rotation is 1)
-	rad   // Radians (one full rotation is 2π)
-	deg   // Degrees (one full rotation is 360)
-	grad  // Gradiants (one full rotation is 400)
-		
 skipInit transient float Time
 	// // The largest possible time value
 	// const inline cs Time maxValue := Number.MAX_VALUE

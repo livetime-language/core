@@ -75,56 +75,10 @@ global skipInit unit math
 		return 'xxxx-xxxx-xxx-xxxx'.replace(/[x]/g, (c) => {  
 			return math.floor(math.random() * 16).toString(16);  
 		}); 
-
-	inline js Angle floor: Angle value // The value to round down
-		Math.floor(value)
 	
 skipInit transient float Time
 	// The number of milliseconds elapsed since January 1, 1970
 	static inline js Time now := Date.now()
-		
-struct float
-	implicit inline js Angle toAngle() this
-
-transient float Angle
-	inline js float toFloat() this
-	inline js string toString() this.toString()
-		
-	// Returns true if the angle is not zero
-	inline js bool toBool := this
-	
-	inline Angle + Angle value
-	inline Angle - Angle value
-	inline Angle - float value
-	inline Angle + float value
-	inline float / Angle value
-	inline float * Angle value
-	
-	inline Angle += Angle value
-	inline Angle -= Angle value
-	inline Angle /= Angle value
-	inline Angle *= Angle value
-	
-	inline bool == Angle value
-	inline bool != Angle value
-	inline bool < Angle value
-	inline bool <= Angle value
-	inline bool > Angle value
-	inline bool >= Angle value
-	
-	inline js Angle operator - (Angle a) -a
-	
-	inline js Angle % ensureSingleExecution Angle value
-		((this % value) + value) % value
-	
-	inline js float in: AngleUnit unit
-		(unit==1 ? this*math.TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
-		
-enum AngleUnit
-	turns // Turn (one full rotation is 1)
-	rad   // Radians (one full rotation is 2π)
-	deg   // Degrees (one full rotation is 360)
-	grad  // Gradiants (one full rotation is 400)
 	
 enum HttpMethod: Get, Post, Put, Delete
 			

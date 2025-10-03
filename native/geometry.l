@@ -136,7 +136,7 @@ struct Vector2
 		this.y += y
 		return this
 		
-	rotate: Angle angle // The angle in turns (one full rotation is 1)
+	rotate: float angle // The angle in radians (one full rotation is 2*pi)
 		let x = this.x, y = this.y
 		let sn = math.sin(angle)
 		let cs = math.cos(angle)
@@ -154,7 +154,7 @@ struct Vector2
 	manhattanDistanceTo: Vector2 value // The second vector
 		return math.abs(x - value.x) + math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: Vector2 value // The second vector
 		return math.getAngleForVector(value - this)
 
@@ -396,7 +396,7 @@ struct IntVector2
 	manhattanDistanceTo: IntVector2 value // The second vector
 		return math.abs(x - value.x) + math.abs(y - value.y)
 
-	// // The angle to another vector in turns (one full rotation is 1)
+	// // The angle to another vector in radians (one full rotation is 2*pi)
 	// angleTo: IntVector2 value // The second vector
 	// 	return math.getAngleForVector(value - this)
 		
@@ -480,7 +480,7 @@ struct Matrix2D
 		return this	
 		
 	// Rotates the matrix by a given angle
-	rotate: Angle angle // The angle in turns (one full rotation is 1)
+	rotate: float angle // The angle in radians (one full rotation is 2*pi)
 		let a0 = m0, a1 = m1, a2 = m2, a3 = m3
 		let sin = math.sin(angle), cos = math.cos(angle)
 		m0 = a0 *  cos + a2 * sin
@@ -526,168 +526,112 @@ struct Matrix2D
 // 		for this: sum += selector(.)
 // 		return sum	
 		
-// ------------------------------------------- Angle -------------------------------------------
-		
-transient immutable float Angle
-	inline cpp float toFloat() this
-	inline cpp string toString() this.toString()
-		
-	// Returns true if the angle is not zero
-	inline cpp bool toBool := this
+// ------------------------------------------------------- Trigonometry -------------------------------------------------------
 	
-	inline cpp Angle operator +  (Angle a, Angle b) a+b
-	inline cpp Angle operator +  (Angle a, int b) a+b
-	inline cpp Angle operator +  (Angle a, float b) a+b
-	
-	inline cpp Angle operator -  (Angle a, Angle b) a-b
-	inline cpp Angle operator -  (Angle a, int b) a-b
-	inline cpp Angle operator -  (Angle a, float b) a-b
-	inline cpp Angle operator -  (Angle a) -a
-	
-	inline cpp float operator /  (Angle a, Angle b) a/b
-	inline cpp Angle operator /  (Angle a, int b) a/b
-	inline cpp Angle operator /  (Angle a, float b) a/b
-	
-	inline cpp Angle operator *  (Angle a, int b) a*b
-	inline cpp Angle operator *  (Angle a, float b) a*b
-	inline cpp Angle operator *  (int a, Angle b) a*b
-	inline cpp Angle operator *  (float a, Angle b) a*b
-	
-	inline cpp Angle operator %  (Angle a, int b) a%b
-	inline cpp Angle operator %  (Angle a, Angle b) a%b
-	
-	inline cpp bool  operator <  (Angle a, Angle b) a<b
-	inline cpp bool  operator <= (Angle a, Angle b) a<=b
-	inline cpp bool  operator >  (Angle a, Angle b) a>b
-	inline cpp bool  operator >= (Angle a, Angle b) a>=b
-	
-	inline cpp bool  operator == (Angle a, Angle b) a==b
-	inline cpp bool  operator == (Angle a, int b) a==b
-	inline cpp bool  operator == (Angle a, float b) a==b
-	
-	inline cpp bool  operator != (Angle a, Angle b) a!=b
-	inline cpp bool  operator != (Angle a, int b) a!=b
-	inline cpp bool  operator != (Angle a, float b) a!=b
-	
-	inline cpp float in: AngleUnit unit
-		(unit==1 ? this*math_TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
-		
-	inline cpp bool isApproximately: Angle value
-		                            float epsilon = 0.0175
-		(Math.abs((((this % math_TwoPI) + math_TwoPI) % math_TwoPI) - (((value % math_TwoPI) + math_TwoPI) % math_TwoPI)) < epsilon)
-		
-enum AngleUnit
-	turns    // One full rotation is 1
-	radians  // One full rotation is 2π (about 6.2832)
-	degrees  // One full rotation is 360
-	gradians // One full rotation is 400
-	
-	
-immutable priority low struct float
-	implicit inline cpp Angle toAngle() this
-	
-	inline cpp Angle operator °(float angle) (angle/360)
+mmutable priority low struct float
+	inline cpp float operator °(float angle) (angle/180*pi)
 	
 	// One full rotation is 1
-	inline cpp Angle turns := this
+	inline cpp float turns := (this*math.twoPi)
 	
 	// One full rotation is 2π (about 6.2832)
-	inline cpp Angle radians := (this/math_TwoPI)
+	inline cpp float radians := this
 		
 	// One full rotation is 360
-	inline cpp Angle degrees := (this/360)
+	inline cpp float degrees := (this/180*pi)
 		
 	// One full rotation is 400
-	inline cpp Angle gradians := (this/400)
+	inline cpp float gradians := (this/200*pi)
 
-cpp vector, std::vector
-priority low struct List<T>
-	// inline cpp T[] sort: Angle(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-		
-	// T[] orderBy: Angle(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
+global skipInit priority low unit math		
+	// The angle of a half rotation (the ratio of a circle's circumference to its diameter)
+	global const float pi = 3.141592653589793
 
-global skipInit priority low unit math
-	// Returns the absolute value
-	inline cpp Angle abs: Angle value // The angle to return the absolute value of
-		std::abs(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline cpp Angle ceil: Angle value // The angle to round up
-		std::ceil(value)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline cpp Angle floor: Angle value // The angle to round down
-		std::floor(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cpp Angle round: Angle value // The angle to round
-		std::round(value)
-		
-	// Returns the smallest of the given values
-	inline cpp Angle min: Angle a // The first angle
-		                 Angle b // The second angle
-		std::min(a, b)
-		
-	// Returns the largest of the given values
-	inline cpp Angle max: Angle a // The first angle
-		                 Angle b // The second angle
-		std::max(a, b)
-		
-	// The ratio of a circle's circumference to its diameter
-	const float PI = 3.141592653589793
+	// The angle of a half rotation (pi)
+	const float halfCircle = 3.141592653589793
 	
-	// The ratio of a circle's radius to its diameter
-	const float TwoPI = 6.283185307179586
+	// The angle of a full rotation (the ratio of a circle's radius to its diameter)
+	const float twoPi = 6.283185307179586
+
+	// The angle of a full rotation (2*pi)
+	const float fullCircle = 6.283185307179586
+
+	// The angle of a quarter rotation
+	const float halfPi = 1.5707963267948966
+
+	// The angle of a quarter rotation (pi/2)
+	const float quarterCircle = 1.5707963267948966
 	
-	internal inline cpp float nativeSin: float angle // The angle in radians
-		std::sin(angle)
-		
-	internal inline cpp float nativeCos: float angle // The angle in radians
-		std::cos(angle)
-		
-	internal inline cpp float nativeTan: float angle // The angle in radians
-		std::tan(angle)
-		
-	// Returns the sine of an angle in turns
-	sin: Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .5 - math.floor(angle))
+	// The angle of a eighth rotation
+	const float quarterPi = 0.7853981633974483
+
+	
+	moveTowardsAngle: float value
+		              float targetValue
+		              float speed = 10
+		if targetValue > value: return math.min(value + speed, targetValue) else
+		if targetValue < value: return math.max(value - speed, targetValue)
+	
+	// Returns the sine of an angle in radians
+	important sin: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= math.twoPi
+	    float result = angle - .5 - math.floor(angle)
 	    result *= 16 * (math.abs(result) - .5)
 	    result += .225 * result * (math.abs(result) - 1)
 	    return result
 
-	// Returns the cosine of an angle in turns
-	cos: Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .25 - math.floor(angle + .25))
+	// Returns the cosine of an angle in radians
+	important cos: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= math.twoPi
+	    float result = angle - .25 - math.floor(angle + .25)
 	    result *= 16 * (math.abs(result) - .5)
 	    result += .225 * result * (math.abs(result) - 1)
 	    return result
 	
-	// Returns the tangent of an angle in turns
-	tan: Angle angle
+	// Returns the tangent of an angle in radians
+	important tan: float angle // The angle in radians (one full rotation is 2*pi)
 		return sin(angle) / cos(angle)
+			
+	float atan: float x
+		return math.quarterPi * x - x * (abs(x) - 1) * (0.2447 + 0.0663 * abs(x));
 		
-	// Returns the inverse tangent in turns
-	Angle atan2: float y, float x
-		float r, angle;
-		float abs_y = math.abs(y) + .00000000001
-		if x < 0.0
-			r = (x + abs_y) / (abs_y - x);
-			angle = .375;
-		else
-			r = (x - abs_y) / (x + abs_y);
-			angle = .125;
-		angle += (.03124211533 * r * r - .1562424076) * r;
-		if y < 0.0: return cast -angle
-		else        return cast angle
+	float atan2: float y
+	            float x
+		if (x >= 0) { // -pi/2 .. pi/2
+			if (y >= 0) { // 0 .. pi/2
+				if (y < x) { // 0 .. pi/4
+					return atan(y / x);
+				} else { // pi/4 .. pi/2
+					return math.halfPi - atan(x / y);
+				}
+			} else {
+				if (-y < x) { // -pi/4 .. 0
+					return atan(y / x);
+				} else { // -pi/2 .. -pi/4
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		} else { // -pi..-pi/2, pi/2..pi
+			if (y >= 0) { // pi/2 .. pi
+				if (y < -x) { // pi*3/4 .. pi
+					return atan(y / x) + math.pi;
+				} else { // pi/2 .. pi*3/4
+					return math.halfPi - atan(x / y);
+				}
+			} else { // -pi .. -pi/2
+				if (-y < -x) { // -pi .. -pi*3/4
+					return atan(y / x) - math.pi;
+				} else { // -pi*3/4 .. -pi/2
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		}
 
-unit math
 	// Returns the arctangent of the quotient of the given values
-	Angle getAngleForVector: Vector2 vector
+	float getAngleForVector: Vector2 vector
 		return math.atan2(vector.y, vector.x)
 		
-	Vector2 getVectorForAngle: Angle angle      // The angle in turns (one full rotation is 1)
+	Vector2 getVectorForAngle: float angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
 		                       float radius = 1
 		return new Vector2(math.cos(angle)*radius, math.sin(angle)*radius)
 		
@@ -911,8 +855,8 @@ immutable Direction
 	string name       // The name of the direction (e.g. "Left", "Right", "Up", "Down", "UpLeft", "DownRight", ...)
 	int index         // The index starting with "Right" and going around clockwise (0: Right, 1: Down, 2: Left, 3: Up)
 	IntVector2 vector // The vector of the direction (Right: {1,0}, Down:{0,1}, Left:{-1,0}, Up:{0,-1})
-	Angle angle       // The angle in turns starting with "Right" and going around clockwise
-	Angle isoAngle    // The angle in turns within an isometric grid
+	float angle        // The angle in radians starting with "Right" and going around clockwise
+	float isoAngle     // The angle in radians within an isometric grid
 	
 	toString := name
 	

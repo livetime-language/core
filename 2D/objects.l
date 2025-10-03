@@ -76,7 +76,7 @@ enum Side: Front, Back
 class Object
 	Vector2 position
 	implicit Vector2 size
-	Angle angle
+	float angle
 	float alpha = 1
 	implicit Player[] visibleFor = null
 	int layer = 0
@@ -202,9 +202,8 @@ class Object
 		return this
 		
 	fadeScaleAndRotateIn: float startScale = 3
-		                  Angle startAngle = -.0625
-		                  //Angle startAngle = -.08
-		                  Angle endAngle = 0
+		                  float startAngle = -.0625
+		                  float endAngle = 0.0
 		                  Time duration = 200
 		                  Time delay = 0
 		alpha = 0
@@ -264,7 +263,7 @@ Object CircularTextObject
 	Font font            // The font of the text
 	Color color = White  // The color of the text
 	float radius = 100   // The radius of the circle to draw the text around
-	Angle angle = 0      // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
+	float angle = 0.0    // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
 	float spacing = .2   // The spacing between the letters of the text
 	
 	internal override tick
@@ -345,7 +344,7 @@ Object StandardButton
 
 struct Particle
 	Vector2 pos, speed
-	Angle angle, rotationSpeed
+	float angle, rotationSpeed
 	int frame
 
 enum ParticleMode: Burst, OneParticlePerImageFrame

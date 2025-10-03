@@ -1195,7 +1195,7 @@ skipInit global unit input
 	// Image: onTouchDown2.png
 	global onTouchDown: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
-		                Angle angle                         // Rotate the touch area by this angle
+		                float angle                          // Rotate the touch area by this angle
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
 		                bool showClickableArea = false      // Highlight the clickable area for debugging

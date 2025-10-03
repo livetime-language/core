@@ -24,7 +24,7 @@ Object Piece
 	// const minSize = 75 // EVAL
 	
 	Image image // The image of the piece
-	Angle angle // The rotation of the piece in turns (one full rotation is 1)
+	float angle // The rotation of the piece in radians (one full rotation is 2*pi)
 	
 	bool stackable
 	bool movable = true
@@ -43,8 +43,8 @@ Object Piece
 	
 	// Rotate
 	private Touch rotateTouch
-	private Angle rotateOffset
-	private Angle targetAngle
+	private float rotateOffset
+	private float targetAngle
 	private bool rotatedOverThreshold
 	
 	Vector2 iconPos = Vector2.None

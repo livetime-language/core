@@ -463,9 +463,9 @@ transient skipInit global unit graphics
 		                      implicit layer = 0                  // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White                 // Tint the image with this color
-		                      Angle angle = 0.0                   // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
-		                      flipX = false                       // Mirror the image horizontally
-		                      flipY = false                       // Mirror the image vertically
+		                      angle = 0.0                         // Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                      flipX = false                        // Mirror the image horizontally
+		                      flipY = false                        // Mirror the image vertically
 		                      SourceCodeLocation location
 		if(angle == 0 && !flipX && !flipY) {
 			graphics.drawImage(image, position, size, visibleFor, frame, layer, alpha, color, 1, 1, location)
@@ -536,9 +536,9 @@ transient skipInit global unit graphics
 		                   implicit int layer = 0               // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
-		                   Angle angle = 0.0                    // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
-		                   flipX = false                        // Mirror the image horizontally
-		                   flipY = false                        // Mirror the image vertically
+		                   angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                   flipX = false                         // Mirror the image horizontally
+		                   flipY = false                         // Mirror the image vertically
 		                   SourceCodeLocation location
 		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) % image.frames.length;
 		drawImage image, position, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
@@ -589,9 +589,9 @@ transient skipInit global unit graphics
 		                   implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
-		                   Angle angle = 0.0                    // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
-		                   flipX = false                        // Mirror the image horizontally
-		                   flipY = false                        // Mirror the image vertically
+		                   angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                   flipX = false                         // Mirror the image horizontally
+		                   flipY = false                         // Mirror the image vertically
 		                   clickableMargin = Vector2(16,16)     // The margin around the image within which it is clickable
 		                   showClickableArea = false            // Highlight the clickable area for debugging
 		                   hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
@@ -696,15 +696,15 @@ transient skipInit global unit graphics
 		             outlineWidth = 0                     // The width of the outline around the text in pixels
 		             implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
-		             Angle angle = 0.0                    // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
+		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		             implicit Player[] visibleFor = null  // Only this player or list of players will see the text
 		             implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
 		             clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
 		             showClickableArea = false            // Highlight the clickable area for debugging
 		             hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		             overflow = TextOverflow.Scale        // Should text that exceeds the max width be hidden or wrapped?
-		             float maxWidth = 0                   // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
-		             float lineHeight = 0                 // The height of each line when overflow is set to 'Wrap'
+		             overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
+		             maxWidth = 0.0                       // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
+		             lineHeight = 0.0                     // The height of each line when overflow is set to 'Wrap'
 		             void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
 		             SourceCodeLocation location
 		
@@ -874,15 +874,15 @@ transient skipInit global unit graphics
 		                                outlineWidth = 0                     // The width of the outline around the text in pixels
 		                                implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
-		                                Angle angle = 0.0                    // Rotate the image by this angle in turns (0: no rotation, 1: one full rotation)
+		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		                                implicit Player[] visibleFor = null  // Only this player or list of players will see the text
 		                                implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
 		                                clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
 		                                showClickableArea = false            // Highlight the clickable area for debugging
 		                                hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		                                overflow = TextOverflow.Scale        // Should text that exceeds the max width be hidden or wrapped?
-		                                float maxWidth = float.maxValue      // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
-		                                float lineHeight = 0                 // The height of each line when overflow is set to 'Wrap'
+		                                overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
+		                                float maxWidth = float.maxValue        // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
+		                                float lineHeight = 0.0                // The height of each line when overflow is set to 'Wrap'
 		                                void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
 		                                SourceCodeLocation location
 		bool isVisible = isVisibleFor(visibleFor)
@@ -1047,29 +1047,29 @@ transient skipInit global unit graphics
 	// Example: Draw text around a circular video
 	// ```
 	//     drawVideo me, position:pos, shape:Circle, size:radius*2-40
-	//     drawCircularText "Made up by", position:pos, size:30, radius, angle:-.07
+	//     drawCircularText "Made up by", position:pos, size:30, radius, angle:-pi
 	// ```
 	global drawCircularText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
 		                     Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                     float size = 0                       // The font size of the text
+		                     size = 0.0                           // The font size of the text
 		                     Color color = null                   // The color of the text
 		                     Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		                     implicit layer = 0                   // Higher layers are drawn in front of lower layers
-		                     float radius = 100                   // The radius of the circle to draw the text around
-		                     Angle angle = 0                      // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
-		                     float spacing = .2                   // The spacing between the letters of the text
+		                     radius = 100.0                       // The radius of the circle to draw the text around
+		                     angle = 0.0                          // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
+		                     spacing = .2                         // The spacing between the letters of the text
 		                     implicit Player[] visibleFor = null  // Only this player or list of players will see the text
 		                     SourceCodeLocation location
 		Font effectiveFont = font || currentFont
 		int fontSize = math.floor(size || currentFontSize)
 		float totalWidth = graphics.getTextWidth text, fontSize, effectiveFont
-		Angle startAngle = angle - totalWidth/2*spacing/radius
+		float startAngle = angle - totalWidth/2*spacing/radius
 		float prevWidth
 		for text as letter
 			float width = graphics.getTextWidth text[..i+1], fontSize, effectiveFont
 			float centerOfLetter = (width+prevWidth)/2
 			prevWidth = width
-			Angle angleOfLetter = startAngle + centerOfLetter*spacing/radius
+			float angleOfLetter = startAngle + centerOfLetter*spacing/radius
 			drawText text:letter, position+math.getVectorForAngle(angleOfLetter, radius), fontSize, color, effectiveFont, layer, angleOfLetter, visibleFor, location
 
 	// ------------------------------------------------------- Button -------------------------------------------------------
@@ -1251,8 +1251,8 @@ transient skipInit global unit graphics
 		                       Color color = null                      // The color of the area within the circle
 		                       Color outlineColor = null               // The color of the outline around the circle
 		                       outlineWidth = 0                        // The width of the outline around the circle in pixels
-		                       Angle startAngle = 0                    // Draw an arc with this start angle in turns, measured from the positive x-axis
-		                       Angle angle = 1.0                       // Draw an arc with this angle in turns (0.25: quarter circle, 0.5: half circle, 1: full circle)
+		                       startAngle = 0.0                        // Draw an arc with this start angle in radians, measured from the positive x-axis
+		                       angle = math.twoPi                 // Draw an arc with this angle in radians (one full rotation is 2*pi)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
 		                       implicit Player[] visibleFor = null     // Only this player or list of players will see the circle
 		                       implicit layer = 0                      // Higher layers are drawn in front of lower layers
@@ -1611,7 +1611,7 @@ transient skipInit global unit graphics
 	//                 drawImage Button
 	// ```
 	// Image: graphicsRotate.png
-	rotate: Angle angle  // The angle in turns (0: no rotation, 1: one full rotation)
+	rotate: float angle  // The angle in radians (one full rotation is 2*pi)
 		    void() code  // All drawing operations within this block of code will be rotated
 		if angle == 0: code; return
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
@@ -1656,8 +1656,8 @@ transient skipInit global unit graphics
 	// ```
 	// Image: graphicsTransform.png
 	transform: Vector2 move = Vector2.None  // The distance to move
-		       Angle rotate = 0             // The angle in turns (0: no rotation, 1: one full rotation)
-		       float scale = 1              // The factor to scale by
+		       rotate = 0.0                 // The angle in radians (one full rotation is 2*pi)
+		       scale = 1.0                  // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
@@ -2514,16 +2514,16 @@ internal transient immutable DisplayItem DisplayCircle
 		graphics.context.beginPath();
 		if(this.w == this.h) {
 			let radius = this.w/2
-			if(this.angle == 1) {
-				graphics.context.arc(this.x+radius, this.y+radius, radius, 0, math.TwoPI, this.direction);
+			if(this.angle == math.twoPi) {
+				graphics.context.arc(this.x+radius, this.y+radius, radius, 0, math.twoPi, this.direction);
 			} else {
-				let startAngle = this.startAngle - .25
-				graphics.context.arc(this.x+radius, this.y+radius, radius, startAngle*math.TwoPI, (startAngle+this.angle)*math.TwoPI, this.direction);
+				let startAngle = this.startAngle - math.halfPi
+				graphics.context.arc(this.x+radius, this.y+radius, radius, startAngle*math.twoPi, (startAngle+this.angle)*math.twoPi, this.direction);
 			}
 		} else {
 			let radiusX = this.w/2
 			let radiusY = this.h/2
-			graphics.context.ellipse(this.x+radiusX, this.y+radiusY, radiusX, radiusY, 0, math.TwoPI, this.direction);
+			graphics.context.ellipse(this.x+radiusX, this.y+radiusY, radiusX, radiusY, 0, math.twoPi, this.direction);
 		}
 		if(this.color) {
 			graphics.context.fillStyle = this.color

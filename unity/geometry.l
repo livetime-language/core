@@ -112,7 +112,7 @@ cs(UnityEngine) struct Vector3
 	// // The smaller of the two coordinates
 	// min := x < y ? x : y
 	
-	// rotate: Angle angle // The angle in turns (one full rotation is 1)
+	// rotate: float angle // The angle in radians (one full rotation is 2*pi)
 	// 	var x = this.x, y = this.y
 	// 	var sn = Math.sin(angle)
 	// 	var cs = Math.cos(angle)
@@ -128,7 +128,7 @@ cs(UnityEngine) struct Vector3
 	// manhattanDistanceTo: Vector2 value // The second vector
 	// 	return Math.abs(x - value.x) + Math.abs(y - value.y)
 
-	// // The angle to another vector in turns (one full rotation is 1)
+	// // The angle to another vector in radians (one full rotation is 2*pi)
 	// angleTo: Vector2 value // The second vector
 	// 	return Math.getAngleForVector(value - this)
 
@@ -371,7 +371,7 @@ cs(UnityEngine Vector2Int) struct IntVector2
 	manhattanDistanceTo: IntVector2 value // The second vector
 		return Math.abs(x - value.x) + Math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: IntVector2 value // The second vector
 		return Math.getAngleForVector(value - this)
 		
@@ -521,7 +521,7 @@ cs(UnityEngine Vector3Int) struct IntVector3
 // 	manhattanDistanceTo: IntVector2 value // The second vector
 // 		return Math.abs(x - value.x) + Math.abs(y - value.y)
 
-// 	// The angle to another vector in turns (one full rotation is 1)
+// 	// The angle to another vector in radians (one full rotation is 2*pi)
 // 	angleTo: IntVector2 value // The second vector
 // 		return Math.getAngleForVector(value - this)
 		
@@ -537,10 +537,10 @@ class List<T>
 
 unit Math
 	// Returns the arctangent of the quotient of the given values
-	Angle getAngleForVector: Vector2 vector
+	float getAngleForVector: Vector2 vector
 		return Math.atan2(vector.y, vector.x)
 		
-	Vector2 getVectorForAngle: Angle angle      // The angle in turns (one full rotation is 1)
+	Vector2 getVectorForAngle: float angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
 		                       float radius = 1
 		return new Vector2(Math.cos(angle)*radius, Math.sin(angle)*radius)
 		
@@ -739,7 +739,7 @@ struct Direction
 	int index
 	IntVector2 vector
 	IntVector3 vector3
-	Angle angle
+	float angle
 	Quaternion quaternion
 	
 	override toString := name

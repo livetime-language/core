@@ -115,7 +115,7 @@ Bucket
 	
 js THREE.Quaternion
 Quaternion
-	inline js Quaternion(float x = 0.0, float y = 0.0, float z = 0.0) new THREE.Quaternion().setFromEuler(new THREE.Euler(x*math.TwoPI, y*math.TwoPI, z*math.TwoPI))
+	inline js Quaternion(float x = 0.0, float y = 0.0, float z = 0.0) new THREE.Quaternion().setFromEuler(new THREE.Euler(x*math.twoPi, y*math.twoPi, z*math.twoPi))
 		
 	js Quaternion operator = (Quaternion a, Quaternion b) a.x = b.x; a.y = b.y; a.z = b.z; a.w = b.w; return a
 	

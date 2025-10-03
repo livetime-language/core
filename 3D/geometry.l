@@ -646,11 +646,11 @@ struct Quaternion
 	// void() _onChangeCallback
 	
 	
-	Quaternion(float x, float y, float z) {}.setFromEuler(new Euler(x*math.TwoPI, y*math.TwoPI, z*math.TwoPI))
+	Quaternion(float x, float y, float z) {}.setFromEuler(new Euler(x*math.twoPi, y*math.twoPi, z*math.twoPi))
 		
 	Quaternion
 
-	// static Quaternion fromEuler(float x, float y, float z) {}.setFromEuler(new Euler(x*math.TwoPI, y*math.TwoPI, z*math.TwoPI))
+	// static Quaternion fromEuler(float x, float y, float z) {}.setFromEuler(new Euler(x*math.twoPi, y*math.twoPi, z*math.twoPi))
 	
 	static Quaternion fromEuler(float x, float y, float z) 
 		return {}.setFromEuler(new Euler(x, y, z))
@@ -1411,7 +1411,7 @@ struct Vector2
 		this.y += y
 		return this
 		
-	rotate: Angle angle // The angle in turns (one full rotation is 1)
+	rotate: float angle // The angle in radians (one full rotation is 2*pi)
 		let x = this.x, y = this.y
 		let sn = math.sin(angle)
 		let cs = math.cos(angle)
@@ -1429,7 +1429,7 @@ struct Vector2
 	manhattanDistanceTo: Vector2 value // The second vector
 		return math.abs(x - value.x) + math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: Vector2 value // The second vector
 		return math.getAngleForVector(value - this)
 
@@ -1656,7 +1656,7 @@ struct IntVector2
 	manhattanDistanceTo: IntVector2 value // The second vector
 		return math.abs(x - value.x) + math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: IntVector2 value // The second vector
 		return math.getAngleForVector(value - this)
 		
@@ -1740,7 +1740,7 @@ struct Matrix2D
 		return this	
 		
 	// Rotates the matrix by a given angle
-	rotate: Angle angle // The angle in turns (one full rotation is 1)
+	rotate: float angle // The angle in radians (one full rotation is 2*pi)
 		let a0 = m0, a1 = m1, a2 = m2, a3 = m3
 		let sin = math.sin(angle), cos = math.cos(angle)
 		m0 = a0 *  cos + a2 * sin
@@ -1785,64 +1785,14 @@ class List<T>
 		Vector2 sum = {0,0}
 		for this: sum += selector(.)
 		return sum	
-		
-transient float Angle
-	inline js float toFloat() this
-	inline js string toString() this.toString()
-		
-	// Returns true if the angle is not zero
-	inline js bool toBool := this
-	
-	inline js Angle operator +  (Angle a, Angle b) a+b
-	inline js Angle operator +  (Angle a, int b) a+b
-	inline js Angle operator +  (Angle a, float b) a+b
-	
-	inline js Angle operator -  (Angle a, Angle b) a-b
-	inline js Angle operator -  (Angle a, int b) a-b
-	inline js Angle operator -  (Angle a, float b) a-b
-	inline js Angle operator -  (Angle a) -a
-	
-	inline js float operator /  (Angle a, Angle b) a/b
-	inline js Angle operator /  (Angle a, int b) a/b
-	inline js Angle operator /  (Angle a, float b) a/b
-	
-	inline js Angle operator *  (Angle a, int b) a*b
-	inline js Angle operator *  (Angle a, float b) a*b
-	inline js Angle operator *  (int a, Angle b) a*b
-	inline js Angle operator *  (float a, Angle b) a*b
-	
-	inline js Angle operator %  (Angle a, int b) a%b
-	inline js Angle operator %  (Angle a, Angle b) a%b
-	
-	inline js bool  operator <  (Angle a, Angle b) a<b
-	inline js bool  operator <= (Angle a, Angle b) a<=b
-	inline js bool  operator >  (Angle a, Angle b) a>b
-	inline js bool  operator >= (Angle a, Angle b) a>=b
-	
-	inline js bool  operator == (Angle a, Angle b) a==b
-	inline js bool  operator == (Angle a, int b) a==b
-	inline js bool  operator == (Angle a, float b) a==b
-	
-	inline js bool  operator != (Angle a, Angle b) a!=b
-	inline js bool  operator != (Angle a, int b) a!=b
-	inline js bool  operator != (Angle a, float b) a!=b
-	
-	inline js float in: AngleUnit unit
-		(unit==1 ? this*math.TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
-		
-enum AngleUnit
-	turns    // One full rotation is 1
-	radians  // One full rotation is 2π (about 6.2832)
-	degrees  // One full rotation is 360
-	gradians // One full rotation is 400
 
 unit math
 	// Returns the arctangent of the quotient of the given values
-	Angle getAngleForVector: Vector2 vector
+	float getAngleForVector: Vector2 vector
 		return math.atan2(vector.y, vector.x)
 		
-	Vector2 getVectorForAngle: Angle angle      // The angle in turns (one full rotation is 1)
-		                       float radius = 1
+	Vector2 getVectorForAngle: float angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
+		                       float radius = 1.0
 		return new Vector2(math.cos(angle)*radius, math.sin(angle)*radius)
 		
 	Vector2 intersectLines: Vector2 startA
@@ -2045,8 +1995,8 @@ class Direction
 	string name       // The name of the direction (e.g. "Left", "Right", "Up", "Down", "UpLeft", "DownRight", ...)
 	int index         // The index starting with "Right" and going around clockwise (0: Right, 1: Down, 2: Left, 3: Up)
 	IntVector2 vector // The vector of the direction (Right: {1,0}, Down:{0,1}, Left:{-1,0}, Up:{0,-1})
-	Angle angle       // The angle in turns starting with "Right" and going around clockwise
-	Angle isoAngle    // The angle in turns within an isometric grid
+	float angle        // The angle in radians starting with "Right" and going around clockwise
+	float isoAngle     // The angle in radians within an isometric grid
 	
 	toString := name
 	

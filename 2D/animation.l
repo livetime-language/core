@@ -185,8 +185,8 @@ internal Animation ScaleAnimation
 	tick(float progress) object.size = startValue + delta * progress
 	
 internal Animation RotateAnimation
-	implicit Angle startValue
-	implicit Angle delta
+	implicit float startValue
+	implicit float delta
 	tick(float progress) object.angle = startValue + delta * progress
 	
 internal Animation FadeSoundAnimation

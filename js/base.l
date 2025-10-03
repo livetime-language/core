@@ -8,7 +8,6 @@ immutable struct int
 	
 	inline int * int value
 	inline float * float value
-	inline Angle * Angle value
 	
 	inline float / int value
 	inline float / float value
@@ -2194,70 +2193,89 @@ global skipInit unit math
 		                Time b // The second time
 		Math.max(a, b)
 		
-	// ------------------------------------------------------- Trigonometry in radians -------------------------------------------------------
+	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
+	
+	// The angle of a half rotation (the ratio of a circle's circumference to its diameter)
+	global const float pi = 3.141592653589793
+
+	// The angle of a half rotation (pi)
+	const float halfCircle = 3.141592653589793
+	
+	// The angle of a full rotation (the ratio of a circle's radius to its diameter)
+	const float twoPi = 6.283185307179586
+
+	// The angle of a full rotation (2*pi)
+	const float fullCircle = 6.283185307179586
+
+	// The angle of a quarter rotation
+	const float halfPi = 1.5707963267948966
+
+	// The angle of a quarter rotation (pi/2)
+	const float quarterCircle = 1.5707963267948966
+	
+	// The angle of a eighth rotation
+	const float quarterPi = 0.7853981633974483
+
+	moveTowardsAngle: float value
+		              float targetValue
+		              float speed = 10
+		if targetValue > value: return math.min(value + speed, targetValue) else
+		if targetValue < value: return math.max(value - speed, targetValue)
 	
 	// Returns the sine of an angle in radians
-	internal inline js float radianSin: float angle // The angle in radians
-		Math.sin(angle)
-		
-	// Returns the cosine of an angle in radians
-	internal inline js float radianCos: float angle // The angle in radians
-		Math.cos(angle)
-		
-	// Returns the tangent of an angle in radians
-	internal inline js float radianTan: float angle // The angle in radians
-		Math.tan(angle)
-		
-	// Returns the inverse sine in radians
-	internal inline js float radianAsin: float value
-		Math.asin(value)
-		
-	// Returns the inverse cosine in radians
-	internal inline js float radianAcos: float value
-		Math.acos(value)
-		
-	// Returns the inverse tangent in radians
-	internal inline js float radianAtan: float value
-		Math.atan(value)
-		
-	// Returns the inverse tangent in radians
-	internal inline js float radianAtan2: float y, float x
-		Math.atan2(y,x)
-		
-	// ------------------------------------------------------- Trigonometry in turns -------------------------------------------------------
-	
-	// Returns the sine of an angle in turns
-	important sin: implicit Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .5 - math.floor(angle))
+	important sin: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= math.twoPi
+	    float result = angle - .5 - math.floor(angle)
 	    result *= 16 * (math.abs(result) - .5)
 	    result += .225 * result * (math.abs(result) - 1)
 	    return result
 
-	// Returns the cosine of an angle in turns
-	important cos: implicit Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .25 - math.floor(angle + .25))
+	// Returns the cosine of an angle in radians
+	important cos: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= math.twoPi
+	    float result = angle - .25 - math.floor(angle + .25)
 	    result *= 16 * (math.abs(result) - .5)
 	    result += .225 * result * (math.abs(result) - 1)
 	    return result
 	
-	// Returns the tangent of an angle in turns
-	important tan: implicit Angle angle
+	// Returns the tangent of an angle in radians
+	important tan: float angle // The angle in radians (one full rotation is 2*pi)
 		return sin(angle) / cos(angle)
+			
+	float atan: float x
+		return math.quarterPi * x - x * (abs(x) - 1) * (0.2447 + 0.0663 * abs(x));
 		
-	// Returns the inverse tangent in turns
-	important Angle atan2: float y, float x
-		float r
-		Angle angle
-		float abs_x = math.abs(x) + .00000000001
-		if y > 0.0
-			r = (abs_x - y) / (abs_x + y);
-			angle = .375;
-		else
-			r = (-abs_x - y) / (abs_x - y);
-			angle = .125;
-		angle += (.03124211533 * r * r - .1562424076) * r;
-		if x < 0.0: return -angle
-		else        return angle
+	float atan2: float y
+	            float x
+		if (x >= 0) { // -pi/2 .. pi/2
+			if (y >= 0) { // 0 .. pi/2
+				if (y < x) { // 0 .. pi/4
+					return atan(y / x);
+				} else { // pi/4 .. pi/2
+					return math.halfPi - atan(x / y);
+				}
+			} else {
+				if (-y < x) { // -pi/4 .. 0
+					return atan(y / x);
+				} else { // -pi/2 .. -pi/4
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		} else { // -pi..-pi/2, pi/2..pi
+			if (y >= 0) { // pi/2 .. pi
+				if (y < -x) { // pi*3/4 .. pi
+					return atan(y / x) + math.pi;
+				} else { // pi/2 .. pi*3/4
+					return math.halfPi - atan(x / y);
+				}
+			} else { // -pi .. -pi/2
+				if (-y < -x) { // -pi .. -pi*3/4
+					return atan(y / x) - math.pi;
+				} else { // -pi*3/4 .. -pi/2
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		}
 		
 	// ------------------------------------------------------- log, pow, exp -------------------------------------------------------
 	
