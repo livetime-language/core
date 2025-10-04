@@ -1,4 +1,3 @@
-
 struct float
 	inline Dimension toDimension() Dimension(this, Html.defaultUnit)
 		
@@ -49,11 +48,11 @@ immutable priority low struct float
 global skipInit unit math
 	// Returns the arctangent of the quotient of the given values
 	Angle getAngleForVector: Vector2 vector
-		return math.atan2(vector.y, vector.x)
+		return Angle(math.atan2(vector.y, vector.x), radians)
 		
 	Vector2 getVectorForAngle: Angle angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
 		                       float radius = 1.0
-		return new Vector2(math.sin(angle)*radius, -math.cos(angle)*radius)
+		return new Vector2(math.sin(angle.value)*radius, -math.cos(angle.value)*radius)
 
 struct Angle
 	float value          // The value in the specified unit
@@ -91,3 +90,5 @@ struct Angle
 	
 	Angle operator - (Angle a) Angle(-a.value, a.unit)
 
+class DateTime
+	static inline js float now() Date.now()

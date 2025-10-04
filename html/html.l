@@ -88,7 +88,7 @@ class Node
 		this.onpointerdown = {
 			if this.touches == null: this.touches = []
 			TouchType type
-			if ev.pointerType == Mouse: type = cast ev.button.limit(0..2); else
+			if ev.pointerType == Mouse: type = cast ev.button.clamp(0 to 2); else
 			if ev.pointerType == Touch: type = Touch; else
 				                        type = Pen
 			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, pixels)}
@@ -594,13 +594,24 @@ global unit Html
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
 
+	// Render a html element within the draw function. It renders a div by default, but you can specify a different tag.
+	// In addition to the listed parameters, you can also specify html attributes and css styles.
+	// Refer to the Styles and Attributes classes for all available attributes and styles.
+	// You can render the children of the element in an indented block of code underneath the div.
+	// Example:
+	//     app
+	//         draw
+	//             div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{top:80 left:80}
+	//                 div tag:"h1", text:"Todo List"
+	//                 for items as item
+	//     		           div text:item.text, fontStyle:Italic
 	global div: string text = null                // The text content of the element 
-		        string tag = "div"                // The tag of element
+		        string tag = "div"                // The tag of element, defaults to "div"
 		        expand Attributes attributes = {} // The attributes of the element
 		        expand Style style = null         // Apply this css style to the element
 		        dynamic data = {}                 // The data attributes of the element
 		        Style onHover = null              // Apply this css style to the element when the user moves their mouse over the element
-		        void() children = null            // The children of the element
+		        void() children = null            // A block of code that renders the children of the element
 		        SourceCodeLocation location
 		Node node, nextNode
 		string sourceLocation = location?.toString

@@ -1,5 +1,46 @@
 // A number stored as a 32-bit integer
 immutable struct int
+	// Returns the absolute value of the integer
+	// Example:
+	//     int value = -10
+	//     print value.abs 
+	// Output:
+	//     10
+	important inline js int abs
+		Math.abs(this)
+
+	// Clamp the value to a specific range
+	// Example: Ensure the player's health is between 0 and 100
+	//     Player
+	//         int health
+	//         changeHealth: int delta
+	//             health = (health + delta) clamp 0 to 100
+	important inline js int clamp: int from // The inclusive minimum value
+		                           int to   // The inclusive maximum value
+		(this < from ? from : this > to ? to : this)
+		
+	// Make sure the value never falls below a minimum value
+	// Example: Make sure the score is at least 0
+	//     score = score atLeast 0
+	important inline js int atLeast: int value
+		(this < value ? value : this)
+	
+	// Make sure the value never exceets a maximum value
+	// Example: Make sure the percentage is at most 100
+	//     percentage = percentage atMost 100
+	important inline js int atMost: int value
+		(this > value ? value : this)
+
+	// Format the integer as a string
+	// Example: Format the integer as a string with the given minimum number of digits
+	//     int number = 7
+	//     print number.format(minIntegerDigits:3)
+	// Output:
+	//     007
+	important inline js string format: int minIntegerDigits = 1 // A value with a smaller number of integer digits than this number will be left-padded with zeros to the specified length
+	                                   bool grouping = false    // Whether to use grouping separators, such as thousands separators
+		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+			
 	inline int + int value
 	inline float + float value
 	
@@ -28,9 +69,6 @@ immutable struct int
 	// The smallest possible integer value
 	const important minValue = -2147483648
 	
-	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
-	
 	// The remainer after a division by the given value. The sign stays the same.
 	important inline js int remainder: int value // The value to divide by
 		(this % value)
@@ -43,13 +81,6 @@ immutable struct int
 	inline js int fromHex(string value) parseInt(value, 16)
 		
 	inline js string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-		
-	important inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	// Returns the absolute value of the integer
-	important inline js int abs
-		Math.abs(this)
 		
 	// Shift the bits of the int to the left. Excess bits shifted off to the left are discarded
 	important inline js int shiftLeft: int count // The amount of bits to shift 
@@ -82,57 +113,7 @@ immutable struct int
 	// Clear a specific bit of the integer
 	inline js int clearFlag: implicit int bitIndex // The index of the bit to clear
 		(this &= ~(1 << bitIndex))
-	
-	// Limit the value to a specific range
-	// Example: Limit the player's to be between 0 and 100
-	//     Player
-	//         int health
-	//         changeHealth: int delta
-	//             health = (health + delta) limit 0..100
-	important inline js int limit: int from // The inclusive minimum value
-		                 int to   // The inclusive maximum value
-		(this < from ? from : this > to ? to : this)
 		
-	inline js float limit: float from // The inclusive minimum value
-		                   float to   // The inclusive maximum value
-		(this < from ? from : this > to ? to : this)
-		
-	// Make sure the value never exceets a maximum value
-	// Example: Make sure the card count never exceets a maximum value of 5
-	//     cardCount = cardCount limit ..5
-	inline js int limit: int to
-		(this > to ? to : this)
-	
-	inline js float limit: float to
-		(this > to ? to : this)
-	
-	// Make sure the value never falls below a minimum value
-	// Example: Make sure the score never fall below 0
-	//     score = score limit 0..
-	inline js int limit: int from
-		(this < from ? from : this)
-	
-	inline js float limit: float from
-		(this < from ? from : this)
-	
-	// Make sure the value never falls below a minimum value
-	// Example: Make sure the score never fall below 0
-	//     score = score atLeast 0
-	important inline js int atLeast: int value
-		(this < value ? value : this)
-	
-	inline js float atLeast: float value
-		(this < value ? value : this)
-	
-	// Make sure the value never exceets a maximum value
-	// Example: Make sure the card count never exceets a maximum value of 5
-	//     cardCount = cardCount atMost 5
-	important inline js int atMost: int value
-		(this > value ? value : this)
-	
-	inline js float atMost: float value
-		(this > value ? value : this)
-	
 	inline js int setIfLarger: int newValue
 		(this = Math.max(newValue, this))
 		
@@ -167,13 +148,13 @@ immutable struct int
 	inline js int assignIfGreater: int value
 		(value > this ? this = value : this)
 		
-	static js TResult[] enumerate: int from, int to, TResult(int i) selector
+	static internal js TResult[] enumerate: int from, int to, TResult(int i) selector
 		let result = []
 		for(let i=from; i < to; ++i)
 			result.push(selector(i))
 		return result
 		
-	static js TResult[] enumerate: int from, int to, int step, TResult(int i) selector
+	static internal js TResult[] enumerate: int from, int to, int step, TResult(int i) selector
 		let result = []
 		if(to > from && step > 0) {
 			for(let i=from; i < to; i += step)
@@ -186,9 +167,119 @@ immutable struct int
 		
 	inline js TResult[] times: TResult(int i) selector
 		int.enumerate(0, this, selector)
+
+	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	const inline js int undefined := undefined
 	
 // A number stored as a double precision 64-bit floating point value
 immutable struct float
+	// Returns the absolute value of the float
+	// Example:
+	//     float value = -3.14
+	//     print value.abs 
+	// Output:
+	//     3.14
+	important inline js int abs
+		Math.abs(this)
+
+	// Clamp the value to a specific range
+	// Example: Ensure the player's health is between 0 and 100
+	//     Player
+	//         float health
+	//         changeHealth: float delta
+	//             health = (health + delta) clamp 0 to 100
+	important inline js float clamp: float from // The inclusive minimum value
+		                           float to   // The inclusive maximum value
+		(this < from ? from : this > to ? to : this)
+		
+	// Make sure the value never falls below a minimum value
+	// Example: Make sure the score is at least 0
+	//     score = score atLeast 0
+	important inline js float atLeast: float value
+		(this < value ? value : this)
+	
+	// Make sure the value never exceets a maximum value
+	// Example: Make sure the percentage is at most 100
+	//     percentage = percentage atMost 100
+	important inline js float atMost: float value
+		(this > value ? value : this)
+
+	important inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+		
+	inline js string format: int fractionDigits, bool grouping = false
+		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
+		
+	inline js string format: int minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+				
+	// Returns -1, 0, or 1 depending on the sign of the value
+	important inline js float sign
+		Math.sign(this)
+		
+	// Returns the smallest integer greater than or equal to the given value 
+	important inline js int ceil
+		Math.ceil(this)
+		
+	// Returns the largest integer less than or equal to the given value
+	important inline js int floor
+		Math.floor(this)
+		
+	// Returns the given value rounded to the nearest integer
+	important inline js int round
+		Math.round(this)
+	
+	important inline js bool isApproximately: float value
+		                            float epsilon = 0.00001
+		(Math.abs(this - value) < epsilon)
+		
+	// ------------------------------------------- Time -------------------------------------------
+		
+	// This is used to make it clear that a time is in milliseconds. All time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 500 milliseconds
+	inline js float milliseconds := this
+	
+	// Convenience function to convert a time from seconds to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 7 seconds
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 7000
+	inline js float seconds := (this*1000)
+		
+	// Convenience function to convert a time from minutes to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 minutes
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 120000
+	inline js float minutes := (this*60000)
+		
+	// Convenience function to convert a time from hours to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 hours
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 7200000
+	inline js float hours := (this*3600000)
+	
+	// Convenience function to convert a time from days to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 days
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 172800000
+	inline js float days := (this*86400000)
+	
+	// Convenience function to convert a time from weeks to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 weeks
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 1209600000
+	inline js float weeks := (this*604800000)
+
 	inline float + float value
 	inline float - float value
 	inline float / float value
@@ -216,9 +307,6 @@ immutable struct float
 	// The smallest possible floating point value
 	const important inline js float minValue := -Number.MAX_VALUE
 	
-	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
-	
 	// Positiv infinity
 	const important inline js float infinity := Number.POSITIVE_INFINITY
 	
@@ -230,9 +318,6 @@ immutable struct float
 	js float operator % (float a, float b)
 		return ((a % b) + b) % b
 		
-	// Can result from failed conversion or operations with undefined or complex result
-	const inline js float notANumber := Number.NaN
-	
 	// The remainer after a division by the given value. The sign stays the same.
 	important inline js float remainder: float value
 		(this % value)
@@ -243,55 +328,6 @@ immutable struct float
 	inline js bool toBool := this
 	
 	important inline js string toString := this.toString()
-		
-	important inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	inline js string format: int fractionDigits, bool grouping = false
-		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
-		
-	inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	// Returns the absolute value
-	important inline js float abs
-		Math.abs(this)
-		
-	// Returns -1, 0, or 1 depending on the sign of the value
-	important inline js float sign
-		Math.sign(this)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	important inline js int ceil
-		Math.ceil(this)
-		
-	// Returns the largest integer less than or equal to the given value
-	important inline js int floor
-		Math.floor(this)
-		
-	// Returns the given value rounded to the nearest integer
-	important inline js int round
-		Math.round(this)
-		
-	inline js float limit: float from
-		                   float to
-		(this < from ? from : this < to ? this : to)
-		
-	inline js float limit: float to
-		(this < to ? this : to)
-	
-	inline js float limit: float from
-		(this < from ? from : this)
-	
-	important inline js float atLeast: float value
-		(this < value ? value : this)
-	
-	important inline js float atMost: float value
-		(this > value ? value : this)
-	
-	important inline js bool isApproximately: float value
-		                            float epsilon = 0.00001
-		(Math.abs(this - value) < epsilon)
 		
 	important inline js float moveTowards: float value
 		                         float speed = 1
@@ -307,25 +343,9 @@ immutable struct float
 
 	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
 		
-	// ------------------------------------------- Time -------------------------------------------
-		
-	// Milliseconds
-	inline js float milliseconds := this
+	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	const inline js int undefined := undefined
 	
-	// Seconds
-	inline js float seconds := (this*1000)
-		
-	// Minutes
-	inline js float minutes := (this*60000)
-		
-	// Hours
-	inline js float hours := (this*3600000)
-	
-	// Days
-	inline js float days := (this*86400000)
-	
-	// Weeks	
-	inline js float weeks := (this*604800000)
 	
 // A sequence of characters
 js String
