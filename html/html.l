@@ -45,7 +45,7 @@ class Node
 	inline js void insertBefore(Node newNode, Node referenceNode) this.insertBefore(newNode, referenceNode)
 	inline js void setSelectionRange(int from, int to) this.setSelectionRange(from, to)
 	inline js void select() this.select()
-	inline js void setCursorPosition(int index) Html.setCursorPosition(this, index)
+	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
 	inline js void focus() this.focus()
 	inline js void scrollToBottom() this.scrollTo(0, this.scrollHeight)
 	inline js void scrollIntoView() this.scrollIntoView()
@@ -80,7 +80,7 @@ class Node
 		                    float duration = 1 seconds
 		                    AnimationFill fill = Forwards
 		                    easing = "linear"
-		this.animate([Html.expandStyle(from), Html.expandStyle(to)], {@duration:duration, @fill:fill, @easing:easing})
+		this.animate([html.expandStyle(from), html.expandStyle(to)], {@duration:duration, @fill:fill, @easing:easing})
 		
 	Touch[] touches
 	
@@ -124,7 +124,7 @@ class Node
 				touch.ctrlKey = ev.ctrlKey
 				touch.altKey = ev.altKey
 				touch.metaKey = ev.metaKey
-				Node touchedNode = Html.getNodeAt(ev.pageX, ev.pageY)
+				Node touchedNode = html.getNodeAt(ev.pageX, ev.pageY)
 				touch.touchedId = touchedNode ? touchedNode.id : ""
 				this.touches.removeAt(index)
 				do(touch, touches, this, ev)
@@ -151,7 +151,7 @@ class Node
 		
 	inline js void captureTouch(Touch touch) this.setPointerCapture(touch.id)
 
-dynamic Attributes
+importance:5 dynamic Attributes
 	string id    // A unique string to indentify a specic element, often used to style a single element
 	string class // A string to assign a class to one or more elements, often used to style several elements
 	string key   // A unique identifier used to find the node that should be reused
@@ -192,7 +192,7 @@ immutable HtmlEvent
 	stopPropagation    // Mark the event as handled and prevent its parent elements from receiving the event
 	preventDefault     // Prevent the default action (for example, showing the context menu on a right click)
 		
-	inline Vector2 relativeTouchPosition() Html.getRelativeMousePosition(this, this.currentTarget)
+	inline Vector2 relativeTouchPosition() html.getRelativeMousePosition(this, this.currentTarget)
 	inline js Vector2 touchPosition() new Vector2(this.clientX/Platform.scale, this.clientY/Platform.scale)
 
 immutable HtmlKeyboardEvent
@@ -221,14 +221,133 @@ Node WebView
 	
 	inline js void downloadURL(string url) this.downloadURL(url)
 	inline js void goBack() this.goBack()
+
+struct float
+	inline Dimension toDimension() Dimension(this, html.defaultUnit)
+		
+	// Pixels
+	inline Dimension px()          Dimension(this, pixels)
+		
+	// Makes the value relative to its parent's value
+	inline Dimension percent()     Dimension(this, percent)
+		
+	// A fraction of the available space
+	inline Dimension fr()          Dimension(this, fraction)
+		
+	// Font size of the parent (for font-size), font size of the element itself (for other properties)
+	inline Dimension em()          Dimension(this, em)
+		
+	// Font size of the root element
+	inline Dimension rem()         Dimension(this, rem)
+		
+	// Percentage of the viewport's width
+	inline Dimension vw()          Dimension(this, viewportWidth)
+		
+	// Percentage of the viewport's height
+	inline Dimension vh()          Dimension(this, viewportHeigh)
+		
+	// Percentage of the small viewport's width (without the address bar on mobile)
+	inline Dimension svw()         Dimension(this, smallViewportWidth)
+		
+	// Percentage of the small viewport's height (without the address bar on mobile)
+	inline Dimension svh()         Dimension(this, smallViewportHeight)
+		
+immutable priority low struct float
+	inline Dimension toAngle() Angle(this, radians)
+
+	inline Angle operator °(float value) Angle(value, degrees)
 	
-global unit Html
+	// One full rotation is 1
+	inline Angle turns := Angle(this, turns)
+	
+	// One full rotation is 2π (about 6.2832)
+	inline Angle radians := Angle(this, radians)
+		
+	// One full rotation is 360
+	inline Angle degrees := Angle(this, degrees)
+		
+	// One full rotation is 400
+	inline Angle gradians := Angle(this, gradians)
+		
+global skipInit unit math
+	// Returns the arctangent of the quotient of the given values
+	Angle getAngleForVector: Vector2 vector
+		return Angle(math.atan2(vector.y, vector.x), radians)
+		
+	Vector2 getVectorForAngle: Angle angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
+		                       float radius = 1.0
+		return new Vector2(math.sin(angle.value)*radius, -math.cos(angle.value)*radius)
+
+struct Angle
+	float value         // The value in the specified unit
+	Unit unit = radians // The unit of the value (turns, degrees, gradians, or radians)
+	
+	float toFloat()   return this.value
+	string toString() return "{this.value}{this.unit}"
+	
+	// Returns true if the angle is not zero
+	inline js bool toBool := this.value
+	
+	Angle assign Angle other: value = other.value; unit = other.unit; return this
+	Angle assign float other: value = other; return this
+
+	Angle + Angle other:   return {value + other.value, unit}
+	Angle - Angle other:   return {value - other.value, unit}
+	Angle * Angle other:   return {value * other.value, unit}
+	Angle / Angle other:   return {value / other.value, unit}
+	
+	Angle + float other:   return {value + other, unit}
+	Angle - float other:   return {value - other, unit}
+	Angle * float other:   return {value * other, unit}
+	Angle / float other:   return {value / other, unit}
+
+	Angle += Angle other:  value += other.value; return this
+	Angle -= Angle other:  value -= other.value; return this
+		
+	Angle += float other:  value += other; return this
+	Angle -= float other:  value -= other; return this
+		
+	bool >  Angle other:   return value >  other.value
+	bool >= Angle other:   return value >= other.value
+	bool <  Angle other:   return value <  other.value
+	bool <= Angle other:   return value <= other.value
+	
+	Angle operator - (Angle a) Angle(-a.value, a.unit)
+
+class DateTime
+	static inline js float now() Date.now()
+	
+global static priority low class html
 	Unit defaultUnit = pixels
-	
 	private Node parentNode
 	private Node currentNode
 	private Node currentOverlay
-	
+
+	// Call refresh to re-render the html after you changed any data.
+	// Example:
+	//     app
+	//     	   int counter = 0
+	//         draw
+	//             button "You clicked this button {counter} times", onClick:counter++; refresh
+	global void refresh
+		nodesCreated = nodesUpdated = 0
+		parentNode = documentBody
+		currentNode = parentNode.firstChild
+		currentOverlay = documentBody.nextSibling
+		app.draw
+		while currentNode
+			let next = currentNode.nextSibling
+			currentNode.remove
+			currentNode = next
+		while currentOverlay
+			let next = currentOverlay.nextSibling
+			currentOverlay.remove
+			currentOverlay = next
+		focusTabIndex = int.minValue
+		// if not overlayNode
+		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
+		// 	body.parentNode.appendChild overlayNode
+		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform.scale)
 	inline js void scrollTo(float x, float y) window.scrollTo(x,y)
 	inline js Node get(string id) document.getElementById(id)
@@ -243,10 +362,10 @@ global unit Html
 	init
 		initHandlers
 	
-	js void initHandlers
+	private js void initHandlers
 		window.onresize = e => {
-			Html.resize();
-			Html.refresh();
+			html.resize();
+			html.refresh();
 		}
 
 	internal js void reset
@@ -318,7 +437,7 @@ global unit Html
 			}
 		}
 		
-	static js Style expandStyle: Style style
+	static private js Style expandStyle: Style style
 		if(style.size) { 
 			style.width  = style.size.x+"px"; 
 			style.height = style.size.y+"px";
@@ -350,11 +469,11 @@ global unit Html
 		// node.style = ""
 		if(style) {
 			// Always set style (slowest)
-			// for(let key in Html.expandStyle(style))
+			// for(let key in html.expandStyle(style))
 			// 	node.style[key] = style[key]
 				
 			// Set style if it changed (slow)
-			// for(let key in Html.expandStyle(style)) {
+			// for(let key in html.expandStyle(style)) {
 			// 	let value = style[key].toString();
 			// 	if(node.style[key] != value) {
 			// 		node.style[key] = value
@@ -363,7 +482,7 @@ global unit Html
 			
 			// Check if style has changed using a shadow copy (fastest)
 			let shadowStyle = node.shadowStyle || (node.shadowStyle = new Map)
-			for(let key in Html.expandStyle(style)) {
+			for(let key in html.expandStyle(style)) {
 				let value = style[key].toString();
 				if(shadowStyle.get(key) != value) {
 					node.style[key] = value;
@@ -407,347 +526,6 @@ global unit Html
 	
 	int nodesCreated
 	int nodesUpdated
-	
-	global void refresh
-		nodesCreated = nodesUpdated = 0
-		parentNode = documentBody
-		currentNode = parentNode.firstChild
-		currentOverlay = documentBody.nextSibling
-		app.draw
-		while currentNode
-			let next = currentNode.nextSibling
-			currentNode.remove
-			currentNode = next
-		while currentOverlay
-			let next = currentOverlay.nextSibling
-			currentOverlay.remove
-			currentOverlay = next
-		focusTabIndex = int.minValue
-		// if not overlayNode
-		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
-		// 	body.parentNode.appendChild overlayNode
-		
-	script: string src
-			dynamic data = {}
-		let node = div tag:"script", data
-		if !node.src.endsWith(src): node.src = src
-		node.onload = refresh
-		
-	css: string src
-		dynamic node = cast div tag:"link"
-		node.rel = "stylesheet" 
-		if !node.href.endsWith(src): node.href = Platform.basePath + src
-		
-	style: string text
-		return div tag:"style" text
-		
-	// Lays outs its children in a horizontal row				
-	global row: expand Attributes attributes = null // The attributes of the HTML element
-		        expand Style style = {}             // The css style of the HTML element
-		        void() children = null              // The children of the HTML element
-		        SourceCodeLocation location
-		style.display = Flex
-		style.flexDirection = Row
-		return div attributes, style, children, location
-
-	// Lays out its children in a vertical column
-	global column: expand Attributes attributes = null // The attributes of the HTML element
-		           expand Style style = {}             // The css style of the HTML element
-		           void() children = null              // The children of the HTML element
-		           SourceCodeLocation location
-		style.display = Flex
-		style.flexDirection = Column
-		return div attributes, style, children, location
-
-	// Lays out its children in a grid
-	global grid: expand Attributes attributes = null // The attributes of the HTML element
-		         expand Style style = {}             // The css style of the HTML element
-		         float[] gridTemplateColumns         // The sizes of the columns
-		         void() children = null              // The children of the HTML element
-		         SourceCodeLocation location
-		style.display = Grid
-		string gridTemplateColumnsString
-		for gridTemplateColumns
-			gridTemplateColumnsString += "{.}fr "
-		style.gridTemplateColumns = gridTemplateColumnsString
-		return div attributes, style, children, location
-
-	global img: Image image                       // The image to display
-		        void(HtmlEvent ev) onClick = null // Called when the user clicks the image
-		        expand Attributes attributes = {} // The attributes of the HTML element
-		        expand Style style = null         // The css style of the HTML element
-		        dynamic data = null               // The data attributes of the element
-		        bool visible = true
-		        SourceCodeLocation location
-		if not visible: return
-		if data == null: data = {}
-		data.src = Platform.basePath + image.src
-		let node = div tag:"img", attributes, style, data, location
-		node.onclick = onClick
-		return node
-
-	global img: string src                        // The file of the image to display
-		        expand Attributes attributes = {} // The attributes of the HTML element
-		        expand Style style = null         // The css style of the HTML element
-		        SourceCodeLocation location
-		return div tag:"img", attributes, style, data:{src:src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") ? src : Platform.basePath + src}, location
-		
-	global img: string src                        // The file of the image to display
-		        expand Attributes attributes = {} // The attributes of the HTML element
-		        expand Style style = null         // The css style of the HTML element
-		        dynamic data                      // The data attributes of the element
-		        SourceCodeLocation location
-		if data == null: data = {}
-		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") ? src : Platform.basePath + src
-		return div tag:"img", attributes, style, data, location
-
-	global link: string text = null
-		         string href = "#"
-		         expand Attributes attributes = {} // The attributes of the HTML element
-		         expand Style style = null         // The css style of the HTML element
-		         SourceCodeLocation location
-		let node = div text, tag:"a", attributes, style, location
-		node.href = href
-		return node
-
-	global span: string text = null
-		         expand Attributes attributes = {} // The attributes of the HTML element
-		         expand Style style = null         // The css style of the HTML element
-		         SourceCodeLocation location
-		return div text, tag:"span", attributes, style, location
-		
-	global button: string text = null
-		           void(HtmlEvent ev) onClick = null // Called when the user clicks the button
-		           expand Attributes attributes = {} // The attributes of the HTML element
-		           expand Style style = null         // The css style of the HTML element
-		           SourceCodeLocation location
-		let node = div text, tag:"button", attributes, style, location
-		node.onclick = onClick
-		return node
-		
-	global button: string text = null
-		           bool(HtmlEvent ev) onClick = null // Called when the user clicks the button
-		           expand Attributes attributes = {} // The attributes of the HTML element
-		           expand Style style = null         // The css style of the HTML element
-		           bool disableAfterClick = false
-		           SourceCodeLocation location
-		let node = div text, tag:"button", attributes, style, location
-		if disableAfterClick
-			node.disabled = false
-			node.onclick = let success = onClick(.); if not object.isEqualAndSameType(success, false): node.disabled = true
-		else
-			node.onclick = onClick(.)
-		return node
-	
-	video: string src                        // The file of the video to display 
-		   expand Attributes attributes = {} // The attributes of the HTML element 
-		   expand Style style = {}           // The css style of the HTML element 
-		   SourceCodeLocation location
-		style.position = Absolute
-		style.zIndex = -1000
-		let element = div tag:"video", attributes, style, location, data:{src}
-		element.muted = true
-		element.autoplay = true
-		
-	global iframe: string src                        // The url of the content to display
-		           expand Attributes attributes = {} // The attributes of the HTML element
-		           expand Style style = null         // The css style of the HTML element
-		           dynamic data = {}                 // The data attributes of the element
-		           int frameborder = 0
-		           string allow = ""
-		           string referrerpolicy = ""
-		           bool allowfullscreen = true
-		           SourceCodeLocation location
-		data.frameborder = frameborder
-		data.allow = allow
-		data.referrerpolicy = referrerpolicy
-		data.allowfullscreen = allowfullscreen
-		let node = div tag:"iframe", attributes, style, data, location
-		if node.src != src: node.src = src
-		return node
-
-	global webview: string initialUrl = ""              // The url of the content to display
-		            expand Attributes attributes = {} // The attributes of the HTML element
-		            expand Style style = null         // The css style of the HTML element
-		            dynamic data = null               // The data attributes of the element
-		            void(string url) onNavigate = null
-		            SourceCodeLocation location
-		WebView node = cast div tag:"webview", attributes, style, data, location
-		node.onWillNavigate = onNavigate
-		if not node.src: node.src = initialUrl
-		if !node.hasHandlers
-			node.hasHandlers = true
-			node.on "will-navigate": if node.onWillNavigate != null: node.onWillNavigate(event.url)
-		return node
-
-	global body: expand Attributes attributes = {} // The attributes of the element
-		         expand Style style = null         // Apply this css style to the element
-		         void() children
-		         nocolon void() header
-		         SourceCodeLocation location
-		let node = div attributes, style, children, location
-		let prevParentNode = parentNode
-		let prevCurrentNode = currentNode
-		parentNode = node
-		currentNode = node.firstChild
-		header
-		parentNode = prevParentNode
-		currentNode = prevCurrentNode
-
-	// Render a html element within the draw function. It renders a div by default, but you can specify a different tag.
-	// In addition to the listed parameters, you can also specify html attributes and css styles.
-	// Refer to the Styles and Attributes classes for all available attributes and styles.
-	// You can render the children of the element in an indented block of code underneath the div.
-	// Example:
-	//     app
-	//         draw
-	//             div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{top:80 left:80}
-	//                 div tag:"h1", text:"Todo List"
-	//                 for items as item
-	//     		           div text:item.text, fontStyle:Italic
-	global div: string text = null                // The text content of the element 
-		        string tag = "div"                // The tag of element, defaults to "div"
-		        expand Attributes attributes = {} // The attributes of the element
-		        expand Style style = null         // Apply this css style to the element
-		        dynamic data = {}                 // The data attributes of the element
-		        Style onHover = null              // Apply this css style to the element when the user moves their mouse over the element
-		        void() children = null            // A block of code that renders the children of the element
-		        SourceCodeLocation location
-		Node node, nextNode
-		string sourceLocation = location?.toString
-		string key = attributes?.key
-		
-		if key
-			// If a key is specified, we store all nodes in a map on the parent object
-			if not parentNode.childrenByKey: parentNode.childrenByKey = {}
-			node = parentNode.childrenByKey[key]
-			if not node
-				// Create new node (with key)
-				node = Node.create tag
-				parentNode.childrenByKey[key] = node
-				nextNode = currentNode
-				if nextNode: parentNode.insertBefore node, nextNode
-				else         parentNode.appendChild node
-				nodesCreated++
-			else
-				// Resuse existing node (with key)
-				nextNode = currentNode ? currentNode.nextSibling : null
-				nodesUpdated++
-			node.used = true
-			
-		else	
-			if !currentNode or (currentNode.tagName?.toLowerCase != tag or currentNode.sourceLocation != sourceLocation)
-				// Create new node
-				node = Node.create tag
-				nextNode = currentNode
-				if nextNode: parentNode.insertBefore node, nextNode
-				else         parentNode.appendChild node
-				nodesCreated++
-			else
-				// Resuse existing node
-				node = currentNode
-				nextNode = currentNode.nextSibling
-				nodesUpdated++
-		
-		setStyle node, style
-		setDataAttributes node, data
-		
-		if attributes != null
-			if attributes.id and attributes.id != node.id:           node.id = attributes.id
-			if attributes.class and attributes.class != node.class:  node.class = attributes.class
-			if attributes.title and attributes.title != node.title:  node.title = attributes.title
-			
-			if attributes.onClick != null:      node.onclick = attributes.onClick
-			if attributes.onLeftClick != null:  node.onclick = attributes.onLeftClick
-			if attributes.onRightClick != null: node.oncontextmenu = attributes.onRightClick
-			if attributes.onKeyDown != null:    node.onkeydown = attributes.onKeyDown
-			if attributes.onKeyUp != null:      node.onkeyup = attributes.onKeyUp
-			if attributes.tabIndex:             node.set("tabindex", attributes.tabIndex.toString)
-			
-		node.sourceLocation = sourceLocation
-		if onHover != null
-			Style unHover = getStyleToRevert originalStyle:style, onHover
-			node.onpointerover = setStyle(node, onHover)
-			node.onpointerout  = setStyle(node, unHover)
-		
-		if text != null
-			if node.shadowInnerHtml != text
-				node.innerHTML = text
-				node.shadowInnerHtml = text
-		else
-		if children != null or node.hasChildren
-			node.shadowInnerHtml = null
-			let prevParentNode = parentNode
-			parentNode = node
-			currentNode = node.firstChild
-			if parentNode.childrenByKey
-				for parentNode.childrenByKey
-					.used = false
-			children()
-			
-			// Remove all children that are no longer used
-			if parentNode.childrenByKey
-				// If the children have keys, removed all nodes that are not marked as "used"
-				for parentNode.childrenByKey
-					if not .used
-						.remove
-						parentNode.childrenByKey.remove key
-			else
-				// If the chidren don't have keys, remove all remaining nodes, that haven't been reused
-				while currentNode
-					let next = currentNode.nextSibling
-					currentNode.remove
-					currentNode = next
-			parentNode = prevParentNode
-			
-		node.hasChildren = children != null
-		currentNode = nextNode
-		return node
-		
-	global overlay: expand Attributes attributes = {} // The attributes of the element
-		            expand Style style = null         // Apply this css style to the element
-		            void() children = null            // The children of the element
-		            SourceCodeLocation location
-		Node node, nextNode
-		string sourceLocation = location?.toString
-		
-		if !currentOverlay or currentOverlay.sourceLocation != sourceLocation
-			node = Node.create "div"
-			nextNode = currentOverlay
-			if nextNode: documentBody.parentNode.insertBefore node, nextNode
-			else         documentBody.parentNode.appendChild node
-		else
-			node = currentOverlay
-			nextNode = currentOverlay.nextSibling
-		
-		if style == null: style = {}	
-		if not style.inset:           style.inset = {0,0,0,0}
-		if not style.position:        style.position = Fixed
-		setStyle node, style
-		
-		if attributes != null
-			if attributes.id != null:           node.id = attributes.id
-			if attributes.class != null:        node.class = attributes.class
-			if attributes.onClick != null:      node.onclick = attributes.onClick
-			if attributes.onRightClick != null: node.oncontextmenu = attributes.onRightClick
-				
-		let prevParentNode = parentNode
-		let prevCurrentNode = currentNode
-		parentNode = node
-		currentNode = node.firstChild
-		children()
-		while currentNode
-			let next = currentNode.nextSibling
-			currentNode.remove
-			currentNode = next
-		parentNode = prevParentNode
-		currentNode = prevCurrentNode
-		
-		currentOverlay = nextNode
-		return node
-		
-	// -------------------------------------- Fields with change handlers --------------------------------------
-		
 	void() currentChangeHandler
 	
 	global void onChange: stored void() onChange
@@ -756,216 +534,3 @@ global unit Html
 		currentChangeHandler = onChange
 		do
 		currentChangeHandler = prevChangeHandler
-		
-	// ---------- Radio & Toggle ----------
-	
-	global inline void radio: int model                         // The variable that holds the value. This will be updated when the user clicks the radio button
-		                      int value                         // The value of this state of the radio button
-		                      Image image                       // The image to display
-		                      expand Attributes attributes = {} // The attributes of the HTML element
-		                      expand Style style = null         // The css style of the HTML element
-		                      dynamic data = null               // The data attributes of the element
-		                      SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"img", attributes, style, data, location
-		node.style.opacity = model == value ? 1 : .3
-		node.src = Platform.basePath + image.src
-		node.onclick = model = value; changeHandler; refresh
-
-	global inline void radio: int model                         // The variable that holds the value. This will be updated when the user clicks the radio button
-		                      int value                         // The value of this state of the radio button
-		                      Image image                       // The image to display
-		                      inline void() onInput             // Called when the user clicks the radio button
-		                      expand Attributes attributes = {} // The attributes of the HTML element
-		                      expand Style style = null         // The css style of the HTML element
-		                      dynamic data = null               // The data attributes of the element
-		                      SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"img", attributes, style, data, location
-		node.style.opacity = model == value ? 1 : .3
-		node.src = Platform.basePath + image.src
-		node.onclick = model = value; onInput; changeHandler; refresh
-
-	global inline void toggle: bool model                        // The variable that holds the value. This will be updated when the user clicks the toggle button
-		                       Image[] images                    // A list with one image per state of the toggle
-		                       expand Attributes attributes = {} // The attributes of the HTML element
-		                       expand Style style = null         // The css style of the HTML element
-		                       dynamic data = null               // The data attributes of the element
-		                       SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"img", attributes, style, data, location
-		node.src = Platform.basePath + images[model ? 1 : 0].src
-		node.onclick = model = !model; changeHandler; refresh
-
-	global inline void toggle: bool model                        // The variable that holds the value. This will be updated when the user clicks the toggle button
-		                       Image[] images                    // A list with one image per state of the toggle
-		                       inline void() onInput             // Called when the user clicks the toggle button
-		                       expand Attributes attributes = {} // The attributes of the HTML element
-		                       expand Style style = null         // The css style of the HTML element
-		                       dynamic data = null               // The data attributes of the element
-		                       SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"img", attributes, style, data, location
-		node.src = Platform.basePath + images[model ? 1 : 0].src
-		node.onclick = model = !model; onInput; changeHandler; refresh
-
-	// ---------- Input & TextArea ----------
-	
-	int focusTabIndex = 0
-	
-	// Automatic Text Input: Updates the model automatically in with every keystroke
-	global inline void field: string model = ""                 // The variable that holds the value. This will be updated when the user changed the text
-		                      bool focused = false              // Whether the cursor should be placed in the field
-		                      expand Attributes attributes = {} // The attributes of the HTML element
-		                      expand Style style = null         // The css style of the HTML element
-		                      dynamic data = {}                 // The data attributes of the element
-		                      SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"input", attributes, style, data, location
-		node.value = model
-		node.oninput = model = node.value; changeHandler
-		if focused: node.focus
-		
-	// Automatic Text Input: Updates the model automatically in with every keystroke
-	global inline void field: string model = ""                 // The variable that holds the value. This will be updated when the user changed the text
-		                      bool focused = false              // Whether the cursor should be placed in the field
-		                      inline void() onEnter = null      // Called when the user presses the enter key
-		                      expand Attributes attributes = {} // The attributes of the HTML element
-		                      expand Style style = null         // The css style of the HTML element
-		                      SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"input", attributes, style, location
-		node.value = model
-		node.oninput = model = node.value; changeHandler
-		node.onkeydown = if(ev.keyCode == Enter) onEnter()
-		if focused or focusTabIndex == attributes.tabIndex: node.focus
-		
-	// Manual Text Input: If you specify a onChange handler, the model won't be updated automatically
-	global inline void field: string model = ""                  // The variable that holds the value. This will be updated when the user changed the text
-		                      bool focused = false               // Whether the cursor should be placed in the field
-		                      inline void(string value) onChange // If you specify a onChange handler, the model won't be updated automatically
-		                      expand Attributes attributes = {}  // The attributes of the HTML element
-		                      expand Style style = null          // The css style of the HTML element
-		                      bool realtime = true               // Should onChange be called with every keystroke?
-		                      SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"input", attributes, style, location
-		node.value = model or ""
-		if realtime: node.oninput = onChange(node.value); changeHandler
-		else         node.onchange = onChange(node.value); changeHandler
-		if focused or focusTabIndex == attributes.tabIndex: node.focus
-			
-	fileInput: string accept = "image/*"
-		       string capture = "environment"
-		       bool multiple = false
-		       void(Node node) onChange = null
-		       expand Style style = null
-		       SourceCodeLocation location
-		dynamic data = {type:"file" accept capture}
-		if multiple: data.multiple = true
-		let node = div tag:"input", data, style, location
-		node.onchange = onChange(node)
-		node.setAttribute("capture", "environment")
-		return node
-		
-	js Promise<string> getDataUrlForFile: File file
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = e => resolve(e.target.result);
-			reader.readAsDataURL(file);	
-		})
-	
-	// Automatic Editable Text: Updates the model automatically in with every keystroke
-	global inline void editableText: string model = ""                          // The variable that holds the value. This will be updated when the user changed the text
-		                             inline void(string value) onChanged = null // Called after the model changed
-		                             int tabIndex = -1
-		                             expand Attributes attributes = {}          // The attributes of the HTML element
-		                             expand Style style = null                  // The css style of the HTML element
-		                             dynamic data = {}                          // The data attributes of the element
-		                             bool realtime = false                      // Should onChange be called with every keystroke?
-		                             SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div attributes, style, data, location
-		if model != node.innerText: node.innerText = model
-		node.contentEditable = "plaintext-only"
-		let prevModel = model
-		if realtime
-			node.oninput = model = node.innerText; onChanged(model); changeHandler
-		else         
-			node.onblur = model = node.innerText; if model != prevModel: onChanged(model); changeHandler
-		if focusTabIndex == tabIndex: delay 100: node.focus
-
-	// Automatic Editable Text: Updates the model automatically in with every keystroke
-	global inline void editableText: string model = ""                          // The variable that holds the value. This will be updated when the user changed the text
-		                             inline void(string value) onChanged = null // Called after the model changed
-		                             inline void() onClick = null
-		                             int tabIndex = -1
-		                             expand Attributes attributes = {}          // The attributes of the HTML element
-		                             expand Style style = null                  // The css style of the HTML element
-		                             dynamic data = {}                          // The data attributes of the element
-		                             bool realtime = false                      // Should onChange be called with every keystroke?
-		                             SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div attributes, style, data, location
-		if model != node.innerText: node.innerText = model
-		node.onclick = onClick
-		node.contentEditable = "plaintext-only"
-		let prevModel = model
-		if realtime
-			node.oninput = model = node.innerText; onChanged(model); changeHandler
-		else         
-			node.onblur = model = node.innerText; if model != prevModel: onChanged(model); changeHandler
-		if focusTabIndex == tabIndex: delay 100: node.focus
-
-	// Automatic Text Area: Updates the model automatically in with every keystroke
-	global inline void textarea: string model = ""                 // The variable that holds the value. This will be updated when the user changed the text
-		                         bool focused = false              // Whether the cursor should be placed in the field
-		                         expand Attributes attributes = {} // The attributes of the HTML element
-		                         expand Style style = null         // The css style of the HTML element
-		                         SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let node = div tag:"textarea", attributes, style, location
-		node.value = model
-		node.style.minHeight = 16px
-		node.style.overflow = Scroll; node.style.height = 1px; node.style.height = node.scrollHeight px; node.style.overflow = Hidden
-		node.oninput = model = node.value; node.style.overflow = Scroll; node.style.height = 1px; node.style.height = node.scrollHeight px; node.style.overflow = Hidden; changeHandler
-		if focused or focusTabIndex == attributes.tabIndex: node.focus
-
-	// ---------- Canvas ----------
-	
-	dynamic currentContext
-	
-	global canvas: Vector2 size
-		           expand Attributes attributes = {} // The attributes of the HTML element
-		           expand Style style = null         // The css style of the HTML element
-		           void() draw
-		           SourceCodeLocation location
-		if style == null: style = {}
-		style.width = {size.x}
-		style.height = {size.y}
-		let canvas = div tag:"canvas", attributes, style, location
-		canvas.width = size.x
-		canvas.height = size.y 
-		currentContext = canvas.context
-		if currentContext == null: currentContext = canvas.context = canvas.getContext("2d")
-		currentContext.clearRect(0,0,style.width,style.height)
-		draw()
-		return canvas
-		
-	global drawRectangle: Vector2 pos
-		                  Vector2 size
-		                  Color color = Black
-		currentContext.fillStyle = color.hex
-		currentContext.fillRect(pos.x, pos.y, size.x, size.y)
-		
-	global drawText: implicit string text
-		             Vector2 pos
-		             float size = 30
-		             Font font = null
-		             Color color = Black
-		currentContext.fillStyle = color.hex
-		string effectiveFont = font ? font.name : "Open Sans"
-		currentContext.font = "{size}px {effectiveFont}"
-		currentContext.fillText(text, pos.x, pos.y)
-	
-

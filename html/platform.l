@@ -68,7 +68,7 @@ skipInit global unit Platform
 				try
 					stop
 					// We need to call resize again after the first refresh to prevent unwanted scrolling
-					Html.resize
+					html.resize
 					startTickInterval
 				catch 
 					sendErrorToEditor .
@@ -90,11 +90,11 @@ skipInit global unit Platform
 	async replay
 		try
 			heartbeat "replay"
-			if resetWhenCodeChanged: Html.reset
+			if resetWhenCodeChanged: html.reset
 			initMedia
 			initDatabase
 			initAll
-			Html.resize
+			html.resize
 			startApp
 			refresh
 		catch
@@ -103,7 +103,7 @@ skipInit global unit Platform
 			sendFinished
 		
 	stop
-		Html.reset
+		html.reset
 		replay
 		
 	private js void startApp
@@ -158,7 +158,7 @@ skipInit global unit Platform
 	toggleSmallScreen
 		isMobile = !isMobile;
 		setLocalStorageString("isMobile", isMobile ? "true" : "false")
-		Html.resize
+		html.resize
 		refresh
 
 	inline js void setLocalStorageString: string key, string value

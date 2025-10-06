@@ -23,7 +23,7 @@ class TodoItem
 	string text
 
 // Defines the main class "app". Classes with lowercase names are singletons.
-// You can access their fields from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
+// You can access their fields from anywhere like this: app.items, app.newItemText, app.start, app.draw, etc
 static class app
 	TodoItem[] items
 	string newItemText = ""
@@ -65,9 +65,10 @@ static class app
 static class app
 	Item[] items
 	string name
+	int counter
 
 	start
-		// Lists
+		// List
 		TodoItem[] items = [
 			{text:"Example", state:NotStarted}
 		]
@@ -79,13 +80,15 @@ static class app
 		let firstTwoItems = items[..2]
 		let lastTwoItems = items[-2..]
 
-		// Maps
+		// Map (hashtable)
 		Item[int] itemById
+		itemById[id] = {"My item"}
+		itemById.remove id
+		itemById.clear
 		for items as item
 			itemById[item.id] = item
 		for itemsById as item, id
 			print "id:{id} text:{item.text}"
-		items.clear
 
 		// Conditions
 		if items.length > 0
@@ -115,6 +118,16 @@ static class app
 		for 5 backwards as i
 			print i
 
+		// Iterate over map
+		for itemById as value, key
+			print "{key}: {value}"
+
+		// Define a function pointer that takes a touch as a parameter and returns void
+		void(Touch touch) onClick
+
+		// Define a function pointer that takes no parameter and returns float
+		float() getTemperature
+
 		// Important: If you divide an integer by an integer in LiveTime, you always get a float
 		float fraction = 1 / 2
 
@@ -123,15 +136,19 @@ static class app
 		
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
-		// Div with blue text
-		div text:"Done items" fontSize:64 color:#0000ff
+		// Div with blue text. Refer to the Styles class for all available css styles.
+		div text:"Done items", fontSize:64, color:#0000ff
 
 		// Div with children
 		let doneItems = helpers.getAllDoneItems
-		div display:Flex border:{width:1px, style:Solid, color:Black} margin:{top:10percent, right:auto, bottom:10percent, left:auto}
+		div display:Flex ,border:{width:1px, style:Solid, color:Black}, margin:{top:10percent, right:auto, bottom:10percent, left:auto}
 			for doneItems as item
 				div item.text
 
+		// Call refresh to re-render the html after you changed any data.
+		div "Counter: {counter}"
+		button "Increment counter", onClick:counter++; refresh
+		
 		// Headlines
 		div tag:"h1", text:"Title"
 		div tag:"h2", text:"Section"
@@ -156,14 +173,8 @@ static class helpers
 		return app.items.all.state == Done
 
 # References
-For all available styles, read this file:
-lib/core/html/styles.l
-
-For all available html elements, read this file:
-lib/core/html/html.l
-
-For all available classes and functions in the LiveTime Standard Library, read this file:
-lib/core/js/base.l
-
 For all available images in the current project, read this file:
 src/media.l
+
+For a complete reference of the LiveTime Programming language with all available classes and functions, read this file:
+lib/core/html/documentation.md
