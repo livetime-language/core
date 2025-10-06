@@ -282,7 +282,7 @@ transient skipInit unit Platform
 				
 DateTime
 	// The number of milliseconds elapsed since January 1, 1970
-	static important float now
+	static importance:4 float now
 	
 	// The current frame (by default, there are 30 frames per second)
-	static important inline js int frame := core.frame
+	static importance:4 inline js int frame := core.frame

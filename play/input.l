@@ -158,22 +158,22 @@ enum TouchType: Left, Middle, Right, Touch, Pen
 // A touch or a click
 Touch
 	int id
-	important Player by
+	importance:4 Player by
 	TouchPhase phase
 	TouchType type
 	Vector2 referencePosition
 	Vector2 referenceStartPosition
 	Vector2 smoothPosition
-	important bool isDown
+	importance:4 bool isDown
 	bool handled
 	
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a input.onTouch method
 	
-	important Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
+	importance:4 Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
 	Vector2 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
-	important markAsHandled() handled = true
+	importance:4 markAsHandled() handled = true
 	
 internal transient ScrollEvent
 	immutable int userId
@@ -1143,7 +1143,7 @@ skipInit global unit input
 	//                 print "Clicked OK"
 	// ```
 	// Image: onTouchDown1.png
-	global important onTouchDown: Vector2 position                    // The center of the touch area
+	global importance:4 onTouchDown: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1241,7 +1241,7 @@ skipInit global unit input
 	//                 print "Clicked ball"
 	// ```
 	// Image: onTouchDown3.png
-	global important onTouchDown: Vector2 position                    // The center of the circle
+	global importance:4 onTouchDown: Vector2 position                    // The center of the circle
 		                float radius                        // The radius of the circle
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this circle
@@ -1351,7 +1351,7 @@ skipInit global unit input
 	//                 drawRectangle pos, size+{32,32}, outlineColor:Black, outlineWidth:8
 	// ```
 	// Image: onTouchOver.png
-	global important onTouchOver: Vector2 position                    // The center of the touch area
+	global importance:4 onTouchOver: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                implicit nocolon Player[] by = null // Only consider the mouse from this player  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1411,7 +1411,7 @@ skipInit global unit input
 	//                 moveTouch = null
 	// ```
 	// Image: onTouchDown0.png
-	global important onTouchMove: Touch touch                 // Only consider this particular touch or click
+	global importance:4 onTouchMove: Touch touch                 // Only consider this particular touch or click
 		                triggeredOnTouchDown = true // Ensure we also get a touchMove before the touchDown event on touch screens
 		                void(Touch touch) do        // Do this for each touch or click
 		if not touch or not active: return
@@ -1470,7 +1470,7 @@ skipInit global unit input
 	//                 moveTouch = null
 	// ```
 	// Image: onTouchDown0.png
-	global important onTouchUp: Touch touch          // Only consider this particular touch or click
+	global importance:4 onTouchUp: Touch touch          // Only consider this particular touch or click
 		              markAsHandled = true // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do // Do this for each touch or click
 		if not touch or not active: return

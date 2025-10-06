@@ -513,7 +513,7 @@ global skipInit priority low unit math
 		if targetValue < value: return math.max(value - speed, targetValue)
 	
 	// Returns the sine of an angle in radians
-	important sin: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:4 sin: float angle // The angle in radians (one full rotation is 2*pi)
 		angle /= math.twoPi
 	    float result = angle - .5 - math.floor(angle)
 	    result *= 16 * (math.abs(result) - .5)
@@ -521,7 +521,7 @@ global skipInit priority low unit math
 	    return result
 
 	// Returns the cosine of an angle in radians
-	important cos: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:4 cos: float angle // The angle in radians (one full rotation is 2*pi)
 		angle /= math.twoPi
 	    float result = angle - .25 - math.floor(angle + .25)
 	    result *= 16 * (math.abs(result) - .5)
@@ -529,7 +529,7 @@ global skipInit priority low unit math
 	    return result
 	
 	// Returns the tangent of an angle in radians
-	important tan: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:4 tan: float angle // The angle in radians (one full rotation is 2*pi)
 		return sin(angle) / cos(angle)
 			
 	float atan: float x
