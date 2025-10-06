@@ -69,16 +69,16 @@ struct float
 		
 	// static inline js float fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second).getTime()
 		
-	important inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
-	important inline js int timeSeconds      := Math.floor((this %   60000) /    1000) 
-	important inline js int timeMinutes      := Math.floor((this % 3600000) /   60000) 
-	important inline js int timeHours        := Math.floor((this          ) / 3600000)
+	inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
+	inline js int timeSeconds      := Math.floor((this %   60000) /    1000) 
+	inline js int timeMinutes      := Math.floor((this % 3600000) /   60000) 
+	inline js int timeHours        := Math.floor((this          ) / 3600000)
 		
-	important inline js int totalSeconds      := Math.floor(this /      1000) 
-	important inline js int totalMinutes      := Math.floor(this /     60000) 
-	important inline js int totalHours        := Math.floor(this /   3600000)
-	important inline js int totalDays         := Math.floor(this /  86400000)
-	important inline js int totalWeeks        := Math.floor(this / 604800000)
+	inline js int totalSeconds      := Math.floor(this /      1000) 
+	inline js int totalMinutes      := Math.floor(this /     60000) 
+	inline js int totalHours        := Math.floor(this /   3600000)
+	inline js int totalDays         := Math.floor(this /  86400000)
+	inline js int totalWeeks        := Math.floor(this / 604800000)
 		
 	private static string toMinutesHoursDaysOrWeeksString: float time, showWeeksAfterDays = 31
 		if time < 2 minutes: return "1 minute"
@@ -90,20 +90,10 @@ struct float
 		if time < 2 weeks:   return "1 week"
 		                     return "{time.totalWeeks} weeks"
 
-	inline js float in: TimeUnit unit // Convert the time to this unit
-		(unit==1 ? this/1000 : unit==2 ? this/60000 : unit==3 ? this/3600000 : unit==4 ? this/86400000 : this)
-		
 	js static void startTimer() window._timerStart = performance.now()
 	js static void printTimer(string text) log(text+": "+(performance.now()-window._timerStart))
 	static inline js float preciseTime := performance.now()
 		
-enum TimeUnit
-	milliseconds // Milliseconds
-	seconds      // Seconds
-	minutes      // Minutes
-	hours        // Hours
-	days         // Days
-	
 string TimeString
 	static TimeString now := cast DateTime.fromTime(DateTime.now, outputTimezone:0).toTimeString
 	static TimeString fromTime(float value) := cast DateTime.fromTime(value, outputTimezone:0).toTimeString
