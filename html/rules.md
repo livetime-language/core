@@ -62,7 +62,7 @@ static class app
 			onClick:item.state = item.state != Done ? Done : NotStarted; refresh
 
 			div text:item.state == Done ? "☑" : "☐"
-			div text:item.text, textDecoration:item.state == Done ? "line-through" : "none", color:primaryColor
+			div text:item.text, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none", color:primaryColor
 			div text:"❌", cursor:Pointer, onClick:items.remove item; refresh
 
 	addItem: string text

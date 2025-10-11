@@ -699,104 +699,66 @@ Returns float
 
 ---
 
-# class Padding
+# struct Vector2
 
-## top
-*Public member variable of type Dimension of class Padding*
+## x
+*Public member variable of type float of struct Vector2*
 
-The padding on the top of the element
+The x coordinate of the vector
 
-## right
-*Public member variable of type Dimension of class Padding*
+## y
+*Public member variable of type float of struct Vector2*
 
-The padding on the right side of the element
+The y coordinate of the vector
 
-## bottom
-*Public member variable of type Dimension of class Padding*
+## length
+*Public member function of struct Vector2*
 
-The padding on the bottom of the element
+The length of the vector
 
-## left
-*Public member variable of type Dimension of class Padding*
-
-The padding on the left side of the element
+Returns float
 
 ---
 
-# class Margin
+# struct Dimension
 
-## top
-*Public member variable of type Dimension of class Margin*
+## auto
+*Global variable of type Dimension*
 
-The margin on the top of the element
-
-## right
-*Public member variable of type Dimension of class Margin*
-
-The margin on the right side of the element
-
-## bottom
-*Public member variable of type Dimension of class Margin*
-
-The margin on the bottom of the element
-
-## left
-*Public member variable of type Dimension of class Margin*
-
-The margin on the left side of the element
+Automatically adjust the value to distribute the space evenly
 
 ---
 
 # class Border
 
-## None
+## none
 *Global variable of type Border*
 
 Display no border
 
-## width
-*Public member variable of type Dimension of class Border*
-
-The thickness of the border
-
-## style
-*Public member variable of type BorderStyle of class Border*
-
-The style of the border
-
-## color
-*Public member variable of type Color of class Border*
-
-The color of the border
-
 ---
 
-# class BoxShadow
+# class FontWeight
 
-## offset
-*Public member variable of type Vector2 of class BoxShadow*
+## normal
+*Global variable of type FontWeight*
 
-How far should the shadow be away from the element?
+Normal font weight. Same as 400.
 
-## blur
-*Public member variable of type Dimension of class BoxShadow*
+## bold
+*Global variable of type FontWeight*
 
-How blurry should the shadow be?
+Bold font weight. Same as 700.
 
-## spread
-*Public member variable of type Dimension of class BoxShadow*
+## lighter
+*Global variable of type FontWeight*
 
-Positive values will make the shadow bigger, negative values make it smaller
+One relative font weight lighter than the parent element.
 
-## color
-*Public member variable of type Color of class BoxShadow*
+## bolder
+*Global variable of type FontWeight*
 
-The color of the showow
-
-## inset
-*Public member variable of type bool of class BoxShadow*
-
-Changes the shadow to one inside the frame (as if the content was debossed inside the box)
+One relative font weight heavier than the parent element.
 
 ---
 
@@ -883,7 +845,7 @@ Whether a background-image is fixed or scrolls with the page
 ## backgroundColor
 *Public member variable of type Color of class Style*
 
-The background-color of an element. You can use hex codes like #ff0000 to define the color.
+The background-color of an element. You can use a color literal to define a color, e.g. backgroundColor:#ff0000
 
 *Example:*
 ```
@@ -943,7 +905,7 @@ All the borderBottom properties in one declaration
 ## borderBottomColor
 *Public member variable of type Color of class Style*
 
-The color of the bottom border
+The color of the bottom border. You can use a color literal to define a color, e.g. borderBottomColor:#ff0000
 
 ## borderBottomLeftRadius
 *Public member variable of type Dimension of class Style*
@@ -973,7 +935,7 @@ Whether the table border should be collapsed into a single border, or not
 ## borderColor
 *Public member variable of type Color of class Style*
 
-The color of an element's border (can have up to four values)
+The color of an element's border. You can use a color literal to define a color, e.g. borderColor:#ff0000
 
 ## borderImage
 *Public member variable of type string of class Style*
@@ -1038,7 +1000,7 @@ All the borderRight properties in one declaration
 ## borderRightColor
 *Public member variable of type Color of class Style*
 
-The color of the right border
+The color of the right border. You can use a color literal to define a color, e.g. borderRightColor:#ff0000
 
 ## borderRightStyle
 *Public member variable of type BorderStyle of class Style*
@@ -1068,7 +1030,7 @@ All the borderTop properties in one declaration
 ## borderTopColor
 *Public member variable of type Color of class Style*
 
-The color of the top border
+The color of the top border. You can use a color literal to define a color, e.g. borderTopColor:#ff0000
 
 ## borderTopLeftRadius
 *Public member variable of type Dimension of class Style*
@@ -1128,7 +1090,7 @@ The position of the table caption
 ## caretColor
 *Public member variable of type Color of class Style*
 
-The caret/cursor color of an element
+The caret/cursor color of an element. You can use a color literal to define a color, e.g. caretColor:#ff0000
 
 ## clear
 *Public member variable of type string of class Style*
@@ -1143,7 +1105,7 @@ Which part of a positioned element is visible
 ## color
 *Public member variable of type Color of class Style*
 
-The color of the text. You can use hex codes like #ff0000 to define the color.
+The color of the text. You can use a color literal to define a color, e.g. color:#ff0000
 
 *Example:*
 ```
@@ -1176,7 +1138,7 @@ A shorthand property for setting or returning all the columnRule properties
 ## columnRuleColor
 *Public member variable of type Color of class Style*
 
-The color of the rule between columns
+The color of the rule between columns. You can use a color literal to define a color, e.g. columnRuleColor:#ff0000
 
 ## columnRuleStyle
 *Public member variable of type string of class Style*
@@ -1330,9 +1292,15 @@ div "Hello", fontStyle:Italic
 Whether the font should be displayed in small capital letters
 
 ## fontWeight
-*Public member variable of type float of class Style*
+*Public member variable of type FontWeight of class Style*
 
-The boldness of the font
+The boldness of the font.
+Possible values: normal, bold, lighter, bolder, or a number from 1 to 1000. Higher values mean bolder, lower numbers mean lighter.
+
+*Example:*
+```
+div "Bold text", fontWeight:bold
+```
 
 ## fontSizeAdjust
 *Public member variable of type string of class Style*
@@ -1534,7 +1502,7 @@ All the outline properties in one declaration
 ## outlineColor
 *Public member variable of type Color of class Style*
 
-The color of the outline around a element
+The color of the outline around a element. You can use a color literal to define a color, e.g. outlineColor:#ff0000
 
 ## outlineOffset
 *Public member variable of type string of class Style*
@@ -1682,7 +1650,7 @@ The decoration of a text
 ## textDecorationColor
 *Public member variable of type Color of class Style*
 
-The color of the text-decoration
+The color of the text-decoration. You can use a color literal to define a color, e.g. textDecorationColor:#ff0000
 
 ## textDecorationLine
 *Public member variable of type string of class Style*

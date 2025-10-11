@@ -400,9 +400,25 @@ importance:5 class Margin
 	Margin: string marginString
 		this.marginString = marginString
 
+importance:5 class FontWeight
+	global const FontWeight normal = {fontWeightString:"normal"} // Normal font weight. Same as 400.
+	global const FontWeight bold = {fontWeightString:"bold"} // Bold font weight. Same as 700.
+	global const FontWeight lighter = {fontWeightString:"lighter"} // One relative font weight lighter than the parent element.
+	global const FontWeight bolder = {fontWeightString:"bolder"} // One relative font weight heavier than the parent element.
+
+	string fontWeightString
+	toString := fontWeightString
+
+	FontWeight: string fontWeightString
+		this.fontWeightString = fontWeightString
+	
+	FontWeight: float weight // A value from 1 to 1000. Higher values mean bolder, lower numbers mean lighter. 
+		fontWeightString = "{weight}"
+
 struct float
 	implicit inline Padding toPadding() new Padding(this, this, this, this)
 	implicit inline Margin toMargin() new Margin(this, this, this, this)
+	implicit inline FontWeight toFontWeight() new FontWeight(weight:this)
 
 class string
 	implicit inline Dimension toDimension() new Dimension(dimensionString:this)
@@ -410,6 +426,7 @@ class string
 	implicit inline BoxShadow toBoxShadow() new BoxShadow(boxShadowString:this)
 	implicit inline Padding toPadding() new Padding(paddingString:this)
 	implicit inline Margin toMargin() new Margin(marginString:this)
+	implicit inline FontWeight toFontWeight() new FontWeight(fontWeightString:this)
 	
 importance:5 dynamic Style
 	// Align the individual items along the cross axis. 
@@ -549,7 +566,11 @@ importance:5 dynamic Style
 	//     div "Hello", fontStyle:Italic
 	FontStyle fontStyle
 	string fontVariant // Whether the font should be displayed in small capital letters
-	float fontWeight // The boldness of the font
+	// The boldness of the font. 
+	// Possible values: normal, bold, lighter, bolder, or a number from 1 to 1000. Higher values mean bolder, lower numbers mean lighter. 
+	// Example:
+	//     div "Bold text", fontWeight:bold
+	FontWeight fontWeight 
 	string fontSizeAdjust // Preserves the readability of text when font fallback occurs
 	string fontStretch // Selects a normal, condensed, or expanded face from a font family
 	implicit Dimension gap // The gap between rows or columns
