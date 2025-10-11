@@ -516,9 +516,10 @@ importance:5 dynamic Style
 	// The color of the text. You can use a color literal to define a color, e.g. color:#ff0000
 	// Example:
 	//     app
-	//         Color primaryColor = #808080
+	//         Color mainColor = #ff0000
 	//         draw
-	//            div "Hello", color:primaryColor
+	//            div "Red text", color:mainColor
+	//            div "Blue text", color:#0000ff
 	Color color
 	string columnCount // The number of columns an element should be divided into
 	string columnFill // How to fill columns

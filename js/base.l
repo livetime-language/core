@@ -685,7 +685,7 @@ class List<T>
 	inline js void add: T[] items // The list of items to add
 		this.push(...items)
 			
-	// Add an list of item to the end of the list
+	// Add an list of items to the end of the list
 	importance:5 inline js
 	void addRange: T[] items // The list of items to add
 		this.push(...items)
