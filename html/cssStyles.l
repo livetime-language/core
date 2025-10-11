@@ -42,34 +42,22 @@ enum Unit
 	auto = "auto"
 	none = "none"
 	
-struct Dimension
-	global const Dimension auto = {unit:auto} // Automatically adjust the value to distribute the space evenly
-		
-	float value        // The value in the specified unit
-	Unit unit = pixels // The unit of the value (pixels, percent, Centimeters, Points, ViewportHeight, ViewportWidth, ...)
-	
-	string toString := unit == auto ? "auto" : "{value}{unit}"
-	bool toBool := value != 0
-
-	inline Padding toPadding() Padding(this, this, this, this)
-	inline Margin toMargin() Margin(this, this, this, this)
-
 struct Vector2
-	float x // The x coordinate of the vector
-	float y // The y coordinate of the vector
+	importance:5 float x // The x coordinate of the vector
+	importance:5 float y // The y coordinate of the vector
 	Unit unit = pixels // The unit of the vector (pixels, percent, Centimeters, Points, ViewportHeight, ...)
 	
 	// Used to specify that the vector is not set or invalid
-	static inline Vector2 none() Vector2(float.infinity, float.infinity, none)
+	const Vector2 none = Vector2(float.infinity, float.infinity, none)
 	
 	// {float.minValue, float.minValue}
-	static inline Vector2 minValue() Vector2(float.minValue, float.minValue, pixels)
+	const Vector2 minValue = Vector2(float.minValue, float.minValue, pixels)
 	
 	// {float.maxValue, float.maxValue}
-	static inline Vector2 maxValue() Vector2(float.maxValue, float.maxValue, pixels)
+	const Vector2 maxValue = Vector2(float.maxValue, float.maxValue, pixels)
 	
 	// {0,0}
-	static inline Vector2 zero() Vector2(0, 0, pixels)
+	const Vector2 zero = Vector2(0, 0, pixels)
 		
 	// A string representation of the vector
 	toString := "{x}{unit} {y}{unit}"
@@ -93,7 +81,7 @@ struct Vector2
 	Vector2 / float other:     return {x / other, y / other}
 		
 	// The length of the vector
-	length := math.sqrt(x * x + y * y)
+	importance:5 length := math.sqrt(x * x + y * y)
 		
 	// A vector with each coordinate rounded down to an integer value
 	floor := Vector2(math.floor(x), math.floor(y))
@@ -212,24 +200,6 @@ enum Display
 	FlowRoot = "flow-root" // A block element that establishes a new block formatting context
 	
 	None = "none" // Turns off the display of an element so that it has no effect on layout
-
-importance:5 class Padding
-	implicit Dimension top    // The padding on the top of the element
-	implicit Dimension right  // The padding on the right side of the element
-	implicit Dimension bottom // The padding on the bottom of the element
-	implicit Dimension left   // The padding on the left side of the element
-	string toString := "{top} {right} {bottom} {left}"
-	
-importance:5 class Margin
-	implicit Dimension top    // The margin on the top of the element
-	implicit Dimension right  // The margin on the right side of the element
-	implicit Dimension bottom // The margin on the bottom of the element
-	implicit Dimension left   // The margin on the left side of the element
-	string toString := "{top} {right} {bottom} {left}"
-
-struct float
-	inline Padding toPadding() Padding(this, this, this, this)
-	inline Margin toMargin() Margin(this, this, this, this)
 	
 enum Cursor
 	Pointer = "pointer" // The cursor is a pointer that indicates a link, typically an image of a pointing hand
@@ -332,27 +302,114 @@ enum ObjectFit
 	None = "none" // The replaced content is not resized.
 	ScaleDown = "scale-down" // The content is sized as if none or contain were specified, whichever would result in a smaller concrete object size.
 
-importance:5 class Border
-	global const Border None = {0} // Display no border
-		
-	implicit Dimension width = 1px // The thickness of the border
-	BorderStyle style = Solid // The style of the border
-	Color color = Black // The color of the border
-	
-	toString := width ? "{width} {style} {color}" : "none" 
-	
-importance:5 class BoxShadow
-	Vector2 offset // How far should the shadow be away from the element?
-	implicit Dimension blur = 8px // How blurry should the shadow be?
-	implicit Dimension spread = 8px // Positive values will make the shadow bigger, negative values make it smaller
-	Color color = Black // The color of the showow
-	bool inset // Changes the shadow to one inside the frame (as if the content was debossed inside the box)
-	
-	toString := "{inset ? "inset ":""}{offset.x}{offset.unit} {offset.y}{offset.unit} {blur} {spread} {color}"
-	
 enum lowercase string PointerEvents
 	None // On its own, it doesn't trigger pointer event, but its subtree could by setting pointerEvents 
 	Auto // The element behaves as it would if the pointerEvents property were not specified
+	
+importance:5 struct Dimension
+	global const Dimension auto = {dimensionString:"auto"} // Automatically adjust the value to distribute the space evenly
+
+	string dimensionString
+	toString := dimensionString
+		
+	Dimension: float value        // The value in the specified unit
+		       Unit unit = pixels // The unit of the value (pixels, percent, Centimeters, Points, ViewportHeight, ViewportWidth, ...)
+		dimensionString = "{value}{unit}"
+
+	Dimension: string dimensionString
+		this.dimensionString = dimensionString
+	
+	// bool toBool := value != 0
+
+	inline Padding toPadding() Padding(this, this, this, this)
+	inline Margin toMargin() Margin(this, this, this, this)
+	
+importance:5 class Border
+	global const Border none = {borderString:"none"} // Display no border
+		
+	string borderString
+	toString := borderString
+
+	Border: string borderString // Specify all parameters as a single string, e.g. "1px solid #808080"
+		this.borderString = borderString
+	
+	Border: implicit Dimension width = 1px // The thickness of the border
+	        BorderStyle style = Solid      // The style of the border
+            Color color = Black            // The color of the border. You can use a color literal to define a color, e.g. color:#ff0000
+		borderString = "{width} {style} {color}"
+
+importance:5 class BoxShadow
+	string boxShadowString
+	toString := boxShadowString
+
+	BoxShadow: string boxShadowString // Specify all parameters as a single string, e.g. "10px 5px 5px #808080"
+		this.boxShadowString = boxShadowString
+
+	BoxShadow: Vector2 offset                  // How far should the shadow be away from the element as a vector, e.g. {10px, 10px}
+		       implicit Dimension blur = 8px   // How blurry should the shadow be?
+		       implicit Dimension spread = 8px // Positive values will make the shadow bigger, negative values make it smaller
+		       Color color = Black             // The color of the shadow. You can use a color literal to define a color, e.g. color:#ff0000
+		       bool inset = false              // Changes the shadow to one inside the frame (as if the content was debossed inside the box)
+		boxShadowString = "{inset ? "inset ":""}{offset.x}{offset.unit} {offset.y}{offset.unit} {blur} {spread} {color}"
+
+	BoxShadow: implicit Dimension offsetX = 0px // How far should the shadow be away from the element in the x direction?
+		       implicit Dimension offsetY = 0px // How far should the shadow be away from the element in the y direction?
+		       implicit Dimension blur = 8px    // How blurry should the shadow be?
+		       implicit Dimension spread = 8px  // Positive values will make the shadow bigger, negative values make it smaller
+		       Color color = Black              // The color of the shadow. You can use a color literal to define a color, e.g. color:#ff0000
+		       bool inset = false               // Changes the shadow to one inside the frame (as if the content was debossed inside the box)
+		boxShadowString = "{inset ? "inset ":""}{offsetX} {offsetY} {blur} {spread} {color}"
+
+importance:5 class Padding
+	string paddingString
+	toString := paddingString
+
+	Padding: implicit Dimension all // Padding on the top, right, bottom and left of the element
+		paddingString = "{all}"
+
+	Padding: implicit Dimension topAndBottom // Padding on the top and bottom of the element
+		     implicit Dimension leftAndRight // Padding on the left and right of the element
+		paddingString = "{topAndBottom} {leftAndRight}"
+
+	Padding: implicit Dimension top = 0 px    // Padding on the top of the element
+		     implicit Dimension right = 0 px  // Padding on the right of the element
+		     implicit Dimension bottom = 0 px // Padding on the bottom of the element
+		     implicit Dimension left = 0 px   // Padding on the left of the element
+		paddingString = "{top} {right} {bottom} {left}"
+
+	Padding: string paddingString
+		this.paddingString = paddingString
+	
+importance:5 class Margin
+	string marginString
+	toString := marginString
+
+	Margin: implicit Dimension all // Margin on the top, right, bottom and left of the element
+		marginString = "{all}"
+
+	Margin: implicit Dimension topAndBottom // Margin on the top and bottom of the element
+		    implicit Dimension leftAndRight // Margin on the left and right of the element
+		marginString = "{topAndBottom} {leftAndRight}"
+
+	Margin: implicit Dimension top = 0 px    // Margin on the top of the element
+		    implicit Dimension right = 0 px  // Margin on the right of the element
+		    implicit Dimension bottom = 0 px // Margin on the bottom of the element
+		    implicit Dimension left = 0 px   // Margin on the left of the element
+		marginString = "{top} {right} {bottom} {left}"
+
+	Margin: string marginString
+		this.marginString = marginString
+
+struct float
+	implicit inline Padding toPadding() new Padding(this, this, this, this)
+	implicit inline Margin toMargin() new Margin(this, this, this, this)
+
+class string
+	implicit inline Dimension toDimension() new Dimension(dimensionString:this)
+	implicit inline Border toBorder() new Border(borderString:this)
+	implicit inline BoxShadow toBoxShadow() new BoxShadow(boxShadowString:this)
+	implicit inline Padding toPadding() new Padding(paddingString:this)
+	implicit inline Margin toMargin() new Margin(marginString:this)
 	
 importance:5 dynamic Style
 	// Align the individual items along the cross axis. 
@@ -376,7 +433,7 @@ importance:5 dynamic Style
 	string animationPlayState // Whether the animation is running or paused
 	string background // All the background properties in one declaration
 	string backgroundAttachment // Whether a background-image is fixed or scrolls with the page
-	// The background-color of an element. You can use hex codes like #ff0000 to define the color. 
+	// The background-color of an element. You can use a color literal to define a color, e.g. backgroundColor:#ff0000
 	// Example:
 	//     div "Abort", backgroundColor:#ff0000
 	Color backgroundColor
@@ -397,13 +454,13 @@ importance:5 dynamic Style
 	//     div "Text with border", border:{width:2px, style:Solid, color:#ff0000}
 	Border border
 	Border borderBottom // All the borderBottom properties in one declaration
-	Color borderBottomColor // The color of the bottom border
+	Color borderBottomColor // The color of the bottom border. You can use a color literal to define a color, e.g. borderBottomColor:#ff0000
 	implicit Dimension borderBottomLeftRadius // The shape of the border of the bottom-left corner
 	implicit Dimension borderBottomRightRadius // The shape of the border of the bottom-right corner
 	BorderStyle borderBottomStyle // The style of the bottom border
 	implicit Dimension borderBottomWidth // The width of the bottom border
 	string borderCollapse // Whether the table border should be collapsed into a single border, or not
-	Color borderColor // The color of an element's border (can have up to four values)
+	Color borderColor // The color of an element's border. You can use a color literal to define a color, e.g. borderColor:#ff0000
 	string borderImage // A shorthand property for setting or returning all the borderImage properties
 	implicit Dimension borderImageOutset // The amount by which the border image area extends beyond the border box
 	string borderImageRepeat // Whether the image-border should be repeated, rounded or stretched
@@ -416,13 +473,13 @@ importance:5 dynamic Style
 	implicit Dimension borderLeftWidth // The width of the left border
 	implicit Dimension borderRadius // A shorthand property for setting or returning all the four borderRadius properties
 	Border borderRight // All the borderRight properties in one declaration
-	Color borderRightColor // The color of the right border
+	Color borderRightColor // The color of the right border. You can use a color literal to define a color, e.g. borderRightColor:#ff0000
 	BorderStyle borderRightStyle // The style of the right border
 	implicit Dimension borderRightWidth // The width of the right border
 	implicit Dimension borderSpacing // The space between cells in a table
 	BorderStyle borderStyle // The style of an element's border (can have up to four values)
 	Border borderTop // All the borderTop properties in one declaration
-	Color borderTopColor // The color of the top border
+	Color borderTopColor // The color of the top border. You can use a color literal to define a color, e.g. borderTopColor:#ff0000
 	implicit Dimension borderTopLeftRadius // The shape of the border of the top-left corner
 	implicit Dimension borderTopRightRadius // The shape of the border of the top-right corner
 	BorderStyle borderTopStyle // The style of the top border
@@ -436,10 +493,10 @@ importance:5 dynamic Style
 	BoxShadow boxShadow
 	string boxSizing // Allows you to define certain elements to fit an area in a certain way
 	string captionSide // The position of the table caption
-	Color caretColor // The caret/cursor color of an element
+	Color caretColor // The caret/cursor color of an element. You can use a color literal to define a color, e.g. caretColor:#ff0000
 	string clear // The position of the element relative to floating objects
 	string clip // Which part of a positioned element is visible
-	// The color of the text. You can use hex codes like #ff0000 to define the color. 
+	// The color of the text. You can use a color literal to define a color, e.g. color:#ff0000
 	// Example:
 	//     app
 	//         Color primaryColor = #808080
@@ -450,7 +507,7 @@ importance:5 dynamic Style
 	string columnFill // How to fill columns
 	implicit Dimension columnGap // The gap between the columns
 	string columnRule // A shorthand property for setting or returning all the columnRule properties
-	Color columnRuleColor // The color of the rule between columns
+	Color columnRuleColor // The color of the rule between columns. You can use a color literal to define a color, e.g. columnRuleColor:#ff0000
 	string columnRuleStyle // The style of the rule between columns
 	implicit Dimension columnRuleWidth // The width of the rule between columns
 	string columns // A shorthand property for setting or returning columnWidth and columnCount
@@ -536,7 +593,7 @@ importance:5 dynamic Style
 	string order // The order of the flexible item, relative to the rest
 	string orphans // The minimum number of lines that must be left at the bottom before a page-break
 	Border outline // All the outline properties in one declaration
-	Color outlineColor // The color of the outline around a element
+	Color outlineColor // The color of the outline around a element. You can use a color literal to define a color, e.g. outlineColor:#ff0000
 	string outlineOffset // Offsets an outline, and draws it beyond the border edge
 	string outlineStyle // The style of the outline around an element
 	implicit Dimension outlineWidth // The width of the outline around an element
@@ -572,7 +629,7 @@ importance:5 dynamic Style
 	TextAlign textAlign 
 	string textAlignLast // How the last line of a block is aligned when text-align is "justify"
 	string textDecoration // The decoration of a text
-	Color textDecorationColor // The color of the text-decoration
+	Color textDecorationColor // The color of the text-decoration. You can use a color literal to define a color, e.g. textDecorationColor:#ff0000
 	string textDecorationLine // The type of line in a text-decoration
 	string textDecorationStyle // The style of the line in a text decoration
 	string textIndent // The indentation of the first line of text

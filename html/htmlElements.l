@@ -506,7 +506,7 @@ global static class html
 	global drawRectangle: Vector2 pos
 		                  Vector2 size
 		                  Color color = Black
-		currentContext.fillStyle = color.hex
+		currentContext.fillStyle = color.colorString
 		currentContext.fillRect(pos.x, pos.y, size.x, size.y)
 		
 	// Draw text on the canvas in an indented block of code underneath the canvas.
@@ -521,7 +521,7 @@ global static class html
 		             float size = 30
 		             Font font = null
 		             Color color = Black
-		currentContext.fillStyle = color.hex
+		currentContext.fillStyle = color.colorString
 		string effectiveFont = font ? font.name : "Open Sans"
 		currentContext.font = "{size}px {effectiveFont}"
 		currentContext.fillText(text, pos.x, pos.y)

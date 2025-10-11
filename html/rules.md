@@ -1,5 +1,5 @@
 ---
-description: LiveTime Programming Language, HTML Framework and Standard Library
+description: LiveTime Programming Language and HTML Framework
 globs: *.l
 alwaysApply: true
 ---
@@ -23,8 +23,9 @@ class TodoItem
 	string text
 
 // Defines the main class "app". Classes with lowercase names are singletons.
-// You can access their fields from anywhere like this: app.items, app.newItemText, app.start, app.draw, etc
+// You can access their fields from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
 static class app
+	Color primaryColor = #404040
 	TodoItem[] items
 	string newItemText = ""
 
@@ -37,23 +38,31 @@ static class app
 
 	// This function is called to render the html elements when the application starts or when the refresh function is called.
 	draw
-		div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{top:80 left:80}
+		div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{left:80}
 			div tag:"h1", text:"Todo List"
+
 			if items.length > 0
 				for items as item
 					drawItem item
 			else
 				div text:"No items", fontSize:60, fontStyle:Italic
 
-			div display:Flex, gap:20
+			div display:Flex, gap:20, margin:{top:80}
 				field model:newItemText width:400, fontSize:60
 				button text:"Add", fontSize:60, padding:{left:40 right:40}, cursor:Pointer, onClick:addItem newItemText
 
 	// All functions that render html should start with "draw".
 	drawItem: TodoItem item
-		div display:Flex, gap:20, cursor:Pointer, onClick:item.state = item.state != Done ? Done : NotStarted; refresh
+		div display:Flex, 
+			gap:20,
+			cursor:Pointer,
+			padding:{top:16 bottom:16 left:16},
+			border:{width:2px, style:Solid, color:#808080},
+			boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
+			onClick:item.state = item.state != Done ? Done : NotStarted; refresh
+
 			div text:item.state == Done ? "☑" : "☐"
-			div text:item.text, textDecoration:item.state == Done ? "line-through" : "none"
+			div text:item.text, textDecoration:item.state == Done ? "line-through" : "none", color:primaryColor
 			div text:"❌", cursor:Pointer, onClick:items.remove item; refresh
 
 	addItem: string text
@@ -137,7 +146,7 @@ static class app
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
 		// Div with blue text. Refer to the Styles class for all available css styles.
-		div text:"Done items", fontSize:64, color:#0000ff
+		div text:"Done items", fontSize:64, color:#ff0000
 
 		// Div with children
 		let doneItems = helpers.getAllDoneItems
@@ -162,6 +171,12 @@ static class app
 		button "Clear name", onClick:name = ""; refresh
 		button "Submit name", onClick:http.post "/api/name", body:{name}
 
+		// Border
+		div border:{width:1, style:Solid, color:#808080}
+
+		// Shadow
+		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
+
 static class helpers
 	Item getItemByItem: int id
 		return app.items.find.id == id
@@ -173,8 +188,8 @@ static class helpers
 		return app.items.all.state == Done
 
 # References
-For all available images in the current project, read this file:
+Read this file for all available images in the current project:
 src/media.l
 
-For a complete reference of the LiveTime Programming language with all available classes and functions, read this file:
+Read this file for a complete reference of the LiveTime Programming Language with all available classes and functions:
 lib/core/html/documentation.md

@@ -357,27 +357,32 @@ class Color
 		
 	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
 	
-	string hex
+	string colorString
 	string name
 	
-	string toString := hex
+	string toString := colorString
 	
-	Color: string hex = ""
-		this.hex = hex
+	Color: string colorString = ""
+		let firstChar = colorString[0]
+		if ("0" <= firstChar <= "9") or ("a" <= firstChar <= "f") or ("A" <= firstChar <= "F")
+			colorString = "#" + colorString
+		this.colorString = colorString
 
 	Color: int red = 0
 		   int green = 0
 		   int blue = 0
 		   int alpha = 255
-		this.hex = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue) + componentToHex(alpha)
+		this.colorString = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue) + componentToHex(alpha)
 			
 	static js string componentToHex: int c
 		var hex = c.toString(16);
 		return hex.length == 1 ? "0" + hex : hex;
 		
-	inline js bool == Color other: this?.hex == other?.hex
-	inline js bool != Color other: this?.hex != other?.hex
+	inline js bool == Color other: this?.colorString == other?.colorString
+	inline js bool != Color other: this?.colorString != other?.colorString
 	
 	Color withAlpha: float alpha
-		return {hex[1..7]+componentToHex(math.floor(alpha*255))}
-	
+		return {colorString[1..7]+componentToHex(math.floor(alpha*255))}
+
+immutable class string
+	implicit Color toColor() return Color(this)
