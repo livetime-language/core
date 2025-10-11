@@ -1,5 +1,596 @@
 # LiveTime Programming Language Reference
 
+# int
+A number stored as a 32-bit integer
+
+## Constants
+
+### int maxValue
+The largest possible integer value
+
+### int minValue
+The smallest possible integer value
+
+---
+
+# string
+
+## Member Functions
+
+### length
+Returns the number of characters in the string
+
+Returns int
+
+### toUpperCase
+Returns a string with each character converted to uppercase
+
+Returns string
+
+### toLowerCase
+Returns a string with each character converted to lowercase
+
+Returns string
+
+### toInt
+Returns int
+
+### toFloat
+Returns int
+
+### parseJson
+Returns dynamic
+
+### split
+Splits the string at the given character into a list of substrings
+
+| Parameter | Type   | Description                                                      |
+| --------- | ------ | ---------------------------------------------------------------- |
+| seperator | string | Separate the string at this character, optional, defaults to "," |
+
+Returns string[]
+
+### startsWith
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+
+Returns bool
+
+### endsWith
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+
+Returns bool
+
+### indexOf
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+
+Returns int
+
+### indexOf
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+| startPos  | int    | Required parameter |
+
+Returns int
+
+### lastIndexOf
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+
+Returns int
+
+### lastIndexOf
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+| startPos  | int    | Required parameter |
+
+Returns int
+
+### contains
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| str       | string | Required parameter |
+
+Returns bool
+
+### substring
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| from      | int  | Required parameter |
+
+Returns string
+
+### substring
+| Parameter | Type | Description                       |
+| --------- | ---- | --------------------------------- |
+| from      | int  | Optional parameter, defaults to 0 |
+| to        | int  | Required parameter                |
+
+Returns string
+
+### trim
+Returns string
+
+### trimStart
+Returns string
+
+### trimEnd
+Returns string
+
+---
+
+# List
+A data container that grows in size as needed
+
+## Member Functions
+
+### add
+Add an item to the end of the list
+
+| Parameter | Type | Description     |
+| --------- | ---- | --------------- |
+| item      | T    | The item to add |
+
+
+### addRange
+Add an list of items to the end of the list
+
+| Parameter | Type | Description              |
+| --------- | ---- | ------------------------ |
+| items     | T[]  | The list of items to add |
+
+
+### insert
+Insert an item at a given index
+
+| Parameter | Type | Description                                            |
+| --------- | ---- | ------------------------------------------------------ |
+| item      | T    | The item to insert                                     |
+| index     | int  | Insert the item at this index, optional, defaults to 0 |
+
+
+### insert
+Insert an item at a given index
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| item      | T    | The item to insert |
+| after     | T    | Required parameter |
+
+
+### remove
+Remove an item from the list
+
+*Example: Remove the current player instrance from the list of playeres when they died*
+```
+Player
+    die
+        alivePlayers.remove this
+```
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| item      | T    | The item to remove |
+
+
+### removeAt
+Remove the item at the given index from the list
+
+| Parameter | Type | Description                     |
+| --------- | ---- | ------------------------------- |
+| index     | int  | The index of the item to remove |
+
+
+### removeRange
+Remove a range of items from the list
+
+*Example: Remove the first 3 players from the list*
+```
+players.removeRange 0 to 3
+```
+
+| Parameter | Type | Description                                                    |
+| --------- | ---- | -------------------------------------------------------------- |
+| from      | int  | Remove items starting from this index, optional, defaults to 0 |
+| to        | int  | Remove items up to (but not including) this index              |
+
+
+### removeWhere
+Remove all item the meet a specific condition
+
+*Example: Remove all players that have died.*
+```
+Player
+    bool hasDied
+ app
+     gameOver
+         players.removeWhere.hasDied
+```
+
+| Parameter | Type      | Description            |
+| --------- | --------- | ---------------------- |
+| condition | bool(T a) | The condition to check |
+
+
+### removeFirstWhere
+Remove the first item the meet a specific condition
+
+*Example: Remove the first player with a health smaller than 10.*
+```
+Player
+    int health
+app
+    gameOver
+        players.removeFirstWhere.health < 10
+```
+
+| Parameter | Type      | Description            |
+| --------- | --------- | ---------------------- |
+| condition | bool(T a) | The condition to check |
+
+Returns T
+
+### ensure
+Add an item to the list if it isn't already in there
+
+| Parameter | Type | Description     |
+| --------- | ---- | --------------- |
+| item      | T    | The item to add |
+
+
+### ensure
+Add each item from a list if it isn't already in there
+
+| Parameter | Type | Description              |
+| --------- | ---- | ------------------------ |
+| items     | T[]  | The list of items to add |
+
+
+### contains
+Returns whether the list contains the given item
+
+| Parameter | Type | Description                          |
+| --------- | ---- | ------------------------------------ |
+| item      | T    | Check if the list contains this item |
+
+Returns bool
+
+### indexOf
+The index of an item in the list
+
+| Parameter | Type | Description                |
+| --------- | ---- | -------------------------- |
+| item      | T    | Get the index of this item |
+
+Returns int
+
+### popFirst
+Remove the first item from the list and return it
+
+*Example: Print and remove "Apple" from the list*
+```
+let fruits = ["Apple", "Lemon", "Orange"]
+print fruits.popFirst
+print fruits
+```
+
+*Output:*
+```
+Apple
+[Lemon, Orange]
+```
+
+Returns T
+
+### length
+Gets the number of items in the list
+
+Returns int
+
+### clear
+Removes all items from the list
+
+
+### random
+Gets a random item from the list
+
+Returns T
+
+### orderBy
+Sort the list by a given expression
+
+| Parameter  | Type       | Description                    |
+| ---------- | ---------- | ------------------------------ |
+| expression | float(T a) | First order by this expression |
+
+Returns T[]
+
+### orderBy
+| Parameter  | Type         | Description                    |
+| ---------- | ------------ | ------------------------------ |
+| expression | float(T it)  | First order by this expression |
+| thenBy     | string(T it) | Then order by this expression  |
+
+Returns T[]
+
+### orderBy
+Sort the list by a given expression
+
+| Parameter  | Type         | Description                                                    |
+| ---------- | ------------ | -------------------------------------------------------------- |
+| expression | float(T a)   | First order by this expression                                 |
+| order      | SortingOrder | Specifies if you want to sort in ascending or descending order |
+
+Returns T[]
+
+### find
+Find an item the meets the given condition
+
+*Example: Find a player with a specific id*
+```
+app
+    getPlayerById: int id
+        return players.find.id == id
+```
+
+| Parameter | Type      | Description            |
+| --------- | --------- | ---------------------- |
+| condition | bool(T a) | The condition to check |
+
+Returns T
+
+### shuffle
+Returns T[]
+
+---
+
+# Map
+A data container that stores key-value pairs
+
+## Member Functions
+
+### remove
+Remove the item assosiated with the given key
+
+| Parameter | Type | Description                                |
+| --------- | ---- | ------------------------------------------ |
+| key       | TKey | The key of the item to remove from the map |
+
+
+### has
+Does the map have an item with a specific key?
+
+| Parameter | Type | Description                  |
+| --------- | ---- | ---------------------------- |
+| key       | TKey | The key of the item to check |
+
+Returns bool
+
+### clear
+Remove all items from the map
+
+
+### length
+Returns int
+
+---
+
+# object
+The base class for all classes
+
+## Static Functions
+
+### toJson
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| value     | any  | Required parameter |
+
+Returns string
+
+---
+
+# class Set
+A data container that stores unique values of a given type
+
+## Member Functions
+
+### add
+Add a new element to this set, if there isn't already an element with the same value
+
+| Parameter | Type | Description      |
+| --------- | ---- | ---------------- |
+| value     | T    | The value to add |
+
+
+### remove
+Remove a value from the set
+
+| Parameter | Type | Description         |
+| --------- | ---- | ------------------- |
+| value     | T    | The value to remove |
+
+
+### has
+Is a certain value in the set?
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| value     | T    | The value to check |
+
+Returns bool
+
+### clear
+Remove all items from the set
+
+
+### length
+Return the number of items in the set
+
+Returns int
+
+---
+
+# class math
+
+## Static Functions
+
+### abs
+Returns the absolute value
+
+| Parameter | Type  | Description                               |
+| --------- | ----- | ----------------------------------------- |
+| value     | float | The value to return the absolute value of |
+
+Returns float
+
+### sign
+Returns -1, 0, or 1 depending on the sign of the value
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | Required parameter |
+
+Returns float
+
+### sqrt
+Returns the positive square root of the given value
+
+| Parameter | Type  | Description                            |
+| --------- | ----- | -------------------------------------- |
+| value     | float | The value to return the square root of |
+
+Returns float
+
+### floor
+Returns the largest integer less than or equal to the given value
+
+| Parameter | Type  | Description             |
+| --------- | ----- | ----------------------- |
+| value     | float | The value to round down |
+
+Returns int
+
+### ceil
+Returns the smallest integer greater than or equal to the given value
+
+| Parameter | Type  | Description           |
+| --------- | ----- | --------------------- |
+| value     | float | The value to round up |
+
+Returns int
+
+### round
+Returns the given value rounded to the nearest integer
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | The value to round |
+
+Returns int
+
+### min
+Returns the smallest of the given values
+
+| Parameter | Type  | Description      |
+| --------- | ----- | ---------------- |
+| a         | float | The first value  |
+| b         | float | The second value |
+
+Returns float
+
+### max
+Returns the largest of the given values
+
+| Parameter | Type  | Description      |
+| --------- | ----- | ---------------- |
+| a         | float | The first value  |
+| b         | float | The second value |
+
+Returns float
+
+### sin
+Returns the sine of an angle in radians
+
+| Parameter | Type  | Description                                      |
+| --------- | ----- | ------------------------------------------------ |
+| angle     | float | The angle in radians (one full rotation is 2*pi) |
+
+Returns float
+
+### cos
+Returns the cosine of an angle in radians
+
+| Parameter | Type  | Description                                      |
+| --------- | ----- | ------------------------------------------------ |
+| angle     | float | The angle in radians (one full rotation is 2*pi) |
+
+Returns float
+
+### tan
+Returns the tangent of an angle in radians
+
+| Parameter | Type  | Description                                      |
+| --------- | ----- | ------------------------------------------------ |
+| angle     | float | The angle in radians (one full rotation is 2*pi) |
+
+Returns float
+
+### log
+e raised to which power resuls in the given value?
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | Required parameter |
+
+Returns float
+
+### log2
+2 raised to which power resuls in the given value?
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | Required parameter |
+
+Returns float
+
+### log10
+10 raised to which power resuls in the given value?
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | Required parameter |
+
+Returns float
+
+### pow
+Return the given base raised to the power of the given exponent
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| base      | float | Required parameter |
+| exponent  | float | Required parameter |
+
+Returns float
+
+### exp
+Returns e raised to the power of a given number
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| exponent  | float | Required parameter |
+
+Returns float
+
+---
+
 # struct Vector2
 
 ## Member Variables
@@ -15,6 +606,7 @@ The y coordinate of the vector
 ### length
 The length of the vector
 
+Returns float
 
 ---
 
@@ -108,6 +700,17 @@ All the background properties in one declaration
 ### string backgroundAttachment
 Whether a background-image is fixed or scrolls with the page
 
+### Color backgroundColor
+The background-color of an element. You can use a color literal to define a color, e.g. backgroundColor:#ff0000
+
+*Example:*
+```
+div "Abort", backgroundColor:#ff0000
+```
+
+### Image backgroundImage
+The background-image for an element
+
 ### string backgroundPosition
 The starting position of a background-image
 
@@ -137,6 +740,9 @@ div "Text with border", border:{width:2px, style:Solid, color:#ff0000}
 ### Border borderBottom
 All the borderBottom properties in one declaration
 
+### Color borderBottomColor
+The color of the bottom border. You can use a color literal to define a color, e.g. borderBottomColor:#ff0000
+
 ### Dimension borderBottomLeftRadius
 The shape of the border of the bottom-left corner
 
@@ -151,6 +757,9 @@ The width of the bottom border
 
 ### string borderCollapse
 Whether the table border should be collapsed into a single border, or not
+
+### Color borderColor
+The color of an element's border. You can use a color literal to define a color, e.g. borderColor:#ff0000
 
 ### string borderImage
 A shorthand property for setting or returning all the borderImage properties
@@ -173,6 +782,9 @@ The widths of the image-border
 ### Border borderLeft
 All the borderLeft properties in one declaration
 
+### Color borderLeftColor
+The color of the left border
+
 ### BorderStyle borderLeftStyle
 The style of the left border
 
@@ -184,6 +796,9 @@ A shorthand property for setting or returning all the four borderRadius properti
 
 ### Border borderRight
 All the borderRight properties in one declaration
+
+### Color borderRightColor
+The color of the right border. You can use a color literal to define a color, e.g. borderRightColor:#ff0000
 
 ### BorderStyle borderRightStyle
 The style of the right border
@@ -199,6 +814,9 @@ The style of an element's border (can have up to four values)
 
 ### Border borderTop
 All the borderTop properties in one declaration
+
+### Color borderTopColor
+The color of the top border. You can use a color literal to define a color, e.g. borderTopColor:#ff0000
 
 ### Dimension borderTopLeftRadius
 The shape of the border of the top-left corner
@@ -235,11 +853,26 @@ Allows you to define certain elements to fit an area in a certain way
 ### string captionSide
 The position of the table caption
 
+### Color caretColor
+The caret/cursor color of an element. You can use a color literal to define a color, e.g. caretColor:#ff0000
+
 ### string clear
 The position of the element relative to floating objects
 
 ### string clip
 Which part of a positioned element is visible
+
+### Color color
+The color of the text. You can use a color literal to define a color, e.g. color:#ff0000
+
+*Example:*
+```
+app
+    Color mainColor = #ff0000
+    draw
+       div "Red text", color:mainColor
+       div "Blue text", color:#0000ff
+```
 
 ### string columnCount
 The number of columns an element should be divided into
@@ -252,6 +885,9 @@ The gap between the columns
 
 ### string columnRule
 A shorthand property for setting or returning all the columnRule properties
+
+### Color columnRuleColor
+The color of the rule between columns. You can use a color literal to define a color, e.g. columnRuleColor:#ff0000
 
 ### string columnRuleStyle
 The style of the rule between columns
@@ -482,6 +1118,9 @@ The minimum number of lines that must be left at the bottom before a page-break
 ### Border outline
 All the outline properties in one declaration
 
+### Color outlineColor
+The color of the outline around a element. You can use a color literal to define a color, e.g. outlineColor:#ff0000
+
 ### string outlineOffset
 Offsets an outline, and draws it beyond the border edge
 
@@ -572,6 +1211,9 @@ How the last line of a block is aligned when text-align is "justify"
 
 ### string textDecoration
 The decoration of a text
+
+### Color textDecorationColor
+The color of the text-decoration. You can use a color literal to define a color, e.g. textDecorationColor:#ff0000
 
 ### string textDecorationLine
 The type of line in a text-decoration
@@ -665,4 +1307,173 @@ The line names and track sizing functions of the grid columns
 
 ### Vector2 translate
 Move the element by this vector
+
+### Angle rotate
+Rotate the element by this angle
+
+---
+
+# class Attributes
+
+## Member Variables
+
+### string id
+A unique string to indentify a specic element, often used to style a single element
+
+### string class
+A string to assign a class to one or more elements, often used to style several elements
+
+### string key
+A unique identifier used to find the node that should be reused
+
+### void() onClick
+Execute this code when the user clicks the HTML element
+
+### void(HtmlEvent ev) onLeftClick
+Execute this code when the user clicks the HTML element
+
+### void(HtmlEvent ev) onRightClick
+Execute this code when the user clicks the HTML element with the right mouse button
+
+### void(HtmlKeyboardEvent ev) onKeyDown
+Execute this code when the user presses a key on the keyboard
+
+### void(HtmlKeyboardEvent ev) onKeyUp
+Execute this code when the user releases a key on the keyboard
+
+---
+
+# class html
+
+## Global Functions
+
+### div
+Render a html element within the draw function. It renders a div by default, but you can specify a different tag.
+In addition to the listed parameters, you can also specify html attributes and css styles.
+You can use all members of the Styles class as parameters to apply css styles to the element.
+You can use all members of the Attributes class as parameters to apply html attributes to the element.
+You can render the children of the element in an indented block of code underneath the div.
+
+*Example:*
+```
+app
+    draw
+        div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{top:80 left:80}
+            div tag:"h1", text:"Todo List"
+            for items as item
+		           div text:item.text, fontStyle:Italic
+```
+
+| Parameter | Type    | Description                                                                                                      |
+| --------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| text      | string  | The text content of the element, optional, defaults to null                                                      |
+| tag       | string  | The tag of element, defaults to "div", optional, defaults to "div"                                               |
+| data      | dynamic | The data attributes of the element, optional, defaults to {}                                                     |
+| onHover   | Style   | Apply this css style to the element when the user moves their mouse over the element, optional, defaults to null |
+| children  | void()  | A block of code that renders the children of the element, optional, defaults to null                             |
+
+Returns Node
+
+### img
+Render an image html element within the draw function.
+Place an image in the folder "assets/pb_public/media" and it will automatically show up in the auto completions (without the file extension).
+
+
+*Example: We place the image "OkButton.png" in "assets/pb_public/media".*
+```
+app
+    int clicks = 0
+    draw
+        div "You clicked {clicks} times."
+        img OkButton, onClick:clicks++; refresh
+```
+
+*Example: We place the images "On.png" and "Off.png" in "assets/pb_public/media".*
+```
+app
+    bool isOn = true
+    draw
+        img isOn ? On : Off, onClick:isOn = not isOn; refresh
+```
+
+| Parameter | Type               | Description                                                       |
+| --------- | ------------------ | ----------------------------------------------------------------- |
+| image     | Image              | The image to display                                              |
+| onClick   | void(HtmlEvent ev) | Called when the user clicks the image, optional, defaults to null |
+| data      | dynamic            | The data attributes of the element, optional, defaults to null    |
+| visible   | bool               | Optional parameter, defaults to true                              |
+
+Returns Node
+
+### img
+Render an external image html element within the draw function.
+
+*Example:*
+```
+User
+    string name
+    string profilePicture
+    drawProfile
+        div name
+        img profilePicture
+app
+    User currentUser
+    draw
+        currentUser.drawProfile
+```
+
+| Parameter | Type   | Description                      |
+| --------- | ------ | -------------------------------- |
+| src       | string | The file of the image to display |
+
+Returns Node
+
+### button
+Render a html button element within the draw function.
+You can specify the onClick handler in an indented block of code underneath the button.
+
+*Example:*
+```
+app
+    int clicks = 0
+    draw
+        button "You clicked {clicks} times."
+            clicks++
+            refresh
+```
+
+| Parameter | Type               | Description                                                        |
+| --------- | ------------------ | ------------------------------------------------------------------ |
+| text      | string             | The text to display on the button, optional, defaults to null      |
+| onClick   | void(HtmlEvent ev) | Called when the user clicks the button, optional, defaults to null |
+
+Returns Node
+
+### button
+| Parameter         | Type               | Description                                                              |
+| ----------------- | ------------------ | ------------------------------------------------------------------------ |
+| text              | string             | The text to display on the button, optional, defaults to null            |
+| onClick           | bool(HtmlEvent ev) | Called when the user clicks the button, optional, defaults to null       |
+| disableAfterClick | bool               | Disable the button after the user clicks it, optional, defaults to false |
+
+Returns Node
+
+### link
+Render a html anchor element to link to a url
+
+| Parameter | Type   | Description                          |
+| --------- | ------ | ------------------------------------ |
+| text      | string | Optional parameter, defaults to null |
+| href      | string | Optional parameter, defaults to "#"  |
+
+Returns Node
+
+### span
+Render a html span element to display text
+
+| Parameter | Type   | Description                                                     |
+| --------- | ------ | --------------------------------------------------------------- |
+| text      | string | The text to display within the span, optional, defaults to null |
+
+Returns Node
 
