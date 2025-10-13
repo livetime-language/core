@@ -85,6 +85,7 @@ skipInit global unit Platform
 		success()
 		
 	js void initAll
+		_reset_shared()
 		init()
 		
 	async replay
@@ -101,6 +102,9 @@ skipInit global unit Platform
 			sendErrorToEditor .
 		finally
 			sendFinished
+
+	inline js void resetSharedIndex
+		if(typeof _reset_shared_index != "undefined") _reset_shared_index()
 		
 	stop
 		html.reset
