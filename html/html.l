@@ -15,6 +15,7 @@ class HTMLElement
 	string innerText
 	string shadowInnerHtml
 	string value
+	string placeholder
 	string src
 	any srcObject
 	HTMLElement firstChild

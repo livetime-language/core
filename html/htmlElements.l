@@ -266,7 +266,24 @@ global static class html
 		         expand Style style = null         // The css style of the HTML element
 		         SourceCodeLocation location
 		return div text, tag:"span", attributes, style, location
-	
+
+	// Render a html input element in the draw function
+	importance:5
+	global HTMLElement input: string value = ""                 // The value to display in the field
+		                      string placeholder = ""           // The placeholder text to display in the field
+							  void(string value) onInput = null // Called immediately after every keystroke
+							  bool focused = false              // Whether the cursor should be placed in the field
+		                      expand Attributes attributes = {} // The attributes of the HTML element
+		                      expand Style style = null         // The css style of the HTML element
+		                      dynamic data = {}                 // The data attributes of the element
+		                      SourceCodeLocation location
+		let element = div tag:"input", attributes, style, data, location
+		element.value = value
+		element.placeholder = placeholder
+		element.oninput = onInput(element.value)
+		if focused: element.focus
+		return element
+
 	// ---------------------------------------- Radio & Toggle ----------------------------------------
 	
 	// Render a html radio buttom element in the draw function.
