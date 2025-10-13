@@ -1324,7 +1324,7 @@ A unique string to indentify a specic element, often used to style a single elem
 A string to assign a class to one or more elements, often used to style several elements
 
 ### string key
-A unique identifier used to find the node that should be reused
+A unique identifier used to find the html element that should be reused
 
 ### void() onClick
 Execute this code when the user clicks the HTML element
@@ -1372,7 +1372,7 @@ app
 | onHover   | Style   | Apply this css style to the element when the user moves their mouse over the element, optional, defaults to null |
 | children  | void()  | A block of code that renders the children of the element, optional, defaults to null                             |
 
-Returns Node
+Returns HTMLElement
 
 ### img
 Render an image html element within the draw function.
@@ -1403,7 +1403,7 @@ app
 | data      | dynamic            | The data attributes of the element, optional, defaults to null    |
 | visible   | bool               | Optional parameter, defaults to true                              |
 
-Returns Node
+Returns HTMLElement
 
 ### img
 Render an external image html element within the draw function.
@@ -1426,7 +1426,7 @@ app
 | --------- | ------ | -------------------------------- |
 | src       | string | The file of the image to display |
 
-Returns Node
+Returns HTMLElement
 
 ### button
 Render a html button element within the draw function.
@@ -1447,7 +1447,7 @@ app
 | text      | string             | The text to display on the button, optional, defaults to null      |
 | onClick   | void(HtmlEvent ev) | Called when the user clicks the button, optional, defaults to null |
 
-Returns Node
+Returns HTMLElement
 
 ### button
 | Parameter         | Type               | Description                                                              |
@@ -1456,7 +1456,7 @@ Returns Node
 | onClick           | bool(HtmlEvent ev) | Called when the user clicks the button, optional, defaults to null       |
 | disableAfterClick | bool               | Disable the button after the user clicks it, optional, defaults to false |
 
-Returns Node
+Returns HTMLElement
 
 ### link
 Render a html anchor element to link to a url
@@ -1466,7 +1466,7 @@ Render a html anchor element to link to a url
 | text      | string | Optional parameter, defaults to null |
 | href      | string | Optional parameter, defaults to "#"  |
 
-Returns Node
+Returns HTMLElement
 
 ### span
 Render a html span element to display text
@@ -1475,5 +1475,5 @@ Render a html span element to display text
 | --------- | ------ | --------------------------------------------------------------- |
 | text      | string | The text to display within the span, optional, defaults to null |
 
-Returns Node
+Returns HTMLElement
 

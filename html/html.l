@@ -1,5 +1,5 @@
 js HTMLElement
-class Node
+class HTMLElement
 	string id // A unique string to indentify a specic element, often used to style a single element
 	
 	// A string to assign a class to one or more elements, often used to style several elements
@@ -17,9 +17,9 @@ class Node
 	string value
 	string src
 	any srcObject
-	Node firstChild
-	Node nextSibling
-	Node parentNode
+	HTMLElement firstChild
+	HTMLElement nextSibling
+	HTMLElement parentNode
 	float scrollHeight
 	string href
 	
@@ -37,12 +37,12 @@ class Node
 	File[] files
 	bool complete // Is the resouce completely loaded?
 	
-	Node[string] childrenByKey
+	HTMLElement[string] childrenByKey
 	bool used
 		
-	inline js Node remove() this.remove()
-	inline js void appendChild(Node node) this.appendChild(node)
-	inline js void insertBefore(Node newNode, Node referenceNode) this.insertBefore(newNode, referenceNode)
+	inline js HTMLElement remove() this.remove()
+	inline js void appendChild(HTMLElement element) this.appendChild(element)
+	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode)
 	inline js void setSelectionRange(int from, int to) this.setSelectionRange(from, to)
 	inline js void select() this.select()
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
@@ -72,7 +72,7 @@ class Node
 	inline js void set(string name, string value) this.setAttribute(name, value)
 	inline js void get(string name) this.getAttribute(name)
 	
-	static inline js Node create(string tagName = "div") document.createElement(tagName);
+	static inline js HTMLElement create(string tagName = "div") document.createElement(tagName);
 	inline js void click() this.click()
 	
 	inline js void animate: Style from
@@ -84,7 +84,7 @@ class Node
 		
 	Touch[] touches
 	
-	onTouchDown: void(Touch touch, Touch[] touches, Node node, PointerEvent event) do
+	onTouchDown: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointerdown = {
 			if this.touches == null: this.touches = []
 			TouchType type
@@ -100,7 +100,7 @@ class Node
 			do(touch, touches, this, ev)
 		}
 	
-	onTouchMove: void(Touch touch, Touch[] touches, Node node, PointerEvent event) do
+	onTouchMove: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointermove = {
 			if this.touches == null: this.touches = []
 			Touch touch = this.touches.find.id == ev.pointerId
@@ -111,7 +111,7 @@ class Node
 				do(touch, touches, this, ev)
 		}
 	
-	onTouchUp: void(Touch touch, Touch[] touches, Node node, PointerEvent event) do
+	onTouchUp: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointerup = {
 			if this.touches == null: this.touches = []
 			int index = this.touches.indexWhere.id == ev.pointerId
@@ -124,13 +124,13 @@ class Node
 				touch.ctrlKey = ev.ctrlKey
 				touch.altKey = ev.altKey
 				touch.metaKey = ev.metaKey
-				Node touchedNode = html.getNodeAt(ev.pageX, ev.pageY)
+				HTMLElement touchedNode = html.getElementAt(ev.pageX, ev.pageY)
 				touch.touchedId = touchedNode ? touchedNode.id : ""
 				this.touches.removeAt(index)
 				do(touch, touches, this, ev)
 		}
 		
-	onTouchCancel: void(Touch touch, Touch[] touches, Node node, PointerEvent event) do
+	onTouchCancel: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointercancel = {
 			if this.touches == null: this.touches = []
 			int index = this.touches.indexWhere.id == ev.pointerId
@@ -154,7 +154,7 @@ class Node
 importance:5 dynamic Attributes
 	string id    // A unique string to indentify a specic element, often used to style a single element
 	string class // A string to assign a class to one or more elements, often used to style several elements
-	string key   // A unique identifier used to find the node that should be reused
+	string key   // A unique identifier used to find the html element that should be reused
 	string title
 	
 	native void() onClick = null                       // Execute this code when the user clicks the HTML element
@@ -168,39 +168,39 @@ importance:5 dynamic Attributes
 enum lowercase string PointerType: Mouse, Pen, Touch
 	
 immutable PointerEvent
-	Node target             // The element that triggered the event
-	Node currentTarget      // The element to the event handler is attached to
-	int pointerId           // A unique identifier for the pointer causing the event (for example, a finger)
-	PointerType pointerType // Mouse, Pen, or Touch
-	int button              // The mouse button that was pressed to trigger the event
-	stopPropagation         // Mark the event as handled and prevent its parent elements from receiving the event
-	preventDefault          // Prevent the default action (for example, showing the context menu on a right click)
-	int pageX               // The X coordinate of the pointer relative to the whole document
-	int pageY               // The Y coordinate of the pointer relative to the whole document
-	bool shiftKey           // Is the shift key down?
-	bool altKey             // Is the alt key down?
-	bool ctrlKey            // Is the control key down?
-	bool metaKey            // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
+	HTMLElement target        // The element that triggered the event
+	HTMLElement currentTarget // The element to the event handler is attached to
+	int pointerId             // A unique identifier for the pointer causing the event (for example, a finger)
+	PointerType pointerType   // Mouse, Pen, or Touch
+	int button                // The mouse button that was pressed to trigger the event
+	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event
+	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
+	int pageX                 // The X coordinate of the pointer relative to the whole document
+	int pageY                 // The Y coordinate of the pointer relative to the whole document
+	bool shiftKey             // Is the shift key down?
+	bool altKey               // Is the alt key down?
+	bool ctrlKey              // Is the control key down?
+	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 	
 	// The position of the pointer relative to the whole document
 	inline js Vector2 position() new Vector2(this.pageX/Platform.scale, this.pageY/Platform.scale)
 
 immutable HtmlEvent
-	Node target        // The element that triggered the event
-	Node currentTarget // The element to the event handler is attached to
-	int button         // The mouse button that was pressed to trigger the event
-	stopPropagation    // Mark the event as handled and prevent its parent elements from receiving the event
-	preventDefault     // Prevent the default action (for example, showing the context menu on a right click)
+	HTMLElement target        // The element that triggered the event
+	HTMLElement currentTarget // The element to the event handler is attached to
+	int button                // The mouse button that was pressed to trigger the event
+	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event
+	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
 		
 	inline Vector2 relativeTouchPosition() html.getRelativeMousePosition(this, this.currentTarget)
 	inline js Vector2 touchPosition() new Vector2(this.clientX/Platform.scale, this.clientY/Platform.scale)
 
 immutable HtmlKeyboardEvent
-	Key keyCode        // A system and implementation dependent numerical code identifying the unmodified pressed key
-	Node target        // The element that triggered the event
-	Node currentTarget // The element to the event handler is attached to
-	stopPropagation    // Mark the event as handled and prevent its parent elements from receiving the event
-	preventDefault     // Prevent the default action (for example, showing the context menu on a right click)
+	Key keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
+	HTMLElement target        // The element that triggered the event
+	HTMLElement currentTarget // The element to the event handler is attached to
+	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event
+	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
 
 skipInit class Image
 	string previewSrc
@@ -213,7 +213,7 @@ skipInit class Font
 	string name
 	string src
 	
-Node WebView
+HTMLElement WebView
 	string url
 	
 	native void(string url) onWillNavigate
@@ -319,9 +319,9 @@ class DateTime
 	
 global static priority low class html
 	Unit defaultUnit = pixels
-	private Node parentNode
-	private Node currentNode
-	private Node currentOverlay
+	private HTMLElement parentNode
+	private HTMLElement currentNode
+	private HTMLElement currentOverlay
 
 	// Call refresh to re-render the html after you changed any data.
 	// Example:
@@ -350,14 +350,14 @@ global static priority low class html
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform.scale)
 	inline js void scrollTo(float x, float y) window.scrollTo(x,y)
-	inline js Node get(string id) document.getElementById(id)
-	inline js Node documentBody() document.body
+	inline js HTMLElement get(string id) document.getElementById(id)
+	inline js HTMLElement documentBody() document.body
 	
-	js Node getNodeAt(float x, float y) 
-		let node = document.elementFromPoint(x, y)
-		while(!node.id && node.parentElement)
-			node = node.parentElement
-		return node
+	js HTMLElement getElementAt(float x, float y) 
+		let element = document.elementFromPoint(x, y)
+		while(!element.id && element.parentElement)
+			element = element.parentElement
+		return element
 	
 	init
 		initHandlers
@@ -425,13 +425,13 @@ global static priority low class html
 			style.top = {0}
 			style.bottom = {0}
 
-	private js void setDataAttributes: Node node, dynamic attributes
+	private js void setDataAttributes: HTMLElement element, dynamic attributes
 		if(attributes) {
-			let shadowAttributes = node.shadowAttributes || (node.shadowAttributes = new Map)
+			let shadowAttributes = element.shadowAttributes || (element.shadowAttributes = new Map)
 			for(let key in attributes) {
 				let value = attributes[key].toString();
 				if(shadowAttributes.get(key) != value) {
-					node.setAttribute(key, attributes[key]);
+					element.setAttribute(key, attributes[key]);
 					shadowAttributes.set(key, value);
 				}
 			}
@@ -463,46 +463,46 @@ global static priority low class html
 
 		return userMedia
 	
-	private js void setStyle: Node node, dynamic style
+	private js void setStyle: HTMLElement element, dynamic style
 		// We shouldn't need this because the same line of code can't output less styles than previously
 		// A code change always triggers a complete refresh
-		// node.style = ""
+		// element.style = ""
 		if(style) {
 			// Always set style (slowest)
 			// for(let key in html.expandStyle(style))
-			// 	node.style[key] = style[key]
+			// 	element.style[key] = style[key]
 				
 			// Set style if it changed (slow)
 			// for(let key in html.expandStyle(style)) {
 			// 	let value = style[key].toString();
-			// 	if(node.style[key] != value) {
-			// 		node.style[key] = value
+			// 	if(element.style[key] != value) {
+			// 		element.style[key] = value
 			// 	}
 			// }
 			
 			// Check if style has changed using a shadow copy (fastest)
-			let shadowStyle = node.shadowStyle || (node.shadowStyle = new Map)
+			let shadowStyle = element.shadowStyle || (element.shadowStyle = new Map)
 			for(let key in html.expandStyle(style)) {
 				let value = style[key].toString();
 				if(shadowStyle.get(key) != value) {
-					node.style[key] = value;
+					element.style[key] = value;
 					shadowStyle.set(key, value);
 				}
 			}
 				
 			// Temporary Backfill. Starting from Chrome 104, Safari 14.1 this is no longer needed.
 			// let translate = style.translate
-			// if(translate) node.style.transform += "translate("+translate+") "
+			// if(translate) element.style.transform += "translate("+translate+") "
 			// let rotate = style.rotate
-			// if(rotate) node.style.transform += "rotate("+rotate+"turn) "
+			// if(rotate) element.style.transform += "rotate("+rotate+"turn) "
 				
 			// if(style.targetTranslate || style.targetSize) {
 			// 	setTimeout(() => {
-			// 		node.style.transform = "translate("+style.targetTranslate+") "
+			// 		element.style.transform = "translate("+style.targetTranslate+") "
 			// 	}, 1000)
 			// }
 		} else {
-			node.shadowStyle = null
+			element.shadowStyle = null
 		}
 		
 	private js Style getStyleToRevert: Style originalStyle, Style onHover
@@ -512,11 +512,11 @@ global static priority low class html
 		}
 		return styleToRevert
 				
-	js Vector2 getRelativeMousePosition: HtmlEvent event, Node node
-		let rect = node.getBoundingClientRect()
+	js Vector2 getRelativeMousePosition: HtmlEvent event, HTMLElement element
+		let rect = element.getBoundingClientRect()
 		return new Vector2((event.clientX - rect.left)/Platform.scale, (event.clientY - rect.top)/Platform.scale)
 
-	js void setCursorPosition: Node element, int position
+	js void setCursorPosition: HTMLElement element, int position
 		const range = document.createRange();
 		const selection = window.getSelection();
 		range.setStart(element.childNodes[0], position);

@@ -127,7 +127,7 @@ class Touch
 	TouchPhase phase  // Still, Down, Move, Up
 	TouchType type    // Left, Middle, Right, Touch, Pen
 	Vector2 position  // The position of the touch reletive to the page
-	string touchedId  // The id of the touched html node
+	string touchedId  // The id of the touched html element
 	bool shiftKey     // Is the shift key down?
 	bool altKey       // Is the alt key down?
 	bool ctrlKey      // Is the control key down?
