@@ -362,6 +362,7 @@ global static priority low class html
 	
 	init
 		initHandlers
+		initGlobalEventHandlers
 	
 	private js void initHandlers
 		window.onresize = e => {
@@ -371,9 +372,9 @@ global static priority low class html
 
 	internal js void reset
 		while(document.body.nextSibling) 
-			document.body.nextSibling.remove()
-		document.body.innerHTML = ""
-		input.clear
+			document.body.nextSibling.remove();
+		document.body.innerHTML = "";
+		html.clearGlobalEventHandlers();
 	
 	internal js void resize
 		let body = document.body

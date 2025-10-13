@@ -133,14 +133,10 @@ class Touch
 	bool ctrlKey      // Is the control key down?
 	bool metaKey      // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 	
-unit input
+unit html
 	KeyListener[] keyDownListeners
-	// void(Vector2 position, Vector2 delta, bool isPinch)[] scrollListeners
-	
-	init
-		initHandlers
 		
-	js void initHandlers
+	js void initGlobalEventHandlers
 		document.onkeydown = ev => {
 			if(ev.key == "F10") { 
 				Platform.toggleSmallScreen();
@@ -154,28 +150,13 @@ unit input
 				}
 			}
 		}
-		
-		// if(window._handlersInitialized) return
-		// window._handlersInitialized = true
-		// window.addEventListener('wheel', ev => {
-		// 	if(input.scrollListeners.length > 0) {
-		// 		ev.preventDefault();
-		// 		ev.stopPropagation();
-		// 		for(let listener of input.scrollListeners) {
-		// 			listener.invoke(new Vector2(ev.clientX/Platform.scale, ev.clientY/Platform.scale, "px"), new Vector2(-ev.deltaX, ev.deltaY, "px"), ev.ctrlKey);
-		// 		}
-		// 		return false;			
-		// 	}
-		// }, {passive: false})
 
-	clear
+	clearGlobalEventHandlers
+		if(!keyDownListeners) keyDownListeners = []
 		keyDownListeners.clear
-		// scrollListeners.clear
 	
 	onKeyDown: Key key
 		       stored void(Key key) do
 		keyDownListeners.add {key, do}
-		
-	// onScroll: stored void(Vector2 position, Vector2 delta, bool isPinch) do
-	// 	scrollListeners.add do
+
 	
