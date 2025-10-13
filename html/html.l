@@ -392,7 +392,6 @@ global static priority low class html
 			Platform.scale = window.innerWidth / referenceWidth
 			Platform.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
 			Platform.size = new Vector2(referenceWidth, referenceWidth * window.innerHeight/window.innerWidth)
-			body.style = "background-color: white; color: black; font:32px OpenSans"
 			body.style.transform = 'none !important'
 			body.style.marginRight = '0 !important'
 			body.style.marginBottom = '0 !important'
@@ -405,16 +404,14 @@ global static priority low class html
 			const pullLeft = width - width * Platform.scale
 			body.style.marginBottom = `${-pullUp}px`
 			body.style.marginRight = `${-pullLeft}px`
-			body.className = Platform.isMobile ? "mobile" : ""
-			body.style.touchAction = "none"
 		} else {
 			Platform.isMobile = localStorage.getItem("isMobile") == "true"
 			Platform.scale = Platform.isDebug ? Platform.debugScale : 1
 			body.style.zoom = Platform.scale
-			body.style.font = "32px OpenSans"
-			body.className = Platform.isMobile ? "mobile" : ""
-			body.style.touchAction = "none"
 		}
+		body.style = "background-color: white; color: black; font:12px OpenSans"
+		body.className = Platform.isMobile ? "mobile" : ""
+		body.style.touchAction = "none"
 	
 	enableScrolling: bool value
 		let style = documentBody.style
