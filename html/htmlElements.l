@@ -271,6 +271,7 @@ global static class html
 	importance:5
 	global HTMLElement input: string value = ""                 // The value to display in the field
 		                      string placeholder = ""           // The placeholder text to display in the field
+							  bool readOnly = false             // Whether the field should be read only
 							  void(string value) onInput = null // Called immediately after every keystroke
 							  bool focused = false              // Whether the cursor should be placed in the field
 		                      expand Attributes attributes = {} // The attributes of the HTML element
@@ -280,6 +281,7 @@ global static class html
 		let element = div tag:"input", attributes, style, data, location
 		element.value = value
 		element.placeholder = placeholder
+		element.readOnly = readOnly
 		element.oninput = onInput(element.value)
 		if focused: element.focus
 		return element

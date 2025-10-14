@@ -16,6 +16,7 @@ class HTMLElement
 	string shadowInnerHtml
 	string value
 	string placeholder
+	bool readOnly
 	string src
 	any srcObject
 	HTMLElement firstChild
