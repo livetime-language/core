@@ -80,7 +80,7 @@ class HTMLElement
 	inline js void animate: Style from
 		                    Style to
 		                    float duration = 1 seconds
-		                    AnimationFill fill = Forwards
+		                    AnimationFill fill = forwards
 		                    easing = "linear"
 		this.animate([html.expandStyle(from), html.expandStyle(to)], {@duration:duration, @fill:fill, @easing:easing})
 		
@@ -419,11 +419,11 @@ global static priority low class html
 	enableScrolling: bool value
 		let style = documentBody.style
 		if value
-			style.overflow = Visible
-			style.position = Static
+			style.overflow = visible
+			style.position = static
 		else
-			style.overflow = Hidden
-			style.position = Fixed
+			style.overflow = hidden
+			style.position = fixed
 			style.top = {0}
 			style.bottom = {0}
 

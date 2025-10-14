@@ -350,16 +350,16 @@ global skipInit unit math
 
 // A color comprised of a red, green, blue and alpha component
 class Color
-	global const Color White       = {"#ffffff", "White"}
-	global const Color Black       = {"#000000", "Black"}
-	global const Color Red         = {"#ef476f", "Red"}
-	global const Color Yellow      = {"#ffd166", "Yellow"}
-	global const Color Green       = {"#06d6a0", "Green"}
-	global const Color Blue        = {"#118ab2", "Blue"}
-	global const Color Gray        = {"#3d3d3d", "Gray"}
-	global const Color Transparent = {"#00000000", "Transparent"}
+	global const Color white       = {"#ffffff", "White"}
+	global const Color black       = {"#000000", "Black"}
+	global const Color red         = {"#ef476f", "Red"}
+	global const Color yellow      = {"#ffd166", "Yellow"}
+	global const Color green       = {"#06d6a0", "Green"}
+	global const Color blue        = {"#118ab2", "Blue"}
+	global const Color gray        = {"#3d3d3d", "Gray"}
+	global const Color transparent = {"#00000000", "Transparent"}
 		
-	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
+	const Color transparentRed     = {"#ff000080", "Transparent Red"}
 	
 	string colorString
 	string name

@@ -215,8 +215,8 @@ global static class html
 		        expand Style style = {}             // The css style of the HTML element
 		        void() children = null              // The children of the HTML element
 		        SourceCodeLocation location
-		style.display = Flex
-		style.flexDirection = Row
+		style.display = flex
+		style.flexDirection = row
 		return div attributes, style, children, location
 
 	// Render a html div element with a flex layout and a flex direction of "Column"
@@ -231,8 +231,8 @@ global static class html
 		           expand Style style = {}             // The css style of the HTML element
 		           void() children = null              // The children of the HTML element
 		           SourceCodeLocation location
-		style.display = Flex
-		style.flexDirection = Column
+		style.display = flex
+		style.flexDirection = column
 		return div attributes, style, children, location
 
 	// Render a html div element with a grid layout
@@ -242,7 +242,7 @@ global static class html
 		         float[] gridTemplateColumns         // The sizes of the columns
 		         void() children = null              // The children of the HTML element
 		         SourceCodeLocation location
-		style.display = Grid
+		style.display = grid
 		string gridTemplateColumnsString
 		for gridTemplateColumns
 			gridTemplateColumnsString += "{.}fr "
@@ -483,8 +483,8 @@ global static class html
 		let element = div tag:"textarea", attributes, style, location
 		element.value = model
 		element.style.minHeight = 16px
-		element.style.overflow = Scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = Hidden
-		element.oninput = model = element.value; element.style.overflow = Scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = Hidden; changeHandler
+		element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden
+		element.oninput = model = element.value; element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden; changeHandler
 		if focused or focusTabIndex == attributes.tabIndex: element.focus
 
 	// ---------------------------------------- Canvas ----------------------------------------
@@ -525,7 +525,7 @@ global static class html
 	importance:4
 	global drawRectangle: Vector2 pos
 		                  Vector2 size
-		                  Color color = Black
+		                  Color color = black
 		currentContext.fillStyle = color.colorString
 		currentContext.fillRect(pos.x, pos.y, size.x, size.y)
 		
@@ -540,7 +540,7 @@ global static class html
 		             Vector2 pos
 		             float size = 30
 		             Font font = null
-		             Color color = Black
+		             Color color = black
 		currentContext.fillStyle = color.colorString
 		string effectiveFont = font ? font.name : "Open Sans"
 		currentContext.font = "{size}px {effectiveFont}"
@@ -570,7 +570,7 @@ global static class html
 		   expand Attributes attributes = {} // The attributes of the HTML element 
 		   expand Style style = {}           // The css style of the HTML element 
 		   SourceCodeLocation location
-		style.position = Absolute
+		style.position = absolute
 		style.zIndex = -1000
 		let element = div tag:"video", attributes, style, location, data:{src}
 		element.muted = true
@@ -641,7 +641,7 @@ global static class html
 		
 		if style == null: style = {}	
 		if not style.inset:           style.inset = {0,0,0,0}
-		if not style.position:        style.position = Fixed
+		if not style.position:        style.position = fixed
 		setStyle element, style
 		
 		if attributes != null

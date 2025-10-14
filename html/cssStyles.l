@@ -103,76 +103,78 @@ struct Vector2
 		let y = y - value.y
 		return math.sqrt(x*x + y*y)
 	
-enum AnimationFill
-	None = "none"
-	Forwards = "forwards"
-	Backwards = "backwards"
-	Both = "both"
+enum string AnimationFill
+	none = "none"
+	forwards = "forwards"
+	backwards = "backwards"
+	both = "both"
 	
-enum FlexDirection
-	Row = "row" // The flex container's main-axis will be the same as the text direction
-	Column = "column" // The flex container's main-axis will be the same as the block-axis
+enum string FlexDirection
+	row = "row" // The flex container's main-axis will be the same as the text direction
+	column = "column" // The flex container's main-axis will be the same as the block-axis
 	
-	RowReverse = "row-reverse" // The flex container's main-axis will be the opposite direction of the text direction
-	ColumnReverse = "column-reverse" // The flex container's main-axis will be the opposite direction of the block-axis
+	rowReverse = "row-reverse" // The flex container's main-axis will be the opposite direction of the text direction
+	columnReverse = "column-reverse" // The flex container's main-axis will be the opposite direction of the block-axis
 	
-enum FlexWrap
-	Wrap = "wrap" // The flex items break into multiple lines
-	WrapReverse = "wrap-reverse" // Behaves the same as wrap but cross-start and cross-end are permuted
-	NoWrap = "nowrap" // The flex items are laid out in a single line which may cause the flex container to overflow
+enum string FlexWrap
+	wrap = "wrap" // The flex items break into multiple lines
+	wrapReverse = "wrap-reverse" // Behaves the same as wrap but cross-start and cross-end are permuted
+	noWrap = "nowrap" // The flex items are laid out in a single line which may cause the flex container to overflow
 	
-enum AlignItems
-	FlexStart = "flex-start" // The items are individually aligned toward the start edge of the container
-	Center = "center" // The items are individuallycentered on the secondary axis
-	FlexEnd = "flex-end" // The items are individuallyaligned toward the end edge of the container
-	Stretch = "stretch" // The items are individually stretched along the secondary axis
+enum string AlignItems
+	start = "flex-start" // The items are individually aligned toward the start edge of the container
+	center = "center" // The items are individuallycentered on the secondary axis
+	end = "flex-end" // The items are individuallyaligned toward the end edge of the container
+	stretch = "stretch" // The items are individually stretched along the secondary axis
 	
-	Normal = "normal" // For flex items, the keyword behaves as stretch
+	normal = "normal" // For flex items, the keyword behaves as stretch
 	SelfStart = "self-start" // The items are aligned toward the start edge of the container in the items writing mode
 	SelfEnd = "self-end" // The items are aligned toward the end edge of the container in the items writing mode
 	
 	Baseline = "baseline" // All flex items are aligned such that their flex container baselines align
 	FirstBaseline= "first baseline" // All flex items are aligned such that their flex container baselines align
 	
-	// Added in Chrome 93
-	// Start = "start" // The items are individually aligned toward the start edge of the container
-	// End = "end" // The items are individually aligned toward the end edge of the container
+	// For backwards compatibility
+	flexStart = "flex-start" // The items are individually aligned toward the start edge of the container
+	flexEnd = "flex-end" // The items are individuallyaligned toward the end edge of the container
 
 	// Only supported in Firefox
 	// LastBaseline = "last baseline" // All flex items are aligned such that their flex container baselines align
 	
-enum AlignContent
-	FlexStart = "flex-start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
-	Center = "center" // When wrapping, the whole content is centered on the cross axis
-	FlexEnd = "flex-end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
+enum string AlignContent
+	start = "flex-start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
+	center = "center" // When wrapping, the whole content is centered on the cross axis
+	end = "flex-end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
 	
-	SpaceEvenly = "space-evenly" // When wrapping, distribte the lines evenly with the same space around them
-	SpaceBetween = "space-between" // When wrapping, distribte the lines evenly with no space at the top and bottom
-	SpaceAround = "space-around" // When wrapping, distribte the lines with the same margins around them
+	spaceEvenly = "space-evenly" // When wrapping, distribte the lines evenly with the same space around them
+	spaceBetween = "space-between" // When wrapping, distribte the lines evenly with no space at the top and bottom
+	spaceAround = "space-around" // When wrapping, distribte the lines with the same margins around them
 	
-	Normal = "normal" // The items are packed in their default position as if no align-content value was set
-	Baseline = "baseline" // When wrapping, the whole content is aligned so the baseline match on the cross axis
-	Stretch = "stretch" // When wrapping, stretch the whole content so the container is completely filled
+	normal = "normal" // The items are packed in their default position as if no align-content value was set
+	baseline = "baseline" // When wrapping, the whole content is aligned so the baseline match on the cross axis
+	stretch = "stretch" // When wrapping, stretch the whole content so the container is completely filled
+	
+	// For backwards compatibility
+	flexStart = "flex-start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
+	flexEnd = "flex-end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
+	
+enum string JustifyContent
+	start = "flex-start" // The whole content is aligned toward the start edge on the main axis
+	center = "center" // The whole content is centered on the main axis
+	end = "flex-end" // The whole content is aligned toward the end edge on the main axis
+	
+	spaceEvenly = "space-evenly" // Distribte the items evenly with the same space around them
+	spaceBetween = "space-between" // Distribte the items evenly with no space at the top and bottom
+	spaceAround = "space-around" // Distribte the items with the same margins around them
+	
+	normal = "normal" // The items are packed in their default position as if no justify-content value was set
+	baseline = "baseline" // The whole content is aligned so the baseline match on the cross axis
+	
+	// For backwards compatibility
+	flexStart = "flex-start" // The items are packed flush to each other toward the start edge of the alignment container in the main axis.
+	flexEnd = "flex-end" // The items are packed flush to each other toward the end edge of the alignment container in the main axis.
 	
 	// Added in Chrome 93
-	// Start = "start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
-	// End = "end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
-	
-enum JustifyContent
-	FlexStart = "flex-start" // The whole content is aligned toward the start edge on the main axis
-	Center = "center" // The whole content is centered on the main axis
-	FlexEnd = "flex-end" // The whole content is aligned toward the end edge on the main axis
-	
-	SpaceEvenly = "space-evenly" // Distribte the items evenly with the same space around them
-	SpaceBetween = "space-between" // Distribte the items evenly with no space at the top and bottom
-	SpaceAround = "space-around" // Distribte the items with the same margins around them
-	
-	Normal = "normal" // The items are packed in their default position as if no justify-content value was set
-	Baseline = "baseline" // The whole content is aligned so the baseline match on the cross axis
-	
-	// Added in Chrome 93
-	// Start = "start" // The items are packed flush to each other toward the start edge of the alignment container in the main axis.
-	// End = "end" // The items are packed flush to each other toward the end edge of the alignment container in the main axis.
 	// Left = "left" // The items are packed flush to each other toward the left edge of the alignment container. If the property's axis is not parallel with the inline axis, this value behaves like start.
 	// Right = "right" // The items are packed flush to each other toward the right edge of the alignment container in the appropriate axis. If the property's axis is not parallel with the inline axis, this value behaves like start.
 	
@@ -183,128 +185,128 @@ enum JustifyContent
 	// Not supported for flexbox
 	// Stretch = "stretch" // Stretch the whole content so the container is completely filled
 	
-enum Display
-	Flex = "flex" // A block element that lays out its content according to the flexbox model
-	Grid = "grid" // A block element that lays out its content according to the grid model
-	Table = "table" // A block element that  behave like HTML <table> element
+enum string Display
+	flex = "flex" // A block element that lays out its content according to the flexbox model
+	grid = "grid" // A block element that lays out its content according to the grid model
+	table = "table" // A block element that  behave like HTML <table> element
 	
-	Block = "block" // A block element, generates line breaks before and after the element when in the normal flow
-	Inline = "inline" // An inline element, will be on the same line without line breaks in the normal flow
+	block = "block" // A block element, generates line breaks before and after the element when in the normal flow
+	inline = "inline" // An inline element, will be on the same line without line breaks in the normal flow
 	
-	InlineBlock = "inline-block" // A block element that will be flowed with surrounding content (like an image)
-	InlineFlex = "inline-flex" // An inline element that lays out its content according to the flexbox model
-	InlineGrid = "inline-grid" // An inline element that lays out its content according to the grid model
-	InlineTable = "inline-table" // An inline element that  behave like HTML <table> element
+	inlineBlock = "inline-block" // A block element that will be flowed with surrounding content (like an image)
+	inlineFlex = "inline-flex" // An inline element that lays out its content according to the flexbox model
+	inlineGrid = "inline-grid" // An inline element that lays out its content according to the grid model
+	inlineTable = "inline-table" // An inline element that  behave like HTML <table> element
 	
-	Contents = "contents" // These elements don't produce a specific box by themselves
-	FlowRoot = "flow-root" // A block element that establishes a new block formatting context
+	contents = "contents" // These elements don't produce a specific box by themselves
+	flowRoot = "flow-root" // A block element that establishes a new block formatting context
 	
-	None = "none" // Turns off the display of an element so that it has no effect on layout
+	none = "none" // Turns off the display of an element so that it has no effect on layout
 	
-enum Cursor
-	Pointer = "pointer" // The cursor is a pointer that indicates a link, typically an image of a pointing hand
-	Default = "default" // The platform-dependent default cursor, typically an arrow
-	Grab = "grab" // Something can be grabbed (dragged to be moved)
-	Grabbing = "grabbing" // Something is being grabbed (dragged to be moved)
-	NoDrop = "no-drop" // An item may not be dropped at the current location
-	NotAllowed = "not-allowed" // The requested action will not be carried out
-	Move = "move" // Something is to be moved
-	Copy = "copy" // Something is to be copied
-	ContextMenu = "context-menu" // A context menu is available
-	Help = "help" // Help information is available
-	Progress = "progress" // The program is busy in the background, but the user can still interact with the interface
-	Wait = "wait" // The program is busy, and the user can't interact with the interface
-	Cell = "cell" // The table cell or set of cells can be selected
-	Crosshair = "crosshair" // Cross cursor, often used to indicate selection in a bitmap
-	Text = "text" // The text can be selected Typically the shape of an I-beam
-	VerticalText = "vertical-text" // The vertical text can be selected, typically the shape of a sideways I-beam
-	Alias = "alias" // An alias or shortcut is to be created
-	AllScroll = "all-scroll" // Something can be scrolled in any direction (on Windows, all-scroll is the same as move)
+enum string Cursor
+	pointer = "pointer" // The cursor is a pointer that indicates a link, typically an image of a pointing hand
+	default = "default" // The platform-dependent default cursor, typically an arrow
+	grab = "grab" // Something can be grabbed (dragged to be moved)
+	grabbing = "grabbing" // Something is being grabbed (dragged to be moved)
+	noDrop = "no-drop" // An item may not be dropped at the current location
+	notAllowed = "not-allowed" // The requested action will not be carried out
+	move = "move" // Something is to be moved
+	copy = "copy" // Something is to be copied
+	contextMenu = "context-menu" // A context menu is available
+	help = "help" // Help information is available
+	progress = "progress" // The program is busy in the background, but the user can still interact with the interface
+	wait = "wait" // The program is busy, and the user can't interact with the interface
+	cell = "cell" // The table cell or set of cells can be selected
+	crosshair = "crosshair" // Cross cursor, often used to indicate selection in a bitmap
+	text = "text" // The text can be selected Typically the shape of an I-beam
+	verticalText = "vertical-text" // The vertical text can be selected, typically the shape of a sideways I-beam
+	alias = "alias" // An alias or shortcut is to be created
+	allScroll = "all-scroll" // Something can be scrolled in any direction (on Windows, all-scroll is the same as move)
 		
-	ResizeCol = "col-resize" // The column can be resized horizontally, typically an left-right arrow with a vertial line
-	ResizeRow = "row-resize" // The row can be resized vertically, typically an up-down arrow with a horizontal line
-	ResizeN = "n-resize" // The top of of box can be moved
-	ResizeE = "e-resize" // The right of of box can be moved
-	ResizeS = "s-resize" // The bottom of of box can be moved
-	ResizeW = "w-resize" // The left of of box can be moved
-	ResizeNE = "ne-resize" // The top right corner of a box can be moved
-	ResizeNW = "nw-resize" // The top left corner of a box can be moved
-	ResizeSE = "se-resize" // The bottom right corner of a box can be moved
-	ResizeSW = "sw-resize" // The bottom left corner of a box can be moved
-	ResizeEW = "ew-resize" // Something can be moved left and right
-	ResizeNS = "ns-resize" // Something can be moved up and down
-	ResizeNESW = "nesw-resize" // Something can be moved diagonally from the bottom left to the top right
-	ResizeNWSE = "nwse-resize" // Something can be moved diagonally from the top left to the bottom right
+	resizecol = "col-resize" // The column can be resized horizontally, typically an left-right arrow with a vertial line
+	resizeRow = "row-resize" // The row can be resized vertically, typically an up-down arrow with a horizontal line
+	resizeN = "n-resize" // The top of of box can be moved
+	resizeE = "e-resize" // The right of of box can be moved
+	resizeS = "s-resize" // The bottom of of box can be moved
+	resizeW = "w-resize" // The left of of box can be moved
+	resizeNE = "ne-resize" // The top right corner of a box can be moved
+	resizeNW = "nw-resize" // The top left corner of a box can be moved
+	resizeSE = "se-resize" // The bottom right corner of a box can be moved
+	resizeSW = "sw-resize" // The bottom left corner of a box can be moved
+	resizeEW = "ew-resize" // Something can be moved left and right
+	resizeNS = "ns-resize" // Something can be moved up and down
+	resizeNESW = "nesw-resize" // Something can be moved diagonally from the bottom left to the top right
+	resizeNWSE = "nwse-resize" // Something can be moved diagonally from the top left to the bottom right
 	
-	ZoomIn = "zoom-in" // Something can be zoomed in
-	ZoomOut = "zoom-out" // Something can be zoomed out	
+	zoomIn = "zoom-in" // Something can be zoomed in
+	zoomOut = "zoom-out" // Something can be zoomed out	
 	
-	Auto = "auto" // The cursor will be based on the current context, for example "text" when hovering text
-	None = "none" // No cursor is rendered
+	auto = "auto" // The cursor will be based on the current context, for example "text" when hovering text
+	none = "none" // No cursor is rendered
 	
-enum Position
-	Absolute = "absolute" // Remove the element from the normal flow, it can be moved with top, right, bottom and left
-	Relative = "relative" // Position the element in the normal flow, it can be moved with top, right, bottom and left
-	Fixed = "fixed" // Remove from the element from the normal flow and fix its position
-	Sticky = "sticky" // Position the element in the normal flow and fix its position
-	Static = "static" // Position the element in the normal flow of the document
+enum string Position
+	absolute = "absolute" // Remove the element from the normal flow, it can be moved with top, right, bottom and left
+	relative = "relative" // Position the element in the normal flow, it can be moved with top, right, bottom and left
+	fixed = "fixed" // Remove from the element from the normal flow and fix its position
+	sticky = "sticky" // Position the element in the normal flow and fix its position
+	static = "static" // Position the element in the normal flow of the document
 	
-enum TextAlign
-	Left = "left" // The inline contents are aligned to the left edge of the line box
-	Center = "center" // The inline contents are centered within the line box
-	Right = "right" // The inline contents are aligned to the right edge of the line box
-	Justify = "justify" // The inline contents are justified
+enum string TextAlign
+	left = "left" // The inline contents are aligned to the left edge of the line box
+	center = "center" // The inline contents are centered within the line box
+	right = "right" // The inline contents are aligned to the right edge of the line box
+	justify = "justify" // The inline contents are justified
 	
-	Start = "start" // The same as left if direction is left-to-right and right if direction is right-to-left
-	End = "end" // The same as right if direction is left-to-right and left if direction is right-to-left
+	start = "start" // The same as left if direction is left-to-right and right if direction is right-to-left
+	end = "end" // The same as right if direction is left-to-right and left if direction is right-to-left
 	
-	MatchParent = "match-parent" // Similar to inherit, but the values are calculated according to the parent's direction
+	matchParent = "match-parent" // Similar to inherit, but the values are calculated according to the parent's direction
 	
-enum TextOverflow
-	Ellipsis = "ellipsis" // Use this to show "..." when text is too long
-	Clip = "clip" // Use the default behavior
+enum string TextOverflow
+	ellipsis = "ellipsis" // Use this to show "..." when text is too long
+	clip = "clip" // Use the default behavior
 
-enum FontStyle
-	Normal = "normal" // The standard font style
-	Italic = "italic" // Italic is a way to emphasise key points in a printed text, to identify many types of creative works, to cite foreign words or phrases
-	Oblique = "oblique" // If no oblique version of the font is available, the italic style is used
+enum string FontStyle
+	normal = "normal" // The standard font style
+	italic = "italic" // Italic is a way to emphasise key points in a printed text, to identify many types of creative works, to cite foreign words or phrases
+	oblique = "oblique" // If no oblique version of the font is available, the italic style is used
 
-enum Overflow: 
-	Hidden = "hidden" // Content is clipped if necessary to fit the padding box.
-	Scroll = "scroll" // Content is clipped if necessary to fit the padding box and a scrollbar is shown.
-	Visible = "visible" // Content is not clipped, it may be rendered outside the padding box.
-	Auto = "auto" // Use the default behavior, which is visible.
+enum string Overflow: 
+	hidden = "hidden" // Content is clipped if necessary to fit the padding box.
+	scroll = "scroll" // Content is clipped if necessary to fit the padding box and a scrollbar is shown.
+	visible = "visible" // Content is not clipped, it may be rendered outside the padding box.
+	auto = "auto" // Use the default behavior, which is visible.
 
-enum WhiteSpace
-	NoWrap = "nowrap" // Collapses white space as for normal and suppresses line breaks (text wrapping).
-	Pre = "pre" // Sequences of white space are preserved. Lines are only broken at newline characters and at <br>.
-	PreWrap = "pre-wrap" // Sequences of white space are preserved. Lines are broken as necessary to fill line boxes.
-	PreLine = "pre-line" // Sequences of white space are collapsed. Lines are broken as necessary to fill line boxes.
-	BreakSpaces = "break-spaces" // Sequences of white space are preserved. Lines can be broken at arbitrary points.
-	Normal = "normal" // Sequences of white space are collapsed. Lines are broken as necessary to fill line boxes.
+enum string WhiteSpace
+	noWrap = "nowrap" // Collapses white space as for normal and suppresses line breaks (text wrapping).
+	pre = "pre" // Sequences of white space are preserved. Lines are only broken at newline characters and at <br>.
+	preWrap = "pre-wrap" // Sequences of white space are preserved. Lines are broken as necessary to fill line boxes.
+	preLine = "pre-line" // Sequences of white space are collapsed. Lines are broken as necessary to fill line boxes.
+	breakSpaces = "break-spaces" // Sequences of white space are preserved. Lines can be broken at arbitrary points.
+	normal = "normal" // Sequences of white space are collapsed. Lines are broken as necessary to fill line boxes.
 
-importance:5 enum BorderStyle
-	Solid = "solid" // Displays a single, straight, solid line
-	Dotted = "dotted" // Displays a series of rounded dots
-	Dashed = "dashed" // Displays a series of short square-ended dashes or line segments
-	Double = "double" // Displays two straight lines that add up to the pixel size defined by border-width
-	Groove = "groove" // Displays a border with a carved appearance (the opposite of ridge)
-	Ridge = "ridge" // Displays a border with an extruded appearance (the opposite of groove)
-	Inset = "inset" // Displays a border that makes the element appear embedded (the opposite of outset)
-	Outset = "outset" // Displays a border that makes the element appear embossed (the opposite of inset)
-	Hidden = "hidden" // Displays no border
-	None = "none" // Displays no border
+importance:5 enum string BorderStyle
+	solid = "solid" // Displays a single, straight, solid line
+	dotted = "dotted" // Displays a series of rounded dots
+	dashed = "dashed" // Displays a series of short square-ended dashes or line segments
+	double = "double" // Displays two straight lines that add up to the pixel size defined by border-width
+	groove = "groove" // Displays a border with a carved appearance (the opposite of ridge)
+	ridge = "ridge" // Displays a border with an extruded appearance (the opposite of groove)
+	inset = "inset" // Displays a border that makes the element appear embedded (the opposite of outset)
+	outset = "outset" // Displays a border that makes the element appear embossed (the opposite of inset)
+	hidden = "hidden" // Displays no border
+	none = "none" // Displays no border
 
-enum ObjectFit
-	Contain = "contain" // The replaced content is scaled to maintain its aspect ratio while fitting within the element's content box. The entire object is made to fill the box, while preserving its aspect ratio, so the object will be "letterboxed" or "pillarboxed" if its aspect ratio does not match the aspect ratio of the box.
-	Cover = "cover" // The replaced content is sized to maintain its aspect ratio while filling the element's entire content box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be clipped to fit.
-	Fill = "fill" // The replaced content is sized to fill the element's content box. The entire object will completely fill the box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be stretched to fit.
-	None = "none" // The replaced content is not resized.
-	ScaleDown = "scale-down" // The content is sized as if none or contain were specified, whichever would result in a smaller concrete object size.
+enum string ObjectFit
+	contain = "contain" // The replaced content is scaled to maintain its aspect ratio while fitting within the element's content box. The entire object is made to fill the box, while preserving its aspect ratio, so the object will be "letterboxed" or "pillarboxed" if its aspect ratio does not match the aspect ratio of the box.
+	cover = "cover" // The replaced content is sized to maintain its aspect ratio while filling the element's entire content box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be clipped to fit.
+	fill = "fill" // The replaced content is sized to fill the element's content box. The entire object will completely fill the box. If the object's aspect ratio does not match the aspect ratio of its box, then the object will be stretched to fit.
+	none = "none" // The replaced content is not resized.
+	scaleDown = "scale-down" // The content is sized as if none or contain were specified, whichever would result in a smaller concrete object size.
 
-enum lowercase string PointerEvents
-	None // On its own, it doesn't trigger pointer event, but its subtree could by setting pointerEvents 
-	Auto // The element behaves as it would if the pointerEvents property were not specified
+enum string PointerEvents
+	none // On its own, it doesn't trigger pointer event, but its subtree could by setting pointerEvents 
+	auto // The element behaves as it would if the pointerEvents property were not specified
 	
 importance:5 struct Dimension
 	global const Dimension auto = {dimensionString:"auto"} // Automatically adjust the value to distribute the space evenly
@@ -334,8 +336,8 @@ importance:5 class Border
 		this.borderString = borderString
 	
 	Border: implicit Dimension width = 1px // The thickness of the border
-	        BorderStyle style = Solid      // The style of the border
-            Color color = Black            // The color of the border. You can use a color literal to define a color, e.g. color:#ff0000
+	        BorderStyle style = solid      // The style of the border
+            Color color = black            // The color of the border. You can use a color literal to define a color, e.g. color:#ff0000
 		borderString = "{width} {style} {color}"
 
 importance:5 class BoxShadow
@@ -348,7 +350,7 @@ importance:5 class BoxShadow
 	BoxShadow: Vector2 offset                  // How far should the shadow be away from the element as a vector, e.g. {10px, 10px}
 		       implicit Dimension blur = 8px   // How blurry should the shadow be?
 		       implicit Dimension spread = 8px // Positive values will make the shadow bigger, negative values make it smaller
-		       Color color = Black             // The color of the shadow. You can use a color literal to define a color, e.g. color:#ff0000
+		       Color color = black             // The color of the shadow. You can use a color literal to define a color, e.g. color:#ff0000
 		       bool inset = false              // Changes the shadow to one inside the frame (as if the content was debossed inside the box)
 		boxShadowString = "{inset ? "inset ":""}{offset.x}{offset.unit} {offset.y}{offset.unit} {blur} {spread} {color}"
 
@@ -356,7 +358,7 @@ importance:5 class BoxShadow
 		       implicit Dimension offsetY = 0px // How far should the shadow be away from the element in the y direction?
 		       implicit Dimension blur = 8px    // How blurry should the shadow be?
 		       implicit Dimension spread = 8px  // Positive values will make the shadow bigger, negative values make it smaller
-		       Color color = Black              // The color of the shadow. You can use a color literal to define a color, e.g. color:#ff0000
+		       Color color = black              // The color of the shadow. You can use a color literal to define a color, e.g. color:#ff0000
 		       bool inset = false               // Changes the shadow to one inside the frame (as if the content was debossed inside the box)
 		boxShadowString = "{inset ? "inset ":""}{offsetX} {offsetY} {blur} {spread} {color}"
 
