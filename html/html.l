@@ -164,7 +164,8 @@ importance:5 dynamic Attributes
 	native void(HtmlEvent ev) onRightClick = null      // Execute this code when the user clicks the HTML element with the right mouse button
 	native void(HtmlKeyboardEvent ev) onKeyDown = null // Execute this code when the user presses a key on the keyboard
 	native void(HtmlKeyboardEvent ev) onKeyUp = null   // Execute this code when the user releases a key on the keyboard
-	
+	native void() onBlur = null                        // Execute this code when the element loses focus
+
 	int tabIndex = 0
 
 enum lowercase string PointerType: Mouse, Pen, Touch
