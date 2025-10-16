@@ -167,9 +167,9 @@ importance:5 dynamic Attributes
 	string key   // A unique identifier used to find the html element that should be reused
 	string title
 	
-	native void() onClick = null                       // Execute this code when the user clicks the HTML element
-	native void(HtmlEvent ev) onLeftClick = null       // Execute this code when the user clicks the HTML element
-	native void(HtmlEvent ev) onRightClick = null      // Execute this code when the user clicks the HTML element with the right mouse button
+	native void() onClick = null                       // Execute this code when the user releases the left mouse button on the HTML element
+	native void(HtmlEvent ev) onRightClick = null      // Execute this code when the user releases the right mouse button on the HTML element
+	native void(PointerEvent ev) onPointerDown = null  // Execute this code when the user presses down the left mouse button on the HTML element
 	
 	native void(HtmlKeyboardEvent ev) onKeyDown = null // Execute this code when the user presses a key on the keyboard
 	native void(HtmlKeyboardEvent ev) onKeyUp = null   // Execute this code when the user releases a key on the keyboard

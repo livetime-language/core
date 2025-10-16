@@ -63,15 +63,17 @@ global static class html
 			if attributes.id and attributes.id != element.id:           element.id = attributes.id
 			if attributes.class and attributes.class != element.class:  element.class = attributes.class
 			if attributes.title and attributes.title != element.title:  element.title = attributes.title
+			if attributes.tabIndex:                                     element.set("tabindex", attributes.tabIndex.toString)
 			
 			if attributes.onClick != null:      element.onclick = attributes.onClick
-			if attributes.onLeftClick != null:  element.onclick = attributes.onLeftClick
 			if attributes.onRightClick != null: element.oncontextmenu = attributes.onRightClick
+			if attributes.onPointerDown != null:element.onpointerdown = attributes.onPointerDown
+
 			if attributes.onKeyDown != null:    element.onkeydown = attributes.onKeyDown
 			if attributes.onKeyUp != null:      element.onkeyup = attributes.onKeyUp
+
 			if attributes.onBlur != null:       element.onblur = attributes.onBlur
 			if attributes.onFocus != null:      element.onfocus = attributes.onFocus
-			if attributes.tabIndex:             element.set("tabindex", attributes.tabIndex.toString)
 			
 		element.sourceLocation = sourceLocation
 		if onHover != null
