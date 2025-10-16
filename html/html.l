@@ -66,10 +66,13 @@ class HTMLElement
 	
 	native void(HtmlKeyboardEvent ev) onkeydown
 	native void(HtmlKeyboardEvent ev) onkeyup
+
 	native void(HtmlEvent ev) oninput
 	native void(HtmlEvent ev) onchange
 	native void(HtmlEvent ev) onload
-	native void(HtmlEvent ev) onblur
+
+	native void(FocusEvent ev) onblur
+	native void(FocusEvent ev) onfocus
 	
 	inline js void set(string name, string value) this.setAttribute(name, value)
 	inline js void get(string name) this.getAttribute(name)
@@ -153,6 +156,11 @@ class HTMLElement
 		
 	inline js void captureTouch(Touch touch) this.setPointerCapture(touch.id)
 
+interface FocusEvent
+	HTMLElement target        // The element that triggered the event
+	HTMLElement currentTarget // The element to the event handler is attached to
+	HTMLElement relatedTarget // The element that the focus moved to
+
 importance:5 dynamic Attributes
 	string id    // A unique string to indentify a specic element, often used to style a single element
 	string class // A string to assign a class to one or more elements, often used to style several elements
@@ -162,9 +170,12 @@ importance:5 dynamic Attributes
 	native void() onClick = null                       // Execute this code when the user clicks the HTML element
 	native void(HtmlEvent ev) onLeftClick = null       // Execute this code when the user clicks the HTML element
 	native void(HtmlEvent ev) onRightClick = null      // Execute this code when the user clicks the HTML element with the right mouse button
+	
 	native void(HtmlKeyboardEvent ev) onKeyDown = null // Execute this code when the user presses a key on the keyboard
 	native void(HtmlKeyboardEvent ev) onKeyUp = null   // Execute this code when the user releases a key on the keyboard
-	native void() onBlur = null                        // Execute this code when the element loses focus
+	
+	native void(FocusEvent ev) onBlur = null           // Execute this code when the element loses focus
+	native void(FocusEvent ev) onFocus = null          // Execute this code when the element gains focus
 
 	int tabIndex = 0
 

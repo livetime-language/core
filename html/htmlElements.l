@@ -70,6 +70,7 @@ global static class html
 			if attributes.onKeyDown != null:    element.onkeydown = attributes.onKeyDown
 			if attributes.onKeyUp != null:      element.onkeyup = attributes.onKeyUp
 			if attributes.onBlur != null:       element.onblur = attributes.onBlur
+			if attributes.onFocus != null:      element.onfocus = attributes.onFocus
 			if attributes.tabIndex:             element.set("tabindex", attributes.tabIndex.toString)
 			
 		element.sourceLocation = sourceLocation
