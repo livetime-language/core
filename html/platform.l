@@ -378,6 +378,11 @@ class Color
 		   int alpha = 255
 		this.colorString = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue) + componentToHex(alpha)
 			
+	global static Color hsl: float hue
+		                            float saturation
+		                            float lightness
+		return new Color(colorString:"hsl(" + hue + ", " + saturation + "%, " + lightness + "%)")
+
 	static js string componentToHex: int c
 		var hex = c.toString(16);
 		return hex.length == 1 ? "0" + hex : hex;
