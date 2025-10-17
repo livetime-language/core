@@ -387,7 +387,9 @@ immutable class string
 	inline js string toString() this
 	importance:5 inline js int toInt := parseInt(this)
 	importance:5 inline js int toFloat := parseFloat(this)
-	importance:5 inline js dynamic parseJson() JSON.parse(this)
+	
+	importance:5 inline js any parseJson() JSON.parse(this)
+	importance:5 inline js any parseYaml() yaml.parse(this)
 		
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
 	
@@ -1676,9 +1678,6 @@ interface object
 	
 	inline js bool toBool() (this != null)
 	// inline js string toString() object_stringify(this, 3)
-		
-	importance:5 static inline js string toJson(any value) JSON.stringify(value)
-	static inline js string toFormattedJson(any value) JSON.stringify(value, null, "\t")
 	static inline js bool isEqualAndSameType(any a, any b) (a === b)
 		
 	static internal js string stringify: object subject, int depth = 0 
@@ -1711,6 +1710,18 @@ interface object
 			default:
 				return subject.toString()
 		}
+
+json
+	inline js any parse: string value
+		JSON.parse(value)
+	inline js string stringify: any value
+		JSON.stringify(value)
+
+yaml
+	dynamic lib
+	async any parse: string value
+		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
+		return yaml.lib.load(value)
 
 struct Reference<T>
 	dynamic container
