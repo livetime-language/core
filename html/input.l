@@ -141,7 +141,7 @@ unit html
 			if(ev.key == "F10") { 
 				Platform.toggleSmallScreen();
 			}
-			for(let listener of input.keyDownListeners) {
+			for(let listener of html.keyDownListeners) {
 				if(ev.keyCode == listener.key) {
 					listener.do.invoke(ev.keyCode)
 					ev.preventDefault();
