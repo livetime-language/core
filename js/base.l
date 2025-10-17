@@ -1719,8 +1719,9 @@ json
 
 yaml
 	dynamic lib
-	async any parse: string value
+	setup
 		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
+	any parse: string value
 		return yaml.lib.load(value)
 
 struct Reference<T>
