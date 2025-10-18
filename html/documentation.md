@@ -130,7 +130,7 @@ Returns string
 
 ---
 
-# List
+# class List<T>
 A data container that grows in size as needed
 
 ## Member Functions
@@ -355,7 +355,7 @@ Returns T[]
 
 ---
 
-# Map
+# class Map<TKey, TValue>
 A data container that stores key-value pairs
 
 ## Member Functions
@@ -386,7 +386,7 @@ Returns int
 
 ---
 
-# class Set
+# class Set<T>
 A data container that stores unique values of a given type
 
 ## Member Functions
