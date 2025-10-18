@@ -42,11 +42,19 @@ transient skipInit pocketBase
 		pocketBase.pb.authStore.clear();
 		localStorage.removeItem('pocketbase_auth');
 
-Collection<T> 
-	string name
-	T[] items = []
-	int totalItems
+// Use this class to add, get, update and delete items from a remote PocketBase database table. 
+// The items you fetch from the remote database table are stored locally in the member variable "items". 
+// You can also subscribe to changes in the database table to automatically keep the local items up to date in realtime.
+DatabaseTable<T> 
+	importance:5 string name
+
+	// The items you fetch from the database are stored locally in this list
+	importance:5 T[] items = []
+
+	// The total number of items in the database
+	importance:4 int totalItems
 	
+	importance:5 
 	async inline js void subscribe: string topic = "*"
 		                            string filter = null
 					                string fields = null
@@ -68,10 +76,14 @@ Collection<T>
 			}
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		
+	// Fetch all items from the datebase table and store them in the member variable "items"
+	importance:5 
 	async T[] fetchAll
 		items = cast await pocketBase.pb.collection(this.name).getFullList()
 		return items
 		
+	// Fetch a subset of items from the datebase table and store them in the member variable "items"
+	importance:5 
 	async T[] fetch: string filter = null
 		             string sort = null
 					 string fields = null
@@ -84,6 +96,8 @@ Collection<T>
 		totalItems = result.totalItems
 		return items
 		
+	// Fetch and return a single item from the database table
+	importance:3
 	async T fetchOne: string filter = ""
 		              string sort = null
 		              string expand = null
@@ -91,27 +105,42 @@ Collection<T>
 		let result = await pocketBase.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
 		return result.items[0]
 		
+	// Fetch and return a single item from the database by id
+	importance:3
 	async inline js async T get: string id
 		pocketBase.pb.collection(this.name).getOne(id)
 		
-	async string add: any item
+	// Add an item to the database table and set its id member variable
+	importance:5
+	async string add: any item // An item with a id member variable of type string that is not set yet
 		any newRecord = await pocketBase.pb.collection(this.name).create(item)
 		item.id = newRecord.id
 		return newRecord.id
 		
-	async inline js T update: T item
+	// Updates a complete item with a valid id member variable
+	importance:5
+	async inline js T update: T item // An item with a valid id member variable of type string
 		pocketBase.pb.collection(this.name).update(item.id, item)
 		
+	// Updates an item partially
+	importance:5
+	async inline js T update: string id
+		                      dynamic update
+		pocketBase.pb.collection(this.name).@update(id, update)
+		
+	// If the item has a valid id member variable, update the item, otherwise add it to the database table
+	importance:3
 	async js T save: T item
 		if(!item.id) return this.add(item)
 		else         return pocketBase.pb.collection(this.name).update(item.id, item)
-		
-	async inline js T update: string id, dynamic update
-		pocketBase.pb.collection(this.name).@update(id, update)
-		
-	async inline js void remove: T item
+	
+	// Remove an item from the database table
+	importance:5
+	async inline js void remove: T item // An item with a valid id member variable of type string
 		pocketBase.pb.collection(this.name).delete(item.id)
 		
+	// Upload one or more files to the database table
+	importance:3
 	async js void upload: T item, string fileFieldName = "images", File[] files
 		const formData = new FormData();
 		for(let file of files) {
@@ -136,6 +165,8 @@ Collection<T>
 		item[fileFieldName] = newItem[fileFieldName]
 		return newItem;
 		
+	// Upload one or more files from urls to the database table
+	importance:3
 	async js void uploadFromUrls: T item, string fileFieldName = "images", string[] urls
 		const formData = new FormData();
 		for(let url of urls) {
@@ -163,32 +194,37 @@ Collection<T>
 
 	// ------------------------------------------------------- List -------------------------------------------------------
 	
-	// Gets the number of items in the list
+	// Gets the number of items stored locally
+	importance:3
 	inline js int length() this.items.length
 	
-	// Find an item the meets the given condition
-	// Example: Find a player with a specific id
-	//     app
-	//         getPlayerById: int id
-	//             return players.find.id == id
+	// Find an item the meets the given condition from the items stored locally
+	importance:3 
 	inline js T find: bool(T a) condition // The condition to check
 		this.items.find(condition)
 		
+	// Find all items that meet the given condition from the items stored locally
+	importance:3 
 	inline js T[] where: bool(T a) condition // The condition to check
 		this.items.filter(condition)
-		
+	
+	// Shuffle the items stored locally
+	importance:2 
 	inline shuffle() this.items.shuffle
 	
-	// Get a new list that is a subset of this list
+	// Get a new list that is a subset of the items stored locally
+	importance:2 
 	inline js T[] get: int from = 0 // Return a new list starting from this index, a negative index will start from the end of the list
 		               int to       // Return a new list up to (but not including) this index, a negative index is counted from the end
 		this.items.slice(from, to)
 	
-	// Get a new list that is a subset of this list
+	// Get a new list that is a subset of the items stored locally
+	importance:2 
 	inline js T[] get: int from // Return a new list starting from this index, a negative index will start from the end of the list
 		this.items.slice(from)
 		
-	// Remove a random item from the list and return it
+	// Remove a random item from the items stored locally and return it
+	importance:2 
 	T popRandom()
 		if length == 0: return null
 		int index = math.randomInteger(length)

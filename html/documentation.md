@@ -1506,3 +1506,84 @@ Render a html input element in the draw function
 
 Returns HTMLElement
 
+---
+
+# class DatabaseTable<T>
+Use this class to add, get, update and delete items from a remote PocketBase database table.
+The items you fetch from the remote database table are stored locally in the member variable "items".
+You can also subscribe to changes in the database table to automatically keep the local items up to date in realtime.
+
+## Member Variables
+
+### T[] items
+The items you fetch from the database are stored locally in this list
+
+## Member Functions
+
+### subscribe
+| Parameter | Type   | Description                          |
+| --------- | ------ | ------------------------------------ |
+| topic     | string | Optional parameter, defaults to "*"  |
+| filter    | string | Optional parameter, defaults to null |
+| fields    | string | Optional parameter, defaults to null |
+| expand    | string | Optional parameter, defaults to null |
+
+Returns Promise<void>
+
+### fetchAll
+Fetch all items from the datebase table and store them in the member variable "items"
+
+Returns Promise<T[]>
+
+### fetch
+Fetch a subset of items from the datebase table and store them in the member variable "items"
+
+| Parameter | Type   | Description                          |
+| --------- | ------ | ------------------------------------ |
+| filter    | string | Optional parameter, defaults to null |
+| sort      | string | Optional parameter, defaults to null |
+| fields    | string | Optional parameter, defaults to null |
+| expand    | string | Optional parameter, defaults to null |
+| page      | int    | Optional parameter, defaults to 1    |
+| perPage   | int    | Optional parameter, defaults to 1000 |
+| skipTotal | bool   | Optional parameter, defaults to true |
+
+Returns Promise<T[]>
+
+### add
+Add an item to the database table and set its id member variable
+
+| Parameter | Type | Description                                                          |
+| --------- | ---- | -------------------------------------------------------------------- |
+| item      | any  | An item with a id member variable of type string that is not set yet |
+
+Returns Promise<string>
+
+### update
+Updates a complete item with a valid id member variable
+
+| Parameter | Type | Description                                            |
+| --------- | ---- | ------------------------------------------------------ |
+| item      | T    | An item with a valid id member variable of type string |
+
+Returns Promise<T>
+
+### update
+Updates an item partially
+
+| Parameter | Type    | Description        |
+| --------- | ------- | ------------------ |
+| id        | string  | Required parameter |
+| update    | dynamic | Required parameter |
+
+Returns Promise<T>
+
+### remove
+Remove an item from the database table
+
+| Parameter | Type | Description                                            |
+| --------- | ---- | ------------------------------------------------------ |
+| item      | T    | An item with a valid id member variable of type string |
+
+Returns Promise<void>
+
