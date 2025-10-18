@@ -39,7 +39,10 @@ Returns int
 Returns int
 
 ### parseJson
-Returns dynamic
+Returns any
+
+### parseYaml
+Returns any
 
 ### split
 Splits the string at the given character into a list of substrings
@@ -383,20 +386,6 @@ Returns int
 
 ---
 
-# object
-The base class for all classes
-
-## Static Functions
-
-### toJson
-| Parameter | Type | Description        |
-| --------- | ---- | ------------------ |
-| value     | any  | Required parameter |
-
-Returns string
-
----
-
 # class Set
 A data container that stores unique values of a given type
 
@@ -438,7 +427,27 @@ Returns int
 
 ---
 
-# class math
+# static class json
+
+## Static Functions
+
+### parse
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| value     | string | Required parameter |
+
+Returns any
+
+### stringify
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| value     | any  | Required parameter |
+
+Returns string
+
+---
+
+# static class math
 
 ## Static Functions
 
@@ -1327,13 +1336,13 @@ A string to assign a class to one or more elements, often used to style several 
 A unique identifier used to find the html element that should be reused
 
 ### void() onClick
-Execute this code when the user clicks the HTML element
-
-### void(HtmlEvent ev) onLeftClick
-Execute this code when the user clicks the HTML element
+Execute this code when the user releases the left mouse button on the HTML element
 
 ### void(HtmlEvent ev) onRightClick
-Execute this code when the user clicks the HTML element with the right mouse button
+Execute this code when the user releases the right mouse button on the HTML element
+
+### void(PointerEvent ev) onPointerDown
+Execute this code when the user presses down the left mouse button on the HTML element
 
 ### void(HtmlKeyboardEvent ev) onKeyDown
 Execute this code when the user presses a key on the keyboard
@@ -1341,9 +1350,15 @@ Execute this code when the user presses a key on the keyboard
 ### void(HtmlKeyboardEvent ev) onKeyUp
 Execute this code when the user releases a key on the keyboard
 
+### void(FocusEvent ev) onBlur
+Execute this code when the element loses focus
+
+### void(FocusEvent ev) onFocus
+Execute this code when the element gains focus
+
 ---
 
-# class html
+# static class html
 
 ## Global Functions
 
@@ -1474,6 +1489,20 @@ Render a html span element to display text
 | Parameter | Type   | Description                                                     |
 | --------- | ------ | --------------------------------------------------------------- |
 | text      | string | The text to display within the span, optional, defaults to null |
+
+Returns HTMLElement
+
+### input
+Render a html input element in the draw function
+
+| Parameter   | Type               | Description                                                                   |
+| ----------- | ------------------ | ----------------------------------------------------------------------------- |
+| value       | string             | The value to display in the field, optional, defaults to ""                   |
+| placeholder | string             | The placeholder text to display in the field, optional, defaults to ""        |
+| readOnly    | bool               | Whether the field should be read only, optional, defaults to false            |
+| onInput     | void(string value) | Called immediately after every keystroke, optional, defaults to null          |
+| focused     | bool               | Whether the cursor should be placed in the field, optional, defaults to false |
+| data        | dynamic            | The data attributes of the element, optional, defaults to {}                  |
 
 Returns HTMLElement
 

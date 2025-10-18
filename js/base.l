@@ -1712,9 +1712,9 @@ interface object
 		}
 
 json
-	inline js any parse: string value
+	importance:5 inline js any parse: string value
 		JSON.parse(value)
-	inline js string stringify: any value
+	importance:5 inline js string stringify: any value
 		JSON.stringify(value)
 
 yaml

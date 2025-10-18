@@ -1,9 +1,9 @@
 ---
-description: LiveTime Programming Language and HTML Framework
+description: LiveTime Programming Language, Pocketbase and HTML Framework
 globs: *.l
 alwaysApply: true
 ---
-# We use the LiveTime programming language and HTML Framework
+# We use the LiveTime Programming Language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces. 
 
 LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
@@ -191,5 +191,5 @@ static class helpers
 Read this file for all available images in the current project:
 src/media.l
 
-Read this file for a complete reference of the LiveTime Programming Language with all available classes and functions:
+Read this file for a complete reference of the LiveTime Programming Language and HTML Framwork with all available classes and functions:
 lib/core/html/documentation.md
