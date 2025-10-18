@@ -344,7 +344,7 @@ global static priority low class html
 	//         draw
 	//             button "You clicked this button {counter} times", onClick:counter++; refresh
 	global void refresh
-		Platform.resetSharedIndex
+		Platform.resetStateIndex
 		nodesCreated = nodesUpdated = 0
 		parentNode = documentBody
 		currentNode = parentNode.firstChild

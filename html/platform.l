@@ -85,7 +85,7 @@ skipInit global unit Platform
 		success()
 		
 	js void initAll
-		if(window._reset_shared != undefined) _reset_shared()
+		if(window._reset_state != undefined) _reset_state()
 		init()
 		
 	async replay
@@ -103,8 +103,8 @@ skipInit global unit Platform
 		finally
 			sendFinished
 
-	inline js void resetSharedIndex
-		if(window._reset_shared_index != undefined) _reset_shared_index()
+	inline js void resetStateIndex
+		if(window._reset_state_index != undefined) _reset_state_index()
 		
 	stop
 		html.reset
