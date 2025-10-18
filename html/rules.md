@@ -25,7 +25,7 @@ class TodoItem
 // Defines the main class "app". Classes with lowercase names are singletons.
 // You can access their fields from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
 static class app
-	Color primaryColor = #404040
+	Color primaryColor = #000000
 	TodoItem[] items
 	string newItemText = ""
 
@@ -38,32 +38,32 @@ static class app
 
 	// This function is called to render the html elements when the application starts or when the refresh function is called.
 	draw
-		div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{left:80}
+		div display:flex, flexDirection:column, gap:16, fontSize:16, margin:{left:32 right:32}
 			div tag:"h1", text:"Todo List"
 
 			if items.length > 0
 				for items as item
 					drawItem item
 			else
-				div text:"No items", fontSize:60, fontStyle:Italic
+				div text:"No items", fontSize:16, fontStyle:italic
 
-			div display:Flex, gap:20, margin:{top:80}
-				field model:newItemText width:400, fontSize:60
-				button text:"Add", fontSize:60, padding:{left:40 right:40}, cursor:Pointer, onClick:addItem newItemText
+			div display:flex, gap:20, margin:{top:32}, height:30px
+				field model:newItemText, flex:1, width:400, fontSize:16
+				button text:"Add", fontSize:16, padding:{left:40 right:40}, cursor:pointer, onClick:addItem newItemText
 
 	// All functions that render html should start with "draw".
 	drawItem: TodoItem item
-		div display:Flex, 
-			gap:20,
-			cursor:Pointer,
-			padding:{top:16 bottom:16 left:16},
-			border:{width:2px, style:Solid, color:#808080},
-			boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
+		div display:flex, 
+			gap:16,
+			cursor:pointer,
+			padding:{top:8 right:8 bottom:8 left:8},
+			border:{width:2px, style:solid, color:#808080},
+			boxShadow:{offset:{4,4}, blur:12, spread:4, color:#d0d0d0}
 			onClick:item.state = item.state != Done ? Done : NotStarted; refresh
 
 			div text:item.state == Done ? "☑" : "☐"
-			div text:item.text, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none", color:primaryColor
-			div text:"❌", cursor:Pointer, onClick:items.remove item; refresh
+			div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none", color:primaryColor
+			div text:"❌", cursor:pointer, onClick:items.remove item; refresh
 
 	addItem: string text
 		items.add {text, state:NotStarted}
@@ -71,6 +71,13 @@ static class app
 		refresh
 
 # LiveTime Basics
+enum State
+	InProgress
+	Done
+
+class Item
+	State state
+
 static class app
 	Item[] items
 	string name
@@ -150,7 +157,7 @@ static class app
 
 		// Div with children
 		let doneItems = helpers.getAllDoneItems
-		div display:Flex ,border:{width:1px, style:Solid, color:Black}, margin:{top:10percent, right:auto, bottom:10percent, left:auto}
+		div display:flex, border:{width:1px, style:solid, color:black}, margin:{top:10percent, right:auto, bottom:10percent, left:auto}
 			for doneItems as item
 				div item.text
 
@@ -166,16 +173,26 @@ static class app
 		img Done, width:64
 		img NotDone, width:64
 
+		// Units
+		div borderRadius:8px
+		div width:100percent
+
+		// If you don't specify a unit, it defaults to pixels
+		div borderBottomWidth:8
+
 		// Form
 		field model:name
 		button "Clear name", onClick:name = ""; refresh
 		button "Submit name", onClick:http.post "/api/name", body:{name}
 
 		// Border
-		div border:{width:1, style:Solid, color:#808080}
+		div border:{width:1, style:solid, color:#808080}
 
 		// Shadow
 		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
+
+		// Calc
+		div width:"calc(100% - 16px)"
 
 static class helpers
 	Item getItemByItem: int id
