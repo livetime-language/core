@@ -9,34 +9,37 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
 
 # ToDo-List Example
-// Defines the "ItemState" enum.
+// Defines the enum ItemState
 enum ItemState
 	NotStarted
 	InProgress
 	Done
 
-// Defines the "TodoItem" class. All fields are public by default.
+// Defines the class TodoItem
+// Classes have uppercase names. All members are public by default.
 class TodoItem
 	int id
 	ItemState state
 	bool active = true
 	string text
 
-// Defines the main class "app". Classes with lowercase names are singletons.
-// You can access their fields from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
+// Defines the static class app, the main class of every LiveTime application.
+// Static classes have lowercase names. Their members are public and static by default.
+// You can access its members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
 static class app
 	Color primaryColor = #000000
 	TodoItem[] items
 	string newItemText = ""
 
-	// Defines the function "start" of the class "app".
+	// Defines the member function start of the class app. 
 	// All functions need to be part of a class. There are no top-level functions in LiveTime.
-	// This function is called when the application starts.
+	// app.start is the entry point of the application. It is called when the application starts.
 	start
 		items.add {text:"Buy groceries", state:Done}
 		items.add {text:"Learn LiveTime", state:InProgress}
 
-	// This function is called to render the html elements when the application starts or when the refresh function is called.
+	// Defines the member function draw of the class app. 
+	// app.draw is called to render the html elements when the application starts and when the refresh function is called.
 	draw
 		div display:flex, flexDirection:column, gap:16, fontSize:16, margin:{left:32 right:32}
 			div tag:"h1", text:"Todo List"
@@ -51,7 +54,7 @@ static class app
 				field model:newItemText, flex:1, width:400, fontSize:16
 				button text:"Add", fontSize:16, padding:{left:40 right:40}, cursor:pointer, onClick:addItem newItemText
 
-	// All functions that render html should start with "draw".
+	// All functions that render html should start with "draw"
 	drawItem: TodoItem item
 		div display:flex, 
 			gap:16,
@@ -75,76 +78,82 @@ enum State
 	InProgress
 	Done
 
-class Item
+class Document
+	string id
+	float created
 	State state
 
 static class app
-	Item[] items
+	Document[] documents
+	DatabaseTable<Document> documentsDatabaseTable = {name:"documents"}
 	string name
 	int counter
 
 	start
-		// List
-		TodoItem[] items = [
-			{text:"Example", state:NotStarted}
+		// List (array that can grow and shrink)
+		Document[] documents = [
+			{created:DateTime.now, state:InProgress}
 		]
-		Item newItem = {"Another example"}
-		items.add newItem
-		items.remove newItem
-		items.orderBy.text
-		items.clear
-		let firstTwoItems = items[..2]
-		let lastTwoItems = items[-2..]
+		Document doc = {id:"002e", created:DateTime.now, state:Done}
+		documents.add doc
+		documents.remove doc
+		documents.orderBy.created
+		documents.clear
+		let firstTwoItems = documents[..2]
+		let lastTwoItems = documents[-2..]
 
-		// Map (hashtable)
-		Item[int] itemById
-		itemById[id] = {"My item"}
-		itemById.remove id
-		itemById.clear
-		for items as item
-			itemById[item.id] = item
-		for itemsById as item, id
-			print "id:{id} text:{item.text}"
+		// Map (called Hashtable or Dictionary in other languages)
+		Document[string] documentsById
+		documentsById["002f"] = {id:"002f"}
+		documentsById.remove "002f"
+		documentsById.clear
+		for documents as doc
+			documentsById[doc.id] = doc
+		for documentsById as doc, id
+			print "id:{id} created:{doc.created.toDayMonthYearString}"
 
 		// Conditions
-		if items.length > 0
-			print "There are {items.length} items."
+		if documents.length > 0
+			print "There are {documents.length} documents."
 		else
-			print "There are no items."
+			print "There are no documents."
 
-		// Iterate over items
-		for items as item
-			print item.text
+		// Iterate over a List
+		for documents as doc
+			print doc.id
 
 		// Iterate over an integer range
-		for items.length as i
-			print item[i].text
-
 		// Prints 01234
 		for 0 to 5 as i
 			print i
 
-		// In a for loop, the lower bound is 0 by default, and the current index is named i by default, so we can leave them out. 
-		// Prints 01234
+		// If you leave out the lower bound, it defaults to 0
+		// If you leave out the index variable, it defaults to i
 		for 5
 			print i
 
-		// Use "backwards" to iterate backwards
+		// You can use "." to refer to the current item while iterating
+		for documents
+			print .
+
+		// Prints 01234
+		for 5
+			print .
+			
+		// Use the "backwards" keyword to iterate backwards
 		// Prints 43210
 		for 5 backwards as i
 			print i
 
-		// Iterate over map
-		for itemById as value, key
+		// Iterate over a List by index
+		for documents.length as i
+			print documents[i].state
+
+		// Iterate over a Map
+		for documentsById as value, key
 			print "{key}: {value}"
 
-		// Define a function pointer that takes a touch as a parameter and returns void
-		void(Touch touch) onClick
-
-		// Define a function pointer that takes no parameter and returns float
-		float() getTemperature
-
-		// Important: If you divide an integer by an integer in LiveTime, you always get a float
+		// Very important: If you divide an integer by an integer in LiveTime, you always get a float
 		float fraction = 1 / 2
 
 		// Use math.floor after a division if you need an integer
@@ -152,14 +161,14 @@ static class app
 		
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
-		// Div with blue text. Refer to the Styles class for all available css styles.
-		div text:"Done items", fontSize:64, color:#ff0000
+		// Html div element with blue text. Refer to the Styles class for all available css styles.
+		div text:"Done documents", fontSize:64, color:#ff0000
 
-		// Div with children
+		// Html div element with children
 		let doneItems = helpers.getAllDoneItems
 		div display:flex, border:{width:1px, style:solid, color:black}, margin:{top:10percent, right:auto, bottom:10percent, left:auto}
-			for doneItems as item
-				div item.text
+			for doneItems as doc
+				div text:"{doc.created.toDayMonthYearHourMinuteString} {doc.state}"
 
 		// Call refresh to re-render the html after you changed any data.
 		div "Counter: {counter}"
@@ -169,9 +178,15 @@ static class app
 		div tag:"h1", text:"Title"
 		div tag:"h2", text:"Section"
 
+		// Images
 		// Read the file "src/media.l" for all available images 
 		img Done, width:64
 		img NotDone, width:64
+
+		// Form
+		field model:name
+		button "Clear name", onClick:name = ""; refresh
+		button "Submit name", onClick:http.post "/api/name", body:{name}
 
 		// Units
 		div borderRadius:8px
@@ -179,11 +194,6 @@ static class app
 
 		// If you don't specify a unit, it defaults to pixels
 		div borderBottomWidth:8
-
-		// Form
-		field model:name
-		button "Clear name", onClick:name = ""; refresh
-		button "Submit name", onClick:http.post "/api/name", body:{name}
 
 		// Border
 		div border:{width:1, style:solid, color:#808080}
@@ -195,18 +205,32 @@ static class app
 		div width:"calc(100% - 16px)"
 
 static class helpers
-	Item getItemByItem: int id
-		return app.items.find.id == id
+	// bool(Document doc) defines a function that takes a Document and returns a boolean
+	Document[] filterDocuments: bool(Document doc) predicate
+		return app.documents.where predicate(.)
 
-	Item[] getAllDoneItems
-		return app.items.where.state == Done
+	// void(Document[] documents) defines a function that takes a list of Documents and doesn't return anything
+	async fetchAllDocuments: void(Document[] documents) callback
+		await app.documentsDatabaseTable.fetchAll
+		callback(app.documentsDatabaseTable.items)
+
+	Document getItemByItem: string id
+		return app.documents.find.id == id
+
+	Document[] getAllDoneItems
+		return app.documents.where.state == Done
 
 	bool areAllItemsDone
-		return app.items.all.state == Done
+		return app.documents.all.state == Done
+
+# Check if everything is correct
+1. Fix all linter errors.
+2. As soon as there are no linter errors left, the app is accessable at http://localhost:3030
+3. Test the app to ensure everythings looks great and works as intended.
 
 # References
 Read this file for all available images in the current project:
 src/media.l
 
-Read this file for a complete reference of the LiveTime Programming Language and HTML Framwork with all available classes and functions:
+Read this file for a complete reference of the LiveTime Programming Language and HTML Framework, with all available classes and functions:
 lib/core/html/documentation.md
