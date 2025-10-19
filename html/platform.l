@@ -299,10 +299,6 @@ skipInit global unit Platform
 			do(new Vector2(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, "geo"))
 			else?.(e.message)
 		}, {maximumAge, timeout, enableHighAccuracy})
-
-	string libUrl
-	inline js async dynamic import: string file
-		import((Platform.libUrl || _basePath || location.href.getUntilLast("/")+"/")+file)
 		
 enum lowercase string DataTransferItemKind: String, File
 		

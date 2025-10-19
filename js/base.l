@@ -1711,6 +1711,11 @@ interface object
 				return subject.toString()
 		}
 
+skipInit global unit Platform
+	string libUrl
+	global inline js async dynamic import: string file
+		import((Platform.libUrl || _basePath || location.href.getUntilLast("/")+"/")+file)
+
 json
 	importance:5 inline js any parse: string value
 		JSON.parse(value)
@@ -1720,7 +1725,7 @@ json
 yaml
 	dynamic lib
 	setup
-		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
+		if yaml.lib == null: yaml.lib = await import("lib/js-yaml.js")
 	any parse: string value
 		return yaml.lib.load(value)
 
