@@ -110,6 +110,6 @@ transient global skipInit unit audio
 	
 	adjustVolume: int delta = 1, Player forPlayer = null
 		if !forPlayer or forPlayer.id == input.localUser.id
-			volumeLevel = math.limit(volumeLevel+delta, min:0, max:volumeLevels.length-1)
+			volumeLevel = math.clamp(volumeLevel+delta, min:0, max:volumeLevels.length-1)
 			volume = volumeLevels[volumeLevel]
 			playingSounds.each.sound.updateVolume

@@ -650,7 +650,7 @@ internal transient skipInit unit core
 		Platform.isStaging = room.isStaging
 		localUserId = room.localUserId
 		
-		print "#database opening from db {object.toJson room}"
+		print "#database opening from db {room.toJson}"
 		let result = await inputStore.getAllFromIndex "roomId", roomId
 		result.orderBy.start
 		for result

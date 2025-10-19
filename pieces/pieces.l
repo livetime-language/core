@@ -202,7 +202,7 @@ Piece Stack
 		size = (b.position+{b.size.x/2, b.image.size.y/2}) - (a.position-{a.size.x/2, a.size.y/2})
 	
 	override tick
-		for math.limit(objects.length-shownObjectCount, min:0) to objects.length <- i
+		for math.clamp(objects.length-shownObjectCount, min:0) to objects.length <- i
 			let obj = objects[i]
 			let image = obj.backImage || obj.image
 			drawImage image, obj.position, frame:obj.frame%image.frames.length, size:obj.size
@@ -279,7 +279,7 @@ Piece Board
 		// Zoom
 		if zoomable	
 			onScrolllWithin position, size, by:visibleFor
-				float factor = zoomLookupTable[math.limit math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
+				float factor = zoomLookupTable[math.clamp math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
 				matrix.move event.position
 				matrix.scale {factor, factor}
 				matrix.move event.position*{-1,-1}

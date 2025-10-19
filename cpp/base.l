@@ -75,26 +75,26 @@ immutable struct int
 	inline cpp int clearBit: implicit int bitIndex // The index of the bit to clear
 		(this &= ~(1 << bitIndex))
 	
-	// Limit the value to a specific range
-	// Example: Limit the player's to be between 0 and 100
+	// Clamp the value to a specific range
+	// Example: Clamp the player's to be between 0 and 100
 	//     Player
 	//         int health
 	//         changeHealth: int delta
-	//             health = (health + delta) limit 0..100
-	inline cpp int limit: int from // The inclusive minimum value
+	//             health = (health + delta) clamp 0..100
+	inline cpp int clamp: int from // The inclusive minimum value
 						int to   // The inclusive maximum value
 		(this < from ? from : this > to ? to : this)
 		
 	// Make sure the value never exceets a maximum value
 	// Example: Make sure the card count never exceets a maximum value of 5
-	//     cardCount = cardCount limit ..5
-	inline cpp int limit: int to
+	//     cardCount = cardCount clamp ..5
+	inline cpp int clamp: int to
 		(this > to ? to : this)
 	
 	// Make sure the value never falls below a minimum value
 	// Example: Make sure the score never fall below 0
-	//     score = score limit 0..
-	inline cpp int limit: int from
+	//     score = score clamp 0..
+	inline cpp int clamp: int from
 		(this < from ? from : this)
 	
 	// Make sure the value never exceets a maximum value
@@ -230,14 +230,14 @@ immutable struct float
 	inline cpp(cmath) int round
 		std::round(this)
 		
-	inline cpp float limit: float from
+	inline cpp float clamp: float from
 						float to
 		(this < from ? from : this > to ? to : this)
 		
-	inline cpp float limit: float to
+	inline cpp float clamp: float to
 		(this > to ? to : this)
 	
-	inline cpp float limit: float from
+	inline cpp float clamp: float from
 		(this < from ? from : this)
 	
 	inline cpp float max: float value
@@ -1699,36 +1699,36 @@ unit math
 							int count
 		(value >> count)
 			
-	limit: int value
+	clamp: int value
 		   int min
 		   int max
 		if value < min: return min
 		if value > max: return max
 						return value
 	
-	limit: int value
+	clamp: int value
 		int max
 		if value > max: return max
 						return value
 	
-	limit: int value
+	clamp: int value
 		   int min
 		if value < min: return min
 						return value
 	
-	limit: float value
+	clamp: float value
 		   float min
 		   float max
 		if value < min: return min
 		if value > max: return max
 						return value
 	
-	limit: float value
+	clamp: float value
 		   float max
 		if value > max: return max
 						return value
 			
-	limit: float value
+	clamp: float value
 		   float min
 		if value < min: return min
 						return value

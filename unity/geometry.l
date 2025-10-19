@@ -327,23 +327,23 @@ cs(UnityEngine Vector2Int) struct IntVector2
 	// The smaller of the two coordinates
 	min := x < y ? x : y
 	
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		   IntVector2 max
 		return IntVector2(
-			Math.limit x, min:min.x, max:max.x
-			Math.limit y, min:min.y, max:max.y
+			Math.clamp x, min:min.x, max:max.x
+			Math.clamp y, min:min.y, max:max.y
 		)
 		
-	limit: IntVector2 max
+	clamp: IntVector2 max
 		return IntVector2(
-			Math.limit x, max:max.x
-			Math.limit y, max:max.y
+			Math.clamp x, max:max.x
+			Math.clamp y, max:max.y
 		)
 		
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		return IntVector2(
-			Math.limit x, min:min.x
-			Math.limit y, min:min.y
+			Math.clamp x, min:min.x
+			Math.clamp y, min:min.y
 		)
 		
 	// Interpolates linearly to another vector
@@ -476,23 +476,23 @@ cs(UnityEngine Vector3Int) struct IntVector3
 // 	// The smaller of the two coordinates
 // 	min := x < y ? x : y
 	
-// 	limit: IntVector2 min
+// 	clamp: IntVector2 min
 // 		   IntVector2 max
 // 		return IntVector2(
-// 			Math.limit x, min:min.x, max:max.x
-// 			Math.limit y, min:min.y, max:max.y
+// 			Math.clamp x, min:min.x, max:max.x
+// 			Math.clamp y, min:min.y, max:max.y
 // 		)
 		
-// 	limit: IntVector2 max
+// 	clamp: IntVector2 max
 // 		return IntVector2(
-// 			Math.limit x, max:max.x
-// 			Math.limit y, max:max.y
+// 			Math.clamp x, max:max.x
+// 			Math.clamp y, max:max.y
 // 		)
 		
-// 	limit: IntVector2 min
+// 	clamp: IntVector2 min
 // 		return IntVector2(
-// 			Math.limit x, min:min.x
-// 			Math.limit y, min:min.y
+// 			Math.clamp x, min:min.x
+// 			Math.clamp y, min:min.y
 // 		)
 		
 // 	// Interpolates linearly to another vector
@@ -702,8 +702,8 @@ global transient unit System
 		
 // 	limitToInside: IntVector2 position
 // 		return IntVector2(
-// 			Math.limit position.x, min:0, max:size.x-1
-// 			Math.limit position.y, min:0, max:size.y-1
+// 			Math.clamp position.x, min:0, max:size.x-1
+// 			Math.clamp position.y, min:0, max:size.y-1
 // 		)
 		
 // 	getScreenVector: Vector2 worldVector

@@ -442,7 +442,7 @@ struct Vector3
 		const denominator = math.sqrt( this.lengthSq() * v.lengthSq() )
 		if denominator == 0: return math.PI / 2
 		const theta = this.dot( v ) / denominator
-		return math.nativeAcos( math.limit( theta, - 1, 1 ) )
+		return math.nativeAcos( math.clamp( theta, - 1, 1 ) )
 		
 	// distanceTo( v ) {
 
@@ -1020,7 +1020,7 @@ struct Quaternion
 	// }
 
 	angleTo: Quaternion q
-		return 2 * math.nativeAcos( math.abs( math.limit( this.dot( q ), - 1, 1 ) ) );
+		return 2 * math.nativeAcos( math.abs( math.clamp( this.dot( q ), - 1, 1 ) ) );
 
 	rotateTowards: Quaternion q
 		           float speed
@@ -1614,23 +1614,23 @@ struct IntVector2
 	// The smaller of the two coordinates
 	min := x < y ? x : y
 	
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		   IntVector2 max
 		return IntVector2(
-			math.limit x, min:min.x, max:max.x
-			math.limit y, min:min.y, max:max.y
+			math.clamp x, min:min.x, max:max.x
+			math.clamp y, min:min.y, max:max.y
 		)
 		
-	limit: IntVector2 max
+	clamp: IntVector2 max
 		return IntVector2(
-			math.limit x, max:max.x
-			math.limit y, max:max.y
+			math.clamp x, max:max.x
+			math.clamp y, max:max.y
 		)
 		
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		return IntVector2(
-			math.limit x, min:min.x
-			math.limit y, min:min.y
+			math.clamp x, min:min.x
+			math.clamp y, min:min.y
 		)
 		
 	// Interpolates linearly to another vector
@@ -1956,8 +1956,8 @@ class IsometicGrid
 		
 	limitToInside: IntVector2 position
 		return IntVector2(
-			math.limit position.x, min:0, max:size.x-1
-			math.limit position.y, min:0, max:size.y-1
+			math.clamp position.x, min:0, max:size.x-1
+			math.clamp position.y, min:0, max:size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector

@@ -48,14 +48,14 @@ struct int
 	inline cs int unsetBit: implicit int value
 		(this &= ~value)
 	
-	inline cs int limit: int from
+	inline cs int clamp: int from
 		                 int to
 		(this < from ? from : this > to ? to : this)
 		
-	inline cs int limit: int to
+	inline cs int clamp: int to
 		(this > to ? to : this)
 	
-	inline cs int limit: int from
+	inline cs int clamp: int from
 		(this < from ? from : this)
 	
 	inline cs int max: int value
@@ -147,14 +147,14 @@ struct float
 	inline cs int round
 		Math.round(this)
 		
-	inline cs float limit: float from
+	inline cs float clamp: float from
 		                   float to
 		(this < from ? from : this > to ? to : this)
 		
-	inline cs float limit: float to
+	inline cs float clamp: float to
 		(this > to ? to : this)
 	
-	inline cs float limit: float from
+	inline cs float clamp: float from
 		(this < from ? from : this)
 	
 	inline cs float max: float value
@@ -1618,36 +1618,36 @@ global skipInit unit Math
 		if targetValue < value: return Math.max(value - speed, targetValue)
 			                    return value
 			
-	limit: int value
+	clamp: int value
 		   int min
 		   int max
 		if value < min: return min
 		if value > max: return max
 			            return value
 	
-	limit: int value
+	clamp: int value
 		   int max
 		if value > max: return max
 			            return value
 	
-	limit: int value
+	clamp: int value
 		   int min
 		if value < min: return min
 			            return value
 	
-	limit: float value
+	clamp: float value
 		   float min
 		   float max
 		if value < min: return min
 		if value > max: return max
 			            return value
 	
-	limit: float value
+	clamp: float value
 		   float max
 		if value > max: return max
 			            return value
 			
-	limit: float value
+	clamp: float value
 		   float min
 		if value < min: return min
 			            return value

@@ -818,7 +818,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, (alpha * graphics.currentAlpha).limit(0 to 1), currentClippingPath, text,
+				layer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, text,
 				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{effectiveColor}",
 				location, position.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 

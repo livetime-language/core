@@ -518,23 +518,23 @@ struct IntVector2
 	// The smaller of the two coordinates
 	min := x < y ? x : y
 	
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		   IntVector2 max
 		return IntVector2(
-			math.limit x, min:min.x, max:max.x
-			math.limit y, min:min.y, max:max.y
+			math.clamp x, min:min.x, max:max.x
+			math.clamp y, min:min.y, max:max.y
 		)
 		
-	limit: IntVector2 max
+	clamp: IntVector2 max
 		return IntVector2(
-			math.limit x, max:max.x
-			math.limit y, max:max.y
+			math.clamp x, max:max.x
+			math.clamp y, max:max.y
 		)
 		
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		return IntVector2(
-			math.limit x, min:min.x
-			math.limit y, min:min.y
+			math.clamp x, min:min.x
+			math.clamp y, min:min.y
 		)
 		
 	// The distance to another vector
@@ -928,8 +928,8 @@ class IsometicGrid
 		
 	limitToInside: IntVector2 position
 		return IntVector2(
-			math.limit position.x, min:0, max:size.x-1
-			math.limit position.y, min:0, max:size.y-1
+			math.clamp position.x, min:0, max:size.x-1
+			math.clamp position.y, min:0, max:size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector

@@ -1677,6 +1677,7 @@ interface object
 	static inline js any undefined() undefined
 	
 	inline js bool toBool() (this != null)
+	inline js string toJson() JSON.stringify(this)
 	// inline js string toString() object_stringify(this, 3)
 	static inline js bool isEqualAndSameType(any a, any b) (a === b)
 		
@@ -1725,7 +1726,7 @@ json
 yaml
 	dynamic lib
 	setup
-		if yaml.lib == null: yaml.lib = await import("lib/js-yaml.js")
+		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
 	any parse: string value
 		return yaml.lib.load(value)
 
@@ -2285,38 +2286,38 @@ global skipInit unit math
 		                      int count
 		(value >> count)
 			
-	// ------------------------------------------------------- Limit -------------------------------------------------------
+	// ------------------------------------------------------- Clamp -------------------------------------------------------
 	
-	limit: int value
+	clamp: int value
 		   int min
 		   int max
 		if value < min: return min
 		if value > max: return max
 			            return value
 	
-	limit: int value
+	clamp: int value
 		   int max
 		if value > max: return max
 			            return value
 	
-	limit: int value
+	clamp: int value
 		   int min
 		if value < min: return min
 			            return value
 	
-	limit: float value
+	clamp: float value
 		   float min
 		   float max
 		if value < min: return min
 		if value > max: return max
 			            return value
 	
-	limit: float value
+	clamp: float value
 		   float max
 		if value > max: return max
 			            return value
 			
-	limit: float value
+	clamp: float value
 		   float min
 		if value < min: return min
 			            return value
