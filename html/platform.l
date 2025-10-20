@@ -85,7 +85,7 @@ skipInit global unit Platform
 		success()
 		
 	js void initAll
-		if(window._reset_state != undefined) _reset_state()
+		if(window.reset_state != undefined) reset_state()
 		init()
 		
 	async replay
@@ -104,7 +104,7 @@ skipInit global unit Platform
 			sendFinished
 
 	inline js void resetStateIndex
-		if(window._reset_state_index != undefined) _reset_state_index()
+		if(window.reset_state_index != undefined) reset_state_index()
 		
 	stop
 		html.reset
