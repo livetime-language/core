@@ -273,6 +273,10 @@ transient skipInit global unit graphics
 	
 	internal js void onResize
 		graphics.canvas = document.getElementById("canvas");
+		if(!graphics.canvas) {
+			graphics.canvas = document.createElement("canvas");
+			document.body.append(graphics.canvas)
+		}
 		graphics.pixelRatio = window.devicePixelRatio;
 		graphics.pixelSize = new Vector2(window.innerWidth*graphics.pixelRatio, window.innerHeight*graphics.pixelRatio, null);
 		graphics.isSmallScreen = screen.width < 600 || (localStorage.getItem("smallScreen") == "true")
