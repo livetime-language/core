@@ -328,8 +328,10 @@ struct Angle
 	
 	Angle operator - (Angle a) Angle(-a.value, a.unit)
 
-class DateTime
-	static inline js float now() Date.now()
+// In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
+static class Time
+	// The number of milliseconds elapsed since 1 January 1970
+	importance:5 static inline js float now() Date.now()
 	
 global static priority low class html
 	Unit defaultUnit = pixels

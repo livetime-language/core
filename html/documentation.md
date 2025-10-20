@@ -1358,6 +1358,18 @@ Execute this code when the element gains focus
 
 ---
 
+# static class Time
+In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
+
+## Static Functions
+
+### now
+The number of milliseconds elapsed since 1 January 1970
+
+Returns float
+
+---
+
 # static class html
 
 ## Global Functions
