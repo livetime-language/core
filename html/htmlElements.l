@@ -68,6 +68,8 @@ global static class html
 			if attributes.onClick != null:      element.onclick = attributes.onClick
 			if attributes.onRightClick != null: element.oncontextmenu = attributes.onRightClick
 			if attributes.onPointerDown != null:element.onpointerdown = attributes.onPointerDown
+			if attributes.onPointerOver != null:element.onpointerover = attributes.onPointerOver
+			if attributes.onPointerOut != null: element.onpointerout  = attributes.onPointerOut
 
 			if attributes.onKeyDown != null:    element.onkeydown = attributes.onKeyDown
 			if attributes.onKeyUp != null:      element.onkeyup = attributes.onKeyUp

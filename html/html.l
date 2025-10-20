@@ -169,7 +169,10 @@ importance:5 dynamic Attributes
 	
 	native void() onClick = null                       // Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null      // Execute this code when the user releases the right mouse button on the HTML element
+	
 	native void(PointerEvent ev) onPointerDown = null  // Execute this code when the user presses down the left mouse button on the HTML element
+	native void(PointerEvent ev) onPointerOver = null  // Execute this code when the pointer hovers over the element
+	native void(PointerEvent ev) onPointerOut = null   // Execute this code when the pointer stops hovering over the element
 	
 	native void(HtmlKeyboardEvent ev) onKeyDown = null // Execute this code when the user presses a key on the keyboard
 	native void(HtmlKeyboardEvent ev) onKeyUp = null   // Execute this code when the user releases a key on the keyboard
