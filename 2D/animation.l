@@ -9,11 +9,11 @@ global unit fx
 	endOfPrevAnimation: Object object
 		let lastAnimation = animations.last
 		if lastAnimation?.object == object
-			return math.max(DateTime.now, lastAnimation.startTime + lastAnimation.duration)
-		return DateTime.now
+			return math.max(Time.now, lastAnimation.startTime + lastAnimation.duration)
+		return Time.now
 		
 	internal tick
-		let now = DateTime.now
+		let now = Time.now
 		for animations <-
 			if now >= .startTime
 				float f = .duration ? (now - .startTime)/.duration : 1
@@ -22,7 +22,7 @@ global unit fx
 				
 	global delay: float time = 0 // The delay in milliseconds
 		          stored void() do
-		add DelayAnimation startTime:DateTime.now+time, do
+		add DelayAnimation startTime:Time.now+time, do
 		
 	global js async void delay: float time // The delay in milliseconds
 		return new Promise((resolve, reject) => {
@@ -71,7 +71,7 @@ global unit fx
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
 		         float duration = 300  // The duration in milliseconds
-		add InterpolateAnimation startTime:DateTime.now+delay, duration, do:do(from + (to - from) * .)
+		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from + (to - from) * .)
 				
 	interpolate: float from = 0
 		         float to = 1
@@ -79,14 +79,14 @@ global unit fx
 		         float delay = 0       // The delay in milliseconds
 		         float duration = 300  // The duration in milliseconds
 		         EaseFunction ease
-		add InterpolateAnimation startTime:DateTime.now+delay, duration, do:do(ease.function(from + (to - from) * .))
+		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(ease.function(from + (to - from) * .))
 				
 	interpolate: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
-		add InterpolateAnimation startTime:DateTime.now+delay, duration, do:do(from interpolateTo target:to, progress)
+		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
 	interpolate: Vector2 from
 		         Vector2 to
@@ -94,17 +94,17 @@ global unit fx
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
 		         EaseFunction ease
-		add InterpolateAnimation startTime:DateTime.now+delay, duration, do:do(from interpolateTo target:to, progress, ease)
+		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress, ease)
 				
 	interpolate: Color from
 		         Color to
 		         stored void(Color progress) do
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
-		add InterpolateAnimation startTime:DateTime.now+delay, duration, do:do(from interpolateTo target:to, progress)
+		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
 	global defer: stored void() do
-		add DelayAnimation startTime:DateTime.now, do
+		add DelayAnimation startTime:Time.now, do
 		
 struct float
 	// Animate the float to a target value over a given period of time	
@@ -147,11 +147,11 @@ transient global skipInit unit audio
 		              bool needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain: return
 		
-		if DateTime.frame == 0
-			fx.add PlaySoundAnimation startTime:math.ceil(DateTime.now+core.frameTime)+delay, sound
+		if Time.frame == 0
+			fx.add PlaySoundAnimation startTime:math.ceil(Time.now+core.frameTime)+delay, sound
 		else
 		if delay
-			fx.add PlaySoundAnimation startTime:DateTime.now+delay, sound
+			fx.add PlaySoundAnimation startTime:Time.now+delay, sound
 		else
 			sound.play	
 				
@@ -159,7 +159,7 @@ transient global skipInit unit audio
 		              nocolon float at = 0 // The time at which the sound starts in milliseconds
 		              bool needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain: return
-		if DateTime.now >= at and DateTime.now < math.floor at + core.frameTime
+		if Time.now >= at and Time.now < math.floor at + core.frameTime
 			sound.play
 				
 internal immutable Animation

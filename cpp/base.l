@@ -1576,7 +1576,7 @@ global transient priority unit system
 		logs += text + "\n"
 		
 	saveLogEvery: int frames = 60
-		if logs != "" and DateTime.frame % frames == 0
+		if logs != "" and Time.frame % frames == 0
 			print logs
 			logs = ""
 		

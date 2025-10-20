@@ -62,7 +62,7 @@ skipInit unit Core
 		// smoothFrame = 0
 		Input.isCertain = true
 		// lobby.inLobby = startInLobby
-		// DateTime.now = serverStartTime
+		// Time.now = serverStartTime
 		// audio.stop
 		// initAll
 		
@@ -95,8 +95,8 @@ skipInit unit Core
 		app.start	
 	
 	step
-		DateTime.now = DateTime.realTime
-		Input.parseInputs DateTime.frame, true
+		Time.now = DateTime.realTime
+		Input.parseInputs Time.frame, true
 		tick
 		
 		// Cleanup
@@ -105,7 +105,7 @@ skipInit unit Core
 		Input.users.each.clearEvents
 		
 		// Advance frame
-		DateTime.frame++
+		Time.frame++
 		if frames < frame: frames = frame
 					
 	tick

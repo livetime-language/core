@@ -47,7 +47,7 @@ skipInit unit core
 		// watchIndex = 0
 		// input.isCertain = true
 		// lobby.inLobby = startInLobby
-		// DateTime.now = serverStartTime
+		// Time.now = serverStartTime
 		// snapshotFrame = -1
 		// checksums.clear
 		// lastChecksumFrame = -1
@@ -90,15 +90,15 @@ skipInit unit core
 		app::start();
 		
 	animationFrame
-		DateTime.now = DateTime.realTime
-		let targetFrame = math.floor((DateTime.now - startTime)/frameTime)+1
-		// print "animation frame", DateTime.now, startTime, DateTime.now - startTime, frame, targetFrame
+		Time.now = DateTime.realTime
+		let targetFrame = math.floor((Time.now - startTime)/frameTime)+1
+		// print "animation frame", Time.now, startTime, Time.now - startTime, frame, targetFrame
 		if frame < targetFrame
 			step
 			
 	step
 		// print "step", frame
-		input.parseInputs DateTime.frame
+		input.parseInputs Time.frame
 		tick
 		frame++
 		

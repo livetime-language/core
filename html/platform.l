@@ -116,7 +116,7 @@ skipInit global unit Platform
 	private js void tick
 		Platform.heartbeat("tick")
 		if(app.tick) app.tick()
-		DateTime.frame++
+		Time.frame++
 		
 	private js void startTickInterval
 		if(window._tickInterval) {

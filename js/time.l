@@ -18,10 +18,10 @@ struct float
 	inline string toDayOfWeekDayMonthAtHourMinuteString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthAtHourMinuteString(language)
 	
 	// (23:59) The time is assumed to be local time, doesn't account for timezone offset
-	// inline string toHourMinuteString(language = Loca.language) Time.toHourMinuteString(this, language)
+	// inline string toHourMinuteString(language = Loca.language) DateTime.toHourMinuteString(this, language)
 		
 	// // (23:59) The time is assumed to be local time, doesn't account for timezone offset
-	// static string toHourMinuteString: Time value, language = Loca.language
+	// static string toHourMinuteString: float value, language = Loca.language
 	// 	let hour = math.floor (value % 86400000) / 3600000
 	// 	let minute = math.floor (value % 3600000) / 60000
 	// 	if language == English: return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
@@ -95,7 +95,7 @@ struct float
 	static inline js float preciseTime := performance.now()
 		
 string TimeString
-	static TimeString now := cast DateTime.fromTime(DateTime.now, outputTimezone:0).toTimeString
+	static TimeString now := cast DateTime.fromTime(Time.now, outputTimezone:0).toTimeString
 	static TimeString fromTime(float value) := cast DateTime.fromTime(value, outputTimezone:0).toTimeString
 	
 	inline js bool toBool := this
@@ -146,7 +146,7 @@ string TimeString
 		DateTime.fromTimeString(this).dayOfWeekDayMonthYearHourMinuteString
 	
 string PlainTimeString
-	static PlainTimeString now := DateTime.fromTime(DateTime.now - DateTime.localTimezoneOffset, outputTimezone:0).toPlainTimeString
+	static PlainTimeString now := DateTime.fromTime(Time.now - DateTime.localTimezoneOffset, outputTimezone:0).toPlainTimeString
 	
 	inline js bool toBool := this
 	inline string toString() this
@@ -244,6 +244,8 @@ immutable class DateTime
 	string twoDigitHour   := (this.hour < 10 ? "0"+this.hour : this.hour.toString())
 	string twoDigitMinute := (this.minute < 10 ? "0"+this.minute : this.minute.toString())
 	string twoDigitSecond := (this.second < 10 ? "0"+this.second : this.second.toString())
+
+	static DateTime current() DateTime.fromTime(Time.now)
 		
 	static DateTime fromTimeInSeconds: float timeInSeconds
 		                               int outputTimezone = DateTime.localTimezoneOffset
@@ -520,7 +522,7 @@ js(Date) internal transient class Date
 	js string invariantDayMonthYearHourMinuteSecondString: language = Loca.language
 		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
-	// The number of milliseconds elapsed since January 1, 1970
+	// In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 	inline js float time := this.getTime()
 		
 	// The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"

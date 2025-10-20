@@ -80,7 +80,7 @@ struct Vector2
 	interpolateTo: Vector2 target  // The target position to interpolate to
 		           float startTime      // The start time in milliseconds
 		           float duration = 300 // The duration in milliseconds
-		let progress = (DateTime.now - startTime) / duration
+		let progress = (Time.now - startTime) / duration
 		if progress <= 0: return this
 		if progress >= 1: return target
 		let iprogress = 1 - progress
@@ -101,7 +101,7 @@ struct Vector2
 		           float startTime      // The start time in milliseconds
 		           float duration = 300 // The duration in milliseconds
 		           EaseFunction ease
-		let progress = (DateTime.now - startTime) / duration
+		let progress = (Time.now - startTime) / duration
 		if progress <= 0: return this
 		if progress >= 1: return target
 		progress = ease.function(progress)
@@ -165,7 +165,7 @@ global skipInit unit math
 		                float to = 1
 		                float startTime = 0 // The start time in milliseconds
 		                float duration = 1  // The duration in milliseconds
-		let value = DateTime.now - startTime
+		let value = Time.now - startTime
 		if value <= 0:        return from
 		if value >= duration: return to
 		return from + (to-from) * (value/duration)

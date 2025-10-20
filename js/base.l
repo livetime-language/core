@@ -28,6 +28,10 @@ immutable struct int
 	int atLeast: int value
 		(this < value ? value : this)
 	
+	inline js 
+	float atLeast: float value
+		(this < value ? value : this)
+	
 	// Make sure the value never exceets a maximum value
 	// Example: Make sure the percentage is at most 100
 	//     percentage = percentage atMost 100

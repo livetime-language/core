@@ -277,13 +277,13 @@ Object ImageObject
 Object Effect
 	Image image
 	int framesPerSecond = 15
-	private startFrame = DateTime.frame
+	private startFrame = Time.frame
 	
 	Effect
 		if size.x == 0 and size.y == 0: size = image.size
 	
 	internal override tick
-		var frame = math.floor((DateTime.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
+		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
 		if alpha and frame < image.frames.length
 			drawImage image, position, size, alpha, visibleFor, layer, frame, location
 		else
@@ -362,7 +362,7 @@ Object ParticleSystem
 	internal debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
 	
 	internal override tick
-		if DateTime.now > nextBurst
+		if Time.now > nextBurst
 			if mode == OneParticlePerImageFrame
 				for image.frames.length
 					let angle = -math.randomFloat .5
@@ -384,7 +384,7 @@ Object ParticleSystem
 						angle
 						frame: math.randomInteger(image.frames.length)
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
-				nextBurst = ++burst < bursts ? DateTime.now + burstInterval : float.maxValue
+				nextBurst = ++burst < bursts ? Time.now + burstInterval : float.maxValue
 
 		for particles <-
 			graphics.move .pos

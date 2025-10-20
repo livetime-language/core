@@ -80,7 +80,7 @@ internal transient skipInit unit PeerNetwork
 				// !!! EVALUATE Reconned immediately when failed
 				// or .connectionState == "failed"
 					
-					core.log "[{DateTime.frame}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
+					core.log "[{Time.frame}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
 					.startToConnectTime = user.lastIncomingMessageTime = DateTime.realTime
 					statistics.scheduleSendIn 3 seconds
 					

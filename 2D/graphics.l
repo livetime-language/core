@@ -1905,7 +1905,7 @@ transient skipInit global unit graphics
 		const width = 8
 		const margin1 = 8
 		const margin2 = margin1 - width/2
-		let completion = (DateTime.now - startTime) / duration
+		let completion = (Time.now - startTime) / duration
 		let time = (1 - completion) * 6000
 		
 		drawLine {   0        , -540+margin1} to {math.map(time, 0..960, 0, -960+margin2), -540+margin1}, width
@@ -1914,7 +1914,7 @@ transient skipInit global unit graphics
 		drawLine { 960-margin1,  540-margin2} to { 960-margin1, math.map(time, 960+1080+1920..960+1080+1920+1080, 540-margin2, -540+margin2)}, width
 		drawLine { 960-margin2, -540+margin1} to {math.map(time, 960+1080+1920+1080..960+1080+1920+1080+960, 960-margin2, 0), -540+margin1}, width
 		
-		if completionSound and DateTime.now > startTime + duration - timeBeforeCompletionToPlaySound and not completionSound.isPlaying: playSound completionSound
+		if completionSound and Time.now > startTime + duration - timeBeforeCompletionToPlaySound and not completionSound.isPlaying: playSound completionSound
 		if onComplete != null and completion >= 1: onComplete
 
 // --------------------------------------------- Gizmo ---------------------------------------------

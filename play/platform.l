@@ -279,10 +279,11 @@ transient skipInit unit Platform
 
 	js void navigate: string url
 		window.location.href = url
-				
-DateTime
-	// The number of milliseconds elapsed since January 1, 1970
-	static importance:4 float now
+
+// In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
+static class Time
+	// The number of milliseconds elapsed since 1 January 1970
+	importance:5 float now
 	
 	// The current frame (by default, there are 30 frames per second)
-	static importance:4 inline js int frame := core.frame
+	static importance:5 inline js int frame := core.frame

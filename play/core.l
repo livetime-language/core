@@ -28,7 +28,7 @@ internal transient skipInit unit core
 	NetworkMode mode                // Whether we are in local or connected mode
 	visible string errorMessage     // The error message if we caught any exceptions in the main loop
 	public float startTime          // The time the room was created, syncroniced between all clients
-	public float serverStartTime     // Used to calculate the same DateTime.now from core.frame for all users in core.step
+	public float serverStartTime     // Used to calculate the same Time.now from core.frame for all users in core.step
 	visible int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
 	internal int frames             // Total number of frames we have inputs for
 	internal int frameWithNewWatches// First frame with new watches, do not send watches for frames below this
@@ -120,7 +120,7 @@ internal transient skipInit unit core
 		watchIndex = 0
 		input.isCertain = true
 		lobby.inLobby = startInLobby
-		DateTime.now = serverStartTime
+		Time.now = serverStartTime
 		snapshotFrame = -1
 		checksums.clear
 		lastChecksumFrame = -1
@@ -289,8 +289,8 @@ internal transient skipInit unit core
 	
 	// Logs
 	js void log: logstring text
-		if(DateTime.now > core.prevLog + 3000) core.logs += "\n"
-		core.prevLog = DateTime.now
+		if(Time.now > core.prevLog + 3000) core.logs += "\n"
+		core.prevLog = Time.now
 		
 		let str = new Date().hourMinuteSecondMillisecondString() + " " + text
 		statistics.systemLogs.push(str)
@@ -391,7 +391,7 @@ internal transient skipInit unit core
 			if debug.waitUntilFrame: print "# Frame {frame}"
 
 			// Set time
-			DateTime.now = serverStartTime + math.round(frame * frameTime)
+			Time.now = serverStartTime + math.round(frame * frameTime)
 			
 			// Flags
 			Platform.fastForward = fastForward
@@ -906,7 +906,7 @@ skipInit transient unit statistics
 	
 	// Log game events (like scores, playtimes, etc)
 	log: any value
-		value.frame = DateTime.frame
+		value.frame = Time.frame
 		this.gameLogs.add value
 	
 	private startSession
