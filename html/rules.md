@@ -225,7 +225,7 @@ static class helpers
 
 # Check if everything is correct
 1. Fix all linter errors. Do not finish until all linter errors are fixed.
-2. The development server is always running at http://localhost:3030
+2. The development server is always running at http://localhost:8080
 3. Test the app in a browser to ensure it works and looks great. Do not finish until you verified that everything works as planned.
 
 # References
