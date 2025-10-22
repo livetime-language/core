@@ -202,7 +202,7 @@ static class app
 		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
 
 		// Instead of a value, you can specify a css string.
-		// Make sure to use valid css syntax inside a css string, e.g. "100% - 16px" instead of "100percent - 16"
+		// Make sure to use valid css syntax inside a css string, e.g. "100% - 16px" instead of 100percent - 16
 		div width:"calc(100% - 16px)"
 
 static class helpers
