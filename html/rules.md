@@ -32,7 +32,7 @@ static class app
 	string newItemText = ""
 
 	// Defines the member function start of the class app. 
-	// All functions need to be part of a class. There are no top-level functions in LiveTime.
+	// All functions are member functions of a class. There are no top-level functions or nested functions in LiveTime.
 	// app.start is the entry point of the application. It is called when the application starts.
 	start
 		items.add {text:"Buy groceries", state:Done}
@@ -201,7 +201,8 @@ static class app
 		// Shadow
 		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
 
-		// Calc
+		// Instead of a value, you can specify a css string.
+		// Make sure to use valid css syntax inside a css string, e.g. "100% - 16px" instead of 100percent - 16
 		div width:"calc(100% - 16px)"
 
 static class helpers

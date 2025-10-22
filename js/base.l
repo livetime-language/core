@@ -182,6 +182,18 @@ immutable struct int
 	
 // A number stored as a double precision 64-bit floating point value
 immutable struct float
+	importance:3 inline js
+	bool isNaN() isNaN(this)
+
+	// Checks if the float is not NaN (Not a Number). If you convert a string to a float, it will be NaN if the string is not a valid number. 
+	// Dividing by 0, or taking the square root of a negative number will also result in NaN.
+	// Example:
+	//     convertToFloat: string stringValue, float defaultValue = 0
+	//         float floatValue = stringValue.toFloat
+	//         return floatValue.isValidNumber ? floatValue : defaultValue
+	importance:5 inline js
+	bool isValidNumber() (!isNaN(this))
+
 	// Returns the absolute value of the float
 	// Example:
 	//     float value = -3.14
