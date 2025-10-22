@@ -1344,6 +1344,12 @@ Execute this code when the user releases the right mouse button on the HTML elem
 ### void(PointerEvent ev) onPointerDown
 Execute this code when the user presses down the left mouse button on the HTML element
 
+### void(PointerEvent ev) onPointerOver
+Execute this code when the pointer hovers over the element
+
+### void(PointerEvent ev) onPointerOut
+Execute this code when the pointer stops hovering over the element
+
 ### void(HtmlKeyboardEvent ev) onKeyDown
 Execute this code when the user presses a key on the keyboard
 

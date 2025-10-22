@@ -224,9 +224,9 @@ static class helpers
 		return app.documents.all.state == Done
 
 # Check if everything is correct
-1. Fix all linter errors.
-2. As soon as there are no linter errors left, the app is accessable at http://localhost:3030
-3. Test the app to ensure everythings looks great and works as intended.
+1. Fix all linter errors. Do not finish until all linter errors are fixed.
+2. The development server is always running at http://localhost:3030
+3. Test the app in a browser to ensure it works and looks great. Do not finish until you verified that everything works as planned.
 
 # References
 Read this file for all available images in the current project:
