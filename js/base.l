@@ -1749,9 +1749,9 @@ yaml
 struct Reference<T>
 	dynamic container
 	string key
-	set: T value
+	assign: T value
 		container[key] = value
-	T get
+	implicit T toT
 		return container[key]
 		
 // This struct is automatically filled with the source code location
