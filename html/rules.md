@@ -225,9 +225,12 @@ static class helpers
 		return app.documents.all.state == Done
 
 # Check if everything is correct
-1. Fix all linter errors. Do not finish until all linter errors are fixed.
-2. The development server is always running at http://localhost:8080
-3. Test the app in a browser to ensure it works and looks great. Do not finish until you verified that everything works as planned.
+Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
+
+1. Fix all linter errors.
+2. The development server is always running at http://localhost:8080. Test the app in a browser to ensure it works and looks great.
+
+Do not finish until all errors are fixed and you verified that everything works as planned.
 
 # References
 Read this file for all available images in the current project:
