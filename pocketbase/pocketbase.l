@@ -128,11 +128,27 @@ DatabaseTable<T>
 		                      dynamic update
 		pocketBase.pb.collection(this.name).@update(id, update)
 		
+	// Updates an item partially
+	importance:5
+	async js void updateField: T item
+		                    string key
+					        any value
+		item[key] = value
+		if(!item.id) {
+			await this.add(item)
+		} else {
+			pocketBase.pb.collection(this.name).@update(item.id, {[key]:value})
+		}
+		
 	// If the item has a valid id member variable, update the item, otherwise add it to the database table
 	importance:3
 	async js T save: T item
-		if(!item.id) return this.add(item)
-		else         return pocketBase.pb.collection(this.name).update(item.id, item)
+		if(!item.id) {
+			let newRecord = await pocketBase.pb.collection(this.name).create(item);
+			item.id = newRecord.id
+		} else {
+			await pocketBase.pb.collection(this.name).update(item.id, item)
+		}
 	
 	// Remove an item from the database table
 	importance:5
@@ -231,3 +247,20 @@ DatabaseTable<T>
 		T item = items[index]
 		items.removeAt(index)
 		return item
+
+global transient priority unit System
+	// Do something a given number of times or for each item in a list
+	global inline js void for: DatabaseTable<T> subject    // The list to iterate over
+		                       -> inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           int i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	// Do something a given number of times or for each item in a list
+	global inline js void for: DatabaseTable<T> subject    // The list to iterate over
+		                       <- inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           int i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let _subject=subject.items, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
