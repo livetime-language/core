@@ -404,8 +404,8 @@ immutable class string
 	importance:5 inline js int toInt := parseInt(this)
 	importance:5 inline js int toFloat := parseFloat(this)
 	
-	importance:5 inline js any parseJson() JSON.parse(this)
-	importance:5 inline js any parseYaml() yaml.parse(this)
+	importance:5 inline js dynamic parseJson() JSON.parse(this)
+	importance:5 inline js dynamic parseYaml() yaml.parse(this)
 		
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
 	
@@ -1082,8 +1082,8 @@ class List<T>
 		if order == Ascending: return this.sort(expression(a) - expression(b))
 		else                   return this.sort(expression(b) - expression(a))
 				
-	// Returns true if the given condition is true for any item in the list
-	importance:4 inline js bool any: bool(T a) predicate // The condition to check
+	// Returns true if the given condition is true for dynamic item in the list
+	importance:4 inline js bool dynamic: bool(T a) predicate // The condition to check
 		this.some(predicate)
 		
 	importance:4 inline js bool none: bool(T a) predicate // The condition to check
@@ -1682,20 +1682,17 @@ immutable struct void
 // Denotes a type that can be null
 struct Nullable<T>
 	
-// A Hashtable with keys of type 'string' and values of type 'any'
+// A dynamic type. Useful for representing json and yaml data.
 interface dynamic
-
-// Any type
-interface any
 
 // The base class for all classes
 interface object
-	static inline js any undefined() undefined
+	static inline js dynamic undefined() undefined
 	
 	inline js bool toBool() (this != null)
 	inline js string toJson() JSON.stringify(this)
 	// inline js string toString() object_stringify(this, 3)
-	static inline js bool isEqualAndSameType(any a, any b) (a === b)
+	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 		
 	static internal js string stringify: object subject, int depth = 0 
 		switch(typeof subject)
@@ -1734,16 +1731,16 @@ skipInit global unit Platform
 		import((Platform.libUrl || _basePath || location.href.getUntilLast("/")+"/")+file)
 
 json
-	importance:5 inline js any parse: string value
+	importance:5 inline js dynamic parse: string value
 		JSON.parse(value)
-	importance:5 inline js string stringify: any value
+	importance:5 inline js string stringify: dynamic value
 		JSON.stringify(value)
 
 yaml
 	dynamic lib
 	setup
 		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
-	any parse: string value
+	dynamic parse: string value
 		return yaml.lib.load(value)
 
 struct Reference<T>
@@ -1837,7 +1834,7 @@ global transient priority unit System
 	global inline js Promise<T> promise: void(void(T a) resolve) resolve
 		new Promise(resolve)
 		
-	inline js void doNotSerialize: any object
+	inline js void doNotSerialize: dynamic object
 		_constCache.push(object)
 	
 	// Do something a given number of times or for each item in a list
@@ -2038,10 +2035,10 @@ global transient priority unit System
 	// 	let time = now.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(now.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+now.getFullYear()+" "+now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3});
 	// 	(location ? log(time + " " +text, location.start, location.file) : log(time + " " +text))
 		
-	// js void log: any value
+	// js void log: dynamic value
 	// 	console.log(value)
 	
-	js void log: any value
+	js void log: dynamic value
 		console.log(value)
 	
 	// Display a message in the timeline
@@ -2087,11 +2084,11 @@ global transient priority low unit System
 		for(let _subject=subject, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
 				
 	// Do something a given number of times or for each item in a list
-	global inline js void for: dynamic subject // The list to iterate over
-		                       -> inline void(
-		                           dynamic it, // The current item of the dynamic we are iterating over with the for-loop
-		                           string key  // The current key of the dynamic we are iterating over with the for-loop
-		                       ) do            // Do this for each item in a list
+	global inline js void forDynamic: dynamic subject // The list to iterate over
+		                              -> inline void(
+		                                  dynamic it, // The current item of the dynamic we are iterating over with the for-loop
+		                                  string key  // The current key of the dynamic we are iterating over with the for-loop
+		                              ) do            // Do this for each item in a list
 		{let _subject=subject; for(let key in _subject) do(_subject[key], key)}
 		
 	// Creates a new list populated with the results of calling a function on every element of the list

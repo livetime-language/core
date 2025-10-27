@@ -1,5 +1,5 @@
 file
-	js async void save: any object
+	js async void save: dynamic object
 		                string to
 		const fs = require("fs").promises;
 		await fs.writeFile(to, JSON.stringify(object, null, "\t"))

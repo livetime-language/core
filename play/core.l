@@ -656,7 +656,7 @@ internal transient skipInit unit core
 		for result
 			int userId = .userId
 			int start = .start
-			any inputs = .inputs
+			dynamic inputs = .inputs
 			let user = input.internalUsers[.userId] ?= {id:.userId, local:.userId == localUserId, collectInputs:true}
 			if user.local
 				input.localUser = user
@@ -905,7 +905,7 @@ skipInit transient unit statistics
 			nextSendTime = DateTime.realTime + core.sendStatisticsEvery
 	
 	// Log game events (like scores, playtimes, etc)
-	log: any value
+	log: dynamic value
 		value.frame = Time.frame
 		this.gameLogs.add value
 	

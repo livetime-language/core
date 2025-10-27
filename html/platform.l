@@ -171,11 +171,11 @@ skipInit global unit Platform
 	inline js string getLocalStorageString: string key
 		(localStorage.getItem(key) || "")
 		
-	inline js void setLocalStorageObject: string key, any value
+	inline js void setLocalStorageObject: string key, dynamic value
 		localStorage.setItem(key, JSON.stringify(value))
 		
-	js any getLocalStorageObject: string key
-		                          any defaultValue = null
+	js dynamic getLocalStorageObject: string key
+		                              dynamic defaultValue = null
 		let str = localStorage.getItem(key)
 		return str ? JSON.parse(str) : defaultValue
 		

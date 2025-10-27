@@ -26,7 +26,7 @@ transient skipInit unit Platform
 		window.scrollTo(0,0)
 		
 	js void setLocalStorageObject: string key
-		                           any value
+		                           dynamic value
 		                           void() then = null
 		                           void() else = null
 		try {
@@ -36,7 +36,7 @@ transient skipInit unit Platform
 			else?.()
 		}
 		
-	js any getLocalStorageObject: string key
+	js dynamic getLocalStorageObject: string key
 		try {
 			let str = localStorage.getItem(key)
 			return str ? JSON.parse(str) : null 
@@ -263,7 +263,7 @@ internal IndexedDBStore
 	IndexedDBStore
 		IndexedDB.stores.add this
 		
-	js void put: any data, void() then = null, void(Error error) else = null
+	js void put: dynamic data, void() then = null, void(Error error) else = null
 		try {
 			let trans = IndexedDB.db.transaction(this.name, "readwrite")
 			trans.onerror = e => {
@@ -278,7 +278,7 @@ internal IndexedDBStore
 			else?.(error)
 		}
 		
-	js async any get: any id
+	js async dynamic get: dynamic id
 		return new Promise((resolve, reject) => {
 			try {
 				let trans = IndexedDB.db.transaction(this.name, "readonly");
@@ -291,7 +291,7 @@ internal IndexedDBStore
 			}
 		})
 		
-	js void get: any id, void(any result) then, void(Error error) else = null
+	js void get: dynamic id, void(dynamic result) then, void(Error error) else = null
 		try {
 			let trans = IndexedDB.db.transaction(this.name, "readonly");
 			let req = trans.objectStore(this.name).get(id);
@@ -312,7 +312,7 @@ internal IndexedDBStore
 			else?.();
 		}
 		
-	js async any[] getAllFromIndex: string index, any query
+	js async dynamic[] getAllFromIndex: string index, dynamic query
 		return new Promise((resolve, reject) => {
 			try {
 				let trans = IndexedDB.db.transaction(this.name, "readonly");
@@ -325,7 +325,7 @@ internal IndexedDBStore
 			}
 		})
 		
-	js void getAllFromIndex: string index, any query, void(any[] result) then, void(Error error) else = null
+	js void getAllFromIndex: string index, dynamic query, void(dynamic[] result) then, void(Error error) else = null
 		try {
 			let trans = IndexedDB.db.transaction(this.name, "readonly");
 			let req = trans.objectStore(this.name).index(index).getAll(query);

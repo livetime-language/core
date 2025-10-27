@@ -1,12 +1,12 @@
 http
 	// Perform an http get request
-	js async any get: string url
+	js async dynamic get: string url
 		return (await fetch(url)).json()
 		
-	js async any getText: string url
+	js async dynamic getText: string url
 		return (await fetch(url)).text()
 		
-	js async any getArrayBuffer: string url
+	js async dynamic getArrayBuffer: string url
 		return (await fetch(url)).arrayBuffer()
 		
 	js void get: string url
@@ -27,7 +27,7 @@ http
 	// Perform an http post request
 	js void post: string url
 		          dynamic body = null
-		          void(any result) do = null
+		          void(dynamic result) do = null
 		let result = await (await fetch(url, {method:"POST", body:JSON.stringify(body)})).json()
 		do(result)
 		

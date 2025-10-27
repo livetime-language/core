@@ -269,7 +269,7 @@ internal transient class Buffer
 		this.writePos = writePos
 		
 	// Insert a raw array buffer at the writePos without writing its length
-	js void insertArrayBuffer: any sourceArrayBuffer
+	js void insertArrayBuffer: dynamic sourceArrayBuffer
 		let length = sourceArrayBuffer.byteLength
 		
 		// Expand if neccessary

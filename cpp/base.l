@@ -1277,12 +1277,9 @@ immutable struct void
 // Denotes a type that can be null
 struct Nullable<T>
 	
-// A Hashtable with keys of type 'string' and values of type 'any'
+// A dynamic type. Useful for representing json and yaml data.
 interface dynamic
-	
-// Any type
-interface any
-	
+
 // The base class for all classes
 interface object
 	inline cpp bool toBool() (this != nullptr)
@@ -1779,7 +1776,7 @@ immutable Range
 
 unit Json
 	inline cpp dynamic parse(string str) JSON.parse(str)
-	inline cpp string stringify(any object) JSON.stringify(object)
+	inline cpp string stringify(dynamic object) JSON.stringify(object)
 		
 enum Language: English, German, Spanish, Frensh, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
 

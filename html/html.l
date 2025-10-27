@@ -18,7 +18,7 @@ class HTMLElement
 	string placeholder
 	bool readOnly
 	string src
-	any srcObject
+	dynamic srcObject
 	HTMLElement firstChild
 	HTMLElement nextSibling
 	HTMLElement parentNode
@@ -466,7 +466,7 @@ global static priority low class html
 		}
 		return style 
 
-	js async any getUserMedia
+	js async dynamic getUserMedia
 		let userMedia = await navigator.mediaDevices.getUserMedia({
 			video:{
 				facingMode: "environment"

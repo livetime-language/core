@@ -15,7 +15,7 @@ transient skipInit pocketBase
 	inline js void autoCancellation: value = true
 		pocketBase.pb.@autoCancellation(value);
 		
-	inline js void onAuthChanged: inline void(any user) code
+	inline js void onAuthChanged: inline void(dynamic user) code
 		pocketBase.pb.authStore.onChange((token, record) => code(record))
 		
 	js void authRefresh: void() ifNotLoggedIn
@@ -112,8 +112,8 @@ DatabaseTable<T>
 		
 	// Add an item to the database table and set its id member variable
 	importance:5
-	async string add: any item // An item with a id member variable of type string that is not set yet
-		any newRecord = await pocketBase.pb.collection(this.name).create(item)
+	async string add: dynamic item // An item with a id member variable of type string that is not set yet
+		dynamic newRecord = await pocketBase.pb.collection(this.name).create(item)
 		item.id = newRecord.id
 		return newRecord.id
 		
