@@ -158,6 +158,11 @@ static class app
 
 		// Use math.floor after a division if you need an integer
 		int flooredInteger = math.floor(1 / 2)
+
+		// Cast
+		string jsonString = "\{value:7\}"
+		dynamic config = json.parse(jsonString)
+		int value = (int)config.value
 		
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
