@@ -131,8 +131,8 @@ DatabaseTable<T>
 	// Updates an item partially
 	importance:5
 	async js void updateField: T item
-		                    string key
-					        any value
+		                       string key
+					           dynamic value
 		item[key] = value
 		if(!item.id) {
 			await this.add(item)

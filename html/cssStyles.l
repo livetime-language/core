@@ -389,8 +389,8 @@ importance:5 class Margin
 	Margin: implicit Dimension all // Margin on the top, right, bottom and left of the element
 		marginString = "{all}"
 
-	Margin: implicit Dimension topAndBottom // Margin on the top and bottom of the element
-		    implicit Dimension leftAndRight // Margin on the left and right of the element
+	Margin: implicit Dimension topAndBottom = 0 px // Margin on the top and bottom of the element
+		    implicit Dimension leftAndRight = 0 px // Margin on the left and right of the element
 		marginString = "{topAndBottom} {leftAndRight}"
 
 	Margin: implicit Dimension top = 0 px    // Margin on the top of the element
