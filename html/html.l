@@ -337,6 +337,7 @@ static class Time
 	importance:5 static inline js float now() Date.now()
 	
 global static priority low class html
+	Overflow overflow = scroll
 	Unit defaultUnit = pixels
 	private HTMLElement parentNode
 	private HTMLElement currentNode
@@ -431,6 +432,7 @@ global static priority low class html
 		body.style = "background-color: white; color: black; font:12px OpenSans"
 		body.className = Platform.isMobile ? "mobile" : ""
 		body.style.touchAction = "none"
+		body.style.overflow = html.overflow
 	
 	enableScrolling: bool value
 		let style = documentBody.style
