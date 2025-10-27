@@ -4,9 +4,11 @@ globs: *.l
 alwaysApply: false
 ---
 # We use the LiveTime Programming Language and HTML Framework
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation, never spaces. 
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
 
 LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
+
+Always write the simplest possible code. Avoid code duplication.
 
 # ToDo-List Example
 // Defines the enum ItemState
