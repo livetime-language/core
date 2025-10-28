@@ -240,34 +240,44 @@ HTMLElement WebView
 	inline js void goBack() this.goBack()
 
 struct float
-	inline Dimension toDimension() Dimension(this, html.defaultUnit)
+	inline Dimension toDimension
+		Dimension(this, html.defaultUnit)
 		
 	// Pixels
-	inline Dimension px()          Dimension(this, pixels)
+	inline Dimension px
+		Dimension(this, pixels)
 		
 	// Makes the value relative to its parent's value
-	inline Dimension percent()     Dimension(this, percent)
+	inline Dimension %
+		Dimension(this, percent)
 		
 	// A fraction of the available space
-	inline Dimension fr()          Dimension(this, fraction)
+	inline Dimension fr
+		Dimension(this, fraction)
 		
 	// Font size of the parent (for font-size), font size of the element itself (for other properties)
-	inline Dimension em()          Dimension(this, em)
+	inline Dimension em
+		Dimension(this, em)
 		
 	// Font size of the root element
-	inline Dimension rem()         Dimension(this, rem)
+	inline Dimension rem
+		Dimension(this, rem)
 		
 	// Percentage of the viewport's width
-	inline Dimension vw()          Dimension(this, viewportWidth)
+	inline Dimension vw
+		Dimension(this, viewportWidth)
 		
 	// Percentage of the viewport's height
-	inline Dimension vh()          Dimension(this, viewportHeigh)
+	inline Dimension vh
+		Dimension(this, viewportHeigh)
 		
 	// Percentage of the small viewport's width (without the address bar on mobile)
-	inline Dimension svw()         Dimension(this, smallViewportWidth)
+	inline Dimension svw
+		Dimension(this, smallViewportWidth)
 		
 	// Percentage of the small viewport's height (without the address bar on mobile)
-	inline Dimension svh()         Dimension(this, smallViewportHeight)
+	inline Dimension svh
+		Dimension(this, smallViewportHeight)
 		
 immutable priority low struct float
 	inline Dimension toAngle() Angle(this, radians)

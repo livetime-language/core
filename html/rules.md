@@ -155,7 +155,7 @@ static class app
 		for documentsById as value, key
 			print "{key}: {value}"
 
-		// Very important: If you divide an integer by an integer in LiveTime, you always get a float
+		// If you divide an integer by an integer in LiveTime, you always get a float
 		float fraction = 1 / 2
 
 		// Use math.floor after a division if you need an integer
@@ -166,8 +166,8 @@ static class app
 		dynamic config = json.parse(jsonString)
 		int value = (int)config.value
 
-		// True modulo, like it's used in mathematics. Useful for wrapping around values. 
-		// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
+		// To calucate the remainder of a division, use mod or remainder (not the % symbol, which is used for percentages, e.g. width:100%). 
+		// mod returns the remainder after a floored division, always producing a result with the same sign as the divisor, like in Python.
 		float bufferSize = 100
 		let a = 107 mod bufferSize // a = 7
 		let b = -1 mod bufferSize  // b = 99
@@ -179,7 +179,7 @@ static class app
 
 		// Html div element with children
 		let doneItems = helpers.getAllDoneItems
-		div display:flex, border:{width:1px, style:solid, color:black}, margin:{top:10percent, right:auto, bottom:10percent, left:auto}
+		div display:flex, border:{width:1px, style:solid, color:black}, margin:{top:10%, right:auto, bottom:10%, left:auto}
 			for doneItems as doc
 				div text:"{doc.created.toDayMonthYearHourMinuteString} {doc.state}"
 
@@ -203,7 +203,7 @@ static class app
 
 		// Units
 		div borderRadius:8px
-		div width:100percent
+		div width:100%
 
 		// If you don't specify a unit, it defaults to pixels
 		div borderBottomWidth:8
@@ -214,8 +214,7 @@ static class app
 		// Shadow
 		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
 
-		// Instead of a value, you can specify a css string.
-		// Make sure to use valid css syntax inside a css string, e.g. "100% - 16px" instead of 100percent - 16
+		// Instead of a value, you can specify a css string. In css, you always need to specify units.
 		div width:"calc(100% - 16px)"
 
 static class helpers
