@@ -719,19 +719,19 @@ class List<T>
 		return sum/count
 
 immutable priority low struct float
-	inline js float ° (this/180*math.pi)
+	inline float ° := (this/180*math.pi)
 	
-	// One full rotation is 1
-	inline js float turn := (this*math.twoPi)
+	// Turns: One full rotation is 1
+	inline float turn := (this*math.twoPi)
 	
-	// One full rotation is 2π (about 6.2832)
-	inline js float radians := this
+	// Radians: One full rotation is 2π (about 6.2832)
+	inline float rad := this
 		
-	// One full rotation is 360
-	inline js float degrees := (this/180*math.pi)
+	// Degrees: One full rotation is 360
+	inline float deg := (this/180*math.pi)
 		
-	// One full rotation is 400
-	inline js float gradians := (this/200*math.pi)
+	// Gradians: One full rotation is 400
+	inline float grad := (this/200*math.pi)
 			
 global skipInit unit math
 	// Returns the arctangent of the quotient of the given values
