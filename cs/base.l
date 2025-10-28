@@ -209,10 +209,10 @@ struct float
 	// Weeks	
 	inline cs float weeks := (this*604800000)
 		
-	inline cs float operator °(float angle) (angle/180*pi)
+	inline js float ° (this/180*math.pi)
 	
 	// One full rotation is 1
-	inline cs float turns := (this*math.twoPi)
+	inline cs float turn := (this*math.twoPi)
 	
 	// One full rotation is 2π (about 6.2832)
 	inline cs float radians := this

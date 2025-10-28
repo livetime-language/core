@@ -282,19 +282,19 @@ struct float
 immutable priority low struct float
 	inline Dimension toAngle() Angle(this, radians)
 
-	inline Angle °(float value) Angle(value, degrees)
+	inline Angle ° := Angle(this, degrees)
 	
-	// One full rotation is 1
-	inline Angle turns := Angle(this, turns)
+	// Turns: One full rotation is 1
+	inline Angle turn := Angle(this, turns)
 	
-	// One full rotation is 2π (about 6.2832)
-	inline Angle radians := Angle(this, radians)
+	// Radians: One full rotation is 2π (about 6.2832)
+	inline Angle rad := Angle(this, radians)
 		
-	// One full rotation is 360
-	inline Angle degrees := Angle(this, degrees)
+	// Degrees: One full rotation is 360
+	inline Angle deg := Angle(this, degrees)
 		
-	// One full rotation is 400
-	inline Angle gradians := Angle(this, gradians)
+	// Gradians: One full rotation is 400
+	inline Angle grad := Angle(this, gradians)
 		
 global skipInit unit math
 	// Returns the arctangent of the quotient of the given values
@@ -307,7 +307,7 @@ global skipInit unit math
 
 struct Angle
 	float value         // The value in the specified unit
-	Unit unit = radians // The unit of the value (turns, degrees, gradians, or radians)
+	Unit unit = radians // The unit of the value (turn, degrees, gradians, or radians)
 	
 	float toFloat()   return this.value
 	string toString() return "{this.value}{this.unit}"

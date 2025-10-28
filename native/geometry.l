@@ -472,7 +472,7 @@ mmutable priority low struct float
 	inline cpp float operator °(float angle) (angle/180*pi)
 	
 	// One full rotation is 1
-	inline cpp float turns := (this*math.twoPi)
+	inline cpp float turn := (this*math.twoPi)
 	
 	// One full rotation is 2π (about 6.2832)
 	inline cpp float radians := this
