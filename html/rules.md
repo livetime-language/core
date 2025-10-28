@@ -166,7 +166,8 @@ static class app
 		dynamic config = json.parse(jsonString)
 		int value = (int)config.value
 
-		// To calucate the remainder of a division, use mod or remainder (not the % symbol, which is used for percentages, e.g. width:100%). 
+		// In LiveTime, the % symbol is used for percentages, like in css, e.g. width:100%
+		// To calucate the remainder of a division, use mod or remainder. 
 		// mod returns the remainder after a floored division, always producing a result with the same sign as the divisor, like in Python.
 		float bufferSize = 100
 		let a = 107 mod bufferSize // a = 7
