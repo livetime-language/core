@@ -69,18 +69,32 @@ immutable struct int
 	inline js int ** int value
 		Math.pow(this, value)
 		
-	inline js int % ensureSingleExecution int value
-		(((this % value) + value) % value)
-		
 	// The largest possible integer value
 	const importance:5 maxValue = 2147483647
 	
 	// The smallest possible integer value
 	const importance:5 minValue = -2147483648
 	
-	// The remainer after a division by the given value. The sign stays the same.
-	importance:4 inline js int remainder: int value // The value to divide by
-		(this % value)
+	// The true modulo operator, like it's used in mathematics, useful for wrapping around values. 
+	// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
+	// In other words: A number modulo a positive value will always be positive. 
+	// This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+	// Example:
+	//     int bufferSize = 100
+	//     int a = 107 mod bufferSize // a =  7
+	//     int b =  -1 mod bufferSize // b = 99
+	importance:5 inline js 
+	int mod: ensureSingleExecution int divisor // Returns the remainder of a floored division by this value
+		(((this % divisor) + divisor) % divisor)
+		
+	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// Example:
+	//     int bufferSize = 100
+	//     int a = 107 remainder bufferSize // a =  7
+	//     int b =  -1 remainder bufferSize // b = -1
+	importance:5 inline js 
+	int remainder: int divisor // Returns the remainder of a truncated division by this value
+		(this % divisor)
 		
 	// Returns true if the integer is not zero
 	inline js bool toBool := this
@@ -325,9 +339,6 @@ immutable struct float
 	inline js float ** float value
 		Math.pow(this, value)
 		
-	inline js float % ensureSingleExecution float value
-		(((this % value) + value) % value)
-		
 	// The largest possible floating point value
 	const importance:4 inline js
 	float maxValue := Number.MAX_VALUE
@@ -342,16 +353,32 @@ immutable struct float
 	
 	const inline js float epsilon := Number.EPSILON
 	
-	inline js float operator ** (float a, float b) 
+	inline js float ** (float a, float b) 
 		Math.pow(a,b)
 		
-	js float operator % (float a, float b)
-		return ((a % b) + b) % b
+	// The true modulo operator, like it's used in mathematics, useful for wrapping around values. 
+	// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
+	// In other words: A number modulo a positive value will always be positive. 
+	// This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+	// Example:
+	//     float bufferSize = 100.0
+	//     float a = 107.5 mod bufferSize // a =  7.5
+	//     float b =  -0.5 mod bufferSize // b = 99.5
+	importance:5 inline js 
+	float mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
+		(((this % divisor) + divisor) % divisor)
 		
-	// The remainer after a division by the given value. The sign stays the same.
-	importance:4 inline js 
-	float remainder: float value
-		(this % value)
+	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// Example:
+	//     float bufferSize = 100.0
+	//     float a = 107.5 mod bufferSize // a =  7.5
+	//     float b =  -0.5 mod bufferSize // b = -0.5
+	// Output:
+	//     7
+	//     -1	
+	importance:5 inline js 
+	float remainder: float divisor // Returns the remainder of a truncated division by this value
+		(this % divisor)
 		
 	inline js int toInt := Math.floor(this)
 		
@@ -979,23 +1006,23 @@ class List<T>
 		
 	T next: T currentItem
 		int index = indexOf(currentItem)
-		return this.get((index+1)%length)
+		return this.get((index+1) mod length)
 		
 	T previous: T currentItem
 		int index = indexOf(currentItem)
-		return this.get((index-1)%length)
+		return this.get((index-1) mod length)
 		
 	T next: T currentItem
 		    label bool(T item) where
 		int baseIndex = indexOf(currentItem)
 		for this.length
-			let item = this.get((baseIndex+i+1)%length)
+			let item = this.get((baseIndex+i+1) mod length)
 			if(where(item)) return item
 		return null
 		
 	T prev: T currentItem
 		int index = indexOf(currentItem)
-		return index != -1 ? this.get((index-1)%length) : this.get(length-1)
+		return index != -1 ? this.get((index-1) mod length) : this.get(length-1)
 		
 	T pickWithinRangeOrClosest: float(T a) selector
 		                        float min = -float.infinity
@@ -2352,12 +2379,12 @@ struct RollingList
 	private int index
 	
 	add: float value
-		values[index++ % length] = value
+		values[(index++ mod length)] = value
 		
 	measure: void() do
 		let startTime = DateTime.preciseTime
 		do
-		values[index++ % length] = DateTime.preciseTime - startTime
+		values[index++ mod length] = DateTime.preciseTime - startTime
 	
 	average
 		if values.length == 0: return 0.0

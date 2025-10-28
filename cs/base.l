@@ -9,7 +9,7 @@ struct int
 	inline cs int ** (int a, int b) 
 		Math.pow(a,b)
 		
-	inline cs int operator % (int a, int b)
+	inline cs int mod (int a, int b)
 		(((a % b) + b) % b)
 		
 	// The remainer after a division by the given value. The sign stays the same.
@@ -108,7 +108,7 @@ struct float
 	inline cs float ** (float a, float b) 
 		Math.pow(a,b)
 		
-	inline cs float operator % (float a, float b)
+	inline cs float mod (float a, float b)
 		(((a % b) + b) % b)
 		
 	// The remainer after a division by the given value. The sign stays the same.

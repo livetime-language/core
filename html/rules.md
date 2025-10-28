@@ -165,6 +165,12 @@ static class app
 		string jsonString = "\{value:7\}"
 		dynamic config = json.parse(jsonString)
 		int value = (int)config.value
+
+		// True modulo, like it's used in mathematics. Useful for wrapping around values. 
+		// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
+		float bufferSize = 100
+		let a = 107 mod bufferSize // a = 7
+		let b = -1 mod bufferSize  // b = 99
 		
 	// This function renders the html elements (on startup and when refresh is called)
 	draw

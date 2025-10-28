@@ -272,7 +272,7 @@ struct float
 immutable priority low struct float
 	inline Dimension toAngle() Angle(this, radians)
 
-	inline Angle operator °(float value) Angle(value, degrees)
+	inline Angle °(float value) Angle(value, degrees)
 	
 	// One full rotation is 1
 	inline Angle turns := Angle(this, turns)

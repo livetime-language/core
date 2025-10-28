@@ -22,13 +22,13 @@ struct float
 		
 	// // (23:59) The time is assumed to be local time, doesn't account for timezone offset
 	// static string toHourMinuteString: float value, language = Loca.language
-	// 	let hour = math.floor (value % 86400000) / 3600000
-	// 	let minute = math.floor (value % 3600000) / 60000
-	// 	if language == English: return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
+	// 	let hour = math.floor (value mod 86400000) / 3600000
+	// 	let minute = math.floor (value mod 3600000) / 60000
+	// 	if language == English: return ""+((hour-1) mod 12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
 	// 	else                    return ""+hour+":"+(minute < 10 ? "0":"")+minute
 	
  	// (59:59) The time is assumed to be local time, doesn't account for timezone offset
-	inline js string toMinuteSecondString() (Math.floor((this % 3600000) / 60000) + (this % 60000 < 10000 ? ":0":":") + Math.floor((this % 60000) / 1000))
+	inline js string toMinuteSecondString() (Math.floor((this mod 3600000) / 60000) + (this mod 60000 < 10000 ? ":0":":") + Math.floor((this mod 60000) / 1000))
 	
 	// (23:59:59)
 	inline js string toHourMinuteSecondString(language = Loca.language) new Date(this).hourMinuteSecondString(language)
@@ -69,10 +69,10 @@ struct float
 		
 	// static inline js float fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second).getTime()
 		
-	inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
-	inline js int timeSeconds      := Math.floor((this %   60000) /    1000) 
-	inline js int timeMinutes      := Math.floor((this % 3600000) /   60000) 
-	inline js int timeHours        := Math.floor((this          ) / 3600000)
+	inline js int timeMilliseconds := Math.floor((this mod    1000)          ) 
+	inline js int timeSeconds      := Math.floor((this mod   60000) /    1000) 
+	inline js int timeMinutes      := Math.floor((this mod 3600000) /   60000) 
+	inline js int timeHours        := Math.floor((this            ) / 3600000)
 		
 	inline js int totalSeconds      := Math.floor(this /      1000) 
 	inline js int totalMinutes      := Math.floor(this /     60000) 
@@ -280,10 +280,10 @@ immutable class DateTime
 			day: daysLeft + 1
 			month: currentMonth + 1
 			year: currentYear
-			dayOfWeek: (daysSinceEpoch + 4) % 7 // January 1, 1970 was a Thursday
-			hour: math.floor (outputTime % 86400000) / 3600000
-			minute: math.floor (outputTime % 3600000) / 60000
-			second: math.floor (outputTime % 60000) / 1000
+			dayOfWeek: (daysSinceEpoch + 4) mod 7 // January 1, 1970 was a Thursday
+			hour: math.floor (outputTime mod 86400000) / 3600000
+			minute: math.floor (outputTime mod 3600000) / 60000
+			second: math.floor (outputTime mod 60000) / 1000
 			timezoneOffset: outputTimezone
 		}
 		
@@ -301,14 +301,14 @@ immutable class DateTime
 		// Calculate the number of days since the epoch for full years
 		let days = 0;
 		for 1970 to year
-		    days += (. % 4 == 0 && . % 100 != 0) || (. % 400 == 0) ? 366 : 365;
+		    days += (.remainder(4) == 0 && .remainder(100) != 0) || (.remainder(400) == 0) ? 366 : 365;
 		
 		// Add days for the months of the current year
 		for month - 1
 		    days += daysInMonth[.]
 		
 		// Add a day if the current year is a leap year and month is after February
-		if (month > 2 && (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))
+		if (month > 2 && (year mod 4 == 0 && year mod 100 != 0) || (year mod 400 == 0))
 		    days += 1;
 		
 		// Add the days for the current month
@@ -323,7 +323,7 @@ immutable class DateTime
 		milliseconds += second * 1000;
 		
 		if inputTimezone == outputTimezone
-			return {time: milliseconds + inputTimezone, year, month, day, dayOfWeek: (days + 4) % 7, hour, minute, second, timezoneOffset:outputTimezone}
+			return {time: milliseconds + inputTimezone, year, month, day, dayOfWeek: (days + 4).remainder(7), hour, minute, second, timezoneOffset:outputTimezone}
 		else
 			return DateTime.fromTime(milliseconds + inputTimezone, outputTimezone)
 
@@ -369,7 +369,7 @@ immutable class DateTime
 	// (12:59 pm)
 	hourMinuteString: language = Loca.language
 		if language == German: return ""+hour+":"+(minute < 10 ? "0":"")+minute+" Uhr"
-		else                   return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
+		else                   return ""+(((hour-1) mod 12)+ 1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
 		
 	// (Monday, December 31 at 12:59 pm)
 	dayOfWeekDayMonthAtHourMinuteString: language = Loca.language
@@ -493,7 +493,7 @@ js(Date) internal transient class Date
 	string hourMinuteString: language = Loca.language
 		if language == English
 			let h = hour
-			return ""+((h-1)%12+1)+":"+toTwoDigitString(minute)+(h < 12 ? " am":" pm")
+			return ""+(((h-1) mod 12)+ 1)+":"+toTwoDigitString(minute)+(h < 12 ? " am":" pm")
 		else
 			return ""+hour+":"+toTwoDigitString(minute)
 	
@@ -501,7 +501,7 @@ js(Date) internal transient class Date
 	string hourMinuteSecondString: language = Loca.language
 		if language == English
 			let h = hour
-			return ""+((h-1)%12+1)+":"+toTwoDigitString(minute)+":"+toTwoDigitString(second)+(h < 12 ? " am":" pm")
+			return ""+(((h-1) mod 12)+1)+":"+toTwoDigitString(minute)+":"+toTwoDigitString(second)+(h < 12 ? " am":" pm")
 		else
 			return ""+hour+":"+toTwoDigitString(minute)+":"+toTwoDigitString(second)
 	

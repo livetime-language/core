@@ -11,6 +11,103 @@ The largest possible integer value
 ### int minValue
 The smallest possible integer value
 
+## Member Functions
+
+### mod
+The true modulo operator, like it's used in mathematics, useful for wrapping around values.
+It returns the remainder after a floored division, always producing a result with the same sign as the divisor.
+In other words: A number modulo a positive value will always be positive.
+This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+
+*Example:*
+```
+int bufferSize = 100
+int a = 107 mod bufferSize // a =  7
+int b =  -1 mod bufferSize // b = 99
+```
+
+| Parameter | Type | Description                                               |
+| --------- | ---- | --------------------------------------------------------- |
+| divisor   | int  | Returns the remainder of a floored division by this value |
+
+Returns int
+
+### remainder
+Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+
+*Example:*
+```
+int bufferSize = 100
+int a = 107 remainder bufferSize // a =  7
+int b =  -1 remainder bufferSize // b = -1
+```
+
+| Parameter | Type | Description                                                 |
+| --------- | ---- | ----------------------------------------------------------- |
+| divisor   | int  | Returns the remainder of a truncated division by this value |
+
+Returns int
+
+---
+
+# float
+
+## Member Functions
+
+### isValidNumber
+Checks if the float is not NaN (Not a Number). If you convert a string to a float, it will be NaN if the string is not a valid number.
+Dividing by 0, or taking the square root of a negative number will also result in NaN.
+
+*Example:*
+```
+convertToFloat: string stringValue, float defaultValue = 0
+    float floatValue = stringValue.toFloat
+    return floatValue.isValidNumber ? floatValue : defaultValue
+```
+
+Returns bool
+
+### mod
+The true modulo operator, like it's used in mathematics, useful for wrapping around values.
+It returns the remainder after a floored division, always producing a result with the same sign as the divisor.
+In other words: A number modulo a positive value will always be positive.
+This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+
+*Example:*
+```
+float bufferSize = 100.0
+float a = 107.5 mod bufferSize // a =  7.5
+float b =  -0.5 mod bufferSize // b = 99.5
+```
+
+| Parameter | Type  | Description                                               |
+| --------- | ----- | --------------------------------------------------------- |
+| divisor   | float | Returns the remainder of a floored division by this value |
+
+Returns float
+
+### remainder
+Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+
+*Example:*
+```
+float bufferSize = 100.0
+float a = 107.5 mod bufferSize // a =  7.5
+float b =  -0.5 mod bufferSize // b = -0.5
+```
+
+*Output:*
+```
+7
+-1
+```
+
+| Parameter | Type  | Description                                                 |
+| --------- | ----- | ----------------------------------------------------------- |
+| divisor   | float | Returns the remainder of a truncated division by this value |
+
+Returns float
+
 ---
 
 # string
@@ -39,10 +136,10 @@ Returns int
 Returns int
 
 ### parseJson
-Returns any
+Returns dynamic
 
 ### parseYaml
-Returns any
+Returns dynamic
 
 ### split
 Splits the string at the given character into a list of substrings
@@ -131,7 +228,7 @@ Returns string
 ---
 
 # class List<T>
-A data container that grows in size as needed
+An array that grows and shrinks in size as needed
 
 ## Member Functions
 
@@ -355,21 +452,21 @@ Returns T[]
 
 ---
 
-# class Map<TKey, TValue>
-A data container that stores key-value pairs
+# class Dictionary<TKey, TValue>
+A hashtable that maps keys to values
 
 ## Member Functions
 
 ### remove
 Remove the item assosiated with the given key
 
-| Parameter | Type | Description                                |
-| --------- | ---- | ------------------------------------------ |
-| key       | TKey | The key of the item to remove from the map |
+| Parameter | Type | Description                                       |
+| --------- | ---- | ------------------------------------------------- |
+| key       | TKey | The key of the item to remove from the dictionary |
 
 
 ### has
-Does the map have an item with a specific key?
+Does the dictionary have an item with a specific key?
 
 | Parameter | Type | Description                  |
 | --------- | ---- | ---------------------------- |
@@ -378,7 +475,7 @@ Does the map have an item with a specific key?
 Returns bool
 
 ### clear
-Remove all items from the map
+Remove all items from the dictionary
 
 
 ### length
@@ -436,12 +533,12 @@ Returns int
 | --------- | ------ | ------------------ |
 | value     | string | Required parameter |
 
-Returns any
+Returns dynamic
 
 ### stringify
-| Parameter | Type | Description        |
-| --------- | ---- | ------------------ |
-| value     | any  | Required parameter |
+| Parameter | Type    | Description        |
+| --------- | ------- | ------------------ |
+| value     | dynamic | Required parameter |
 
 Returns string
 
@@ -1571,9 +1668,9 @@ Returns Promise<T[]>
 ### add
 Add an item to the database table and set its id member variable
 
-| Parameter | Type | Description                                                          |
-| --------- | ---- | -------------------------------------------------------------------- |
-| item      | any  | An item with a id member variable of type string that is not set yet |
+| Parameter | Type    | Description                                                          |
+| --------- | ------- | -------------------------------------------------------------------- |
+| item      | dynamic | An item with a id member variable of type string that is not set yet |
 
 Returns Promise<string>
 
@@ -1595,6 +1692,17 @@ Updates an item partially
 | update    | dynamic | Required parameter |
 
 Returns Promise<T>
+
+### updateField
+Updates an item partially
+
+| Parameter | Type    | Description        |
+| --------- | ------- | ------------------ |
+| item      | T       | Required parameter |
+| key       | string  | Required parameter |
+| value     | dynamic | Required parameter |
+
+Returns Promise<void>
 
 ### remove
 Remove an item from the database table
