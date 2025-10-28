@@ -719,7 +719,7 @@ class List<T>
 		return sum/count
 
 immutable priority low struct float
-	inline js float operator °(float angle) (angle/180*math.pi)
+	inline js float °(float angle) (angle/180*math.pi)
 	
 	// One full rotation is 1
 	inline js float turns := (this*math.twoPi)

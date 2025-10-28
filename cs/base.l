@@ -6,7 +6,7 @@ struct int
 	// The smallest possible integer value
 	static inline cs int minValue := int.MinValue
 	
-	inline cs int operator ** (int a, int b) 
+	inline cs int ** (int a, int b) 
 		Math.pow(a,b)
 		
 	inline cs int operator % (int a, int b)
@@ -105,7 +105,7 @@ struct float
 	
 	const inline cs float infinity := float.PositiveInfinity
 	
-	inline cs float operator ** (float a, float b) 
+	inline cs float ** (float a, float b) 
 		Math.pow(a,b)
 		
 	inline cs float operator % (float a, float b)
