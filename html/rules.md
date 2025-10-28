@@ -92,7 +92,7 @@ static class app
 	int counter
 
 	start
-		// List (array that can grow and shrink)
+		// List (array that grows in size as needed)
 		Document[] documents = [
 			{created:DateTime.now, state:InProgress}
 		]
@@ -104,7 +104,7 @@ static class app
 		let firstTwoItems = documents[..2]
 		let lastTwoItems = documents[-2..]
 
-		// Map (called Hashtable or Dictionary in other languages)
+		// Dictionary (hashtable that maps keys to values)
 		Document[string] documentsById
 		documentsById["002f"] = {id:"002f"}
 		documentsById.remove "002f"
@@ -151,7 +151,7 @@ static class app
 		for documents.length as i
 			print documents[i].state
 
-		// Iterate over a Map
+		// Iterate over a Dictionary
 		for documentsById as value, key
 			print "{key}: {value}"
 

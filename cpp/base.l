@@ -1164,12 +1164,12 @@ struct List<T>
 	// 	const a = this || []
 	// 	const b = other || []
 	// 	const result = [];
-	// 	const map = {};
+	// 	const dictionary = {};
 	// 	for (let i = 0, length = b.length; i < length; ++i) {
-	// 		map[b[i]] = true;
+	// 		dictionary[b[i]] = true;
 	// 	}
 	// 	for (let i = 0, length = a.length; i < length; ++i) {
-	// 		if (a[i] in map) result.push(a[i]);
+	// 		if (a[i] in dictionary) result.push(a[i]);
 	// 	}
 	// 	return result;
 		
@@ -1235,9 +1235,9 @@ immutable ImmutableList<T>
 	// 	list.get(index)
 		
 // A data container that stores key-value pairs
-cpp(map, std::map) struct Map<TKey, TValue>
+cpp(map, std::map) struct Dictionary<TKey, TValue>
 	// Get the item assosiated with the given key
-	cpp TValue get: TKey key  // The key of the item to get from the map
+	cpp TValue get: TKey key  // The key of the item to get from the dictionary
 		auto search = this.find(key);
 		return search != this.end() ? search->second : TValue();
 		// if(search != this.end()) {
@@ -1249,12 +1249,12 @@ cpp(map, std::map) struct Map<TKey, TValue>
 		// }
 	
 	// Set the item for the given key
-	inline cpp void set: TKey key     // The key of the item to add to the map
-		                TValue value // The item to add to the map
+	inline cpp void set: TKey key     // The key of the item to add to the dictionary
+		                TValue value // The item to add to the dictionary
 		this[key] = value
 		
-	// private cpp TValue setAndReturn: TKey key     // The key of the item to add to the map
-	// 	                            TValue value // The item to add to the map
+	// private cpp TValue setAndReturn: TKey key     // The key of the item to add to the dictionary
+	// 	                            TValue value // The item to add to the dictionary
 	// 	this.set(key, value);
 	// 	return value;
 		
@@ -1263,10 +1263,10 @@ cpp(map, std::map) struct Map<TKey, TValue>
 	// 	(this.get(key) || (this.setAndReturn(key, value)))
 		
 	// // Remove the item assosiated with the given key
-	// inline cpp void delete: TKey key  // The key of the item to remove from the map
+	// inline cpp void delete: TKey key  // The key of the item to remove from the dictionary
 	// 	this.delete(key)
 		
-	// Remove all items from the map
+	// Remove all items from the dictionary
 	inline cpp void clear
 		this.clear()
 		
@@ -1377,11 +1377,11 @@ global transient priority unit system
 							) do           // Do this for each item in a list
 		for(int _i=subject.size()-1; _i>=0; --_i) { auto _it = subject[_i]; do(_it, _i)}
 		
-	global inline cpp void for: TValue[TKey] subject    // The map to iterate over
+	global inline cpp void for: TValue[TKey] subject    // The dictionary to iterate over
 							-> void(
-								TValue it, // The current value of the map we are iterating over with the for-loop
-								TKey key   // The current key of the map we are iterating over with the for-loop
-							) do           // Do this for each item in a map
+								TValue it, // The current value of the dictionary we are iterating over with the for-loop
+								TKey key   // The current key of the dictionary we are iterating over with the for-loop
+							) do           // Do this for each item in a dictionary
 		foreach(auto _pair in subject) do(_pair.Value, _pair.Key)
 		
 	// Do something for each item in a list. You can add or remove items inside the loop.

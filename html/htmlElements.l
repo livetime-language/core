@@ -25,7 +25,7 @@ global static class html
 		string key = attributes?.key
 		
 		if key
-			// If a key is specified, we store all nodes in a map on the parent object
+			// If a key is specified, we store all nodes in a dictionary on the parent object
 			if not parentNode.childrenByKey: parentNode.childrenByKey = {}
 			element = parentNode.childrenByKey[key]
 			if not element

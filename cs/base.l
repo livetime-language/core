@@ -926,12 +926,12 @@ class List<T>
 	// 	const a = this || []
 	// 	const b = other || []
 	// 	const result = [];
-	// 	const map = {};
+	// 	const dictionary = {};
 	// 	for (let i = 0, length = b.Count; i < length; ++i) {
-	// 		map[b[i]] = true;
+	// 		dictionary[b[i]] = true;
 	// 	}
 	// 	for (let i = 0, length = a.Count; i < length; ++i) {
-	// 		if (a[i] in map) result.push(a[i]);
+	// 		if (a[i] in dictionary) result.push(a[i]);
 	// 	}
 	// 	return result;
 		
@@ -988,7 +988,7 @@ class List<T>
 		
 // A data container that stores key-value pairs
 cs System.Collections.Generic Dictionary
-class Map<TKey, TValue>
+class Dictionary<TKey, TValue>
 	cs TValue get: TKey key
 		TValue value = default(TValue);
 		this.TryGetValue(key, out value);
@@ -1003,9 +1003,9 @@ class Map<TKey, TValue>
 		(this.ContainsKey(key) ? this[key] : this[key] = value)
 		
 	inline cs void each: -> void(
-		                     TValue it, // The current value of the map we are iterating over with the for-loop
-		                     TKey key   // The current key of the map we are iterating over with the for-loop
-		                 ) do           // Do this for each item in a map
+		                     TValue it, // The current value of the dictionary we are iterating over with the for-loop
+		                     TKey key   // The current key of the dictionary we are iterating over with the for-loop
+		                 ) do           // Do this for each item in a dictionary
 		foreach(var pair in this) { var it = pair.Value; var key = pair.Key; do()}
 			
 	cs TValue[] values
@@ -1159,11 +1159,11 @@ global transient unit System
 		                       ) do           // Do this for each item in a list
 		for(int _i=subject.Count-1; _i>=0; --_i) { var _it = subject[_i]; do(_it, _i)}
 		
-	global inline cs void for: TValue[TKey] subject    // The map to iterate over
+	global inline cs void for: TValue[TKey] subject    // The dictionary to iterate over
 		                       -> void(
-		                           TValue it, // The current value of the map we are iterating over with the for-loop
-		                           TKey key   // The current key of the map we are iterating over with the for-loop
-		                       ) do           // Do this for each item in a map
+		                           TValue it, // The current value of the dictionary we are iterating over with the for-loop
+		                           TKey key   // The current key of the dictionary we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a dictionary
 		foreach(var _pair in subject) do(_pair.Value, _pair.Key)
 		
 	// Do something for each item in a list. You can add or remove items inside the loop.

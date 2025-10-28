@@ -612,7 +612,7 @@ enum bool: false, true
 enum SortingOrder: Ascending, Descending
 enum EachDistinctSortBy: DoNotSort = 0, SortByInteger = 1, SortByString = 2
 	
-// A data container that grows in size as needed
+// An array that grows and shrinks in size as needed
 js Array
 class List<T>
 	// Do something for each item in a list
@@ -1513,12 +1513,12 @@ class List<T>
 		const a = this || []
 		const b = other || []
 		const result = [];
-		const map = {};
+		const dictionary = {};
 		for (let i = 0, length = b.length; i < length; ++i) {
-			map[b[i]] = true;
+			dictionary[b[i]] = true;
 		}
 		for (let i = 0, length = a.length; i < length; ++i) {
-			if (a[i] in map) result.push(a[i]);
+			if (a[i] in dictionary) result.push(a[i]);
 		}
 		return result;
 		
@@ -1589,20 +1589,20 @@ immutable ImmutableList<T>
 	inline T get: implicit int index // The index of the item to get
 		list[index]
 		
-// A data container that stores key-value pairs
+// A hashtable that maps keys to values
 js Map
-class Map<TKey, TValue>
+class Dictionary<TKey, TValue>
 	// Get the item assosiated with the given key
-	inline js TValue get: TKey key  // The key of the item to get from the map
+	inline js TValue get: TKey key  // The key of the item to get from the dictionary
 		this.get(key)
 	
 	// Set the item for the given key
-	inline js void set: TKey key     // The key of the item to add to the map
-		                TValue value // The item to add to the map
+	inline js void set: TKey key     // The key of the item to add to the dictionary
+		                TValue value // The item to add to the dictionary
 		this.set(key, value)
 		
-	private js TValue setAndReturn: TKey key     // The key of the item to add to the map
-		                            TValue value // The item to add to the map
+	private js TValue setAndReturn: TKey key     // The key of the item to add to the dictionary
+		                            TValue value // The item to add to the dictionary
 		this.set(key, value);
 		return value;
 		
@@ -1611,29 +1611,29 @@ class Map<TKey, TValue>
 		(this.get(key) || this.setAndReturn(key, value))
 		
 	// Add a value to an item of the list
-	js T addToItem: TKey key // The key of the item to add to the map
-		            TValue value   // The item to add to the map
+	js T addToItem: TKey key // The key of the item to add to the dictionary
+		            TValue value   // The item to add to the dictionary
 		let item = this.get(key)
 		if(item) this.set(key, item + value)
 		else     this.set(key, value)
 		
-	// Add 1 to item of the map
+	// Add 1 to item of the dictionary
 	inline js T incrementItem: TKey key
 		this.set(key, this.get(key)+1)
 		
-	// Subtract 1 to item of the map
+	// Subtract 1 to item of the dictionary
 	inline js T decrementItem: TKey key
 		this.set(key, this.get(key)-1)
 		
 	// Remove the item assosiated with the given key
-	importance:5 inline js void remove: TKey key  // The key of the item to remove from the map
+	importance:5 inline js void remove: TKey key  // The key of the item to remove from the dictionary
 		this.delete(key)
 		
-	// Does the map have an item with a specific key?
+	// Does the dictionary have an item with a specific key?
 	importance:5 inline js bool has: TKey key // The key of the item to check
 		this.has(key)
 		
-	// Remove all items from the map
+	// Remove all items from the dictionary
 	importance:5 inline js void clear
 		this.clear()
 		
@@ -1856,8 +1856,8 @@ global transient priority unit System
 	// Do something a given number of times or for each item in a list
 	global inline js void for: TValue[TKey] subject // The list to iterate over
 		                       -> inline void(
-		                           TValue it,       // The current item of the map we are iterating over with the for-loop
-		                           TKey key         // The current key of the map we are iterating over with the for-loop
+		                           TValue it,       // The current item of the dictionary we are iterating over with the for-loop
+		                           TKey key         // The current key of the dictionary we are iterating over with the for-loop
 		                       ) do                 // Do this for each item in a list
 		for(let _pair of subject) do(_pair[1], _pair[0])
 		
