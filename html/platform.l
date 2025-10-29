@@ -178,6 +178,9 @@ skipInit global unit Platform
 		                              dynamic defaultValue = null
 		let str = localStorage.getItem(key)
 		return str ? JSON.parse(str) : defaultValue
+
+	js void removeLocalStorageItem: string key
+		localStorage.removeItem(key)
 		
 	// Shows a dialog box with a given message
 	inline js void alert: implicit string message // The message to show
