@@ -3,6 +3,7 @@
 # int
 A number stored as a 32-bit integer
 
+
 ## Constants
 
 ### int maxValue
@@ -230,6 +231,7 @@ Returns string
 # class List<T>
 An array that grows and shrinks in size as needed
 
+
 ## Member Functions
 
 ### add
@@ -455,6 +457,7 @@ Returns T[]
 # class Dictionary<TKey, TValue>
 A hashtable that maps keys to values
 
+
 ## Member Functions
 
 ### remove
@@ -485,6 +488,7 @@ Returns int
 
 # class Set<T>
 A data container that stores unique values of a given type
+
 
 ## Member Functions
 
@@ -1464,6 +1468,7 @@ Execute this code when the element gains focus
 # static class Time
 In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 
+
 ## Static Functions
 
 ### now
@@ -1623,35 +1628,183 @@ Returns HTMLElement
 
 ---
 
+# static class database
+Use this static class to login and logout users from the PocketBase backend.
+You can administer the local PocketBase instance at: http://localhost:8090/_
+If you want to dive deeper into PocketBase, you can find the complete documentation at: https://pocketbase.io/docs/
+
+*Example:*
+```
+class User
+    string id
+    string name
+static class app
+    User currentUser
+    start
+        currentUser = await database.getAuthenticatedUser
+        refresh
+    login: string email, string password
+        currentUser = await database.authWithPassword email, password
+        refresh
+    logout
+        database.logout
+        currentUser = null
+        refresh
+```
+
+
+## Static Functions
+
+### getAuthenticatedUser
+Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
+
+*Example:*
+```
+app
+    User currentUser
+    start
+        currentUser = await database.getAuthenticatedUser
+        refresh
+```
+
+Returns Promise<dynamic>
+
+### authWithPassword
+Log in a user with an email and password and return the authenticated user
+
+*Example:*
+```
+app
+    User currentUser
+    login: string email, string password
+        currentUser = await database.authWithPassword email, password
+        refresh
+```
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| email     | string | Required parameter |
+| password  | string | Required parameter |
+
+Returns Promise<dynamic>
+
+### logout
+Log out the current user
+
+*Example:*
+```
+app
+    User currentUser
+    logout
+        database.logout
+        currentUser = null
+```
+
+
+---
+
 # class DatabaseTable<T>
-Use this class to add, get, update and delete items from a remote PocketBase database table.
-The items you fetch from the remote database table are stored locally in the member variable "items".
-You can also subscribe to changes in the database table to automatically keep the local items up to date in realtime.
+Use this class to add, remove, fetch and update items from a remote PocketBase collection.
+The items are stored locally in the member variable "items". Use the functions "get", "find", "where" and "length" to access the local items.
+You can also subscribe to changes in the remote PocketBase collection to automatically keep the local items up to date in realtime.
+
 
 ## Member Variables
+
+### string name
+The name of the remote PocketBase collection
 
 ### T[] items
 The items you fetch from the database are stored locally in this list
 
 ## Member Functions
 
-### subscribe
-| Parameter | Type   | Description                          |
-| --------- | ------ | ------------------------------------ |
-| topic     | string | Optional parameter, defaults to "*"  |
-| filter    | string | Optional parameter, defaults to null |
-| fields    | string | Optional parameter, defaults to null |
-| expand    | string | Optional parameter, defaults to null |
+### add
+Add an item to the database table and the local items and set its id member variable to the id assigned by the database
+
+*Example:*
+```
+class Item
+    string id
+    string name
+app
+    DatabaseTable<Item> items = {name:"items"}
+    string newItemName
+    draw
+        field model:newItemName, placeholder:"Item name"
+        button text:"Add", onClick:addItem {name:newItemName}
+    addItem: Item item
+        await items.add item
+        print "Added item to database and assigned id: {item.id}"
+        refresh
+```
+
+| Parameter | Type | Description                                                          |
+| --------- | ---- | -------------------------------------------------------------------- |
+| item      | T    | An item with a id member variable of type string that is not set yet |
+
+Returns Promise<void>
+
+### remove
+Remove an item from the database table and the local items
+
+*Example:*
+```
+app
+    DatabaseTable<Item> items = {name:"items"}
+    draw
+        for items as item
+            div item.name
+            div "Remove item", onClick:items.remove item; refresh
+```
+
+| Parameter | Type | Description                                            |
+| --------- | ---- | ------------------------------------------------------ |
+| item      | T    | An item with a valid id member variable of type string |
 
 Returns Promise<void>
 
 ### fetchAll
-Fetch all items from the datebase table and store them in the member variable "items"
+Fetch all items from the database table and store them locally in the member variable "items"
+
+*Example:*
+```
+class Item
+    string id
+    string name
+app
+    DatabaseTable<Item> items = {name:"items"}
+    start
+        await items.fetchAll
+        refresh
+    draw
+        for items as item
+            div item.name
+```
 
 Returns Promise<T[]>
 
 ### fetch
-Fetch a subset of items from the datebase table and store them in the member variable "items"
+Fetch a subset of items from the database table and store them locally in the member variable "items"
+
+*Example:*
+```
+class Item
+    string id
+    string userId
+    string active
+    TimeString created
+app
+    DatabaseTable<Item> items = {name:"items"}
+    User user
+    start
+        await items.fetch filter:"userId = '{user.id}' && active = true", sort:"-created"
+        refresh
+    draw
+        div "{user.name} has {items.length} active items:"
+        for items as item
+            div item.name
+```
 
 | Parameter | Type   | Description                          |
 | --------- | ------ | ------------------------------------ |
@@ -1665,51 +1818,42 @@ Fetch a subset of items from the datebase table and store them in the member var
 
 Returns Promise<T[]>
 
-### add
-Add an item to the database table and set its id member variable
+### fetchOne
+Fetch and return a single item from the database table and store it locally in the member variable "items"
 
-| Parameter | Type    | Description                                                          |
-| --------- | ------- | -------------------------------------------------------------------- |
-| item      | dynamic | An item with a id member variable of type string that is not set yet |
+| Parameter | Type   | Description                          |
+| --------- | ------ | ------------------------------------ |
+| filter    | string | Optional parameter, defaults to ""   |
+| sort      | string | Optional parameter, defaults to null |
+| expand    | string | Optional parameter, defaults to null |
 
-Returns Promise<string>
+Returns Promise<T>
 
-### update
-Updates a complete item with a valid id member variable
+### fetchOneById
+Fetch and return a single item from the database by id and store it locally in the member variable "items"
 
-| Parameter | Type | Description                                            |
-| --------- | ---- | ------------------------------------------------------ |
-| item      | T    | An item with a valid id member variable of type string |
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| id        | string | Required parameter |
 
 Returns Promise<T>
 
 ### update
-Updates an item partially
+Update an item with a valid id member variable in the database table and the local items
 
-| Parameter | Type    | Description        |
-| --------- | ------- | ------------------ |
-| id        | string  | Required parameter |
-| update    | dynamic | Required parameter |
-
-Returns Promise<T>
-
-### updateField
-Updates an item partially
+*Example:*
+```
+app
+    DatabaseTable<Item> items = {name:"items"}
+    drawItem: Item item
+        div "{item.name}, active:{item.active}"
+        div "Make item active", onClick:items.update item, {active:true}; refresh
+```
 
 | Parameter | Type    | Description        |
 | --------- | ------- | ------------------ |
 | item      | T       | Required parameter |
-| key       | string  | Required parameter |
-| value     | dynamic | Required parameter |
-
-Returns Promise<void>
-
-### remove
-Remove an item from the database table
-
-| Parameter | Type | Description                                            |
-| --------- | ---- | ------------------------------------------------------ |
-| item      | T    | An item with a valid id member variable of type string |
+| update    | dynamic | Required parameter |
 
 Returns Promise<void>
 

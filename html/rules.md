@@ -3,7 +3,7 @@ description: LiveTime Programming Language and HTML Framework
 globs: *.l
 alwaysApply: false
 ---
-# We use the LiveTime Programming Language and HTML Framework
+# We use the LiveTime Programming Language and HTML Framework with a PocketBase backend
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
 
 LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
@@ -11,50 +11,84 @@ LiveTime uses inline styles for all html elements. Important: To re-render the h
 Always write the simplest possible code. Avoid code duplication.
 
 # ToDo-List Example
-// Defines the enum ItemState
-enum ItemState
+// Defines the enum ItemState that stores its values as strings
+enum string ItemState
 	NotStarted
 	InProgress
 	Done
 
-// Defines the class TodoItem
+// Defines the class User
 // Classes have uppercase names. All members are public by default.
+class User
+	string id
+	string name
+
+// Defines the class TodoItem
 class TodoItem
-	int id
-	ItemState state
-	bool active = true
+	string id
+	string userId
+	ItemState state = NotStarted
 	string text
 
 // Defines the static class app, the main class of every LiveTime application.
 // Static classes have lowercase names. Their members are public and static by default.
-// You can access its members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
+// You can access their members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
 static class app
-	Color primaryColor = #000000
-	TodoItem[] items
-	string newItemText = ""
+	const Color primaryColor = #118ab2
+	const fontSize = 16px
+	const Padding buttonPadding = {topAndBottom:6 leftAndRight:16}
+
+	User currentUser
+	DatabaseTable<TodoItem> items = {name:"todoItems"}
+
+	string newItemText
+	string email, password
 
 	// Defines the member function start of the class app. 
-	// All functions are member functions of a class. There are no top-level functions or nested functions in LiveTime.
+	// All functions need to be part of a class. There are no top-level functions in LiveTime.
 	// app.start is the entry point of the application. It is called when the application starts.
 	start
-		items.add {text:"Buy groceries", state:Done}
-		items.add {text:"Learn LiveTime", state:InProgress}
+		currentUser = await database.getAuthenticatedUser
+		fetchItems
+
+	fetchItems
+		if not currentUser: return
+		await items.fetch filter:"userId = '{currentUser.id}'"
+		refresh
 
 	// Defines the member function draw of the class app. 
 	// app.draw is called to render the html elements when the application starts and when the refresh function is called.
 	draw
-		div display:flex, flexDirection:column, gap:16, fontSize:16, margin:{left:32 right:32}
-			div tag:"h1", text:"Todo List"
+		if not currentUser
+			column gap:8 margin:{all:40px}
+				div tag:"h1", text:"Login"
+				field model:email, type:email, placeholder:"Email", fontSize
+				field model:password, type:password, placeholder:"Password", fontSize
 
-			if items.length > 0
-				for items as item
-					drawItem item
-			else
-				div text:"No items", fontSize:16, fontStyle:italic
+				button text:"Login", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
+				onClick:
+					currentUser = await database.authWithPassword email, password
+					fetchItems
+		else
+			div display:flex, flexDirection:column, gap:16, fontSize, margin:{left:32 right:32}
+				row alignItems:center
+					div tag:"h1", text:"Todo List", flex:1
 
-			div display:flex, gap:20, margin:{top:32}, height:30px
-				field model:newItemText, flex:1, width:400, fontSize:16
-				button text:"Add", fontSize:16, padding:{left:40 right:40}, cursor:pointer, onClick:addItem newItemText
+					button "Logout", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
+					onClick:
+						database.logout
+						currentUser = null
+						refresh
+
+				if items.length > 0
+					for items as item
+						drawItem item
+				else
+					div text:"No items", fontSize, fontStyle:italic
+
+				div display:flex, gap:20, margin:{top:16}, height:30px
+					field model:newItemText, flex:1, width:400, fontSize, onEnter:addItem newItemText
+					button text:"Add", fontSize, padding:buttonPadding, cursor:pointer, color:white, backgroundColor:primaryColor, onClick:addItem newItemText
 
 	// All functions that render html should start with "draw"
 	drawItem: TodoItem item
@@ -63,18 +97,22 @@ static class app
 			cursor:pointer,
 			padding:{top:8 right:8 bottom:8 left:8},
 			border:{width:2px, style:solid, color:#808080},
-			boxShadow:{offset:{4,4}, blur:12, spread:4, color:#d0d0d0}
-			onClick:item.state = item.state != Done ? Done : NotStarted; refresh
+			boxShadow:{offset:{4,4}, blur:12, spread:4, color:#d0d0d0},
+			onClick:
+				// Toggle the state of the item
+				ItemState state = item.state != Done ? Done : NotStarted
+				await items.update item, {state}
+				refresh
 
 			div text:item.state == Done ? "☑" : "☐"
-			div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none", color:primaryColor
-			div text:"❌", cursor:pointer, onClick:items.remove item; refresh
+			div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none"
+			div text:"❌", cursor:pointer, onClick:await items.remove item; refresh
 
 	addItem: string text
-		items.add {text, state:NotStarted}
+		await items.add {userId:currentUser.id, state:NotStarted, text}
 		newItemText = ""
 		refresh
-
+		
 # LiveTime Basics
 enum State
 	InProgress
