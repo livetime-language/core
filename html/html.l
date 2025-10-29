@@ -16,6 +16,7 @@ class HTMLElement
 	string shadowInnerHtml
 	string value
 	string placeholder
+	InputType type
 	bool readOnly
 	string src
 	dynamic srcObject

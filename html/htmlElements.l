@@ -364,6 +364,8 @@ global static class html
 	// The model variable you pass in will be updated automatically after every keystroke.
 	importance:4
 	global inline void field: string model = ""                 // The variable that holds the value. This will be updated when the user changed the text
+		                      string placeholder = ""           // The placeholder text to display in the field
+		                      InputType type = text            // The type of the input field
 		                      bool focused = false              // Whether the cursor should be placed in the field
 		                      expand Attributes attributes = {} // The attributes of the HTML element
 		                      expand Style style = null         // The css style of the HTML element
@@ -372,6 +374,8 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"input", attributes, style, data, location
 		element.value = model
+		element.placeholder = placeholder
+		element.type = type
 		element.oninput = model = element.value; changeHandler
 		if focused: element.focus
 	
