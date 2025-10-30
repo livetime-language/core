@@ -203,18 +203,19 @@ DatabaseTable<T>
 		totalItemsOfLastFetch = result.totalItems
 		return items
 		
-	// Fetch and return a single item from the database table and store it locally in the member variable "items"
-	importance:5
-	async T fetchOne: string filter = ""
+	// Fetch and return a single item from the database table
+	importance:5 async
+	T fetchOne: string filter = ""
 		              string sort = null
 		              string expand = null
 		let result = await database.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
 		return result.items[0]
 		
-	// Fetch and return a single item from the database by id and store it locally in the member variable "items"
-	importance:5
-	async inline js async T fetchOneById: string id
-		database.pb.collection(this.name).getOne(id)
+	// Fetch and return a single item from the database by id
+	importance:5 async
+	T fetchOneById: string id
+		let result = database.pb.collection(this.name).getOne(id)
+		return result.items[0]
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
