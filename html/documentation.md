@@ -1628,6 +1628,52 @@ Returns HTMLElement
 
 ---
 
+# static class http
+
+## Static Functions
+
+### get
+Fetch JSON data from a url with a http GET request. Returns a promise to the parsed JSON response.
+
+*Example:*
+```
+dynamic config = await http.get "/api/config.json"
+```
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| url       | string | Required parameter |
+
+Returns Promise<dynamic>
+
+### getText
+Fetch a string from a url with a http GET request. Returns a promise to the text response.
+string configString = await http.getText "/api/config.txt"
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| url       | string | Required parameter |
+
+Returns Promise<string>
+
+### post
+Fetch JSON data from a url with a http POST request. Returns a promise to the parsed JSON response.
+
+*Example:*
+```
+User user = {name:"John", age:30}
+dynamic result = await http.post "/api/saveUser", user
+```
+
+| Parameter | Type    | Description                                                                    |
+| --------- | ------- | ------------------------------------------------------------------------------ |
+| url       | string  | Required parameter                                                             |
+| body      | dynamic | The body object that will be send as a JSON string, optional, defaults to null |
+
+Returns Promise<dynamic>
+
+---
+
 # static class database
 Use this static class to login and logout users from the PocketBase backend.
 You can administer the local PocketBase instance at: http://localhost:8090/_
@@ -1819,7 +1865,7 @@ app
 Returns Promise<T[]>
 
 ### fetchOne
-Fetch and return a single item from the database table and store it locally in the member variable "items"
+Fetch and return a single item from the database table
 
 | Parameter | Type   | Description                          |
 | --------- | ------ | ------------------------------------ |
@@ -1830,7 +1876,7 @@ Fetch and return a single item from the database table and store it locally in t
 Returns Promise<T>
 
 ### fetchOneById
-Fetch and return a single item from the database by id and store it locally in the member variable "items"
+Fetch and return a single item from the database by id
 
 | Parameter | Type   | Description        |
 | --------- | ------ | ------------------ |

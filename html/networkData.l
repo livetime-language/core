@@ -1,45 +1,48 @@
 http
-	// Perform an http get request
-	js async dynamic get: string url
+	// Fetch JSON data from a url with a http GET request. Returns a promise to the parsed JSON response.
+	// Example:
+	//     dynamic config = await http.get "/api/config.json"
+	importance:5 js async
+	dynamic get: string url
 		return (await fetch(url)).json()
 		
-	js async dynamic getText: string url
+	// Fetch a string from a url with a http GET request. Returns a promise to the text response.
+	//     string configString = await http.getText "/api/config.txt"
+	importance:5 js async
+	string getText: string url
 		return (await fetch(url)).text()
 		
-	js async dynamic getArrayBuffer: string url
+	// Fetch an ArrayBuffer from a url with a http GET request. Returns a promise to the array buffer response.
+	importance:2 js async
+	dynamic getArrayBuffer: string url
 		return (await fetch(url)).arrayBuffer()
 		
-	js void get: string url
-		         void(dynamic result) do = null
-		let result = await (await fetch(url)).json()
-		do(result)
+	// Fetch JSON data from a file url with a http GET request. Returns a promise to the parsed JSON response.
+	importance:2 js async
+	dynamic getFile: string url
+		return (await fetch("file://"+url)).json()
 		
-	js void getFile: string url
-		             void(dynamic result) do = null
-		let result = await (await fetch("file://"+url)).json()
-		do(result)
+	// Fetch JSON data from a url with a http POST request. Returns a promise to the parsed JSON response.
+	// Example:
+	//     User user = {name:"John", age:30}
+	//     dynamic result = await http.post "/api/saveUser", user
+	importance:5 js async
+	dynamic post: string url
+		          dynamic body = null // The body object that will be send as a JSON string
+		return (await fetch(url, {method:"POST", body:JSON.stringify(body)})).json()
 		
-	js void getText: string url
-		             void(string result) do = null
-		let result = await (await fetch(url)).text()
-		do(result)
+	// Fetch JSON data from a url with a http PUT request. Returns a promise to the parsed JSON response.
+	// Example:
+	//     User user = {name:"John", age:30}
+	//     dynamic result = await http.put "/api/saveUser", user
+	importance:4 js async
+	dynamic put: string url
+		         dynamic body = null  // The body object that will be send as a JSON string
+		return (await fetch(url, {method:"PUT", body:JSON.stringify(body)})).json()
 		
-	// Perform an http post request
-	js void post: string url
-		          dynamic body = null
-		          void(dynamic result) do = null
-		let result = await (await fetch(url, {method:"POST", body:JSON.stringify(body)})).json()
-		do(result)
-		
-	// Perform an http post request
-	js void put: string url
-		         dynamic body = null
-		         void(dynamic result) do = null
-		let result = await (await fetch(url, {method:"PUT", body:JSON.stringify(body)})).json()
-		do(result)
-		
-	// Perform an http delete request
-	js void delete: string url
-		            void(dynamic result) do = null
-		let result = await (await fetch(url, {method:"DELETE"})).json()
-		do(result)
+	// Fetch JSON data from a url with a http DELETE request. Returns a promise to the parsed JSON response.
+	// Example:
+	//     dynamic result = await http.delete "/api/deleteUser/{user.id}"
+	importance:4 js async
+	dynamic delete: string url
+		return (await fetch(url, {method:"DELETE"})).json()
