@@ -1110,7 +1110,7 @@ class List<T>
 		else                   return this.sort(expression(b) - expression(a))
 				
 	// Returns true if the given condition is true for dynamic item in the list
-	importance:4 inline js bool dynamic: bool(T a) predicate // The condition to check
+	importance:4 inline js bool any: bool(T a) predicate // The condition to check
 		this.some(predicate)
 		
 	importance:4 inline js bool none: bool(T a) predicate // The condition to check
