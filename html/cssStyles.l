@@ -1,7 +1,7 @@
 enum Unit
-	pixels = "px" // pixels
+	pixels = "px" // Pixels
 	percent = "%" // Makes the value relative to its parent's value
-	fraction = "fr" // A fraction of the available space
+	fraction = "fr" // Fraction of the available space
 	
 	centimeters = "cm" // Centimeters
 	millimeters = "mm" // Millimeters
@@ -45,7 +45,7 @@ enum Unit
 struct Vector2
 	importance:5 float x // The x coordinate of the vector
 	importance:5 float y // The y coordinate of the vector
-	Unit unit = pixels // The unit of the vector (pixels, percent, Centimeters, Points, ViewportHeight, ...)
+	Unit unit = pixels // The unit of the vector (pixels, percent, centimeters, points, viewportWidth, viewportHeight, ...)
 	
 	// Used to specify that the vector is not set or invalid
 	const Vector2 none = Vector2(float.infinity, float.infinity, none)
@@ -122,19 +122,18 @@ enum string FlexWrap
 	noWrap = "nowrap" // The flex items are laid out in a single line which may cause the flex container to overflow
 	
 enum string AlignItems
-	start = "flex-start" // The items are individually aligned toward the start edge of the container
+	start = "start" // The items are individually aligned toward the start edge of the container
 	center = "center" // The items are individuallycentered on the secondary axis
-	end = "flex-end" // The items are individuallyaligned toward the end edge of the container
+	end = "end" // The items are individuallyaligned toward the end edge of the container
 	stretch = "stretch" // The items are individually stretched along the secondary axis
 	
 	normal = "normal" // For flex items, the keyword behaves as stretch
-	SelfStart = "self-start" // The items are aligned toward the start edge of the container in the items writing mode
-	SelfEnd = "self-end" // The items are aligned toward the end edge of the container in the items writing mode
+	selfStart = "self-start" // The items are aligned toward the start edge of the container in the items writing mode
+	selfEnd = "self-end" // The items are aligned toward the end edge of the container in the items writing mode
 	
-	Baseline = "baseline" // All flex items are aligned such that their flex container baselines align
-	FirstBaseline= "first baseline" // All flex items are aligned such that their flex container baselines align
+	baseline = "baseline" // All flex items are aligned such that their flex container baselines align
+	firstBaseline= "first baseline" // All flex items are aligned such that their flex container baselines align
 	
-	// For backwards compatibility
 	flexStart = "flex-start" // The items are individually aligned toward the start edge of the container
 	flexEnd = "flex-end" // The items are individuallyaligned toward the end edge of the container
 
@@ -142,9 +141,9 @@ enum string AlignItems
 	// LastBaseline = "last baseline" // All flex items are aligned such that their flex container baselines align
 	
 enum string AlignContent
-	start = "flex-start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
+	start = "start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
 	center = "center" // When wrapping, the whole content is centered on the cross axis
-	end = "flex-end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
+	end = "end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
 	
 	spaceEvenly = "space-evenly" // When wrapping, distribte the lines evenly with the same space around them
 	spaceBetween = "space-between" // When wrapping, distribte the lines evenly with no space at the top and bottom
@@ -154,14 +153,13 @@ enum string AlignContent
 	baseline = "baseline" // When wrapping, the whole content is aligned so the baseline match on the cross axis
 	stretch = "stretch" // When wrapping, stretch the whole content so the container is completely filled
 	
-	// For backwards compatibility
 	flexStart = "flex-start" // When wrapping, the whole content is aligned toward the start edge on the cross axis
 	flexEnd = "flex-end" // When wrapping, the whole content is aligned toward the end edge on the cross axis
 	
 enum string JustifyContent
-	start = "flex-start" // The whole content is aligned toward the start edge on the main axis
+	start = "start" // The whole content is aligned toward the start edge on the main axis
 	center = "center" // The whole content is centered on the main axis
-	end = "flex-end" // The whole content is aligned toward the end edge on the main axis
+	end = "end" // The whole content is aligned toward the end edge on the main axis
 	
 	spaceEvenly = "space-evenly" // Distribte the items evenly with the same space around them
 	spaceBetween = "space-between" // Distribte the items evenly with no space at the top and bottom
@@ -170,7 +168,6 @@ enum string JustifyContent
 	normal = "normal" // The items are packed in their default position as if no justify-content value was set
 	baseline = "baseline" // The whole content is aligned so the baseline match on the cross axis
 	
-	// For backwards compatibility
 	flexStart = "flex-start" // The items are packed flush to each other toward the start edge of the alignment container in the main axis.
 	flexEnd = "flex-end" // The items are packed flush to each other toward the end edge of the alignment container in the main axis.
 	
@@ -332,7 +329,7 @@ importance:5 struct Dimension
 	toString := dimensionString
 		
 	Dimension: float value        // The value in the specified unit
-		       Unit unit = pixels // The unit of the value (pixels, percent, Centimeters, Points, ViewportHeight, ViewportWidth, ...)
+		       Unit unit = pixels // The unit of the value (pixels, percent, centimeters, points, viewportWidth, viewportHeight, ...)
 		dimensionString = "{value}{unit}"
 
 	Dimension: string dimensionString
@@ -449,14 +446,14 @@ class string
 	
 importance:5 dynamic Style
 	// Align the individual items along the cross axis. 
-	// Possible values: FlexStart, Center, FlexEnd, Stretch, Normal, SelfStart, SelfEnd, Baseline, FirstBaseline
+	// Possible values: start, center, end, stretch, normal, selfStart, selfEnd, baseline, firstBaseline, flexStart, flexEnd
 	// Example:
-	//     div display:Flex, flexDirection:Column, width:100 percent
-	//         div "CenteredText", alignItems:Center
-	AlignItems alignItems 
+	//     div display:flex, flexDirection:column, width:100%
+	//         div "CenteredText", alignItems:center
+	AlignItems alignItems
 	// When wrapping, align the whole content along the cross axis. 
-	// Possible values: FlexStart, Center, FlexEnd, SpaceEvenly, SpaceBetween, SpaceAround, Normal, Baseline, Stretch
-	AlignContent alignContent 
+	// Possible values: start, center, end, spaceEvenly, spaceBetween, spaceAround, normal, baseline, stretch, flexStart, flexEnd
+	AlignContent alignContent
 	string alignSelf // The alignment for selected items inside a flexible container
 	string animation // A shorthand property for all the animation properties, except the animationPlayState
 	string animationDelay // When the animation will start
@@ -487,7 +484,7 @@ importance:5 dynamic Style
 	string backfaceVisibility // Whether or not an element should be visible when not facing the screen
 	// The border of an element. 
 	// Example:
-	//     div "Text with border", border:{width:2px, style:Solid, color:#ff0000}
+	//     div "Text with border", border:{width:2px, style:solid, color:#ff0000}
 	Border border
 	Border borderBottom // All the borderBottom properties in one declaration
 	Color borderBottomColor // The color of the bottom border. You can use a color literal to define a color, e.g. borderBottomColor:#ff0000
@@ -561,9 +558,9 @@ importance:5 dynamic Style
 	implicit string flex // The length of the item, relative to the rest
 	implicit Dimension flexBasis // The initial length of a flexible item
 	// The direction of the flexible items. 
-	// Possible values: Row, RowReverse, Column, ColumnReverse
+	// Possible values: row, rowReverse, column, columnReverse
 	// Example:
-	//     div display:Flex, flexDirection:Column
+	//     div display:flex, flexDirection:column, width:100%
 	//         for items as item
 	//             div text:item.text
 	FlexDirection flexDirection
@@ -571,9 +568,9 @@ importance:5 dynamic Style
 	float flexGrow // How much the item will grow relative to the rest
 	float flexShrink // How the item will shrink relative to the rest
 	// Whether the flexible items should wrap or not. 
-	// Possible values: NoWrap, Wrap, WrapReverse
+	// Possible values: noWrap, wrap, wrapReverse
 	// Example:
-	//     div display:Flex, flexWrap:Wrap
+	//     div display:flex, flexWrap:wrap, width:100%
 	//         for items as item
 	//             div text:item.text
 	FlexWrap flexWrap
@@ -581,9 +578,9 @@ importance:5 dynamic Style
 	string font // FontStyle, fontVariant, fontWeight, fontSize, lineHeight, and fontFamily in one declaration
 	string fontFamily // The font family for text
 	implicit Dimension fontSize // The font size of the text
-	// Whether the style of the font is Normal, Italic or Oblique. 
+	// Whether the style of the font is normal, italic or oblique. 
 	// Example:
-	//     div "Hello", fontStyle:Italic
+	//     div "Hello", fontStyle:italic
 	FontStyle fontStyle
 	string fontVariant // Whether the font should be displayed in small capital letters
 	// The boldness of the font. 
@@ -601,9 +598,9 @@ importance:5 dynamic Style
 	string imageOrientation // Specifies a rotation in clockwise direction appied to an image
 	string isolation // Defines whether an element must create a new stacking content
 	// Justify the whole content along the main axis (as in "justified text"). 
-	// Possible values: FlexStart, Center, FlexEnd, SpaceEvenly, SpaceBetween, SpaceAround, Normal, Baseline
+	// Possible values: start, center, end, spaceEvenly, spaceBetween, spaceAround, normal, baseline, flexStart, flexEnd
 	// Example:
-	//     div display:Flex, flexDirection:Row, justifyContent:Center
+	//     div display:flex, flexDirection:row, justifyContent:center, width:100%
 	//         div "This is centered horizontally"
 	JustifyContent justifyContent
 	implicit Dimension left // The left position of a positioned element
@@ -652,9 +649,9 @@ importance:5 dynamic Style
 	string perspective // The perspective on how 3D elements are viewed
 	string perspectiveOrigin // The bottom position of 3D elements
 	// The type of positioning method used for an element. 
-	// Possible values: Absolute, Relative, Fixed, Sticky, Static
+	// Possible values: absolute, relative, fixed, sticky, static
 	// Example:
-	//     div position:Absolute, left:0px, top:0px
+	//     div position:absolute, left:0px, top:0px
 	//         div "This is positioned in the top left corner"
 	Position position 
 	string quotes // The type of quotation marks for embedded quotations
@@ -664,9 +661,9 @@ importance:5 dynamic Style
 	string tableLayout // The way to lay out table cells, rows, and columns
 	string tabSize // The length of the tab-character
 	// The horizontal alignment of text. 
-	// Possible values: Left, Center, Right, Justify, Start, End, MatchParent
+	// Possible values: left, center, right, justify, start, end, matchParent
 	// Example:
-	//     div textAlign:Center text:"This is centered horizontally"
+	//     div textAlign:center text:"This is centered horizontally"
 	TextAlign textAlign 
 	string textAlignLast // How the last line of a block is aligned when text-align is "justify"
 	string textDecoration // The decoration of a text
@@ -676,9 +673,9 @@ importance:5 dynamic Style
 	string textIndent // The indentation of the first line of text
 	string textJustify // The justification method used when text-align is "justify"
 	// What should happen when text overflows the containing element. 
-	// Possible values: Ellipsis, Clip
+	// Possible values: ellipsis, clip
 	// Example:
-	//     div textOverflow:Ellipsis text:"This is an example of text overflow"
+	//     div textOverflow:ellipsis text:"This is an example of text overflow"
 	TextOverflow textOverflow 
 	string textShadow // The shadow effect of a text
 	string textTransform // The capitalization of a text

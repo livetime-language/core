@@ -7,10 +7,10 @@ global static class html
 	// Example:
 	//     app
 	//         draw
-	//             div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{top:80 left:80}
+	//             column gap:30, fontSize:60, margin:{top:80 left:80}, width:100%
 	//                 div tag:"h1", text:"Todo List"
 	//                 for items as item
-	//     		           div text:item.text, fontStyle:Italic
+	//     		           div text:item.text, fontStyle:italic
 	importance:5
 	global div: string text = null                // The text content of the element 
 		        string tag = "div"                // The tag of element, defaults to "div"
@@ -208,14 +208,15 @@ global static class html
 			element.onclick = onClick(.)
 		return element
 
-	// Render a html div element with a flex layout and a flex direction of "Row"
+	// Render a html div element with a flex layout and a flex direction of row
+	// Convenience shortcut for: div display:flex, flexDirection:row
 	// Example:
 	//     app
 	//         drawToolbar
-	//             row gap:8, alignItems:Center, justifyContent:SpaceBetween
+	//             row gap:8, alignItems:center, justifyContent:spaceBetween, width:100%
 	//                 img OpenIcon, size:{32,32}
 	//                 img SaveIcon, size:{32,32}
-	importance:4
+	importance:5
 	global row: expand Attributes attributes = null // The attributes of the HTML element
 		        expand Style style = {}             // The css style of the HTML element
 		        void() children = null              // The children of the HTML element
@@ -224,14 +225,15 @@ global static class html
 		style.flexDirection = row
 		return div attributes, style, children, location
 
-	// Render a html div element with a flex layout and a flex direction of "Column"
+	// Render a html div element with a flex layout and a flex direction of column. 
+	// Convenience shortcut for: div display:flex, flexDirection:column
 	// Example:
 	//     app
 	//         drawSidebar
-	//             column gap:8, alignItems:FlexEnd, justifyContent:FlexStart
+	//             column gap:8, alignItems:end, justifyContent:start, width:100%
 	//                 for sidebarItems as item
 	//                     div item.text, color:#808080
-	importance:4
+	importance:5
 	global column: expand Attributes attributes = null // The attributes of the HTML element
 		           expand Style style = {}             // The css style of the HTML element
 		           void() children = null              // The children of the HTML element
@@ -506,7 +508,7 @@ global static class html
 	//     app
 	//         draw
 	//             canvas size:{100,100}
-	//                 drawRectangle pos:{0,0}, size:{100,100}, color:Red
+	//                 drawRectangle pos:{0,0}, size:{100,100}, color:red
 	importance:4
 	global canvas: Vector2 size
 		           expand Attributes attributes = {} // The attributes of the HTML element
@@ -530,7 +532,7 @@ global static class html
 	//     app
 	//         draw
 	//             canvas size:{100,100}
-	//                 drawRectangle pos:{0,0}, size:{100,100}, color:Red
+	//                 drawRectangle pos:{0,0}, size:{100,100}, color:red
 	importance:4
 	global drawRectangle: Vector2 pos
 		                  Vector2 size
@@ -543,7 +545,7 @@ global static class html
 	//     app
 	//         draw
 	//             canvas size:{100,100}
-	//                 drawText text:"Hello, world!", pos:{0,0}, size:30, color:Red
+	//                 drawText text:"Hello, world!", pos:{0,0}, size:30, color:red
 	importance:4
 	global drawText: implicit string text
 		             Vector2 pos
