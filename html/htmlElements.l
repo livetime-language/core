@@ -427,7 +427,7 @@ global static class html
 		element.setAttribute("capture", "environment")
 		return element
 		
-	private js Promise<string> getDataUrlForFile: File file
+	js Promise<string> getDataUrlForFile: File file
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 			reader.onload = e => resolve(e.target.result);
