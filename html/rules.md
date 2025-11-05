@@ -1,7 +1,6 @@
 ---
-description: LiveTime Programming Language and HTML Framework
+description: LiveTime Programming Language
 globs: *.l
-alwaysApply: false
 ---
 # We use the LiveTime Programming Language and HTML Framework with a PocketBase backend
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
