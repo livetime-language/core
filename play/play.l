@@ -3,14 +3,12 @@ transient skipInit global unit graphics
 	// Draw a button with the default style.
 	//
 	// Example: If the current player instance touches or clicks the image or 16 pixels around it, we print the exact position that was touched. If other players will touch the image, nothing will happen.
-	// ```
 	//     Player
 	//         bool done
 	//         tick
 	//             if not done
 	//                 drawButton "I'm done", visibleFor:me
 	//                     done = true
-	// ```
 	// Image: drawButton.png
 	global void drawStandardButton: text = ""                            // The text of the button
 		                            Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
@@ -28,14 +26,12 @@ transient skipInit global unit graphics
 	// Draw a large button with the default style.
 	//
 	// Example: If the current player instance touches or clicks the image or 16 pixels around it, we print the exact position that was touched. If other players will touch the image, nothing will happen.
-	// ```
 	//     Player
 	//         bool done
 	//         tick
 	//             if not done
 	//                 drawButton "I'm done", visibleFor:me
 	//                     done = true
-	// ```
 	// Image: drawButton.png
 	global void drawLargeButton: text = ""                            // The text of the button
 		                         Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
