@@ -2239,7 +2239,7 @@ global skipInit unit math
 		if targetValue < value: return math.max(value - speed, targetValue)
 	
 	// Returns the sine of an angle in radians
-	importance:5 sin: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
 		angle /= math.twoPi
 	    float result = angle - .5 - math.floor(angle)
 	    result *= 16 * (math.abs(result) - .5)
@@ -2247,7 +2247,7 @@ global skipInit unit math
 	    return result
 
 	// Returns the cosine of an angle in radians
-	importance:5 cos: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
 		angle /= math.twoPi
 	    float result = angle - .25 - math.floor(angle + .25)
 	    result *= 16 * (math.abs(result) - .5)
@@ -2255,14 +2255,30 @@ global skipInit unit math
 	    return result
 	
 	// Returns the tangent of an angle in radians
-	importance:5 tan: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:5 float tan: float angle // The angle in radians (one full rotation is 2*pi)
 		return sin(angle) / cos(angle)
 			
 	float atan: float x
-		return math.quarterPi * x - x * (abs(x) - 1) * (0.2447 + 0.0663 * abs(x));
+		float absX = math.abs(x)
+		// Use range reduction for better accuracy
+		// For |x| > 1, use identity: atan(x) = π/2 - atan(1/x)
+		bool useReduction = absX > 1
+		if useReduction
+			absX = 1 / absX
+		
+		// Polynomial approximation for range [0, 1]
+		// More accurate minimax polynomial
+		float x2 = absX * absX
+		float result = absX * (0.99997726 + x2 * (-0.33262347 + x2 * (0.19354346 + x2 * (-0.04432514))))
+		
+		// Apply range reduction
+		if useReduction
+			result = math.pi / 2 - result
+		
+		return x < 0 ? -result : result
 		
 	float atan2: float y
-	            float x
+	             float x
 		if (x >= 0) { // -pi/2 .. pi/2
 			if (y >= 0) { // 0 .. pi/2
 				if (y < x) { // 0 .. pi/4
