@@ -2240,19 +2240,42 @@ global skipInit unit math
 	
 	// Returns the sine of an angle in radians
 	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
-		angle /= math.twoPi
-	    float result = angle - .5 - math.floor(angle)
-	    result *= 16 * (math.abs(result) - .5)
-	    result += .225 * result * (math.abs(result) - 1)
-	    return result
+		// Range reduction to [-pi, pi] using true modulo for stability
+		float x = angle mod math.twoPi
+		if x > math.pi: x -= math.twoPi
+		
+		// Use symmetries to fold into [-pi/2, pi/2]
+		bool negate = false
+		if x < 0
+			negate = true
+			x = -x
+		if x > math.halfPi
+			x = math.pi - x
+		
+		// 7th-order Taylor-like polynomial on [-pi/2, pi/2] in Horner form
+		// sin(x) ≈ x * (1 + x^2*(-1/6 + x^2*(1/120 + x^2*(-1/5040))))
+		float x2 = x * x
+		float s = x * (1 + x2 * (-0.16666666666666666 + x2 * (0.008333333333333333 + x2 * (-0.0001984126984126984))))
+		return negate ? -s : s
 
 	// Returns the cosine of an angle in radians
 	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
-		angle /= math.twoPi
-	    float result = angle - .25 - math.floor(angle + .25)
-	    result *= 16 * (math.abs(result) - .5)
-	    result += .225 * result * (math.abs(result) - 1)
-	    return result
+		// Range reduction to [-pi, pi]
+		float x = angle mod math.twoPi
+		if x > math.pi: x -= math.twoPi
+		
+		// Use even symmetry and fold to [0, pi/2]
+		x = math.abs(x)
+		bool negate = false
+		if x > math.halfPi
+			x = math.pi - x
+			negate = true
+		
+		// 8th-order polynomial (Taylor-like) on [0, pi/2]
+		// cos(x) ≈ 1 + x^2*(-1/2 + x^2*(1/24 + x^2*(-1/720 + x^2*(1/40320))))
+		float x2 = x * x
+		float c = 1 + x2 * (-0.5 + x2 * (0.041666666666666664 + x2 * (-0.001388888888888889 + x2 * (0.000024801587301587304))))
+		return negate ? -c : c
 	
 	// Returns the tangent of an angle in radians
 	importance:5 float tan: float angle // The angle in radians (one full rotation is 2*pi)
