@@ -762,17 +762,17 @@ One relative font weight heavier than the parent element.
 
 ### AlignItems alignItems
 Align the individual items along the cross axis.
-Possible values: FlexStart, Center, FlexEnd, Stretch, Normal, SelfStart, SelfEnd, Baseline, FirstBaseline
+Possible values: start, center, end, stretch, normal, selfStart, selfEnd, baseline, firstBaseline, flexStart, flexEnd
 
 *Example:*
 ```
-div display:Flex, flexDirection:Column, width:100 percent
-    div "CenteredText", alignItems:Center
+div display:flex, flexDirection:column, width:100%
+    div "CenteredText", alignItems:center
 ```
 
 ### AlignContent alignContent
 When wrapping, align the whole content along the cross axis.
-Possible values: FlexStart, Center, FlexEnd, SpaceEvenly, SpaceBetween, SpaceAround, Normal, Baseline, Stretch
+Possible values: start, center, end, spaceEvenly, spaceBetween, spaceAround, normal, baseline, stretch, flexStart, flexEnd
 
 ### string alignSelf
 The alignment for selected items inside a flexible container
@@ -844,7 +844,7 @@ The border of an element.
 
 *Example:*
 ```
-div "Text with border", border:{width:2px, style:Solid, color:#ff0000}
+div "Text with border", border:{width:2px, style:solid, color:#ff0000}
 ```
 
 ### Border borderBottom
@@ -1046,11 +1046,11 @@ The initial length of a flexible item
 
 ### FlexDirection flexDirection
 The direction of the flexible items.
-Possible values: Row, RowReverse, Column, ColumnReverse
+Possible values: row, rowReverse, column, columnReverse
 
 *Example:*
 ```
-div display:Flex, flexDirection:Column
+div display:flex, flexDirection:column, width:100%
     for items as item
         div text:item.text
 ```
@@ -1066,11 +1066,11 @@ How the item will shrink relative to the rest
 
 ### FlexWrap flexWrap
 Whether the flexible items should wrap or not.
-Possible values: NoWrap, Wrap, WrapReverse
+Possible values: noWrap, wrap, wrapReverse
 
 *Example:*
 ```
-div display:Flex, flexWrap:Wrap
+div display:flex, flexWrap:wrap, width:100%
     for items as item
         div text:item.text
 ```
@@ -1088,11 +1088,11 @@ The font family for text
 The font size of the text
 
 ### FontStyle fontStyle
-Whether the style of the font is Normal, Italic or Oblique.
+Whether the style of the font is normal, italic or oblique.
 
 *Example:*
 ```
-div "Hello", fontStyle:Italic
+div "Hello", fontStyle:italic
 ```
 
 ### string fontVariant
@@ -1136,11 +1136,11 @@ Defines whether an element must create a new stacking content
 
 ### JustifyContent justifyContent
 Justify the whole content along the main axis (as in "justified text").
-Possible values: FlexStart, Center, FlexEnd, SpaceEvenly, SpaceBetween, SpaceAround, Normal, Baseline
+Possible values: start, center, end, spaceEvenly, spaceBetween, spaceAround, normal, baseline, flexStart, flexEnd
 
 *Example:*
 ```
-div display:Flex, flexDirection:Row, justifyContent:Center
+div display:flex, flexDirection:row, justifyContent:center, width:100%
     div "This is centered horizontally"
 ```
 
@@ -1281,11 +1281,11 @@ The bottom position of 3D elements
 
 ### Position position
 The type of positioning method used for an element.
-Possible values: Absolute, Relative, Fixed, Sticky, Static
+Possible values: absolute, relative, fixed, sticky, static
 
 *Example:*
 ```
-div position:Absolute, left:0px, top:0px
+div position:absolute, left:0px, top:0px
     div "This is positioned in the top left corner"
 ```
 
@@ -1309,11 +1309,11 @@ The length of the tab-character
 
 ### TextAlign textAlign
 The horizontal alignment of text.
-Possible values: Left, Center, Right, Justify, Start, End, MatchParent
+Possible values: left, center, right, justify, start, end, matchParent
 
 *Example:*
 ```
-div textAlign:Center text:"This is centered horizontally"
+div textAlign:center text:"This is centered horizontally"
 ```
 
 ### string textAlignLast
@@ -1339,11 +1339,11 @@ The justification method used when text-align is "justify"
 
 ### TextOverflow textOverflow
 What should happen when text overflows the containing element.
-Possible values: Ellipsis, Clip
+Possible values: ellipsis, clip
 
 *Example:*
 ```
-div textOverflow:Ellipsis text:"This is an example of text overflow"
+div textOverflow:ellipsis text:"This is an example of text overflow"
 ```
 
 ### string textShadow
@@ -1493,10 +1493,10 @@ You can render the children of the element in an indented block of code undernea
 ```
 app
     draw
-        div display:Flex, flexDirection:Column, gap:30, fontSize:60, margin:{top:80 left:80}
+        column gap:30, fontSize:60, margin:{top:80 left:80}, width:100%
             div tag:"h1", text:"Todo List"
             for items as item
-		           div text:item.text, fontStyle:Italic
+		           div text:item.text, fontStyle:italic
 ```
 
 | Parameter | Type    | Description                                                                                                      |
@@ -1590,6 +1590,44 @@ Returns HTMLElement
 | text              | string             | The text to display on the button, optional, defaults to null            |
 | onClick           | bool(HtmlEvent ev) | Called when the user clicks the button, optional, defaults to null       |
 | disableAfterClick | bool               | Disable the button after the user clicks it, optional, defaults to false |
+
+Returns HTMLElement
+
+### row
+Render a html div element with a flex layout and a flex direction of row
+Convenience shortcut for: div display:flex, flexDirection:row
+
+*Example:*
+```
+app
+    drawToolbar
+        row gap:8, alignItems:center, justifyContent:spaceBetween, width:100%
+            img OpenIcon, size:{32,32}
+            img SaveIcon, size:{32,32}
+```
+
+| Parameter | Type   | Description                                                  |
+| --------- | ------ | ------------------------------------------------------------ |
+| children  | void() | The children of the HTML element, optional, defaults to null |
+
+Returns HTMLElement
+
+### column
+Render a html div element with a flex layout and a flex direction of column.
+Convenience shortcut for: div display:flex, flexDirection:column
+
+*Example:*
+```
+app
+    drawSidebar
+        column gap:8, alignItems:end, justifyContent:start, width:100%
+            for sidebarItems as item
+                div item.text, color:#808080
+```
+
+| Parameter | Type   | Description                                                  |
+| --------- | ------ | ------------------------------------------------------------ |
+| children  | void() | The children of the HTML element, optional, defaults to null |
 
 Returns HTMLElement
 
