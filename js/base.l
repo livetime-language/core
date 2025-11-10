@@ -1770,13 +1770,14 @@ yaml
 	dynamic parse: string value
 		return yaml.lib.load(value)
 
-struct Reference<T>
+class Reference<T>
 	dynamic container
 	string key
 	assign: T value
 		container[key] = value
 	implicit T toT
 		return container[key]
+	inline bool toBool() (this.container != null and this.container[this.key] != null)
 		
 // This struct is automatically filled with the source code location
 internal transient immutable SourceCodeLocation
