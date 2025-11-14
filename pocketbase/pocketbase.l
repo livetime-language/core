@@ -6,20 +6,21 @@
 //         string id
 //         string name
 //     static class app
-//         User currentUser
+//         User user
 //         start
-//             currentUser = await database.getAuthenticatedUser
+//             user = await database.getAuthenticatedUser
 //             refresh
 //         login: string email, string password
-//             currentUser = await database.authWithPassword email, password
+//             user = await database.authWithPassword email, password
 //             refresh
 //         logout
 //             database.logout
-//             currentUser = null
+//             user = null
 //             refresh
 transient skipInit static class database
 	string url, libUrl
 	dynamic pb
+	DatabaseTable<User> users
 	
 	// Called automatically in Platform.start
 	internal async void connect: string url
@@ -32,13 +33,14 @@ transient skipInit static class database
 		const PocketBase = (await import((database.libUrl || _basePath || location.href.getUntilLast("/")+"/")+"lib/pocketbase.es.js")).default
 		if(database.pb) database.pb.realtime.unsubscribe();
 		database.pb = new PocketBase(database.url);
+		this.users = new DatabaseTable("users", []);
 		
 	// Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
 	// Example:
 	//     app
-	//         User currentUser
+	//         User user
 	//         start
-	//             currentUser = await database.getAuthenticatedUser
+	//             user = await database.getAuthenticatedUser
 	//             refresh
 	importance:5 async
 	dynamic getAuthenticatedUser
@@ -46,16 +48,15 @@ transient skipInit static class database
 			let result = await pb.collection("users").authRefresh();
 			return result.record
 		catch as error
-			print error
 			logout
 			return null
 
 	// Log in a user with an email and password and return the authenticated user
 	// Example:
 	//     app
-	//         User currentUser
+	//         User user
 	//         login: string email, string password
-	//             currentUser = await database.authWithPassword email, password
+	//             user = await database.authWithPassword email, password
 	//             refresh
 	importance:5 async 
 	dynamic authWithPassword: string email
@@ -66,10 +67,10 @@ transient skipInit static class database
 	// Log out the current user
 	// Example:
 	//     app
-	//         User currentUser
+	//         User user
 	//         logout
 	//             database.logout
-	//             currentUser = null
+	//             user = null
 	importance:5
 	void logout
 		pb.authStore.clear();
@@ -95,7 +96,6 @@ transient skipInit static class database
 DatabaseTable<T> 
 	// The name of the remote PocketBase collection
 	importance:5 string name
-	
 
 	// The items you fetch from the database are stored locally in this list
 	importance:5 T[] items = []

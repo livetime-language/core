@@ -7,7 +7,7 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 
 LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
 
-Always write the simplest possible code. Avoid code duplication.
+Always write the simplest possible and most efficient code. Avoid code duplication.
 
 # ToDo-List Example
 // Defines the enum ItemState that stores its values as strings
