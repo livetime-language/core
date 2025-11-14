@@ -60,9 +60,14 @@ transient skipInit static class database
 	//             refresh
 	importance:5 async 
 	dynamic authWithPassword: string email
-		                            string password
+		                      string password
 		let result = await pb.collection("users").authWithPassword(email, password)
 		return result.record
+
+	importance:5 async
+	dynamic signupNewUser: User user
+		await users.add(user)
+		return await authWithPassword(user.email, user.password)
 
 	// Log out the current user
 	// Example:
