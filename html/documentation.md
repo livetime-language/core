@@ -1219,7 +1219,7 @@ Specifies the alignment of the replaced element inside its box
 ### float opacity
 The opacity level for an element
 
-### string order
+### int order
 The order of the flexible item, relative to the rest
 
 ### string orphans
