@@ -135,11 +135,17 @@ class Touch
 	
 unit html
 	KeyListener[] keyDownListeners
+	void() defaultButtonToTriggerWithEnterKey = null
 		
 	js void initGlobalEventHandlers
 		document.onkeydown = ev => {
 			if(ev.key == "F10") { 
 				Platform.toggleSmallScreen();
+			} else if(ev.key == "Enter" && html.defaultButtonToTriggerWithEnterKey != null) {
+				html.defaultButtonToTriggerWithEnterKey.invoke(ev)
+				ev.preventDefault();
+				ev.stopPropagation();
+				return false;
 			}
 			for(let listener of html.keyDownListeners) {
 				if(ev.keyCode == listener.key) {

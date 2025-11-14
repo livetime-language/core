@@ -185,7 +185,7 @@ importance:5 dynamic Attributes
 
 enum lowercase string PointerType: Mouse, Pen, Touch
 	
-immutable PointerEvent
+immutable HtmlEvent PointerEvent
 	HTMLElement target        // The element that triggered the event
 	HTMLElement currentTarget // The element to the event handler is attached to
 	int pointerId             // A unique identifier for the pointer causing the event (for example, a finger)

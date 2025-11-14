@@ -155,9 +155,9 @@ global static class html
 	//             div name
 	//             img profilePicture
 	//     app
-	//         User currentUser
+	//         User user
 	//         draw
-	//             currentUser.drawProfile
+	//             user.drawProfile
 	importance:5
 	global img: string src                        // The file of the image to display
 		        expand Attributes attributes = {} // The attributes of the HTML element
@@ -185,12 +185,14 @@ global static class html
 	//                 refresh
 	importance:5
 	global button: string text = null                // The text to display on the button
-		           void(HtmlEvent ev) onClick = null // Called when the user clicks the button
+		           void() onClick = null // Called when the user clicks the button
 		           expand Attributes attributes = {} // The attributes of the HTML element
 		           expand Style style = null         // The css style of the HTML element
+				   bool triggerWithEnterKey = false  // Make this the default button that triggers the onClick handler when the user presses the enter key
 		           SourceCodeLocation location
 		let element = div text, tag:"button", attributes, style, location
-		element.onclick = onClick
+		if triggerWithEnterKey: html.defaultButtonToTriggerWithEnterKey = onClick
+		element.onpointerdown = onClick
 		return element
 		
 	importance:5
@@ -203,9 +205,9 @@ global static class html
 		let element = div text, tag:"button", attributes, style, location
 		if disableAfterClick
 			element.disabled = false
-			element.onclick = let success = onClick(.); if not object.isEqualAndSameType(success, false): element.disabled = true
+			element.onpointerdown = let success = onClick(.); if not object.isEqualAndSameType(success, false): element.disabled = true
 		else
-			element.onclick = onClick(.)
+			element.onpointerdown = onClick(.)
 		return element
 
 	// Render a html div element with a flex layout and a flex direction of row
