@@ -230,7 +230,7 @@ skipInit global unit Platform
 		try      { _ }
 		catch(e) { return e.stack }
 		
-	inline js void debugger() debugger
+	global inline js void debugger() debugger
 	
 	global js void onNavigate: void(string url) do
 		window.onpopstate = e => do(location.pathname)
