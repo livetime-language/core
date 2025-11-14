@@ -474,6 +474,55 @@ immutable class string
 	importance:5 inline js int lastIndexOf(string str, int startPos) this.lastIndexOf(str, startPos)
 		
 	importance:5 inline js bool contains(string str) this.includes(str)
+
+	importance:5 js bool isEmail() 
+		// RFC 5322 compliant email validation
+		// Check basic structure first
+		if (!this || this.length > 254) return false;
+		
+		// Split into local and domain parts
+		const atIndex = this.lastIndexOf('@');
+		if (atIndex === -1 || atIndex === 0 || atIndex === this.length - 1) return false;
+		
+		const local = this.substring(0, atIndex);
+		const domain = this.substring(atIndex + 1);
+		
+		// Validate local part (before @)
+		// - Length: 1-64 characters
+		// - Cannot start or end with a dot
+		// - No consecutive dots
+		// - Allowed characters: a-z, A-Z, 0-9, and .!#$%&'*+-/=?^_`{|}~
+		if (local.length === 0 || local.length > 64) return false;
+		if (local[0] === '.' || local[local.length - 1] === '.') return false;
+		if (local.includes('..')) return false;
+		if (!/^[a-zA-Z0-9.!#$%&'*+\-/=?^_`{|}~]+$/.test(local)) return false;
+		
+		// Validate domain part (after @)
+		// - Length: 1-253 characters
+		// - Must contain at least one dot
+		// - Cannot start or end with a dot or hyphen
+		// - No consecutive dots
+		// - Each label (part between dots) must be 1-63 characters
+		// - Labels can only contain a-z, A-Z, 0-9, and hyphens (not at start/end)
+		if (domain.length === 0 || domain.length > 253) return false;
+		if (!domain.includes('.')) return false;
+		if (domain[0] === '.' || domain[domain.length - 1] === '.') return false;
+		if (domain[0] === '-' || domain[domain.length - 1] === '-') return false;
+		if (domain.includes('..')) return false;
+		
+		const labels = domain.split('.');
+		for (let i = 0; i < labels.length; i++) {
+			const label = labels[i];
+			if (label.length === 0 || label.length > 63) return false;
+			if (label[0] === '-' || label[label.length - 1] === '-') return false;
+			if (!/^[a-zA-Z0-9-]+$/.test(label)) return false;
+		}
+		
+		// Check that TLD is at least 2 characters and alphabetic
+		const tld = labels[labels.length - 1];
+		if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+		
+		return true;
 		
 	inline js int getCharCodeAt(int index) this.charCodeAt(index)
 		
@@ -1777,7 +1826,9 @@ class Reference<T>
 		container[key] = value
 	implicit T toT
 		return container[key]
-	inline bool toBool() (this.container != null and this.container[this.key] != null)
+	T value
+		return container[key]
+	inline bool toBool() (this != null and this.container and this.container[this.key])
 		
 // This struct is automatically filled with the source code location
 internal transient immutable SourceCodeLocation
