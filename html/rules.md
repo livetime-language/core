@@ -65,19 +65,19 @@ static class app
 				field model:password, type:password, placeholder:"Password", fontSize
 
 				button text:"Login", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
-				onClick:
-					currentUser = await database.authWithPassword email, password
-					fetchItems
+					onClick:
+						currentUser = await database.authWithPassword email, password
+						fetchItems
 		else
 			div display:flex, flexDirection:column, gap:16, fontSize, margin:{left:32 right:32}
 				row alignItems:center
 					div tag:"h1", text:"Todo List", flex:1
 
 					button "Logout", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
-					onClick:
-						database.logout
-						currentUser = null
-						refresh
+						onClick:
+							database.logout
+							currentUser = null
+							refresh
 
 				if items.length > 0
 					for items as item
