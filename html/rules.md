@@ -9,7 +9,7 @@ LiveTime uses inline styles for all html elements. Important: To re-render the h
 
 Always write the simplest possible and most efficient code. Avoid code duplication.
 
-# ToDo-List Example
+# Example application
 // Defines the enum ItemState that stores its values as strings
 enum string ItemState
 	NotStarted
@@ -20,7 +20,8 @@ enum string ItemState
 // Classes have uppercase names. All members are public by default.
 class User
 	string id
-	string name
+	string email
+	string password
 
 // Defines the class TodoItem
 class TodoItem
@@ -37,7 +38,7 @@ static class app
 	const fontSize = 16px
 	const Padding buttonPadding = {topAndBottom:6 leftAndRight:16}
 
-	User currentUser
+	User user
 	DatabaseTable<TodoItem> items = {name:"todoItems"}
 
 	string newItemText
@@ -47,18 +48,18 @@ static class app
 	// All functions need to be part of a class. There are no top-level functions in LiveTime.
 	// app.start is the entry point of the application. It is called when the application starts.
 	start
-		currentUser = await database.getAuthenticatedUser
+		user = await database.getAuthenticatedUser
 		fetchItems
 
 	fetchItems
-		if not currentUser: return
-		await items.fetch filter:"userId = '{currentUser.id}'"
+		if not user: return
+		await items.fetch filter:"userId = '{user.id}'"
 		refresh
 
 	// Defines the member function draw of the class app. 
 	// app.draw is called to render the html elements when the application starts and when the refresh function is called.
 	draw
-		if not currentUser
+		if not user
 			column gap:8 margin:{all:40px}
 				div tag:"h1", text:"Login"
 				field model:email, type:email, placeholder:"Email", fontSize
@@ -66,7 +67,7 @@ static class app
 
 				button text:"Login", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
 					onClick:
-						currentUser = await database.authWithPassword email, password
+						user = await database.authWithPassword email, password
 						fetchItems
 		else
 			div display:flex, flexDirection:column, gap:16, fontSize, margin:{left:32 right:32}
@@ -76,7 +77,7 @@ static class app
 					button "Logout", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
 						onClick:
 							database.logout
-							currentUser = null
+							user = null
 							refresh
 
 				if items.length > 0
@@ -108,7 +109,7 @@ static class app
 			div text:"❌", cursor:pointer, onClick:await items.remove item; refresh
 
 	addItem: string text
-		await items.add {userId:currentUser.id, state:NotStarted, text}
+		await items.add {userId:user.id, state:NotStarted, text}
 		newItemText = ""
 		refresh
 		

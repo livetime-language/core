@@ -54,18 +54,32 @@ transient skipInit static class database
 	// Log in a user with an email and password and return the authenticated user
 	// Example:
 	//     app
-	//         User user
-	//         login: string email, string password
-	//             user = await database.authWithPassword email, password
-	//             refresh
+	//        drawLogin
+	//            field model:email, type:email, placeholder:"Email"
+	//            field model:password, type:password, placeholder:"Password"
+	//            button text:"Login", padding:buttonPadding, color:white, backgroundColor:primaryColor
+	//                onClick:
+	//                    user = await database.authWithPassword email, password
 	importance:5 async 
 	dynamic authWithPassword: string email
 		                      string password
 		let result = await pb.collection("users").authWithPassword(email, password)
 		return result.record
 
+	// Create a new user and then call authWithPassword to log in the user.
+	// Ensure the user object has a valid email, password and passwordConfirm member variables.
+	// Example:
+	//     app
+	//        User user
+	//        drawSignup
+	//            field model:user.email, type:email, placeholder:"Email"
+	//            field model:user.password, type:password, placeholder:"Choose Password"
+	//            field model:user.passwordConfirm, type:password, placeholder:"Confirm Password"
+	//            button text:"Signup", padding:buttonPadding, color:white, backgroundColor:primaryColor
+	//                onClick:
+	//                    await database.signupNewUser user
 	importance:5 async
-	dynamic signupNewUser: User user
+	dynamic signupNewUser: dynamic user
 		await users.add(user)
 		return await authWithPassword(user.email, user.password)
 
