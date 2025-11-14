@@ -274,17 +274,19 @@ static class helpers
 	bool areAllItemsDone
 		return app.documents.all.state == Done
 
-# Check if everything is correct
-Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
-
-1. Fix all linter errors.
-2. The development server is always running at http://localhost:8080. Test the app in a browser to ensure it works and looks great.
-
-Do not finish until all errors are fixed and you verified that everything works as planned.
-
-# References
+# More information
 Read this file for all available images in the current project:
 src/media.l
 
 Read this file for a complete reference of the LiveTime Programming Language and HTML Framework, with all available classes and functions:
 lib/core/html/documentation.md
+Always read this documentation if you encounter problems.
+
+# Check if everything is correct
+Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
+
+1. Double check your code to ensure you wrote the simples possible, most efficient code.
+2. Double check you fixed all linter errors.
+3. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+
+Do not finish until all errors are fixed and you verified that everything works as intended.
