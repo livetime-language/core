@@ -103,17 +103,17 @@ static class app
 				ItemState state = item.state != Done ? Done : NotStarted
 				await items.update item, {state}
 				refresh
-
-			div text:item.state == Done ? "☑" : "☐"
-			div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none"
-			div text:"❌", cursor:pointer, onClick:await items.remove item; refresh
+			children:
+				div text:item.state == Done ? "☑" : "☐"
+				div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? "line-through" : "none"
+				div text:"❌", cursor:pointer, onClick:await items.remove item; refresh
 
 	addItem: string text
 		await items.add {userId:user.id, state:NotStarted, text}
 		newItemText = ""
 		refresh
 		
-# LiveTime Basics
+# Basics of the LiveTime programming language
 enum State
 	InProgress
 	Done
@@ -124,6 +124,7 @@ class Document
 	State state
 
 static class app
+	Color buttonColor = #0000ff
 	Document[] documents
 	DatabaseTable<Document> documentsDatabaseTable = {name:"documents"}
 	string name
@@ -214,13 +215,21 @@ static class app
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
 		// Html div element with blue text. Refer to the Styles class for all available css styles.
-		div text:"Done documents", fontSize:64, color:#ff0000
+		div text:"Hello", color:#ff0000, border:{width:1px, style:solid, color:black}, margin:{top:10%, right:auto, bottom:10%, left:auto}
 
 		// Html div element with children
 		let doneItems = helpers.getAllDoneItems
-		div display:flex, border:{width:1px, style:solid, color:black}, margin:{top:10%, right:auto, bottom:10%, left:auto}
+		div display:flex, flexDirection:column
 			for doneItems as doc
 				div text:"{doc.created.toDayMonthYearHourMinuteString} {doc.state}"
+
+		// Html div element with onClick handler and children (include the "children:" label in this case)
+		div display:flex, flexDirection:row, backgroundColor:app.buttonColor
+			onClick:
+				print "Saving document"
+			children:
+				img SaveIcon
+				div "Save", fontSize:64, color:white
 
 		// Call refresh to re-render the html after you changed any data.
 		div "Counter: {counter}"
