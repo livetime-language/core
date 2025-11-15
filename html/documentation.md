@@ -1784,6 +1784,10 @@ Ensure the user object has a valid email, password and passwordConfirm member va
 
 *Example:*
 ```
+class User
+    string email
+    string password
+    string passwordConfirm
 app
    User user
    drawSignup
@@ -1795,9 +1799,9 @@ app
                await database.signupNewUser user
 ```
 
-| Parameter | Type    | Description        |
-| --------- | ------- | ------------------ |
-| user      | dynamic | Required parameter |
+| Parameter | Type    | Description                                                                     |
+| --------- | ------- | ------------------------------------------------------------------------------- |
+| user      | dynamic | A user object with a valid email, password and passwordConfirm member variables |
 
 Returns Promise<dynamic>
 
