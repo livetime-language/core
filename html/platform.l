@@ -227,8 +227,8 @@ skipInit global unit Platform
 		clearInterval(handle)
 		
 	js object stack
-		try      { _ }
-		catch(e) { return e.stack }
+		try { _ }
+		catch(e) { return e.stack.split("\n").slice(2).join("\n") }
 		
 	global inline js void debugger() debugger
 	

@@ -2117,8 +2117,14 @@ global transient priority unit System
 	// js void log: dynamic value
 	// 	console.log(value)
 	
-	js void log: dynamic value
+	inline js void log: dynamic value
 		console.log(value)
+	
+	inline js void log: dynamic value, dynamic value2
+		console.log(value, value2)
+
+	inline js void log: dynamic value, dynamic value2, dynamic value3
+		console.log(value, value2, value3)
 	
 	// Display a message in the timeline
 	global js void watch: logstring text // The text, variables or expressions to watch

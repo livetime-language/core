@@ -17,7 +17,9 @@ global static class html
 		        expand Attributes attributes = {} // The attributes of the element
 		        expand Style style = null         // Apply this css style to the element
 		        dynamic data = {}                 // The data attributes of the element
-		        Style onHover = null              // Apply this css style to the element when the user moves their mouse over the element
+		        Style styleWhenHovering = null    // The css style that should be applied to the element when the user moves their pointer over the element
+		        Style styleWhenFocused = null     // The css style that should be applied to the element when it is focused
+				bool focusInitially = false       // Focus the element when its first created. It will not be focused again when the page is refreshed.
 		        void() children = null            // A block of code that renders the children of the element
 		        SourceCodeLocation location
 		HTMLElement element, nextNode
@@ -49,6 +51,9 @@ global static class html
 				nextNode = currentNode
 				if nextNode: parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
+				if focusInitially
+					System.log "div: focusing", element
+					element.focus
 				nodesCreated++
 			else
 				// Resuse existing element
@@ -78,11 +83,16 @@ global static class html
 			if attributes.onFocus != null:      element.onfocus = attributes.onFocus
 			
 		element.sourceLocation = sourceLocation
-		if onHover != null
-			Style unHover = getStyleToRevert originalStyle:style, onHover
-			element.onpointerover = setStyle(element, onHover)
-			element.onpointerout  = setStyle(element, unHover)
+		if styleWhenHovering != null
+			Style styleWhenNotHovering = getStyleToRevert originalStyle:style, styleWhenHovering
+			element.onpointerover = setStyle(element, styleWhenHovering)
+			element.onpointerout  = setStyle(element, styleWhenNotHovering)
 		
+		if styleWhenFocused != null
+			Style styleWhenNotFocused = getStyleToRevert originalStyle:style, styleWhenFocused
+			element.onfocus = print "#div onfocus"; setStyle(element, styleWhenFocused); if attributes?.onFocus != null: attributes.onFocus(.)
+			element.onblur  = print "#div onblur"; setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null: attributes.onBlur(.)
+
 		if text != null
 			if element.shadowInnerHtml != text
 				element.innerHTML = text
@@ -283,17 +293,17 @@ global static class html
 		                      string placeholder = ""           // The placeholder text to display in the field
 							  bool readOnly = false             // Whether the field should be read only
 							  void(string value) onInput = null // Called immediately after every keystroke
-							  bool focused = false              // Whether the cursor should be placed in the field
 		                      expand Attributes attributes = {} // The attributes of the HTML element
 		                      expand Style style = null         // The css style of the HTML element
 		                      dynamic data = {}                 // The data attributes of the element
+							  bool focusInitially = false       // Focus the element when its first created. It will not be focused again when the page is refreshed.
+							  Style styleWhenFocused = null         // The css style to apply when the element is focused
 		                      SourceCodeLocation location
-		let element = div tag:"input", attributes, style, data, location
+		let element = div tag:"input", attributes, style, data, focusInitially, styleWhenFocused, location
 		element.value = value
 		element.placeholder = placeholder
 		element.readOnly = readOnly
 		element.oninput = onInput(element.value)
-		if focused: element.focus
 		return element
 
 	// ---------------------------------------- Radio & Toggle ----------------------------------------
