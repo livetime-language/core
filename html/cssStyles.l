@@ -322,6 +322,12 @@ enum string InputType
 	search	// A single-line text field for entering search strings. Line-breaks are automatically removed from the input value. May include a delete icon in supporting browsers that can be used to clear the field. Displays a search icon instead of enter key on some devices with dynamic keypads.	
 	hidden // A control that is not displayed but whose value is submitted to the server. There is an example in the next column, but it's hidden!	
 	
+enum string TextDecoration
+	none = "none" // No text decoration
+	underline = "underline" // A line below the text
+	overline = "overline" // A line above the text
+	linethrough = "line-through" // A line through the text
+
 importance:5 struct Dimension
 	global const Dimension auto = {dimensionString:"auto"} // Automatically adjust the value to distribute the space evenly
 
@@ -666,7 +672,7 @@ importance:5 dynamic Style
 	//     div textAlign:center text:"This is centered horizontally"
 	TextAlign textAlign 
 	string textAlignLast // How the last line of a block is aligned when text-align is "justify"
-	string textDecoration // The decoration of a text
+	TextDecoration textDecoration // The decoration of a text
 	Color textDecorationColor // The color of the text-decoration. You can use a color literal to define a color, e.g. textDecorationColor:#ff0000
 	string textDecorationLine // The type of line in a text-decoration
 	string textDecorationStyle // The style of the line in a text decoration
