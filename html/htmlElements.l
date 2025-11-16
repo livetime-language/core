@@ -79,8 +79,9 @@ global static class html
 			if attributes.onKeyDown != null:    element.onkeydown = attributes.onKeyDown
 			if attributes.onKeyUp != null:      element.onkeyup = attributes.onKeyUp
 
-			if attributes.onBlur != null:       element.onblur = attributes.onBlur
-			if attributes.onFocus != null:      element.onfocus = attributes.onFocus
+			if styleWhenFocused == null
+				if attributes.onBlur != null:   element.onblur = attributes.onBlur
+				if attributes.onFocus != null:  element.onfocus = attributes.onFocus
 			
 		element.sourceLocation = sourceLocation
 		if styleWhenHovering != null
@@ -92,6 +93,7 @@ global static class html
 			Style styleWhenNotFocused = getStyleToRevert originalStyle:style, styleWhenFocused
 			element.onfocus = print "#div onfocus"; setStyle(element, styleWhenFocused); if attributes?.onFocus != null: attributes.onFocus(.)
 			element.onblur  = print "#div onblur"; setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null: attributes.onBlur(.)
+			if html.activeElement == element: setStyle(element, styleWhenFocused)
 
 		if text != null
 			if element.shadowInnerHtml != text

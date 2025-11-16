@@ -384,6 +384,7 @@ global static priority low class html
 	inline js void scrollTo(float x, float y) window.scrollTo(x,y)
 	inline js HTMLElement get(string id) document.getElementById(id)
 	inline js HTMLElement documentBody() document.body
+	inline js HTMLElement activeElement() document.activeElement
 	
 	js HTMLElement getElementAt(float x, float y) 
 		let element = document.elementFromPoint(x, y)
