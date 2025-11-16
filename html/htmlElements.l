@@ -51,9 +51,9 @@ global static class html
 				nextNode = currentNode
 				if nextNode: parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
+				// TEMP: TO THINK ABOUT
 				if focusInitially
-					System.log "div: focusing", element
-					element.focus
+					delay 0: element.focus
 				nodesCreated++
 			else
 				// Resuse existing element
