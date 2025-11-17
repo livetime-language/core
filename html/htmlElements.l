@@ -294,6 +294,7 @@ global static class html
 	global HTMLElement input: string value = ""                 // The value to display in the field
 		                      string placeholder = ""           // The placeholder text to display in the field
 							  bool readOnly = false             // Whether the field should be read only
+							  int rows = 1                      // The number of rows to display in the field
 							  void(string value) onInput = null // Called immediately after every keystroke
 		                      expand Attributes attributes = {} // The attributes of the HTML element
 		                      expand Style style = null         // The css style of the HTML element
@@ -301,7 +302,8 @@ global static class html
 							  bool focusInitially = false       // Focus the element when its first created. It will not be focused again when the page is refreshed.
 							  Style styleWhenFocused = null         // The css style to apply when the element is focused
 		                      SourceCodeLocation location
-		let element = div tag:"input", attributes, style, data, focusInitially, styleWhenFocused, location
+		let element = div tag:rows > 1 ? "textarea" : "input", attributes, style, data, focusInitially, styleWhenFocused, location
+		element.rows = rows
 		element.value = value
 		element.placeholder = placeholder
 		element.readOnly = readOnly

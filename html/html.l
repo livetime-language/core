@@ -15,6 +15,7 @@ class HTMLElement
 	string innerText
 	string shadowInnerHtml
 	string value
+	int rows
 	string placeholder
 	InputType type
 	bool readOnly
