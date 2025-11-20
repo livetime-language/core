@@ -61,8 +61,8 @@ struct Vector2
 			location
 		}	
 				
-	Vector2 % Vector2 other:   return {x % other.x, y % other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
-	Vector2 % float other:     return {x % other,   y % other,   location}
+	Vector2 % Vector2 other:   return {(x mod other.x), (y mod other.y), location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
+	Vector2 % float other:     return {(x mod other),   (y mod other),   location}
 		
 	Vector2 += Vector2 other: x += other.x; y += other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
 	Vector2 -= Vector2 other: x -= other.x; y -= other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
@@ -448,8 +448,8 @@ struct IntVector2
 	Vector2 / IntVector2 other:      return {x / other.x, y / other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
 	Vector2 / float other:           return {x / other,   y / other, location}
 
-	IntVector2 % IntVector2 other:   return {x % other.x, y % other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
-	IntVector2 % int other:          return {x % other,   y % other, location}
+	IntVector2 % IntVector2 other:   return {(x mod other.x), (y mod other.y), location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
+	IntVector2 % int other:          return {(x mod other),   (y mod other), location}
 		
 	IntVector2 += IntVector2 other: x += other.x; y += other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
 	IntVector2 -= IntVector2 other: x -= other.x; y -= other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this

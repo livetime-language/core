@@ -511,7 +511,7 @@ internal transient skipInit unit core
 			
 	// This is called at the beginning of each step
 	private checkSaveState
-		if enabledMilestones and input.isCertain and frame > 0 and frame % milestoneInterval == 0
+		if enabledMilestones and input.isCertain and frame > 0 and frame mod milestoneInterval == 0
 			Buffer buffer = {}
 			saveState buffer
 			int milestoneIndex = math.floor(frame / milestoneInterval) - 1
@@ -529,7 +529,7 @@ internal transient skipInit unit core
 		saveTime = DateTime.measure
 			Snapshot.serialize snapshot
 			if Platform.logSerialize
-				serializeLogs[frame % 100] = Snapshot.serializeLog
+				serializeLogs[frame mod 100] = Snapshot.serializeLog
 				
 		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
 		if simulateRollback
@@ -628,7 +628,7 @@ internal transient skipInit unit core
 		let inputs = user.inputs
 		if inputs.writePos > user.storedInputsUpTo
 			// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
-			let start = inputs.writePos - (inputs.writePos % chunkSize)
+			let start = inputs.writePos - (inputs.writePos mod chunkSize)
 			let id = "{roomId}-{user.id}-{start}"
 			print "[{frame}] <{user.id}> Storing inputs {id} ({start} to {inputs.writePos})"
 			inputStore.put {id, roomId, userId:user.id, start, inputs:inputs.subArrayBuffer(start to inputs.writePos)}
@@ -765,7 +765,7 @@ internal transient skipInit unit core
 		
 	onWrongChecksum: int frame, float mine, float theirs
 		string message = " Out of sync. frame:{frame} mine:{mine} theirs:{theirs}"
-		string serializeLog = serializeLogs[frame % 100]
+		string serializeLog = serializeLogs[frame mod 100]
 		core.log message
 		if not snapshotLogWithWrongChecksum
 			snapshotLogWithWrongChecksum = "frame:{frame} mine:{mine} theirs:{theirs}\n{serializeLog}"

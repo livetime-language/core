@@ -665,7 +665,7 @@ skipInit global unit input
 			
 		int composite = cast(inputType)                                 // inputType: 0 -  31 (5 bit)
 		              + math.shiftLeft(touchType, 5)                    // touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
+		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8) // id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -676,7 +676,7 @@ skipInit global unit input
 		if !inputs: return
 		int composite = cast(inputType)                                 // inputType: 0 -  31 (5 bit)
 		              + math.shiftLeft(touchType, 5)                    // touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
+		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8) // id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(x)
@@ -686,7 +686,7 @@ skipInit global unit input
 		let inputs = localUser.inputs
 		int composite = cast(InputType.TouchMove)                       // inputType: 0 -  31 (5 bit)
 		              + math.shiftLeft(cast TouchType.Left, 5)          // touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
+		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8) // id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -822,12 +822,12 @@ skipInit global unit input
 					updatePlayers
 				
 				let value = inputs.readUnsignedInt16
-				InputType inputType = cast(value % 32)
+				InputType inputType = cast(value mod 32)
 				
 				if inputType >= TouchDown && inputType <= Scroll
 					if !player: core.log " ERROR: userId {userId} not in playersById"
-					TouchType type = cast((value shiftRight 5) % 8)
-					int id = (value shiftRight 8) % 128
+					TouchType type = cast((value shiftRight 5) mod 8)
+					int id = (value shiftRight 8) mod 128
 					Vector2 referencePos = {inputs.readInt16, inputs.readInt16}
 					bool isSmoothPosition = !core.smoothTouchPosition or internalUser.local or frame <= internalUser.smoothFrame
 					
@@ -903,8 +903,8 @@ skipInit global unit input
 					internalUser.downKeys.add key
 					player.keysCurrentlyDown.ensure key
 					if keyPressed: internalUser.pressedKeys.add keyPressed
-						
-					int controllerButtonIndex = cast((value shiftRight 5) % 16)
+
+					int controllerButtonIndex = cast((value shiftRight 5) mod 16)
 						player.controllerKeyDownFrame[controllerButtonIndex] = frame
 					
 				else
@@ -913,7 +913,7 @@ skipInit global unit input
 					internalUser.upKeys.add key
 					player.keysCurrentlyDown.remove key
 					
-					int controllerButtonIndex = cast((value shiftRight 5) % 16)
+					int controllerButtonIndex = cast((value shiftRight 5) mod 16)
 						player.controllerKeyDownFrame[controllerButtonIndex] = 0
 				else
 				if inputType == Navigate
