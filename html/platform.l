@@ -181,11 +181,7 @@ skipInit global unit Platform
 
 	js void removeLocalStorageItem: string key
 		localStorage.removeItem(key)
-		
-	// Shows a dialog box with a given message
-	inline js void alert: implicit string message // The message to show
-		alert(message)
-	
+			
 	inline js void openLink: string url
 		window.open(url)
 		

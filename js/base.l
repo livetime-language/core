@@ -2136,6 +2136,10 @@ global transient priority unit System
 	// Shows a dialog box with a given message
 	global inline js void alert: implicit string message // The message to show
 		alert(message)
+
+	global inline js void alert: implicit string message // The message to show
+	                             float delay             // Show the message after this delay in milliseconds
+		setTimeout(() => alert(message), delay)
 		
 	global inline js void break() break
 	global inline js void continue() continue
