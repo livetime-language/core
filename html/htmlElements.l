@@ -571,22 +571,21 @@ global static class html
 
 	// ---------------------------------------- Markdown ----------------------------------------
 
-	markdown: string text, expand Style style
+	global markdown: string text, expand Style style
 		div style
 			let lines = text.split("\n")
 			for lines as line
 				if line.startsWith("# ")
-					div tag:"h1", text:line.substring(2), fontSize:24, fontWeight:bold, margin:{top:16 bottom:8}
+					div tag:"h1", text:line.substring(2), fontSize:28, fontWeight:bold, margin:{top:0 bottom:8}
 				else if line.startsWith("## ")
-					div tag:"h2", text:line.substring(3), fontSize:20, fontWeight:bold, margin:{top:12 bottom:6}
+					div tag:"h2", text:line.substring(3), fontSize:24, fontWeight:bold, margin:{top:0 bottom:8}
 				else if line.startsWith("- ")
 					div display:flex, gap:8, margin:{left:8 bottom:4}
 						div "•", color:#4b5563
 						parseInline line.substring(2)
 				else
-					if line.trim != ""
-						div margin:{bottom:4}
-							parseInline line
+					div margin:{bottom:4} minHeight:12px
+						parseInline line
 
 	private void parseInline: string text
 		if text == "": return
