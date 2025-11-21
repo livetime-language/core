@@ -432,7 +432,7 @@ global static class html
 			
 	// Render a html file input element in the draw function. 
 	// The onChange handler will be called when the user selects a file.
-	importance:4 fileInput: string accept = "image/*"
+	fileInput: string accept = "image/*"
 		       string capture = "environment"
 		       bool multiple = false
 		       void(HTMLElement element) onChange = null
@@ -443,6 +443,19 @@ global static class html
 		let element = div tag:"input", data, style, location
 		element.onchange = onChange(element)
 		element.setAttribute("capture", "environment")
+		return element
+
+	imageInput: string capture = "environment"
+		       bool multiple = false
+		       void(HTMLElement element) onChange = null
+			   void() children = null
+		       SourceCodeLocation location
+		dynamic data = {type:"file" accept:"image/*" capture}
+		if multiple: data.multiple = true
+		let element = div tag:"input", data, display:none, location
+		element.onchange = onChange(element)
+		element.setAttribute("capture", "environment")
+		div children, onClick: element.click
 		return element
 		
 	js Promise<string> getDataUrlForFile: File file
