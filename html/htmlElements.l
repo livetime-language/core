@@ -430,27 +430,17 @@ global static class html
 		else         element.onchange = onChange(element.value); changeHandler
 		if focused or focusTabIndex == attributes.tabIndex: element.focus
 			
-	// Render a html file input element in the draw function. 
-	// The onChange handler will be called when the user selects a file.
-	fileInput: string accept = "image/*"
-		       string capture = "environment"
-		       bool multiple = false
-		       void(HTMLElement element) onChange = null
-		       expand Style style = null
-		       SourceCodeLocation location
+	// Render a html element to upload files. The children will determine the look of the element. 
+	// The native html input element itself is hidden. 
+	// Clicking the any of the children will show the file selector dialog.
+	importance:4
+	HTMLElement fileInput: string accept = ".jpg,.jpeg,.png"           // The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
+	                       FileInputCaptureMode capture = environment  // user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera
+		                   bool multiple = false                       // Allow selecting and uploading multiple images at once
+			               void() children                             // Determines the look of the element, as the native html input element is hidden
+		                   void(HTMLElement element) onChange = null   // Called when the user selected a file
+		                   SourceCodeLocation location
 		dynamic data = {type:"file" accept capture}
-		if multiple: data.multiple = true
-		let element = div tag:"input", data, style, location
-		element.onchange = onChange(element)
-		element.setAttribute("capture", "environment")
-		return element
-
-	imageInput: string capture = "environment"
-		       bool multiple = false
-		       void(HTMLElement element) onChange = null
-			   void() children = null
-		       SourceCodeLocation location
-		dynamic data = {type:"file" accept:"image/*" capture}
 		if multiple: data.multiple = true
 		let element = div tag:"input", data, display:none, location
 		element.onchange = onChange(element)
@@ -458,13 +448,6 @@ global static class html
 		div children, onClick: element.click
 		return element
 		
-	js Promise<string> getDataUrlForFile: File file
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = e => resolve(e.target.result);
-			reader.readAsDataURL(file);	
-		})
-	
 	// Render a html editable text element in the draw function.
 	// The model variable you pass in will be updated automatically.
 	importance:4

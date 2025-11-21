@@ -449,6 +449,11 @@ class string
 	implicit inline Padding toPadding() new Padding(paddingString:this)
 	implicit inline Margin toMargin() new Margin(marginString:this)
 	implicit inline FontWeight toFontWeight() new FontWeight(fontWeightString:this)
+
+enum string FileInputCaptureMode
+	none = "" // Do not capture an image with the camera
+	user // Capture the image from the front-facing camera
+	environment // Capture the image from the backwards-facing camera
 	
 importance:5 dynamic Style
 	// Align the individual items along the cross axis. 
