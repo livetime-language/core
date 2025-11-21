@@ -236,9 +236,8 @@ DatabaseTable<T>
 		
 	// Fetch and return a single item from the database by id
 	importance:5 async
-	T fetchOneById: string id
-		let result = database.pb.collection(this.name).getOne(id)
-		return result.items[0]
+	T fetchOneById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
+		return database.pb.collection(this.name).getOne(id)
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
