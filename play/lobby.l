@@ -70,10 +70,10 @@ unit lobby
 				
 			if not host: return
 			if key == Right
-				showName players[showNameIndex++ % players.length]
+				showName players[showNameIndex++ mod players.length]
 			else
 			if key == Tab and cmd
-				showNameIndex = (showNameIndex+1) % players.length
+				showNameIndex = (showNameIndex+1) mod players.length
 			else
 			if key == Enter or key == Tab or key == Right
 				switchFieldFocus 1
@@ -123,7 +123,7 @@ unit lobby
 					if editNames
 						// Suggestions
 						for nameSuggestions -> name
-							drawButton name, position:pos+{-150+100*(i%4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
+							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
 								fields[playerIndex].text = name
 								setPlayerName player, name
 								
@@ -158,7 +158,7 @@ unit lobby
 			
 	switchFieldFocus: int delta
 		let focusIndex = fields.indexWhere.isFocused
-		focusIndex = (focusIndex + delta) % fields.length
+		focusIndex = (focusIndex + delta) mod fields.length
 		fields.each.focus focusIndex == i
 			
 	showName: Player player
@@ -250,7 +250,7 @@ internal Object LobbyTextField
 		lastTypeTime = Time.now
 		
 	tick
-		let c = isFocused and ((Time.now%1000) < 500)
+		let c = isFocused and ((Time.now mod 1000) < 500)
 		onTouchDownAny by editableBy
 			focus false
 		onTouchDown position+{0,size.x/2}, {width,size.x*2}, by:editableBy
@@ -265,7 +265,7 @@ internal Object LobbyTextField
 				if onChanged != null: onChanged text
 					
 		drawText text, position+{0, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor
-		
-		if isFocused and (((Time.now - lastTypeTime)%1500) < 750)
+
+		if isFocused and (((Time.now - lastTypeTime) mod 1500) < 750)
 			let textWidth = graphics.getTextWidth text, size, font:ByTheWay
 			drawText "|", position+{textWidth/2, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor:editableBy

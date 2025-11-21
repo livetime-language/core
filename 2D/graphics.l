@@ -516,7 +516,7 @@ transient skipInit global unit graphics
 		                   alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                 // Tint the image with this color
 		                   SourceCodeLocation location
-		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) % image.frames.length;
+		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) mod image.frames.length;
 		drawImage image, position, frame, size, visibleFor, layer, alpha, color, location
 	
 	// Draw an image, animate it and flip it horizontally or vertically.
@@ -538,7 +538,7 @@ transient skipInit global unit graphics
 		                   flipX = false                         // Mirror the image horizontally
 		                   flipY = false                         // Mirror the image vertically
 		                   SourceCodeLocation location
-		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) % image.frames.length;
+		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) mod image.frames.length;
 		drawImage image, position, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
 	
 	global importance:4 void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
@@ -2006,12 +2006,12 @@ internal skipInit transient unit gizmo
 		min = Vector2.None
 		max = Vector2.None
 	
-	internal onTouch: InputType InputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
+	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 		if Platform.mode != Manipulator: return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
-		if InputType == TouchDown: touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if InputType == TouchUp:   touchDownPos = Vector2.None; isManipulating = false
+		if inputType == TouchDown: touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
+		if inputType == TouchUp:   touchDownPos = Vector2.None; isManipulating = false
 			
 		// Which handle are we currently hovering over?
 		if items and not touchDownPos
@@ -2029,9 +2029,8 @@ internal skipInit transient unit gizmo
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
 		if !overHandleDirection and codeId >= waitingForCodeId
-			if (InputType == TouchDown and !insideGizmo)
-			or (InputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
-			
+			if (inputType == TouchDown and !insideGizmo) 
+			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
 				GizmoOverItem[] overItems
 				for graphics.items -> item
@@ -2041,8 +2040,8 @@ internal skipInit transient unit gizmo
 									
 				if overItems.length
 					// Select next item cycling through all items the mouse pointer is over
-					if InputType == TouchDown: locationIndex = 0
-					let selectedStackItem = overItems[locationIndex++ % overItems.length]
+					if inputType == TouchDown: locationIndex = 0
+					let selectedStackItem = overItems[locationIndex++ mod overItems.length]
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
 					Platform.sendSelectToEditor cursorLocation.file, cursorLocation.start
@@ -2099,7 +2098,7 @@ internal skipInit transient unit gizmo
 					influences.add {cursorLocation.file, cursorLocation.end, cursorLocation.end, deltas:[referencePos.x - touchDownPos.x, referencePos.y - touchDownPos.y], initialValues:[0,0], label:"position"}
 				
 			// Send manipulation to editor	
-			if InputType == TouchMove and touchDownPos and codeId >= waitingForCodeId
+			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId
 				if not isManipulating and movedSinceTouchDown
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
