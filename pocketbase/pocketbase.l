@@ -277,13 +277,13 @@ DatabaseTable<T>
 	//             div "Make item active", onClick:items.updateField item, fieldName:"active", value:true; refresh
 	importance:3
 	async js void updateField: T item
-		                       string fieldName
+		                       string key
 					           dynamic value
 		item[key] = value
 		if(!item.id) {
 			await this.add(item)
 		} else {
-			database.pb.collection(this.name).@update(item.id, {[fieldName]:value})
+			await database.pb.collection(this.name).@update(item.id, {[key]:value})
 		}
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
