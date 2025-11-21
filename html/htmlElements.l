@@ -585,7 +585,78 @@ global static class html
 		string effectiveFont = font ? font.name : "Open Sans"
 		currentContext.font = "{size}px {effectiveFont}"
 		currentContext.fillText(text, pos.x, pos.y)
-	
+
+	// ---------------------------------------- Markdown ----------------------------------------
+
+	markdown: string text, expand Style style
+		div style
+			let lines = text.split("\n")
+			for lines as line
+				if line.startsWith("# ")
+					div tag:"h1", text:line.substring(2), fontSize:24, fontWeight:bold, margin:{top:16 bottom:8}
+				else if line.startsWith("## ")
+					div tag:"h2", text:line.substring(3), fontSize:20, fontWeight:bold, margin:{top:12 bottom:6}
+				else if line.startsWith("- ")
+					div display:flex, gap:8, margin:{left:8 bottom:4}
+						div "•", color:#4b5563
+						parseInline line.substring(2)
+				else
+					if line.trim != ""
+						div margin:{bottom:4}
+							parseInline line
+
+	private void parseInline: string text
+		if text == "": return
+
+		// Image: ![Alt](Url)
+		let imageStart = text.indexOf("![")
+		if imageStart >= 0
+			let altEnd = text.indexOf("](", imageStart)
+			let urlEnd = text.indexOf(")", altEnd)
+			if altEnd > imageStart and urlEnd > altEnd
+				parseInline text.substring(0, imageStart)
+				let url = text.substring(altEnd + 2, urlEnd)
+				let alt = text.substring(imageStart + 2, altEnd)
+				// img url, title:alt, maxWidth:100%, borderRadius:4
+				img url, title:alt, style:{maxWidth:100%, borderRadius:4}
+				parseInline text.substring(urlEnd + 1)
+				return
+
+		// Link: [Text](Url)
+		let linkStart = text.indexOf("[")
+		if linkStart >= 0
+			let textEnd = text.indexOf("](", linkStart)
+			let urlEnd = text.indexOf(")", textEnd)
+			if textEnd > linkStart and urlEnd > textEnd
+				parseInline text.substring(0, linkStart)
+				let url = text.substring(textEnd + 2, urlEnd)
+				let label = text.substring(linkStart + 1, textEnd)
+				link label, href:url, color:primaryColor, textDecoration:underline
+				parseInline text.substring(urlEnd + 1)
+				return
+
+		// Bold: **Text**
+		let boldStart = text.indexOf("**")
+		if boldStart >= 0
+			let boldEnd = text.indexOf("**", boldStart + 2)
+			if boldEnd > boldStart
+				parseInline text.substring(0, boldStart)
+				span text.substring(boldStart + 2, boldEnd), fontWeight:bold
+				parseInline text.substring(boldEnd + 2)
+				return
+
+		// Italic: *Text*
+		let italicStart = text.indexOf("*")
+		if italicStart >= 0
+			let italicEnd = text.indexOf("*", italicStart + 1)
+			if italicEnd > italicStart
+				parseInline text.substring(0, italicStart)
+				span text.substring(italicStart + 1, italicEnd), fontStyle:italic
+				parseInline text.substring(italicEnd + 1)
+				return
+
+		span text
+
 	// ---------------------------------------- Misc ----------------------------------------
 
 	// Render a html script element
