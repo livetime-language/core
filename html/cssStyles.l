@@ -483,11 +483,11 @@ importance:5 dynamic Style
 	AlignContent alignContent
 	AlignSelf alignSelf // Overrides a grid or flex item's align-items value. In grid, it aligns the item inside the grid area. In flexbox, it aligns the item on the cross axis.
 	string animation // A shorthand property for all the animation properties, except the animationPlayState
-	string animationDelay // When the animation will start
+	float animationDelay // When the animation will start
 	string animationDirection // Whether or not the animation should play in reverse on alternate cycles
-	string animationDuration // How many seconds or milliseconds an animation takes to complete one cycle
+	float animationDuration // How many seconds or milliseconds an animation takes to complete one cycle
 	string animationFillMode // What values are applied by the animation outside the time it is executing
-	string animationIterationCount // The number of times an animation should be played
+	int animationIterationCount // The number of times an animation should be played
 	string animationName // A name for the @keyframes animation
 	string animationTimingFunction // The speed curve of the animation
 	string animationPlayState // Whether the animation is running or paused
@@ -503,11 +503,11 @@ importance:5 dynamic Style
 	// Example: We place the image "OkButton.png" in "assets/pb_public/media".
 	//     div backgroundImage:OkButton
 	Image backgroundImage // The background-image for an element
-	string backgroundPosition // The starting position of a background-image
+	Vector2 backgroundPosition // The starting position of a background-image
 	string backgroundRepeat // How to repeat (tile) a background-image
 	string backgroundClip // The painting area of the background
 	string backgroundOrigin // The positioning area of the background images
-	string backgroundSize // The size of the background image
+	Vector2 backgroundSize // The size of the background image
 	string backfaceVisibility // Whether or not an element should be visible when not facing the screen
 	// The border of an element. 
 	// Example:
@@ -632,7 +632,7 @@ importance:5 dynamic Style
 	JustifyContent justifyContent
 	implicit Dimension left // The left position of a positioned element
 	implicit Dimension letterSpacing // The space between characters in a text
-	string lineHeight // The distance between lines in a text
+	float lineHeight // The distance between lines in a text
 	string listStyle // ListStyleImage, listStylePosition, and listStyleType in one declaration
 	string listStyleImage // An image as the list-item marker
 	string listStylePosition // The position of the list-item marker
