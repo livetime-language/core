@@ -30,7 +30,7 @@ transient skipInit static class database
 	// Called automatically in Platform.start
 	internal async js void connect
 		if(!database.url) database.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
-		const PocketBase = (await import((database.libUrl || _basePath || location.href.getUntilLast("/")+"/")+"lib/pocketbase.es.js")).default
+		const PocketBase = (await import((database.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
 		if(database.pb) database.pb.realtime.unsubscribe();
 		database.pb = new PocketBase(database.url);
 		this.users = new DatabaseTable("users", []);
