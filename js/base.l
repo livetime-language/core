@@ -642,7 +642,7 @@ immutable class string
 	
 	inline js string get: int from = 0
 		                  int to
-		this.substring(from, to)
+		this.substring(from, to >= 0 ? to : to + this.length)
 		
 	inline js string get: int from = 0
 		this.substring(from)
@@ -1827,6 +1827,9 @@ class Reference<T>
 	T value
 		return container[key]
 	inline bool toBool() (this != null and this.container and this.container[this.key])
+
+struct Type<T>
+	inline js string toString() this
 		
 // This struct is automatically filled with the source code location
 internal transient immutable SourceCodeLocation
@@ -2154,6 +2157,9 @@ global transient priority unit System
 	global inline js void try: inline void() code
 		                       inline nocolon void() finally
 		try code() @finally finally()
+
+	// Return an object that contains all global variables and functions
+	global inline js dynamic globals() window
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string
