@@ -623,13 +623,11 @@ immutable class string
 	inline js string interleaveWith: int charCode
 		this.split("").join(String.fromCharCode(charCode))
 		
-	inline js string replace: string value
-		                      nocolon implicit string with
-		(this = this.replaceAll(value, with))
-		
-	js string replaced: string value
-		                nocolon string with
-		return this.replaceAll(value, $with)
+	// Replace all occurrences of a string with another string
+	importance:5 inline js
+	string replaceAll: string occurrencesOf // Search for all occurrences of this string
+		               nocolon string with  // Replace them with this string
+		this.replaceAll(occurrencesOf, $with)
 		
 	inline js string padStart: int targetLength
 		                       string padString = " "
