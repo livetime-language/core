@@ -644,7 +644,7 @@ immutable class string
 	
 	inline js string get: int from = 0
 		                  int to
-		this.substring(from, to)
+		this.substring(from, to >= 0 ? to : to + this.length)
 		
 	inline js string get: int from = 0
 		this.substring(from)
