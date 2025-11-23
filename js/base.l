@@ -2156,6 +2156,9 @@ global transient priority unit System
 	global inline js void try: inline void() code
 		                       inline nocolon void() finally
 		try code() @finally finally()
+
+	// Return an object that contains all global variables and functions
+	global inline js dynamic globals() window
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string
