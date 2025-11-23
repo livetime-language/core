@@ -1829,6 +1829,9 @@ class Reference<T>
 	T value
 		return container[key]
 	inline bool toBool() (this != null and this.container and this.container[this.key])
+
+struct Type<T>
+	inline js string toString() this
 		
 // This struct is automatically filled with the source code location
 internal transient immutable SourceCodeLocation
