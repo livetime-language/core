@@ -449,6 +449,27 @@ class string
 	implicit inline Padding toPadding() new Padding(paddingString:this)
 	implicit inline Margin toMargin() new Margin(marginString:this)
 	implicit inline FontWeight toFontWeight() new FontWeight(fontWeightString:this)
+
+enum string FileInputCaptureMode
+	none = "" // Do not capture an image with the camera
+	user // Capture the image from the front-facing camera
+	environment // Capture the image from the backwards-facing camera
+
+enum string AlignSelf
+	auto // Use the parent's align-items value.
+	normal // Use the element's default alignment.
+	selfStart = "self-start" // Aligns the items to be flush with the edge of the alignment container corresponding to the item's start side in the cross axis.
+	selfEnd = "self-end" // Aligns the items to be flush with the edge of the alignment container corresponding to the item's end side in the cross axis.
+	flexStart = "flex-start" // The cross-start margin edge of the flex item is flushed with the cross-start edge of the line.
+	flexEnd = "flex-end" // The cross-end margin edge of the flex item is flushed with the cross-end edge of the line.
+	center // The flex item's margin box is centered within the line on the cross-axis. If the cross-size of the item is larger than the flex container, it will overflow equally in both directions.
+	baseline // Specifies participation in first- or last-baseline alignment: aligns the alignment baseline of the box's first or last baseline set with the corresponding baseline in the shared first or last baseline set of all the boxes in its baseline-sharing group.
+	firstBaseline = "first baseline" // Like baseline, but the fallback alignment is start.
+	lastBaseline = "last baseline" // Like baseline, but the fallback alignment is end.
+	stretch // If the item's cross-size is auto, the used size is set to the length necessary to be as close to filling the container as possible, respecting the item's width and height limits. If the item is not auto-sized, this value falls back to flex-start, and to self-start or self-end if the container's align-content is first baseline (or baseline) or last baseline.
+	anchorCenter = "anchor-center" // In the case of anchor-positioned elements, aligns the item to the center of the associated anchor element in the block direction. See Centering on the anchor using anchor-center.
+	safe // If the size of the item overflows the alignment container, the item is instead aligned as if the alignment mode were start.
+	unsafe // Regardless of the relative sizes of the item and alignment container, the given alignment value is honored.
 	
 importance:5 dynamic Style
 	// Align the individual items along the cross axis. 
@@ -460,13 +481,13 @@ importance:5 dynamic Style
 	// When wrapping, align the whole content along the cross axis. 
 	// Possible values: start, center, end, spaceEvenly, spaceBetween, spaceAround, normal, baseline, stretch, flexStart, flexEnd
 	AlignContent alignContent
-	string alignSelf // The alignment for selected items inside a flexible container
+	AlignSelf alignSelf // Overrides a grid or flex item's align-items value. In grid, it aligns the item inside the grid area. In flexbox, it aligns the item on the cross axis.
 	string animation // A shorthand property for all the animation properties, except the animationPlayState
-	string animationDelay // When the animation will start
+	float animationDelay // When the animation will start
 	string animationDirection // Whether or not the animation should play in reverse on alternate cycles
-	string animationDuration // How many seconds or milliseconds an animation takes to complete one cycle
+	float animationDuration // How many seconds or milliseconds an animation takes to complete one cycle
 	string animationFillMode // What values are applied by the animation outside the time it is executing
-	string animationIterationCount // The number of times an animation should be played
+	int animationIterationCount // The number of times an animation should be played
 	string animationName // A name for the @keyframes animation
 	string animationTimingFunction // The speed curve of the animation
 	string animationPlayState // Whether the animation is running or paused
@@ -482,11 +503,11 @@ importance:5 dynamic Style
 	// Example: We place the image "OkButton.png" in "assets/pb_public/media".
 	//     div backgroundImage:OkButton
 	Image backgroundImage // The background-image for an element
-	string backgroundPosition // The starting position of a background-image
+	Vector2 backgroundPosition // The starting position of a background-image
 	string backgroundRepeat // How to repeat (tile) a background-image
 	string backgroundClip // The painting area of the background
 	string backgroundOrigin // The positioning area of the background images
-	string backgroundSize // The size of the background image
+	Vector2 backgroundSize // The size of the background image
 	string backfaceVisibility // Whether or not an element should be visible when not facing the screen
 	// The border of an element. 
 	// Example:
@@ -611,7 +632,7 @@ importance:5 dynamic Style
 	JustifyContent justifyContent
 	implicit Dimension left // The left position of a positioned element
 	implicit Dimension letterSpacing // The space between characters in a text
-	string lineHeight // The distance between lines in a text
+	float lineHeight // The distance between lines in a text
 	string listStyle // ListStyleImage, listStylePosition, and listStyleType in one declaration
 	string listStyleImage // An image as the list-item marker
 	string listStylePosition // The position of the list-item marker

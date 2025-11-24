@@ -26,15 +26,18 @@ skipInit global unit Platform
 	global bool isMobile
 	bool electron
 	
-	// Info
+	// Location
 	public inline js string url := location.href
 	public inline js string host := location.host
+	public inline js string locationHash := location.hash
 	public inline js string basePath := _basePath
 	public inline js string protocolAndHost() (location.host && !Platform.isDebug ? location.origin : "http://localhost")
 	public inline js string referrer := document.referrer
+	public inline js dynamic networkInformation() navigator.connection
+
+	// Encode
 	public inline js string encodeURIComponent(string value) encodeURIComponent(value)
 	public inline js string decodeURIComponent(string value) decodeURIComponent(value)
-	public inline js dynamic networkInformation() navigator.connection
 
 	private inline js void initMedia
 		this.electron = window?.process?.versions?.electron
@@ -181,24 +184,12 @@ skipInit global unit Platform
 
 	js void removeLocalStorageItem: string key
 		localStorage.removeItem(key)
-		
-	// Shows a dialog box with a given message
-	inline js void alert: implicit string message // The message to show
-		alert(message)
-	
+			
 	inline js void openLink: string url
 		window.open(url)
 		
 	inline js void redirect: string url
 		location.href = url
-		
-	inline js void pushState: string url
-		                      object state = null
-		history.pushState(state, "", url);
-		
-	inline js void replaceState: string url
-		                         object state = null
-		history.replaceState(state, "", url);
 		
 	inline js void copyToClipboard: string text
 		navigator.clipboard.writeText(text)
@@ -232,8 +223,16 @@ skipInit global unit Platform
 		
 	global inline js void debugger() debugger
 	
-	global js void onNavigate: void(string url) do
-		window.onpopstate = e => do(location.pathname)
+	inline js void pushState: string url
+		                      object state = null
+		history.pushState(state, "", url);
+		
+	inline js void replaceState: string url
+		                         object state = null
+		history.replaceState(state, "", url);
+		
+	global js void onPopState: void() do
+		window.onpopstate = $do
 		
 	global js void onPaste: void(DateTransfer data) do
 		document.onpaste = e => do(e.clipboardData)

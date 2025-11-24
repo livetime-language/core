@@ -623,13 +623,11 @@ immutable class string
 	inline js string interleaveWith: int charCode
 		this.split("").join(String.fromCharCode(charCode))
 		
-	inline js string replace: string value
-		                      nocolon implicit string with
-		(this = this.replaceAll(value, with))
-		
-	js string replaced: string value
-		                nocolon string with
-		return this.replaceAll(value, $with)
+	// Replace all occurrences of a string with another string
+	importance:5 inline js
+	string replaceAll: string occurrencesOf // Search for all occurrences of this string
+		               nocolon string with  // Replace them with this string
+		this.replaceAll(occurrencesOf, $with)
 		
 	inline js string padStart: int targetLength
 		                       string padString = " "
@@ -644,7 +642,7 @@ immutable class string
 	
 	inline js string get: int from = 0
 		                  int to
-		this.substring(from, to)
+		this.substring(from, to >= 0 ? to : to + this.length)
 		
 	inline js string get: int from = 0
 		this.substring(from)
@@ -1829,6 +1827,9 @@ class Reference<T>
 	T value
 		return container[key]
 	inline bool toBool() (this != null and this.container and this.container[this.key])
+
+struct Type<T>
+	inline js string toString() this
 		
 // This struct is automatically filled with the source code location
 internal transient immutable SourceCodeLocation
@@ -2136,6 +2137,10 @@ global transient priority unit System
 	// Shows a dialog box with a given message
 	global inline js void alert: implicit string message // The message to show
 		alert(message)
+
+	global inline js void alert: implicit string message // The message to show
+	                             float delay             // Show the message after this delay in milliseconds
+		setTimeout(() => alert(message), delay)
 		
 	global inline js void break() break
 	global inline js void continue() continue
@@ -2152,6 +2157,9 @@ global transient priority unit System
 	global inline js void try: inline void() code
 		                       inline nocolon void() finally
 		try code() @finally finally()
+
+	// Return an object that contains all global variables and functions
+	global inline js dynamic globals() window
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string

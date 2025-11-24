@@ -430,28 +430,24 @@ global static class html
 		else         element.onchange = onChange(element.value); changeHandler
 		if focused or focusTabIndex == attributes.tabIndex: element.focus
 			
-	// Render a html file input element in the draw function. 
-	// The onChange handler will be called when the user selects a file.
-	importance:4 fileInput: string accept = "image/*"
-		       string capture = "environment"
-		       bool multiple = false
-		       void(HTMLElement element) onChange = null
-		       expand Style style = null
-		       SourceCodeLocation location
+	// Render a html element to upload files. The children will determine the look of the element. 
+	// The native html input element itself is hidden. 
+	// Clicking the any of the children will show the file selector dialog.
+	importance:4
+	HTMLElement fileInput: string accept = ".jpg,.jpeg,.png"           // The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
+	                       FileInputCaptureMode capture = environment  // user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera
+		                   bool multiple = false                       // Allow selecting and uploading multiple images at once
+			               void() children                             // Determines the look of the element, as the native html input element is hidden
+		                   void(HTMLElement element) onChange = null   // Called when the user selected a file
+		                   SourceCodeLocation location
 		dynamic data = {type:"file" accept capture}
 		if multiple: data.multiple = true
-		let element = div tag:"input", data, style, location
+		let element = div tag:"input", data, display:none, location
 		element.onchange = onChange(element)
 		element.setAttribute("capture", "environment")
+		div children, onClick: element.click
 		return element
 		
-	js Promise<string> getDataUrlForFile: File file
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = e => resolve(e.target.result);
-			reader.readAsDataURL(file);	
-		})
-	
 	// Render a html editable text element in the draw function.
 	// The model variable you pass in will be updated automatically.
 	importance:4
@@ -572,7 +568,77 @@ global static class html
 		string effectiveFont = font ? font.name : "Open Sans"
 		currentContext.font = "{size}px {effectiveFont}"
 		currentContext.fillText(text, pos.x, pos.y)
-	
+
+	// ---------------------------------------- Markdown ----------------------------------------
+
+	global markdown: string text, expand Style style
+		div style
+			let lines = text.split("\n")
+			for lines as line
+				if line.startsWith("# ")
+					div tag:"h1", text:line.substring(2), fontSize:28, fontWeight:bold, margin:{top:0 bottom:8}
+				else if line.startsWith("## ")
+					div tag:"h2", text:line.substring(3), fontSize:24, fontWeight:bold, margin:{top:0 bottom:8}
+				else if line.startsWith("- ")
+					div display:flex, gap:8, margin:{left:8 bottom:4}
+						div "•", color:#4b5563
+						parseInline line.substring(2)
+				else
+					div margin:{bottom:4} minHeight:12px
+						parseInline line
+
+	private void parseInline: string text
+		if text == "": return
+
+		// Image: ![Alt](Url)
+		let imageStart = text.indexOf("![")
+		if imageStart >= 0
+			let altEnd = text.indexOf("](", imageStart)
+			let urlEnd = text.indexOf(")", altEnd)
+			if altEnd > imageStart and urlEnd > altEnd
+				parseInline text.substring(0, imageStart)
+				let url = text.substring(altEnd + 2, urlEnd)
+				let alt = text.substring(imageStart + 2, altEnd)
+				// img url, title:alt, maxWidth:100%, borderRadius:4
+				img url, title:alt, style:{maxWidth:100%, borderRadius:4}
+				parseInline text.substring(urlEnd + 1)
+				return
+
+		// Link: [Text](Url)
+		let linkStart = text.indexOf("[")
+		if linkStart >= 0
+			let textEnd = text.indexOf("](", linkStart)
+			let urlEnd = text.indexOf(")", textEnd)
+			if textEnd > linkStart and urlEnd > textEnd
+				parseInline text.substring(0, linkStart)
+				let url = text.substring(textEnd + 2, urlEnd)
+				let label = text.substring(linkStart + 1, textEnd)
+				link label, href:url, textDecoration:underline
+				parseInline text.substring(urlEnd + 1)
+				return
+
+		// Bold: **Text**
+		let boldStart = text.indexOf("**")
+		if boldStart >= 0
+			let boldEnd = text.indexOf("**", boldStart + 2)
+			if boldEnd > boldStart
+				parseInline text.substring(0, boldStart)
+				span text.substring(boldStart + 2, boldEnd), fontWeight:bold
+				parseInline text.substring(boldEnd + 2)
+				return
+
+		// Italic: *Text*
+		let italicStart = text.indexOf("*")
+		if italicStart >= 0
+			let italicEnd = text.indexOf("*", italicStart + 1)
+			if italicEnd > italicStart
+				parseInline text.substring(0, italicStart)
+				span text.substring(italicStart + 1, italicEnd), fontStyle:italic
+				parseInline text.substring(italicEnd + 1)
+				return
+
+		span text
+
 	// ---------------------------------------- Misc ----------------------------------------
 
 	// Render a html script element

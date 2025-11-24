@@ -30,7 +30,7 @@ transient skipInit static class database
 	// Called automatically in Platform.start
 	internal async js void connect
 		if(!database.url) database.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
-		const PocketBase = (await import((database.libUrl || _basePath || location.href.getUntilLast("/")+"/")+"lib/pocketbase.es.js")).default
+		const PocketBase = (await import((database.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
 		if(database.pb) database.pb.realtime.unsubscribe();
 		database.pb = new PocketBase(database.url);
 		this.users = new DatabaseTable("users", []);
@@ -122,6 +122,7 @@ DatabaseTable<T>
 
 	// The items you fetch from the database are stored locally in this list
 	importance:5 T[] items = []
+	bool busy
 
 	// ------------------------------------------------------- Add -------------------------------------------------------
 
@@ -236,9 +237,8 @@ DatabaseTable<T>
 		
 	// Fetch and return a single item from the database by id
 	importance:5 async
-	T fetchOneById: string id
-		let result = database.pb.collection(this.name).getOne(id)
-		return result.items[0]
+	T fetchOneById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
+		return database.pb.collection(this.name).getOne(id)
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
@@ -277,13 +277,13 @@ DatabaseTable<T>
 	//             div "Make item active", onClick:items.updateField item, fieldName:"active", value:true; refresh
 	importance:3
 	async js void updateField: T item
-		                       string fieldName
+		                       string key
 					           dynamic value
 		item[key] = value
 		if(!item.id) {
 			await this.add(item)
 		} else {
-			database.pb.collection(this.name).@update(item.id, {[fieldName]:value})
+			await database.pb.collection(this.name).@update(item.id, {[key]:value})
 		}
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
@@ -310,10 +310,69 @@ DatabaseTable<T>
 			}
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		
-	// ------------------------------------------------------- Upload -------------------------------------------------------
+	// ------------------------------------------------------- Files -------------------------------------------------------
 		
-	// Upload one or more files to the database table
-	importance:3
+	importance:4
+	async js void addFile: Reference<string[]> model
+		                   File[] files
+						   bool instantlyUpdateLocalFiles = false
+						   void(File[] failedFiles) onError = null
+		let prevBusy = this.busy;
+		this.busy = true;
+		let failedFiles = []
+		let addedDateUrls = []
+		try {
+			if(instantlyUpdateLocalFiles) {
+				let localFiles = model.container[model.key]
+				for(let file of files) {
+					let dataUrl = await this.getDataUrlForFile(file)
+					localFiles.push(dataUrl);
+					addedDateUrls.push(dataUrl);
+				}
+				html.refresh();
+			}
+
+			for(let i=0; i<files.length; i++) {
+				let file = files[i]
+				try {
+					let result = await database.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
+					model.container[model.key] = result[model.key];
+					if(i < files.length-1) html.refresh();
+				} catch(e) {
+					failedFiles.push(file)
+				}
+			}
+		} finally {
+			if(instantlyUpdateLocalFiles && addedDateUrls.length > 0) {
+				let localFiles = model.container[model.key]
+				for(let dataUrl of addedDateUrls) {
+					localFiles.remove(dataUrl);
+				}
+			}
+			this.busy = prevBusy;
+			html.refresh();
+			if(failedFiles.length > 0 && onError != null) {
+				onError(failedFiles)
+			}
+		}
+
+	importance:4
+	async js void removeFile: Reference<string[]> model
+		                      string file
+		let listOfFiles = model.container[model.key];
+		listOfFiles.remove(file);
+		html.refresh();
+		await database.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
+
+	private js Promise<string> getDataUrlForFile: File file
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = e => resolve(e.target.result);
+			reader.readAsDataURL(file);	
+		})
+		
+	// Create and upload files #deprecated
+	importance:0
 	async js void upload: T item, string fileFieldName = "images", File[] files
 		const formData = new FormData();
 		for(let file of files) {
@@ -337,9 +396,9 @@ DatabaseTable<T>
 		}
 		item[fileFieldName] = newItem[fileFieldName]
 		return newItem;
-		
-	// Upload one or more files from urls to the database table
-	importance:3
+
+	// Create and upload files from urls #deprecated
+	importance:0
 	async js void uploadFromUrls: T item, string fileFieldName = "images", string[] urls
 		const formData = new FormData();
 		for(let url of urls) {
