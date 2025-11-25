@@ -1804,7 +1804,7 @@ interface object
 skipInit global unit Platform
 	string libUrl
 	global inline js async dynamic import: string file
-		import((Platform.libUrl || _basePath || location.href.getUntilLast("/")+"/")+file)
+		import((Platform.libUrl || _basePath || location.origin+"/")+file)
 
 json
 	importance:5 inline js dynamic parse: string value
