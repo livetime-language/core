@@ -193,8 +193,8 @@ DatabaseTable<T>
 	//             for items as item
 	//                 div item.name
 	importance:5 
-	async T[] fetchAll
-		items = cast await database.pb.collection(this.name).getFullList()
+	async T[] fetchAll: string sort = null
+		items = cast await database.pb.collection(this.name).getFullList({sort})
 		return items
 		
 	// Fetch a subset of items from the database table and store them locally in the member variable "items"
