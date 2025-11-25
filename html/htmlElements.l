@@ -613,7 +613,7 @@ global static class html
 				parseInline text.substring(0, linkStart)
 				let url = text.substring(textEnd + 2, urlEnd)
 				let label = text.substring(linkStart + 1, textEnd)
-				link label, href:url, color:primaryColor, textDecoration:underline
+				link label, href:url, textDecoration:underline
 				parseInline text.substring(urlEnd + 1)
 				return
 
