@@ -229,6 +229,16 @@ Returns string
 ### trimEnd
 Returns string
 
+### replaceAll
+Replace all occurrences of a string with another string
+
+| Parameter     | Type   | Description                               |
+| ------------- | ------ | ----------------------------------------- |
+| occurrencesOf | string | Search for all occurrences of this string |
+| with          | string | Replace them with this string             |
+
+Returns string
+
 ---
 
 # class List<T>
@@ -777,25 +787,25 @@ div display:flex, flexDirection:column, width:100%
 When wrapping, align the whole content along the cross axis.
 Possible values: start, center, end, spaceEvenly, spaceBetween, spaceAround, normal, baseline, stretch, flexStart, flexEnd
 
-### string alignSelf
-The alignment for selected items inside a flexible container
+### AlignSelf alignSelf
+Overrides a grid or flex item's align-items value. In grid, it aligns the item inside the grid area. In flexbox, it aligns the item on the cross axis.
 
 ### string animation
 A shorthand property for all the animation properties, except the animationPlayState
 
-### string animationDelay
+### float animationDelay
 When the animation will start
 
 ### string animationDirection
 Whether or not the animation should play in reverse on alternate cycles
 
-### string animationDuration
+### float animationDuration
 How many seconds or milliseconds an animation takes to complete one cycle
 
 ### string animationFillMode
 What values are applied by the animation outside the time it is executing
 
-### string animationIterationCount
+### int animationIterationCount
 The number of times an animation should be played
 
 ### string animationName
@@ -824,7 +834,7 @@ div "Abort", backgroundColor:#ff0000
 ### Image backgroundImage
 The background-image for an element
 
-### string backgroundPosition
+### Vector2 backgroundPosition
 The starting position of a background-image
 
 ### string backgroundRepeat
@@ -836,7 +846,7 @@ The painting area of the background
 ### string backgroundOrigin
 The positioning area of the background images
 
-### string backgroundSize
+### Vector2 backgroundSize
 The size of the background image
 
 ### string backfaceVisibility
@@ -987,7 +997,7 @@ app
        div "Blue text", color:#0000ff
 ```
 
-### string columnCount
+### int columnCount
 The number of columns an element should be divided into
 
 ### string columnFill
@@ -1153,7 +1163,7 @@ The left position of a positioned element
 ### Dimension letterSpacing
 The space between characters in a text
 
-### string lineHeight
+### float lineHeight
 The distance between lines in a text
 
 ### string listStyle
@@ -1322,7 +1332,7 @@ div textAlign:center text:"This is centered horizontally"
 ### string textAlignLast
 How the last line of a block is aligned when text-align is "justify"
 
-### string textDecoration
+### TextDecoration textDecoration
 The decoration of a text
 
 ### Color textDecorationColor
@@ -1502,13 +1512,15 @@ app
 		           div text:item.text, fontStyle:italic
 ```
 
-| Parameter | Type    | Description                                                                                                      |
-| --------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
-| text      | string  | The text content of the element, optional, defaults to null                                                      |
-| tag       | string  | The tag of element, defaults to "div", optional, defaults to "div"                                               |
-| data      | dynamic | The data attributes of the element, optional, defaults to {}                                                     |
-| onHover   | Style   | Apply this css style to the element when the user moves their mouse over the element, optional, defaults to null |
-| children  | void()  | A block of code that renders the children of the element, optional, defaults to null                             |
+| Parameter         | Type    | Description                                                                                                                        |
+| ----------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| text              | string  | The text content of the element, optional, defaults to null                                                                        |
+| tag               | string  | The tag of element, defaults to "div", optional, defaults to "div"                                                                 |
+| data              | dynamic | The data attributes of the element, optional, defaults to {}                                                                       |
+| styleWhenHovering | Style   | The css style that should be applied to the element when the user moves their pointer over the element, optional, defaults to null |
+| styleWhenFocused  | Style   | The css style that should be applied to the element when it is focused, optional, defaults to null                                 |
+| focusInitially    | bool    | Focus the element when its first created. It will not be focused again when the page is refreshed., optional, defaults to false    |
+| children          | void()  | A block of code that renders the children of the element, optional, defaults to null                                               |
 
 Returns HTMLElement
 
@@ -1657,14 +1669,16 @@ Returns HTMLElement
 ### input
 Render a html input element in the draw function
 
-| Parameter   | Type               | Description                                                                   |
-| ----------- | ------------------ | ----------------------------------------------------------------------------- |
-| value       | string             | The value to display in the field, optional, defaults to ""                   |
-| placeholder | string             | The placeholder text to display in the field, optional, defaults to ""        |
-| readOnly    | bool               | Whether the field should be read only, optional, defaults to false            |
-| onInput     | void(string value) | Called immediately after every keystroke, optional, defaults to null          |
-| focused     | bool               | Whether the cursor should be placed in the field, optional, defaults to false |
-| data        | dynamic            | The data attributes of the element, optional, defaults to {}                  |
+| Parameter        | Type               | Description                                                                                                                     |
+| ---------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| value            | string             | The value to display in the field, optional, defaults to ""                                                                     |
+| placeholder      | string             | The placeholder text to display in the field, optional, defaults to ""                                                          |
+| readOnly         | bool               | Whether the field should be read only, optional, defaults to false                                                              |
+| rows             | int                | The number of rows to display in the field, optional, defaults to 1                                                             |
+| onInput          | void(string value) | Called immediately after every keystroke, optional, defaults to null                                                            |
+| data             | dynamic            | The data attributes of the element, optional, defaults to {}                                                                    |
+| focusInitially   | bool               | Focus the element when its first created. It will not be focused again when the page is refreshed., optional, defaults to false |
+| styleWhenFocused | Style              | The css style to apply when the element is focused, optional, defaults to null                                                  |
 
 Returns HTMLElement
 
@@ -1899,6 +1913,10 @@ app
             div item.name
 ```
 
+| Parameter | Type   | Description                          |
+| --------- | ------ | ------------------------------------ |
+| sort      | string | Optional parameter, defaults to null |
+
 Returns Promise<T[]>
 
 ### fetch
@@ -1946,12 +1964,12 @@ Fetch and return a single item from the database table
 
 Returns Promise<T>
 
-### fetchOneById
+### fetchById
 Fetch and return a single item from the database by id
 
-| Parameter | Type   | Description        |
-| --------- | ------ | ------------------ |
-| id        | string | Required parameter |
+| Parameter | Type   | Description                                         |
+| --------- | ------ | --------------------------------------------------- |
+| id        | string | The id of the item to fetch (e.g "nx7n98bscxomkl4") |
 
 Returns Promise<T>
 
