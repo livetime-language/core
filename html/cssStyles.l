@@ -334,15 +334,13 @@ importance:5 struct Dimension
 	string dimensionString
 	toString := dimensionString
 		
-	Dimension: float value        // The value in the specified unit
-		       Unit unit = pixels // The unit of the value (pixels, percent, centimeters, points, viewportWidth, viewportHeight, ...)
+	Dimension: float value                  // The value in the specified unit
+		       Unit unit = html.defaultUnit // The unit of the value (pixels, percent, centimeters, points, viewportWidth, viewportHeight, ...)
 		dimensionString = "{value}{unit}"
 
 	Dimension: string dimensionString
 		this.dimensionString = dimensionString
 	
-	// bool toBool := value != 0
-
 	inline Padding toPadding() Padding(this, this, this, this)
 	inline Margin toMargin() Margin(this, this, this, this)
 	
@@ -564,7 +562,7 @@ importance:5 dynamic Style
 	//            div "Red text", color:mainColor
 	//            div "Blue text", color:#0000ff
 	Color color
-	string columnCount // The number of columns an element should be divided into
+	int columnCount // The number of columns an element should be divided into
 	string columnFill // How to fill columns
 	implicit Dimension columnGap // The gap between the columns
 	string columnRule // A shorthand property for setting or returning all the columnRule properties

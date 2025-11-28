@@ -348,7 +348,7 @@ static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 static inline js float now() Date.now()
 	
-global static priority low class html
+global priority low skipInit static class html
 	Overflow overflow = scroll
 	Unit defaultUnit = pixels
 	private HTMLElement parentNode

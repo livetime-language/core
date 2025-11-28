@@ -46,6 +46,7 @@ skipInit global unit Platform
 		Sound.init?.();
 		audio.init();
 		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
+		html.init();
 		app.init?.()
 		
 	private async inline js void initDatabase
