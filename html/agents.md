@@ -7,7 +7,9 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 
 LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
 
-Always write the simplest possible and most efficient code. Avoid code duplication.
+Always write the simplest possible and most efficient code.
+Avoid code duplication. Do not overengineer.
+Avoid deeply nested code. Aim for around 1 to 4 draw functions per page.
 
 # Example application
 // Defines the enum ItemState that stores its values as strings
@@ -283,19 +285,26 @@ static class helpers
 	bool areAllItemsDone
 		return app.documents.all.state == Done
 
+# Images
+Place images in the folder "assets/pb_public/media". 
+If you place "Example.png" in this folder, you can use "Example" in the img component:
+app
+	draw
+		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
+
 # More information
-Read this file for all available images in the current project:
-src/media.l
+Read "lib/core/html/documentation.md" for the full LiveTime documention. Read this file if you encounter problems.
+The folder "lib/core/js" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
+The folder "lib/core/html" contains the implementation of the LiveTime HTML framework (div, img, button, etc).
+The folder "lib/core/pocketbase" contains the PocketBase frontend API (database, DatabaseTable, etc)
 
-Read this file for a complete reference of the LiveTime Programming Language and HTML Framework, with all available classes and functions:
-lib/core/html/documentation.md
-Always read this documentation if you encounter problems.
-
-# Check if everything is correct
+# Always check if everything is correct
 Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
 
-1. Double check your code to ensure you wrote the simples possible, most efficient code.
-2. Double check you fixed all linter errors.
-3. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+1. Double check you wrote the simples possible, most efficient code with minimal code duplication.
+2. Double check the code is not deeply nested.
+3. Double check you called refresh after changing data.
+4. Double check you fixed all linter errors.
+5. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
 
 Do not finish until all errors are fixed and you verified that everything works as intended.
