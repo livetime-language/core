@@ -237,7 +237,7 @@ DatabaseTable<T>
 		
 	// Fetch and return a single item from the database by id
 	importance:5 async
-	T fetchOneById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
+	T fetchById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
 		return database.pb.collection(this.name).getOne(id)
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
@@ -288,7 +288,6 @@ DatabaseTable<T>
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
 		
-	importance:3
 	async inline js void subscribe: string topic = "*"
 		                            string filter = null
 					                string fields = null
@@ -308,7 +307,29 @@ DatabaseTable<T>
 					this.items.remove(item);
 				}
 			}
+			html.refresh();
 		}, {@filter:filter, @fields:fields, @expand:expand})
+
+	async js T subscribeById: string id
+					                     string fields = null
+		                                 string expand = null
+										 void() onDelete = null
+		database.pb.collection(this.name).subscribe(id, e => {
+			console.log(e.action, e.record);
+			if(e.action == "delete") {
+				onDelete?.();
+			} else {
+				// model = e.record;
+				Object.assign(model, e.record);
+			}
+			html.refresh();
+		}, {@fields:fields, @expand:expand})
+		var model = await database.pb.collection(this.name).getOne(id)
+		return model;
+
+	importance:3
+	inline js void unsubscribe: string topic = "*"
+		database.pb.collection(this.name).unsubscribe(topic)
 		
 	// ------------------------------------------------------- Files -------------------------------------------------------
 		
