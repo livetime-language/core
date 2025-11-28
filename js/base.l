@@ -716,7 +716,6 @@ class List<T>
 		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
 			
 	js void eachDistinct: TKey(T it) selector
-		                  EachDistinctSortBy sortBy = SortByInteger
 		                  void(
 		                      TKey it,
 		                      T[] items,
@@ -724,21 +723,16 @@ class List<T>
 		                  ) do
 		if(this.length > 0) {
 			let _subject = this
-			let defaultValue;
-			if(sortBy == 1) {defaultValue = 0; _subject = [...this].sort((a,b) => (selector(a) || 0) - (selector(b) || 0)); } else
-			if(sortBy == 2) {defaultValue = ""; _subject = [...this].sort((a,b) => (selector(a) || "").localeCompare(selector(b) || "")); }
-			let it = selector(_subject[0]) || defaultValue, i=0;
-			for(let _nextIndex=1; _nextIndex<_subject.length; ++_nextIndex) { 
-				let _nextIt = selector(_subject[_nextIndex]) || defaultValue;
-				if(_nextIt != it) {
-					let items = _subject.slice(i, _nextIndex);
-					do(it, items, i)
-					it = _nextIt;
-					i = _nextIndex;
+			let keys = _subject.map(selector);
+			let distinctKeys = new Set(keys).values();
+			let index = 0
+			for(let key of distinctKeys) {
+				let items = []
+				for(let i=0; i<_subject.length; ++i) {
+					if(keys[i] == key) items.push(_subject[i])
 				}
+				do(key, items, index++)
 			}
-			let items = _subject.slice(i, _subject.length);
-			do(it, items, i)
 		}
 			
 	// Add an item to the end of the list
@@ -2585,4 +2579,98 @@ unit Loca
 		}
 		return result
 	
-	
+enum lowercase string NumberFormatLocaleMatcher
+	lookup // The locale matching algorithm to use.
+	bestFit = "best fit" // The locale matching algorithm to use.
+
+enum lowercase string NumberFormatStyle
+	decimal // For plain number formatting (default)
+	currency // For currency formatting
+	percent // For percent formatting.
+	unit // For unit formatting.
+
+enum lowercase string NumberFormatCurrencyDisplay
+	code // Use the ISO currency code.
+	symbol // Use a localized currency symbol such as €. (default)
+	narrowSymbol // Use a narrow format symbol ("$100" rather than "US$100").
+	name // Use a localized currency name such as "dollar".
+
+enum lowercase string NumberFormatCurrencySign
+	standard // Use standard minus sign for negative numbers. (default)
+	accounting // Wrap the number with parentheses instead of appending a minus sign.
+
+enum lowercase string NumberFormatUnitDisplay
+	short // E.g., 16 l. (default)
+	narrow // E.g., 16l.
+	long // E.g., 16 litres.
+
+enum lowercase string NumberFormatRoundingPriority
+	auto // The result from the significant digits property is used. (default)
+	morePrecision // The result from the property that results in more precision is used.
+	lessPrecision // The result from the property that results in less precision is used.
+
+enum lowercase string NumberFormatRoundingMode
+	ceil // Round toward +∞. Positive values round up. Negative values round "more positive".
+	floor // Round toward -∞. Positive values round down. Negative values round "more negative".
+	expand // Round away from 0. The magnitude of the value is always increased by rounding.
+	trunc // Round toward 0. This magnitude of the value is always reduced by rounding.
+	halfCeil // Ties toward +∞. Values above the half-increment round like "ceil", and below like "floor".
+	halfFloor // Ties toward -∞. Values above the half-increment round like "ceil", and below like "floor".
+	halfExpand // Ties away from 0. Values above the half-increment round like "expand", and below like "trunc". (default)
+	halfTrunc // Ties toward 0. Values above the half-increment round like "expand", and below like "trunc".
+	halfEven // Ties towards the nearest even integer.
+
+enum lowercase string NumberFormatTrailingZeroDisplay
+	auto // Keep trailing zeros according to minimumFractionDigits and minimumSignificantDigits. (default)
+	stripIfInteger // Remove the fraction digits if they are all zero.
+
+enum lowercase string NumberFormatNotation
+	standard // Plain number formatting. (default)
+	scientific // Return the order-of-magnitude for formatted number.
+	engineering // Return the exponent of ten when divisible by three.
+	compact // String representing exponent; defaults to using the "short" form.
+
+enum lowercase string NumberFormatCompactDisplay
+	short // E.g., 1K. (default)
+	long // E.g., 1 thousand.
+
+enum lowercase string NumberFormatSignDisplay
+	auto // Sign display for negative numbers only, including negative zero. (default)
+	always // Always display sign.
+	exceptZero // Sign display for positive and negative numbers, but not zero.
+	negative // Sign display for negative numbers only, excluding negative zero.
+	never // Never display sign.
+
+enum lowercase string NumberFormatUseGrouping
+	always // Display grouping separators even if the locale prefers otherwise.
+	auto // Display grouping separators based on the locale preference.
+	min2 // Display grouping separators when there are at least 2 digits in a group.
+	false = "false" // Display no grouping separators.
+
+dynamic NumberFormatOptions
+	NumberFormatLocaleMatcher localeMatcher // The locale matching algorithm to use. Possible values are "lookup" and "best fit"; the default is "best fit".
+	string numberingSystem // The numbering system to use for number formatting, such as "arab", "hans", "mathsans", and so on.
+	NumberFormatStyle style // The formatting style to use.
+	string currency // The currency to use in currency formatting. Possible values are the ISO 4217 currency codes, such as "USD" for the US dollar, "EUR" for the euro, or "CNY" for the Chinese RMB.
+	NumberFormatCurrencyDisplay currencyDisplay // How to display the currency in currency formatting.
+	NumberFormatCurrencySign currencySign // In many locales, accounting format means to wrap the number with parentheses instead of appending a minus sign.
+	string unit // The unit to use in unit formatting. Possible values: "acre", "bit", "byte", "celsius", "centimeter", "day", "degree", "fahrenheit", "fluid-ounce", "foot", "gallon", "gigabit", "gigabyte", "gram", "hectare", "hour", "inch", "kilobit", "kilobyte", "kilogram", "kilometer", "liter", "megabit", "megabyte", "meter", "mile", "mile-scandinavian", "milliliter", "millimeter", "millisecond", "minute", "month", "ounce", "percent", "petabyte", "pound", "second", "stone", "terabit", "terabyte", "week", "yard", "year". Pairs of simple units can be concatenated with "-per-".
+	NumberFormatUnitDisplay unitDisplay // The unit formatting style to use in unit formatting.
+	int minimumIntegerDigits // The minimum number of integer digits to use. Possible values are from 1 to 21; the default is 1.
+	int minimumFractionDigits // The minimum number of fraction digits to use. Possible values are from 0 to 100.
+	int maximumFractionDigits // The maximum number of fraction digits to use. Possible values are from 0 to 100.
+	int minimumSignificantDigits // The minimum number of significant digits to use. Possible values are from 1 to 21; the default is 1.
+	int maximumSignificantDigits // The maximum number of significant digits to use. Possible values are from 1 to 21; the default is 21.
+	NumberFormatRoundingPriority roundingPriority // Specify how rounding conflicts will be resolved if both "FractionDigits" and "SignificantDigits" are specified.
+	int roundingIncrement // Indicates the increment at which rounding should take place relative to the calculated rounding magnitude. Possible values: 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000.
+	NumberFormatRoundingMode roundingMode // How decimals should be rounded.
+	NumberFormatTrailingZeroDisplay trailingZeroDisplay // The strategy for displaying trailing zeros on whole numbers.
+	NumberFormatNotation notation // The formatting that should be displayed for the number.
+	NumberFormatCompactDisplay compactDisplay // Only used when notation is "compact".
+	NumberFormatUseGrouping useGrouping // Whether to use grouping separators, such as thousands separators or thousand/lakh/crore separators.
+	NumberFormatSignDisplay signDisplay // When to display the sign for the number.
+
+js Intl.NumberFormat
+NumberFormat
+	inline js NumberFormat(string locale, NumberFormatOptions options) new Intl.NumberFormat(locale, options)
+	inline js string format(int value) this.format(value)
