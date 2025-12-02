@@ -253,8 +253,8 @@ DatabaseTable<T>
 	async void update: T item
 		               dynamic update
 		dynamic dynamicItem = item
-		await database.pb.collection(this.name).update(dynamicItem.id, update)
 		forDynamic update: dynamicItem[key] = .
+		await database.pb.collection(this.name).update(dynamicItem.id, update)
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
