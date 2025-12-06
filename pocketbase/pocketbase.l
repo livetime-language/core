@@ -1,3 +1,5 @@
+class User
+
 // Use this static class to login and logout users from the PocketBase backend. 
 // You can administer the local PocketBase instance at: http://localhost:8090/_ 
 // If you want to dive deeper into PocketBase, you can find the complete documentation at: https://pocketbase.io/docs/ 
