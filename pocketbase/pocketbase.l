@@ -255,8 +255,8 @@ DatabaseTable<T>
 	async void update: T item
 		               dynamic update
 		dynamic dynamicItem = item
-		await database.pb.collection(this.name).update(dynamicItem.id, update)
 		forDynamic update: dynamicItem[key] = .
+		await database.pb.collection(this.name).update(dynamicItem.id, update)
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
@@ -313,9 +313,10 @@ DatabaseTable<T>
 		}, {@filter:filter, @fields:fields, @expand:expand})
 
 	async js T subscribeById: string id
-					                     string fields = null
-		                                 string expand = null
-										 void() onDelete = null
+		                      string fields = null
+		                      string expand = null
+							  void() onChange = null
+		                      void() onDelete = null
 		database.pb.collection(this.name).subscribe(id, e => {
 			console.log(e.action, e.record);
 			if(e.action == "delete") {
@@ -323,6 +324,7 @@ DatabaseTable<T>
 			} else {
 				// model = e.record;
 				Object.assign(model, e.record);
+				onChange?.();
 			}
 			html.refresh();
 		}, {@fields:fields, @expand:expand})

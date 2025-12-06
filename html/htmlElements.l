@@ -434,7 +434,7 @@ global static class html
 	// The native html input element itself is hidden. 
 	// Clicking the any of the children will show the file selector dialog.
 	importance:4
-	HTMLElement fileInput: string accept = ".jpg,.jpeg,.png"           // The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
+	HTMLElement fileInput: string accept = ".jpg,.jpeg,.png,.webp"     // The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
 	                       FileInputCaptureMode capture = environment  // user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera
 		                   bool multiple = false                       // Allow selecting and uploading multiple images at once
 			               void() children                             // Determines the look of the element, as the native html input element is hidden

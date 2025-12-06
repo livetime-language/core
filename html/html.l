@@ -382,7 +382,8 @@ global priority low skipInit static class html
 		// 	body.parentNode.appendChild overlayNode
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform.scale)
-	inline js void scrollTo(float x, float y) window.scrollTo(x,y)
+	inline js void scrollToTop() window.scrollTo(0,0)
+	inline js void scrollTo(float x = 0, float y = 0) window.scrollTo(x,y)
 	inline js HTMLElement get(string id) document.getElementById(id)
 	inline js HTMLElement documentBody() document.body
 	inline js HTMLElement activeElement() document.activeElement

@@ -5,11 +5,14 @@ globs: *.l
 # We use the LiveTime Programming Language and HTML Framework with a PocketBase backend
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
 
-LiveTime uses inline styles for all html elements. Important: To re-render the html after changing data, you need to call refresh.
+LiveTime uses inline styles for all html elements. 
+Very important: To re-render the html after changing data, you need to call refresh.
 
 Always write the simplest possible and most efficient code.
-Avoid code duplication. Do not overengineer.
-Avoid deeply nested code. Aim for around 1 to 4 draw functions per page.
+Avoid code duplication. Do not overengineer. Keep it simple.
+Do not spread out the code over too many functions.
+Elements that are grouped together visually should be in the same function.
+Aim for about 1 to 5 draw functions per page.
 
 # Example application
 // Defines the enum ItemState that stores its values as strings
@@ -302,9 +305,8 @@ The folder "lib/core/pocketbase" contains the PocketBase frontend API (database,
 Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
 
 1. Double check you wrote the simples possible, most efficient code with minimal code duplication.
-2. Double check the code is not deeply nested.
-3. Double check you called refresh after changing data.
-4. Double check you fixed all linter errors.
-5. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+2. Double check you are calling refresh after changing data.
+3. Double check you fixed all linter errors.
+4. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
 
 Do not finish until all errors are fixed and you verified that everything works as intended.
