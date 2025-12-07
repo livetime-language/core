@@ -37,8 +37,6 @@ struct Vector2
 		
 	Vector2 assign Vector2 other: x = other.x; y = other.y; location = other.location; return this
 		
-	// Vector2 operator = (Vector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
-	
 	Vector2 + Vector2 other:   return {x + other.x, y + other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
 	Vector2 - Vector2 other:   return {x - other.x, y - other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
 	
@@ -89,28 +87,7 @@ struct Vector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	Vector2 operator - (Vector2 a) return {-a.x, -a.y, a.location}
-	
-	// bool operator == (Vector2 a, Vector2 b) return a.x == b.x && a.y == b.y
-	// bool operator != (Vector2 a, Vector2 b) return a.x != b.x || a.y != b.y
-	
-	// bool operator == (Vector2 a, IntVector2 b) return a.x == b.x && a.y == b.y
-	// bool operator != (Vector2 a, IntVector2 b) return a.x != b.x || a.y != b.y
-	
-	// bool operator == (IntVector2 a, Vector2 b) return b.x == a.x && b.y == a.y
-	// bool operator != (IntVector2 a, Vector2 b) return b.x != a.x || b.y != a.y
-	
-	// bool operator >  (Vector2 a, Vector2 b) return a.x >  b.x && a.y >  b.y
-	// bool operator >= (Vector2 a, Vector2 b) return a.x >= b.x && a.y >= b.y
-	// bool operator <  (Vector2 a, Vector2 b) return a.x <  b.x && a.y <  b.y
-	// bool operator <= (Vector2 a, Vector2 b) return a.x <= b.x && a.y <= b.y
-	
-	// bool operator == (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) == length
-	// bool operator != (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) != length
-	// bool operator >  (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) >  length
-	// bool operator >= (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) >= length
-	// bool operator <  (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) <  length
-	// bool operator <= (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) <= length
+	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
 	importance:4 length := math.sqrt(x * x + y * y)
@@ -460,26 +437,6 @@ struct IntVector2
 	Vector2    /= IntVector2 other: x /= other.x; y /= other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
 	Vector2    /= float other:      x /= other;   y /= other; return this
 	
-	// IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
-	
-	// IntVector2 operator + (IntVector2 a, IntVector2 b) return {a.x+b.x, a.y+b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
-	// IntVector2 operator - (IntVector2 a, IntVector2 b) return {a.x-b.x, a.y-b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
-	
-	// IntVector2 operator * (IntVector2 a, IntVector2 b) return {a.x*b.x, a.y*b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
-	// IntVector2 operator * (IntVector2 a, int b)   return {a.x*b, a.y*b, a.location}
-	// IntVector2 operator * (int a, IntVector2 b)   return {a*b.x, a*b.y, b.location}
-		
-	// Vector2 operator / (IntVector2 a, IntVector2 b) return {a.x/b.x, a.y/b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
-	// Vector2 operator / (IntVector2 a, float b)   return {a.x/b, a.y/b, a.location}
-	
-	// IntVector2 operator % (IntVector2 a, IntVector2 b) return {((a.x % b.x) + b.x) % b.x, ((a.y % b.y) + b.y) % b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
-	// IntVector2 operator % (IntVector2 a, int b)   return {((a.x % b) + b) % b, ((a.y % b) + b) % b, a.location}
-	
-	// IntVector2 operator += (IntVector2 a, IntVector2 b) a.x += b.x; a.y += b.y; if(a.location || b.location) {a.location = new SourceCodeLocation(null, 0, 0, a.location, b.location)} return a
-	// IntVector2 operator -= (IntVector2 a, IntVector2 b) a.x -= b.x; a.y -= b.y; if(a.location || b.location) {a.location = new SourceCodeLocation(null, 0, 0, a.location, b.location)} return a
-	// IntVector2 operator *= (IntVector2 a, IntVector2 b) a.x *= b.x; a.y *= b.y; if(a.location || b.location) {a.location = new SourceCodeLocation(null, 0, 0, a.location, b.location)} return a
-	// IntVector2 operator /= (IntVector2 a, IntVector2 b) a.x /= b.x; a.y /= b.y; if(a.location || b.location) {a.location = new SourceCodeLocation(null, 0, 0, a.location, b.location)} return a
-	
 	bool == IntVector2 other: return x == other.x && y == other.y
 	bool != IntVector2 other: return x != other.x || y != other.y
 		
@@ -493,13 +450,6 @@ struct IntVector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	// bool operator == (IntVector2 a, IntVector2 b) return a.x == b.x && a.y == b.y
-	// bool operator != (IntVector2 a, IntVector2 b) return a.x != b.x || a.y != b.y
-	// bool operator >  (IntVector2 a, IntVector2 b) return a.x >  b.x && a.y >  b.y
-	// bool operator >= (IntVector2 a, IntVector2 b) return a.x >= b.x && a.y >= b.y
-	// bool operator <  (IntVector2 a, IntVector2 b) return a.x <  b.x && a.y <  b.y
-	// bool operator <= (IntVector2 a, IntVector2 b) return a.x <= b.x && a.y <= b.y
-	
 	// The length of the vector
 	importance:4 length := math.sqrt(x * x + y * y)
 		

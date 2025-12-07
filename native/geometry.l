@@ -250,33 +250,6 @@ struct IntVector2
 	>= IntVector2 value: return x >= value.x and y >= value.y
 	>  IntVector2 value: return x >  value.x and y >  value.y
 		
-	// IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y;
-	
-	// IntVector2 operator + (IntVector2 a, IntVector2 b) return {a.x+b.x, a.y+b.y}
-	// IntVector2 operator - (IntVector2 a, IntVector2 b) return {a.x-b.x, a.y-b.y}
-	
-	// IntVector2 operator * (IntVector2 a, IntVector2 b) return {a.x*b.x, a.y*b.y}
-	// IntVector2 operator * (IntVector2 a, int b)   return {a.x*b, a.y*b}
-	// IntVector2 operator * (int a, IntVector2 b)   return {a*b.x, a*b.y}
-		
-	// Vector2 operator / (IntVector2 a, IntVector2 b) return {a.x/b.x, a.y/b.y}
-	// Vector2 operator / (IntVector2 a, float b)   return {a.x/b, a.y/b}
-	
-	// IntVector2 operator % (IntVector2 a, IntVector2 b) return {((a.x % b.x) + b.x) % b.x, ((a.y % b.y) + b.y) % b.y}
-	// IntVector2 operator % (IntVector2 a, int b)   return {((a.x % b) + b) % b}
-	
-	// IntVector2 operator += (IntVector2 a, IntVector2 b) a.x += b.x; a.y += b.y;
-	// IntVector2 operator -= (IntVector2 a, IntVector2 b) a.x -= b.x; a.y -= b.y;
-	// IntVector2 operator *= (IntVector2 a, IntVector2 b) a.x *= b.x; a.y *= b.y;
-	// IntVector2 operator /= (IntVector2 a, IntVector2 b) a.x /= b.x; a.y /= b.y;
-	
-	// bool operator == (IntVector2 a, IntVector2 b) return a.x == b.x && a.y == b.y
-	// bool operator != (IntVector2 a, IntVector2 b) return a.x != b.x || a.y != b.y
-	// bool operator >  (IntVector2 a, IntVector2 b) return a.x >  b.x && a.y >  b.y
-	// bool operator >= (IntVector2 a, IntVector2 b) return a.x >= b.x && a.y >= b.y
-	// bool operator <  (IntVector2 a, IntVector2 b) return a.x <  b.x && a.y <  b.y
-	// bool operator <= (IntVector2 a, IntVector2 b) return a.x <= b.x && a.y <= b.y
-	
 	// The length of the vector
 	length := math.sqrt(x * x + y * y)
 		
@@ -469,7 +442,7 @@ struct Matrix2D
 // ------------------------------------------------------- Trigonometry -------------------------------------------------------
 	
 mmutable priority low struct float
-	inline cpp float operator °(float angle) (angle/180*pi)
+	inline cpp float ° := (this/180*pi)
 	
 	// One full rotation is 1
 	inline cpp float turn := (this*math.twoPi)

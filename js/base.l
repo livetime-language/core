@@ -50,6 +50,8 @@ immutable struct int
 	               bool grouping = false    // Whether to use grouping separators, such as thousands separators
 		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
 			
+	// ------------------------------------------- Operators -------------------------------------------
+
 	inline int + int value
 	inline float + float value
 	
@@ -65,6 +67,9 @@ immutable struct int
 	inline int += int value
 	inline int -= int value
 	inline int *= int value
+
+	inline int ++
+	inline int --
 	
 	inline js int ** int value
 		Math.pow(this, value)
@@ -75,23 +80,22 @@ immutable struct int
 	// The smallest possible integer value
 	const importance:5 minValue = -2147483648
 	
-	// The true modulo operator, like it's used in mathematics, useful for wrapping around values. 
+	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
 	// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
-	// In other words: A number modulo a positive value will always be positive. 
-	// This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+	// In other words: A negative number modulo a positive value will always be positive. 
+	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
 	// Example:
-	//     int bufferSize = 100
-	//     int a = 107 mod bufferSize // a =  7
-	//     int b =  -1 mod bufferSize // b = 99
+	//     int a = 107 mod 100 // a =  7
+	//     int b =  -1 mod 100 // b = 99
 	importance:5 inline js 
 	int mod: ensureSingleExecution int divisor // Returns the remainder of a floored division by this value
 		(((this % divisor) + divisor) % divisor)
 		
 	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
 	// Example:
-	//     int bufferSize = 100
-	//     int a = 107 remainder bufferSize // a =  7
-	//     int b =  -1 remainder bufferSize // b = -1
+	//     int a = 107 remainder 100 // a =  7
+	//     int b =  -1 remainder 100 // b = -1
 	importance:5 inline js 
 	int remainder: int divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
@@ -320,6 +324,8 @@ immutable struct float
 	//     Time in milliseconds: 1209600000
 	importance:3 inline js
 	float weeks := (this*604800000)
+	
+	// ------------------------------------------- Operators -------------------------------------------
 
 	inline float + float value
 	inline float - float value
@@ -335,6 +341,8 @@ immutable struct float
 	inline bool <= float value
 	inline bool > float value
 	inline bool >= float value
+
+	inline bool !
 	
 	inline js float ** float value
 		Math.pow(this, value)
@@ -408,14 +416,6 @@ immutable struct float
 // A sequence of characters
 js String
 immutable class string
-	inline string + string value
-	inline string += string value
-	
-	inline string < string value
-	inline string <= string value
-	inline string > string value
-	inline string >= string value
-	
 	// Returns the number of characters in the string
 	importance:5 inline js int length := this.length
 	
@@ -678,8 +678,19 @@ immutable class string
 		
 	bool isLetter
 		return this.toLowerCase != this.toUpperCase
-		
-		
+
+	// ------------------------------------------- Operators -------------------------------------------
+
+	inline string + string value
+	inline string += string value
+	
+	inline string < string value
+	inline string <= string value
+	inline string > string value
+	inline string >= string value
+
+	inline bool !
+	
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
@@ -1756,6 +1767,7 @@ interface dynamic
 // The base class for all classes
 interface object
 	static inline js dynamic undefined() undefined
+	inline bool !
 	
 	inline js bool toBool() (this != null)
 	inline js string toJson() JSON.stringify(this)

@@ -341,7 +341,8 @@ struct Angle
 	bool <  Angle other:   return value <  other.value
 	bool <= Angle other:   return value <= other.value
 	
-	Angle operator - (Angle a) Angle(-a.value, a.unit)
+	Angle -
+		return Angle(-this.value, this.unit)
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 static class Time

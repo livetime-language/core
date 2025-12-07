@@ -25,8 +25,6 @@ cs(UnityEngine) struct Vector3
 	// Creates a copy of the vector with the same values
 	// Vector2 clone() := {x, y, location}
 		
-	// Vector2 operator = (Vector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
-	
 	inline cs Vector3 operator + (Vector3 a, Vector3 b) a + b
 	inline cs Vector3 operator - (Vector3 a, Vector3 b) a - b
 	

@@ -33,9 +33,6 @@ immutable struct Color
 	// static js string componentToHex: int c
 	// 	var hex = c.toString(16);
 	// 	return hex.length == 1 ? "0" + hex : hex;
-		
-	// inline js bool operator ==(Color a, Color b) a.hex == b.hex
-	// inline js bool operator !=(Color a, Color b) a.hex != b.hex
 	
 	// Color withAlpha: float alpha
 	// 	return {hex[1..7]+componentToHex(math.floor(alpha*255))}
