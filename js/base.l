@@ -1832,7 +1832,10 @@ class Reference<T>
 		return container[key]
 	T value
 		return container[key]
-	inline bool toBool() (this != null and this.container and this.container[this.key])
+	inline bool toBool
+		(this != null and this.container and this.container[this.key])
+	inline bool ! 
+		(this == null or this.container == null or !this.container[this.key])
 
 struct Type<T>
 	inline js string toString() this
