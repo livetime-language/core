@@ -348,11 +348,11 @@ immutable struct float
 		Math.pow(this, value)
 		
 	// The largest possible floating point value
-	const importance:4 inline js
+	const importance:5 inline js
 	float maxValue := Number.MAX_VALUE
 	
 	// The smallest possible floating point value
-	const importance:4 inline js
+	const importance:5 inline js
 	float minValue := -Number.MAX_VALUE
 	
 	// Positiv infinity
