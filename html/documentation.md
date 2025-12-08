@@ -15,16 +15,15 @@ The smallest possible integer value
 ## Member Functions
 
 ### mod
-The true modulo operator, like it's used in mathematics, useful for wrapping around values.
+The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values.
 It returns the remainder after a floored division, always producing a result with the same sign as the divisor.
-In other words: A number modulo a positive value will always be positive.
-This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+In other words: A negative number modulo a positive value will always be positive.
+If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
 
 *Example:*
 ```
-int bufferSize = 100
-int a = 107 mod bufferSize // a =  7
-int b =  -1 mod bufferSize // b = 99
+int a = 107 mod 100 // a =  7
+int b =  -1 mod 100 // b = 99
 ```
 
 | Parameter | Type | Description                                               |
@@ -35,12 +34,12 @@ Returns int
 
 ### remainder
 Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
 
 *Example:*
 ```
-int bufferSize = 100
-int a = 107 remainder bufferSize // a =  7
-int b =  -1 remainder bufferSize // b = -1
+int a = 107 remainder 100 // a =  7
+int b =  -1 remainder 100 // b = -1
 ```
 
 | Parameter | Type | Description                                                 |
