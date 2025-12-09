@@ -735,6 +735,10 @@ global static class html
 		if style == null: style = {}	
 		if not style.inset:           style.inset = {0,0,0,0}
 		if not style.position:        style.position = fixed
+		if not style.backgroundColor: style.backgroundColor = #00000080
+		if not style.display:         style.display = flex
+		if not style.alignItems:      style.alignItems = center
+		if not style.justifyContent:  style.justifyContent = center
 		setStyle element, style
 		
 		if attributes != null
