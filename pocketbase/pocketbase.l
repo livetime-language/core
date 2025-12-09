@@ -290,11 +290,13 @@ DatabaseTable<T>
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
 		
-	async inline js void subscribe: string topic = "*"
-		                            string filter = null
-					                string fields = null
-		                            string expand = null
-		database.pb.collection(this.name).subscribe(topic, e => {
+	async js T[] subscribe: string filter = null
+		                     string sort = null
+					         string fields = null
+		                     string expand = null
+		                     int perPage = 1000
+					         bool skipTotal = true
+		database.pb.collection(this.name).subscribe("*", e => {
 			console.log(e.action, e.record);
 			if(e.action == "create") {
 				this.items.push(e.record);
@@ -304,13 +306,13 @@ DatabaseTable<T>
 					Object.assign(item, e.record);
 				}
 			} else if(e.action == "delete") {
-				let item = this.items.find(i => i.id == e.record.id);
-				if(item) {
-					this.items.remove(item);
-				}
+				this.items.removeWhere(i => i.id == e.record.id);
 			}
 			html.refresh();
 		}, {@filter:filter, @fields:fields, @expand:expand})
+		let result = await database.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
+		this.items = result.items
+		return this.items
 
 	async js T subscribeById: string id
 		                      string fields = null
@@ -328,7 +330,7 @@ DatabaseTable<T>
 			}
 			html.refresh();
 		}, {@fields:fields, @expand:expand})
-		var model = await database.pb.collection(this.name).getOne(id)
+		var model = await database.pb.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
 		return model;
 
 	importance:3
