@@ -396,7 +396,7 @@ immutable struct float
 	importance:4 inline js string toString := this.toString()
 		
 	importance:3 inline js float moveTowards: float value
-		                         float speed = 1
+		                                      float speed = 1
 		(this < value ? (this + speed < value ? (this += speed) : (this = value)) : (this - speed > value ? (this -= speed) : (this = value)))
 		
 	inline js float moveTowardsAndEaseOut: float value
@@ -428,10 +428,29 @@ immutable class string
 	// Returns true if the string is not null and not empty	
 	inline js bool toBool := this
 	inline js string toString() this
+
+	// Returns the string converted to an integer. Use int.isValidNumber to check if the conversion was successful.
+	// Example:
+	//     app
+	//         convertStringToNumber: string str
+	//             int number = str.toInt
+	//             if number.isValidNumber: print "The string is a number"
+	//             else:                    print "The string is not a number"
 	importance:5 inline js int toInt := parseInt(this)
-	importance:5 inline js int toFloat := parseFloat(this)
+
+	// Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
+	// Example:
+	//     app
+	//         convertStringToNumber: string str
+	//             float number = str.toFloat
+	//             if number.isValidNumber: print "The string is a number"
+	//             else:                    print "The string is not a number"
+	importance:5 inline js float toFloat := parseFloat(this)
 	
+	// Parse the string as json
 	importance:5 inline js dynamic parseJson() JSON.parse(this)
+	
+	// Parse the string as yaml
 	importance:5 inline js dynamic parseYaml() yaml.parse(this)
 		
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
