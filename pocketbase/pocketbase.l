@@ -294,8 +294,10 @@ DatabaseTable<T>
 		                     string sort = null
 					         string fields = null
 		                     string expand = null
-		                     int perPage = 1000
+							 bool refreshHtmlOnChange = true
+		                     int perPage = 10000
 					         bool skipTotal = true
+							 void() onChange = null
 		database.pb.collection(this.name).subscribe("*", e => {
 			console.log(e.action, e.record);
 			if(e.action == "create") {
@@ -308,10 +310,15 @@ DatabaseTable<T>
 			} else if(e.action == "delete") {
 				this.items.removeWhere(i => i.id == e.record.id);
 			}
-			html.refresh();
+			onChange?.();
+			if(refreshHtmlOnChange) html.refresh();
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		let result = await database.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
 		this.items = result.items
+		if(this.items.length > 0) {
+			onChange?.();
+			if(refreshHtmlOnChange) html.refresh();
+		}
 		return this.items
 
 	async js T subscribeById: string id
