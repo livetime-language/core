@@ -1176,9 +1176,15 @@ class List<T>
 		
 	// Sort the list by a given expression
 	importance:5 T[] orderBy: float(T a) expression // First order by this expression
-		         SortingOrder order    // Specifies if you want to sort in ascending or descending order
+		                      SortingOrder order    // Specifies if you want to sort in ascending or descending order
 		if order == Ascending: return this.sort(expression(a) - expression(b))
 		else                   return this.sort(expression(b) - expression(a))
+				
+	// Sort the list by a given expression
+	importance:5 T[] orderBy: string(T a) expression // First order by this expression
+		                      SortingOrder order    // Specifies if you want to sort in ascending or descending order
+		if order == Ascending: return this.sort(expression(a) compareTo expression(b))
+		else                   return this.sort(expression(b) compareTo expression(a))
 				
 	// Returns true if the given condition is true for dynamic item in the list
 	importance:4 inline js bool any: bool(T a) predicate // The condition to check
