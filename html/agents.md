@@ -43,9 +43,10 @@ static class app
 	const fontSize = 16px
 	const Padding buttonPadding = {topAndBottom:6 leftAndRight:16}
 
-	User user
+	// Used to add, remove, fetch and update items from a remote PocketBase collection. Also stores TodoItems locally in the member variable items.
 	DatabaseTable<TodoItem> items = {name:"todoItems"}
 
+	User user
 	string newItemText
 	string email, password
 
@@ -53,7 +54,7 @@ static class app
 	// All functions need to be part of a class. There are no top-level functions in LiveTime.
 	// app.start is the entry point of the application. It is called when the application starts.
 	start
-		user = await database.getAuthenticatedUser
+		user = await backend.getAuthenticatedUser
 		fetchItems
 
 	fetchItems
@@ -72,7 +73,7 @@ static class app
 
 				button text:"Login", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
 					onClick:
-						user = await database.authWithPassword email, password
+						user = await backend.authWithPassword email, password
 						fetchItems
 		else
 			div display:flex, flexDirection:column, gap:16, fontSize, margin:{left:32 right:32}
@@ -81,7 +82,7 @@ static class app
 
 					button "Logout", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
 						onClick:
-							database.logout
+							backend.logout
 							user = null
 							refresh
 
@@ -305,7 +306,7 @@ app
 Read "lib/core/html/documentation.md" for the full LiveTime documention. Read this file if you encounter problems.
 The folder "lib/core/js" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
 The folder "lib/core/html" contains the implementation of the LiveTime HTML framework (div, img, button, etc).
-The folder "lib/core/pocketbase" contains the PocketBase frontend API (database, DatabaseTable, etc)
+The folder "lib/core/pocketbase" contains the PocketBase API (backend, DatabaseTable, etc)
 
 # Always check if everything is correct
 Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.

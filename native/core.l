@@ -11,7 +11,7 @@ skipInit unit core
 		// mode = Local
 		// input.internalUsers.clear
 		// math.setRandomSeed math.generateRandomSeed 
-		// initDatabase
+		// initBackend
 		stop
 		
 	// Clear all inputs and reset the application to the first frame

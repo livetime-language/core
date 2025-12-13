@@ -73,7 +73,7 @@ transient skipInit unit Platform
 			}
 		if(app.init) app.init();
 			
-	private async inline js void initDatabase
+	private async inline js void initBackend
 		if(typeof(pocketBase) != "undefined") await pocketBase.connect2()
 
 	// This is called when the application starts for the first time	
@@ -88,7 +88,7 @@ transient skipInit unit Platform
 			this.engineStarted = false
 			this.isDebug = isDebug
 			this.userCount = userCount
-			initDatabase
+			initBackend
 			statistics.startTime = now
 			core.simulateConnection = simulateConnection
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
@@ -147,7 +147,7 @@ transient skipInit unit Platform
 		try
 			heartbeat "replay"
 			initMedia
-			initDatabase
+			initBackend
 			openMedia
 				goToCurrentFrame
 		catch

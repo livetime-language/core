@@ -49,8 +49,8 @@ skipInit global unit Platform
 		html.init();
 		app.init?.()
 		
-	private async inline js void initDatabase
-		if(typeof(database) != "undefined") await database.connect2()
+	private async inline js void initBackend
+		if(typeof(backend) != "undefined") await backend.connect2()
 			
 	async start: bool isDebug
 		try
@@ -67,7 +67,7 @@ skipInit global unit Platform
 			this.resetWhenCodeChanged = true
 			
 			initMedia
-			initDatabase
+			initBackend
 			openMedia
 				try
 					stop
@@ -97,7 +97,7 @@ skipInit global unit Platform
 			heartbeat "replay"
 			if resetWhenCodeChanged: html.reset
 			initMedia
-			initDatabase
+			initBackend
 			initAll
 			html.resize
 			startApp

@@ -10,39 +10,52 @@ class User
 //     static class app
 //         User user
 //         start
-//             user = await database.getAuthenticatedUser
+//             user = await backend.getAuthenticatedUser
 //             refresh
 //         login: string email, string password
-//             user = await database.authWithPassword email, password
+//             user = await backend.authWithPassword email, password
 //             refresh
 //         logout
-//             database.logout
+//             backend.logout
 //             user = null
 //             refresh
-transient skipInit static class database
+transient skipInit static class backend
 	string url, libUrl
 	dynamic pb
 	DatabaseTable<User> users
 	
 	// Called automatically in Platform.start
 	internal async void connect: string url
-		database.url = database.libUrl = url + "/"
+		backend.url = backend.libUrl = url + "/"
 		await connect
 		
 	// Called automatically in Platform.start
 	internal async js void connect
-		if(!database.url) database.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
-		const PocketBase = (await import((database.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
-		if(database.pb) database.pb.realtime.unsubscribe();
-		database.pb = new PocketBase(database.url);
+		if(!backend.url) backend.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
+		const PocketBase = (await import((backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
+		if(backend.pb) backend.pb.realtime.unsubscribe();
+		backend.pb = new PocketBase(backend.url);
 		this.users = new DatabaseTable("users", []);
+
+	// Call a http GET endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
+	// and automatically includes the auth token
+	importance:5 inline js async
+	dynamic get: string url // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
+		backend.pb.send(url, {method:"GET"})
+		
+	// Send data to a http POST endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
+	// and automatically includes the auth token
+	importance:5 inline js async 
+	dynamic post: string url   // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
+	              dynamic body // Object with data to send to the backend, e.g. {offerId: "nx7n98bscxomkl4", amount: 5000}
+		backend.pb.send(url, {method:"POST", body:body})
 		
 	// Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
 	// Example:
 	//     app
 	//         User user
 	//         start
-	//             user = await database.getAuthenticatedUser
+	//             user = await backend.getAuthenticatedUser
 	//             refresh
 	importance:5 async
 	dynamic getAuthenticatedUser
@@ -61,7 +74,7 @@ transient skipInit static class database
 	//            field model:password, type:password, placeholder:"Password"
 	//            button text:"Login", padding:buttonPadding, color:white, backgroundColor:primaryColor
 	//                onClick:
-	//                    user = await database.authWithPassword email, password
+	//                    user = await backend.authWithPassword email, password
 	importance:5 async 
 	dynamic authWithPassword: string email
 		                      string password
@@ -83,7 +96,7 @@ transient skipInit static class database
 	//            field model:user.passwordConfirm, type:password, placeholder:"Confirm Password"
 	//            button text:"Signup", padding:buttonPadding, color:white, backgroundColor:primaryColor
 	//                onClick:
-	//                    await database.signupNewUser user
+	//                    await backend.signupNewUser user
 	importance:5 async
 	dynamic signupNewUser: dynamic user // A user object with a valid email, password and passwordConfirm member variables
 		await users.add(user)
@@ -94,7 +107,7 @@ transient skipInit static class database
 	//     app
 	//         User user
 	//         logout
-	//             database.logout
+	//             backend.logout
 	//             user = null
 	importance:5
 	void logout
@@ -110,10 +123,10 @@ transient skipInit static class database
 		pb.autoCancellation(value)
 		
 	inline js void onAuthChanged: inline void(dynamic user) code
-		database.pb.authStore.onChange((token, record) => code(record))
+		backend.pb.authStore.onChange((token, record) => code(record))
 		
 	inline js string token
-		database.pb.authStore.token
+		backend.pb.authStore.token
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "where" and "length" to access the local items.
@@ -122,7 +135,7 @@ DatabaseTable<T>
 	// The name of the remote PocketBase collection
 	importance:5 string name
 
-	// The items you fetch from the database are stored locally in this list
+	// The items you fetch from the backend are stored locally in this list
 	importance:5 T[] items = []
 	bool busy
 
@@ -146,7 +159,7 @@ DatabaseTable<T>
 	importance:5
 	async void add: T item // An item with a id member variable of type string that is not set yet
 		dynamic dynamicItem = item
-		dynamic newRecord = await database.pb.collection(this.name).create(item)
+		dynamic newRecord = await backend.pb.collection(this.name).create(item)
 		dynamicItem.id = newRecord.id
 		items.add item
 
@@ -154,10 +167,10 @@ DatabaseTable<T>
 	importance:3
 	async js T save: T item
 		if(!item.id) {
-			let newRecord = await database.pb.collection(this.name).create(item);
+			let newRecord = await backend.pb.collection(this.name).create(item);
 			item.id = newRecord.id
 		} else {
-			await database.pb.collection(this.name).update(item.id, item)
+			await backend.pb.collection(this.name).update(item.id, item)
 		}
 	
 	// ------------------------------------------------------- Remove -------------------------------------------------------
@@ -173,7 +186,7 @@ DatabaseTable<T>
 	importance:5
 	async void remove: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		await database.pb.collection(this.name).delete(dynamicItem.id)
+		await backend.pb.collection(this.name).delete(dynamicItem.id)
 		items.remove item
 		
 	// ------------------------------------------------------- Fetch -------------------------------------------------------
@@ -196,7 +209,7 @@ DatabaseTable<T>
 	//                 div item.name
 	importance:5 
 	async T[] fetchAll: string sort = null
-		items = cast await database.pb.collection(this.name).getFullList({sort})
+		items = cast await backend.pb.collection(this.name).getFullList({sort})
 		return items
 		
 	// Fetch a subset of items from the database table and store them locally in the member variable "items"
@@ -224,7 +237,7 @@ DatabaseTable<T>
 		             int page = 1
 		             int perPage = 1000
 					 bool skipTotal = true
-		let result = await database.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
+		let result = await backend.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
 		items = cast result.items
 		totalItemsOfLastFetch = result.totalItems
 		return items
@@ -234,13 +247,13 @@ DatabaseTable<T>
 	T fetchOne: string filter = ""
 		              string sort = null
 		              string expand = null
-		let result = await database.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
+		let result = await backend.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
 		return result.items[0]
 		
 	// Fetch and return a single item from the database by id
 	importance:5 async
 	T fetchById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
-		return database.pb.collection(this.name).getOne(id)
+		return backend.pb.collection(this.name).getOne(id)
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
@@ -256,7 +269,7 @@ DatabaseTable<T>
 		               dynamic update
 		dynamic dynamicItem = item
 		forDynamic update: dynamicItem[key] = .
-		await database.pb.collection(this.name).update(dynamicItem.id, update)
+		await backend.pb.collection(this.name).update(dynamicItem.id, update)
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
@@ -268,7 +281,7 @@ DatabaseTable<T>
 	importance:3
 	async void update: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		database.pb.collection(this.name).update(dynamicItem.id, item)
+		backend.pb.collection(this.name).update(dynamicItem.id, item)
 		
 	// Update a single field of an item with a valid id member variable in the database table and the local items
 	// Example:
@@ -285,7 +298,7 @@ DatabaseTable<T>
 		if(!item.id) {
 			await this.add(item)
 		} else {
-			await database.pb.collection(this.name).@update(item.id, {[key]:value})
+			await backend.pb.collection(this.name).@update(item.id, {[key]:value})
 		}
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
@@ -298,7 +311,7 @@ DatabaseTable<T>
 		                     int perPage = 10000
 					         bool skipTotal = true
 							 void() onChange = null
-		database.pb.collection(this.name).subscribe("*", e => {
+		backend.pb.collection(this.name).subscribe("*", e => {
 			console.log(e.action, e.record);
 			if(e.action == "create") {
 				this.items.push(e.record);
@@ -313,7 +326,7 @@ DatabaseTable<T>
 			onChange?.();
 			if(refreshHtmlOnChange) html.refresh();
 		}, {@filter:filter, @fields:fields, @expand:expand})
-		let result = await database.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
+		let result = await backend.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
 		this.items = result.items
 		if(this.items.length > 0) {
 			onChange?.();
@@ -326,7 +339,7 @@ DatabaseTable<T>
 		                      string expand = null
 							  void() onChange = null
 		                      void() onDelete = null
-		database.pb.collection(this.name).subscribe(id, e => {
+		backend.pb.collection(this.name).subscribe(id, e => {
 			console.log(e.action, e.record);
 			if(e.action == "delete") {
 				onDelete?.();
@@ -337,12 +350,12 @@ DatabaseTable<T>
 			}
 			html.refresh();
 		}, {@fields:fields, @expand:expand})
-		var model = await database.pb.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
+		var model = await backend.pb.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
 		return model;
 
 	importance:3
 	inline js void unsubscribe: string topic = "*"
-		database.pb.collection(this.name).unsubscribe(topic)
+		backend.pb.collection(this.name).unsubscribe(topic)
 		
 	// ------------------------------------------------------- Files -------------------------------------------------------
 		
@@ -369,7 +382,7 @@ DatabaseTable<T>
 			for(let i=0; i<files.length; i++) {
 				let file = files[i]
 				try {
-					let result = await database.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
+					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
 					model.container[model.key] = result[model.key];
 					if(i < files.length-1) html.refresh();
 				} catch(e) {
@@ -396,7 +409,7 @@ DatabaseTable<T>
 		let listOfFiles = model.container[model.key];
 		listOfFiles.remove(file);
 		html.refresh();
-		await database.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
+		await backend.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
 
 	private js Promise<string> getDataUrlForFile: File file
 		return new Promise((resolve, reject) => {
@@ -414,7 +427,7 @@ DatabaseTable<T>
 		}
 		let newItem
 		if(item.id) {
-			newItem = await database.pb.collection(this.name).update(item.id, formData)
+			newItem = await backend.pb.collection(this.name).update(item.id, formData)
 		} else {
 			for(let key in item) {
 				if(key != fileFieldName) {
@@ -425,7 +438,7 @@ DatabaseTable<T>
 					}
 				}
 			}
-			newItem = await database.pb.collection(this.name).create(formData);
+			newItem = await backend.pb.collection(this.name).create(formData);
 			item.id = newItem.id;
 		}
 		item[fileFieldName] = newItem[fileFieldName]
@@ -441,7 +454,7 @@ DatabaseTable<T>
 			formData.append('images', imageBlob, 'moved-image.jpg');
 		}
 		if(item.id) {
-			newItem = await database.pb.collection(this.name).update(item.id, formData)
+			newItem = await backend.pb.collection(this.name).update(item.id, formData)
 		} else {
 			for(let key in item) {
 				if(key != fileFieldName) {
@@ -452,7 +465,7 @@ DatabaseTable<T>
 					}
 				}
 			}
-			newItem = await database.pb.collection(this.name).create(formData);
+			newItem = await backend.pb.collection(this.name).create(formData);
 			item.id = newItem.id;
 		}
 		item[fileFieldName] = newItem[fileFieldName]
