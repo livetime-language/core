@@ -651,10 +651,10 @@ internal transient skipInit unit core
 		localUserId = room.localUserId
 		
 		print "#database opening from db {room.toJson}"
-		let result = await inputStore.getAllFromIndex "roomId", roomId
-		result.orderBy.start
-		for result
-			int userId = .userId
+		dynamic[] rooms = await inputStore.getAllFromIndex "roomId", roomId
+		rooms.orderBy.start
+		for rooms as room
+			int userId = room.userId
 			int start = .start
 			dynamic inputs = .inputs
 			let user = input.internalUsers[.userId] ?= {id:.userId, local:.userId == localUserId, collectInputs:true}
