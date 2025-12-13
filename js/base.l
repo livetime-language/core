@@ -434,8 +434,8 @@ immutable class string
 	//     app
 	//         convertStringToNumber: string str
 	//             int number = str.toInt
-	//             if number.isValidNumber: print "The string is a number"
-	//             else:                    print "The string is not a number"
+	//             if number.isValidNumber: print "The string is a number: {number}"
+	//             else                     print "The string is not a number"
 	importance:5 inline js int toInt := parseInt(this)
 
 	// Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
@@ -443,8 +443,8 @@ immutable class string
 	//     app
 	//         convertStringToNumber: string str
 	//             float number = str.toFloat
-	//             if number.isValidNumber: print "The string is a number"
-	//             else:                    print "The string is not a number"
+	//             if number.isValidNumber: print "The string is a number: {number}"
+	//             else                     print "The string is not a number"
 	importance:5 inline js float toFloat := parseFloat(this)
 	
 	// Parse the string as json
@@ -455,10 +455,12 @@ immutable class string
 		
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
 	
-	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	// Variable values that indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	// Example:
+	//     if user.name == string.undefined: user.name = "Guest"
 	const inline js string undefined := undefined
 	
-	// Splits the string at the given character into a list of substrings
+	// Splits the string at the given character into a list of substrings#
 	importance:5 inline js
 	string[] split: string seperator = "," // Separate the string at this character
 		this.split(seperator)
@@ -494,6 +496,7 @@ immutable class string
 		
 	importance:5 inline js bool contains(string str) this.includes(str)
 
+	// Return true if the string is a valid email address
 	importance:5 js bool isEmail() 
 		// RFC 5322 compliant email validation
 		// Check basic structure first
@@ -719,54 +722,16 @@ enum EachDistinctSortBy: DoNotSort = 0, SortByInteger = 1, SortByString = 2
 // An array that grows and shrinks in size as needed
 js Array
 class List<T>
-	// Do something for each item in a list
-	inline js void each -> inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let i=0, _subject=this, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
-		
-	inline js void each <- inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let _subject=this, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
-		
-	// Do something for each item in a list. You can add or remove items inside the loop.
-	inline js void eachChangable -> inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let i=0, _subject=[...this], _len=_subject.length; i<_len; ++i) do(_subject[i], i)
-		
-	inline js void eachChangable <- inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
-			
-	js void eachDistinct: TKey(T it) selector
-		                  void(
-		                      TKey it,
-		                      T[] items,
-		                      int i
-		                  ) do
-		if(this.length > 0) {
-			let _subject = this
-			let keys = _subject.map(selector);
-			let distinctKeys = new Set(keys).values();
-			let index = 0
-			for(let key of distinctKeys) {
-				let items = []
-				for(let i=0; i<_subject.length; ++i) {
-					if(keys[i] == key) items.push(_subject[i])
-				}
-				do(key, items, index++)
-			}
-		}
-			
+	// Gets the number of items in the list
+	importance:5 inline js int length() this.length
+	
+	// ------------------------------------------- Add -------------------------------------------
+
 	// Add an item to the end of the list
-	importance:5 inline js void add: T item // The item to add
+	// Example:
+	//     players.add {name: "Player1", score: 0}
+	importance:5 inline js 
+	void add: T item // The item to add
 		this.push(item)
 		
 	inline js void add: T item  // The item to add
@@ -817,6 +782,19 @@ class List<T>
 	void insert: T item    // The item to insert
 		         T after
 		this.splice(this.indexOf(after)+1, 0, item)
+
+	// Add an item to the list if it isn't already in there
+	importance:5 js void ensure: T item // The item to add
+		if(!this.includes(item))
+			this.push(item)
+		
+	// Add each item from a list if it isn't already in there
+	importance:5 js void ensure: T[] items // The list of items to add
+		for(let it of items)
+			if(!this.includes(it))
+				this.push(it)
+
+	// ------------------------------------------- Remove -------------------------------------------
 		
 	// Remove an item from the list
 	// Example: Remove the current player instrance from the list of playeres when they died
@@ -919,60 +897,7 @@ class List<T>
 				return .
 		return null
 	
-	// Add an item to the list if it isn't already in there
-	importance:5 js void ensure: T item // The item to add
-		if(!this.includes(item))
-			this.push(item)
-		
-	// Add each item from a list if it isn't already in there
-	importance:5 js void ensure: T[] items // The list of items to add
-		for(let it of items)
-			if(!this.includes(it))
-				this.push(it)
-		
-	js void toggle: T item // The item to add
-		let index = this.indexOf(item)
-		if(index != -1) this.splice(index, 1)
-		else            this.push(item)
-		
-	// Returns whether the list contains the given item
-	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
-		(typeof(item) == "object" && item.equal ? this.some(a => item.equal(a)) : this.includes(item))
-		
-	importance:3 bool containsAny: T[] list
-		for list
-			if this contains .
-				return true
-		return false
-		
-	importance:3 bool containsNone: T[] list
-		for list
-			if this contains .
-				return false
-		return true
-		
-	// The index of an item in the list
-	importance:5 inline js
-	int indexOf: ensureSingleExecution T item // Get the index of this item
-		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
-		
-	inline js void setList: T[] list
-		this.splice(0, this.length, ...list)
-		
-	void setFilteredList: T[] list
-		                  bool(T a) condition
-		clear
-		for list: if condition(.): add .
-		
-	void setFilteredList: T[] list
-		                  bool(T a) condition
-		                  int maxCount
-		clear
-		int count = 0
-		for list
-			if condition .
-				add .
-				if ++count >= maxCount: break
+	// ------------------------------------------- Pop -------------------------------------------
 		
 	// Remove the last item from the list and return it
 	// Example: Print and remove "Orange" from the list
@@ -1026,10 +951,99 @@ class List<T>
 	//     [Lemon, Orange]
 	importance:5 inline js T popFirst
 		this.shift()
-	
-	// Gets the number of items in the list
-	importance:5 inline js int length() this.length
-	
+
+	// -------------------------------------------- Iterate -------------------------------------------
+				
+	// Do something for each item in a list
+	inline js void each -> inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let i=0, _subject=this, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	inline js void each <- inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let _subject=this, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+		
+	// Do something for each item in a list. You can add or remove items inside the loop.
+	inline js void eachChangable -> inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let i=0, _subject=[...this], _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	inline js void eachChangable <- inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+			
+	js void eachDistinct: TKey(T it) selector
+		                  void(
+		                      TKey it,
+		                      T[] items,
+		                      int i
+		                  ) do
+		if(this.length > 0) {
+			let _subject = this
+			let keys = _subject.map(selector);
+			let distinctKeys = new Set(keys).values();
+			let index = 0
+			for(let key of distinctKeys) {
+				let items = []
+				for(let i=0; i<_subject.length; ++i) {
+					if(keys[i] == key) items.push(_subject[i])
+				}
+				do(key, items, index++)
+			}
+		}
+					
+	js void toggle: T item // The item to add
+		let index = this.indexOf(item)
+		if(index != -1) this.splice(index, 1)
+		else            this.push(item)
+		
+	// Returns whether the list contains the given item
+	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
+		(typeof(item) == "object" && item.equal ? this.some(a => item.equal(a)) : this.includes(item))
+		
+	importance:3 bool containsAny: T[] list
+		for list
+			if this contains .
+				return true
+		return false
+		
+	importance:3 bool containsNone: T[] list
+		for list
+			if this contains .
+				return false
+		return true
+		
+	// The index of an item in the list
+	importance:5 inline js
+	int indexOf: ensureSingleExecution T item // Get the index of this item
+		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
+		
+	inline js void setList: T[] list
+		this.splice(0, this.length, ...list)
+		
+	void setFilteredList: T[] list
+		                  bool(T a) condition
+		clear
+		for list: if condition(.): add .
+		
+	void setFilteredList: T[] list
+		                  bool(T a) condition
+		                  int maxCount
+		clear
+		int count = 0
+		for list
+			if condition .
+				add .
+				if ++count >= maxCount: break
+			
 	// Truncated or expands the list the given number of items
 	js int setLength: int length // The new length of the list
 		this.length = length
@@ -1147,6 +1161,8 @@ class List<T>
 			}
 			this[0] = item
 		}
+
+	// ------------------------------------------- Sort -------------------------------------------
 		
 	// Sort the list
 	inline js T[] sort
@@ -1156,23 +1172,30 @@ class List<T>
 		this.sort(comparer)
 	
 	// Sort the list by a given expression
-	importance:5 T[] orderBy: float(T a) expression // First order by this expression
+	// Example: Sort all alive players by their score
+	//    let topPlayers = (players.where.isAlive).orderBy.score
+	importance:5
+	T[] orderBy: float(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
 		
+	// Sort by string
+	T[] orderBy: string(T a) expression // First order by this expression
+		return this.sort(expression(a) compareTo expression(b))
+		
+	// Sort by float then by float
 	T[] orderBy: float(T it) expression           // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
-	importance:5 T[] orderBy: float(T it) expression            // First order by this expression
+	// Sort by float then by string
+	T[] orderBy: float(T it) expression            // First order by this expression
 		         label nocolon string(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) - expression(b) || thenBy(a) compareTo thenBy(b))
 		
-	T[] orderBy: string(T it) expression           // First order by this expression
+	// Sort by string then by float
+	T[] orderBy: string(T it) expression          // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) compareTo expression(b) || thenBy(a) - thenBy(b))
-		
-	T[] orderBy: string(T a) expression // First order by this expression
-		return this.sort(expression(a) compareTo expression(b))
 		
 	// Sort the list by a given expression
 	importance:5 T[] orderBy: float(T a) expression // First order by this expression
@@ -1185,34 +1208,58 @@ class List<T>
 		                      SortingOrder order    // Specifies if you want to sort in ascending or descending order
 		if order == Ascending: return this.sort(expression(a) compareTo expression(b))
 		else                   return this.sort(expression(b) compareTo expression(a))
+
+	// ------------------------------------------- Query -------------------------------------------
 				
-	// Returns true if the given condition is true for dynamic item in the list
-	importance:4 inline js bool any: bool(T a) predicate // The condition to check
+	// Returns true if the given condition is true for any item in the list
+	// Example: Check if there are any active enemies
+	//     if enemies.any.isActive
+	importance:4 inline js 
+	bool any: bool(T a) predicate // The condition to check
 		this.some(predicate)
 		
-	importance:4 inline js bool none: bool(T a) predicate // The condition to check
-		!this.some(predicate)
-		
 	// Returns true if the given condition is true for all items in the list
-	importance:4 inline js bool all: bool(T a) predicate // The condition to check
+	// Example: Check if all players are ready
+	//     if players.all.isReady
+	importance:4 inline js 
+	bool all: bool(T a) predicate // The condition to check
 		this.every(predicate)
 		
+	// Returns true if the given condition is false for all items in the list
+	// Example: Check if no player has a health of 0
+	//     if players.none.health == 0
+	importance:3 inline js 
+	bool none: bool(T a) predicate // The condition to check
+		!this.some(predicate)
+		
 	// Return a list that contains the selected field or expression for each item
-	importance:4 inline js TValue[] select: TValue(
-		                           T it,  // The current item of the list
-		                           int i  // The index of the current item of the list
-		                       ) selector // Selects a field or expression for each item
+	// Example: Get a list of all player names
+	//     let playerNames = players.select.name
+	importance:4 inline js 
+	TValue[] select: TValue(
+		                 T it,  // The current item of the list
+		                 int i  // The index of the current item of the list
+		             ) selector // Selects a field or expression for each item
 		this.map(selector)
+
+	// Return a list of all items that meet a specific condition
+	// Example: Get all players with more than 0 health, ordered by their score
+	//     let healthyPlayers = (players.where.health > 0).orderBy.score
+	// Example: Get all active enemies in a random order
+	//    let activeEnemies = (enemies.where.isActive).shuffle
+	importance:4 inline js 
+	T[] where: bool(T a) condition // The condition to check
+		this.filter(condition)
 		
 	// Get the selected field or expression for each item and flattens the result
 	inline js TValue[] flatten: TValue[](T it) selector
 		this.flatMap(selector)
 		
-	// Find an item the meets the given condition
-	// Example: Find a player with a specific id
+	// Find the first item thats meets a condition
+	// Example: Find the name of the player with a specific id
 	//     app
-	//         getPlayerById: int id
-	//             return players.find.id == id
+	//         string getName: int id
+	//             return (players.find.id == id)?.name
 	importance:5 inline js T find: bool(T a) condition // The condition to check
 		this.find(condition)
 		
@@ -1285,9 +1332,6 @@ class List<T>
 			if condition(this[.])
 				return i
 		return -1
-		
-	importance:4 inline js T[] where: bool(T a) condition // The condition to check
-		this.filter(condition)
 		
 	T[] except: T item 
 		T[] result
