@@ -48,9 +48,98 @@ int b =  -1 remainder 100 // b = -1
 
 Returns int
 
+### clamp
+Clamp the value to a specific range
+
+*Example: Ensure the player's health is between 0 and 100*
+```
+Player
+    int health
+    changeHealth: int delta
+        health = (health + delta) clamp 0 to 100
+```
+
+| Parameter | Type | Description                 |
+| --------- | ---- | --------------------------- |
+| from      | int  | The inclusive minimum value |
+| to        | int  | The inclusive maximum value |
+
+Returns int
+
+### atLeast
+Make sure the value never falls below a minimum value
+
+*Example: Make sure the score is at least 0*
+```
+score = score atLeast 0
+```
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| value     | int  | Required parameter |
+
+Returns int
+
+### atMost
+Make sure the value never exceets a maximum value
+
+*Example: Make sure the percentage is at most 100*
+```
+percentage = percentage atMost 100
+```
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| value     | int  | Required parameter |
+
+Returns int
+
+### format
+Format the integer as a string
+
+*Example: Format the integer as a string with the given minimum number of digits*
+```
+int number = 7
+print number.format(minIntegerDigits:3)
+```
+
+*Output:*
+```
+007
+```
+
+| Parameter        | Type | Description                                                                                                                                      |
+| ---------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| minIntegerDigits | int  | A value with a smaller number of integer digits than this number will be left-padded with zeros to the specified length, optional, defaults to 1 |
+| grouping         | bool | Whether to use grouping separators, such as thousands separators, optional, defaults to false                                                    |
+
+Returns string
+
+### toString
+Returns string
+
 ---
 
 # float
+A number stored as a double precision 64-bit floating point value
+
+
+## Static Functions
+
+### maxValue
+The largest possible floating point value
+
+Returns float
+
+### minValue
+The smallest possible floating point value
+
+Returns float
+
+### infinity
+Positiv infinity
+
+Returns float
 
 ## Member Functions
 
@@ -108,9 +197,97 @@ float b =  -0.5 mod bufferSize // b = -0.5
 
 Returns float
 
+### clamp
+Clamp the value to a specific range
+
+*Example: Ensure the player's health is between 0 and 100*
+```
+Player
+    float health
+    changeHealth: float delta
+        health = (health + delta) clamp 0 to 100
+```
+
+| Parameter | Type  | Description                 |
+| --------- | ----- | --------------------------- |
+| from      | float | The inclusive minimum value |
+| to        | float | The inclusive maximum value |
+
+Returns float
+
+### atLeast
+Make sure the value never falls below a minimum value
+
+*Example: Make sure the score is at least 0*
+```
+score = score atLeast 0
+```
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | Required parameter |
+
+Returns float
+
+### atMost
+Make sure the value never exceets a maximum value
+
+*Example: Make sure the percentage is at most 100*
+```
+percentage = percentage atMost 100
+```
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| value     | float | Required parameter |
+
+Returns float
+
+### format
+| Parameter        | Type | Description                           |
+| ---------------- | ---- | ------------------------------------- |
+| fractionDigits   | int  | Required parameter                    |
+| minIntegerDigits | int  | Optional parameter, defaults to 1     |
+| grouping         | bool | Optional parameter, defaults to false |
+
+Returns string
+
+### sign
+Returns -1, 0, or 1 depending on the sign of the value
+
+Returns float
+
+### ceil
+Returns the smallest integer greater than or equal to the given value
+
+Returns int
+
+### floor
+Returns the largest integer less than or equal to the given value
+
+Returns int
+
+### round
+Returns the given value rounded to the nearest integer
+
+Returns int
+
+### isApproximately
+| Parameter | Type  | Description                             |
+| --------- | ----- | --------------------------------------- |
+| value     | float | Required parameter                      |
+| epsilon   | float | Optional parameter, defaults to 0.00001 |
+
+Returns bool
+
+### toString
+Returns string
+
 ---
 
 # string
+A sequence of characters
+
 
 ## Member Functions
 
@@ -130,19 +307,45 @@ Returns a string with each character converted to lowercase
 Returns string
 
 ### toInt
+Returns the string converted to an integer. Use int.isValidNumber to check if the conversion was successful.
+
+*Example:*
+```
+app
+    convertStringToNumber: string str
+        int number = str.toInt
+        if number.isValidNumber: print "The string is a number: {number}"
+        else                     print "The string is not a number"
+```
+
 Returns int
 
 ### toFloat
-Returns int
+Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
+
+*Example:*
+```
+app
+    convertStringToNumber: string str
+        float number = str.toFloat
+        if number.isValidNumber: print "The string is a number: {number}"
+        else                     print "The string is not a number"
+```
+
+Returns float
 
 ### parseJson
+Parse the string as json
+
 Returns dynamic
 
 ### parseYaml
+Parse the string as yaml
+
 Returns dynamic
 
 ### split
-Splits the string at the given character into a list of substrings
+Splits the string at the given character into a list of substrings#
 
 | Parameter | Type   | Description                                                      |
 | --------- | ------ | ---------------------------------------------------------------- |
@@ -202,6 +405,8 @@ Returns int
 Returns bool
 
 ### isEmail
+Return true if the string is a valid email address
+
 Returns bool
 
 ### substring
@@ -238,6 +443,13 @@ Replace all occurrences of a string with another string
 
 Returns string
 
+### parseInt
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| radix     | int  | Required parameter |
+
+Returns int
+
 ---
 
 # class List<T>
@@ -246,8 +458,18 @@ An array that grows and shrinks in size as needed
 
 ## Member Functions
 
+### length
+Gets the number of items in the list
+
+Returns int
+
 ### add
 Add an item to the end of the list
+
+*Example:*
+```
+players.add {name: "Player1", score: 0}
+```
 
 | Parameter | Type | Description     |
 | --------- | ---- | --------------- |
@@ -278,6 +500,22 @@ Insert an item at a given index
 | --------- | ---- | ------------------ |
 | item      | T    | The item to insert |
 | after     | T    | Required parameter |
+
+
+### ensure
+Add an item to the list if it isn't already in there
+
+| Parameter | Type | Description     |
+| --------- | ---- | --------------- |
+| item      | T    | The item to add |
+
+
+### ensure
+Add each item from a list if it isn't already in there
+
+| Parameter | Type | Description              |
+| --------- | ---- | ------------------------ |
+| items     | T[]  | The list of items to add |
 
 
 ### remove
@@ -352,21 +590,23 @@ app
 
 Returns T
 
-### ensure
-Add an item to the list if it isn't already in there
+### popFirst
+Remove the first item from the list and return it
 
-| Parameter | Type | Description     |
-| --------- | ---- | --------------- |
-| item      | T    | The item to add |
+*Example: Print and remove "Apple" from the list*
+```
+let fruits = ["Apple", "Lemon", "Orange"]
+print fruits.popFirst
+print fruits
+```
 
+*Output:*
+```
+Apple
+[Lemon, Orange]
+```
 
-### ensure
-Add each item from a list if it isn't already in there
-
-| Parameter | Type | Description              |
-| --------- | ---- | ------------------------ |
-| items     | T[]  | The list of items to add |
-
+Returns T
 
 ### contains
 Returns whether the list contains the given item
@@ -386,29 +626,6 @@ The index of an item in the list
 
 Returns int
 
-### popFirst
-Remove the first item from the list and return it
-
-*Example: Print and remove "Apple" from the list*
-```
-let fruits = ["Apple", "Lemon", "Orange"]
-print fruits.popFirst
-print fruits
-```
-
-*Output:*
-```
-Apple
-[Lemon, Orange]
-```
-
-Returns T
-
-### length
-Gets the number of items in the list
-
-Returns int
-
 ### clear
 Removes all items from the list
 
@@ -421,17 +638,14 @@ Returns T
 ### orderBy
 Sort the list by a given expression
 
+*Example: Sort all alive players by their score*
+```
+let topPlayers = (players.where.isAlive).orderBy.score
+```
+
 | Parameter  | Type       | Description                    |
 | ---------- | ---------- | ------------------------------ |
 | expression | float(T a) | First order by this expression |
-
-Returns T[]
-
-### orderBy
-| Parameter  | Type         | Description                    |
-| ---------- | ------------ | ------------------------------ |
-| expression | float(T it)  | First order by this expression |
-| thenBy     | string(T it) | Then order by this expression  |
 
 Returns T[]
 
@@ -445,14 +659,24 @@ Sort the list by a given expression
 
 Returns T[]
 
-### find
-Find an item the meets the given condition
+### orderBy
+Sort the list by a given expression
 
-*Example: Find a player with a specific id*
+| Parameter  | Type         | Description                                                    |
+| ---------- | ------------ | -------------------------------------------------------------- |
+| expression | string(T a)  | First order by this expression                                 |
+| order      | SortingOrder | Specifies if you want to sort in ascending or descending order |
+
+Returns T[]
+
+### find
+Find the first item thats meets a condition
+
+*Example: Find the name of the player with a specific id*
 ```
 app
-    getPlayerById: int id
-        return players.find.id == id
+    string getName: int id
+        return (players.find.id == id)?.name
 ```
 
 | Parameter | Type      | Description            |
@@ -462,6 +686,111 @@ app
 Returns T
 
 ### shuffle
+Returns T[]
+
+### pop
+Remove the last item from the list and return it
+
+*Example: Print and remove "Orange" from the list*
+```
+let fruits = ["Apple", "Lemon", "Orange"]
+print fruits.pop
+print fruits
+```
+
+*Output:*
+```
+Orange
+[Apple, Lemon]
+```
+
+Returns T
+
+### popAt
+Remove an item at a specific index from the list and return it
+
+*Example: Print and remove "Lemon" from the list*
+```
+let fruits = ["Apple", "Lemon", "Orange"]
+print fruits.popAt 1
+```
+
+*Output:*
+```
+Lemon
+[Apple, Orange]
+```
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| index     | int  | Required parameter |
+
+Returns T
+
+### reverse
+Reverses the order of the items of the list in place
+
+Returns T[]
+
+### any
+Returns true if the given condition is true for any item in the list
+
+*Example: Check if there are any active enemies*
+```
+if enemies.any.isActive
+```
+
+| Parameter | Type      | Description            |
+| --------- | --------- | ---------------------- |
+| predicate | bool(T a) | The condition to check |
+
+Returns bool
+
+### all
+Returns true if the given condition is true for all items in the list
+
+*Example: Check if all players are ready*
+```
+if players.all.isReady
+```
+
+| Parameter | Type      | Description            |
+| --------- | --------- | ---------------------- |
+| predicate | bool(T a) | The condition to check |
+
+Returns bool
+
+### select
+Return a list that contains the selected field or expression for each item
+
+*Example: Get a list of all player names*
+```
+let playerNames = players.select.name
+```
+
+| Parameter | Type                | Description                                 |
+| --------- | ------------------- | ------------------------------------------- |
+| selector  | TValue(T it, int i) | Selects a field or expression for each item |
+
+Returns TValue[]
+
+### where
+Return a list of all items that meet a specific condition
+
+*Example: Get all players with more than 0 health, ordered by their score*
+```
+let healthyPlayers = (players.where.health > 0).orderBy.score
+```
+
+*Example: Get all active enemies in a random order*
+```
+let activeEnemies = (enemies.where.isActive).shuffle
+```
+
+| Parameter | Type      | Description            |
+| --------- | --------- | ---------------------- |
+| condition | bool(T a) | The condition to check |
+
 Returns T[]
 
 ---
@@ -561,6 +890,8 @@ Returns string
 ---
 
 # static class math
+A collection of mathematical functions and constants
+
 
 ## Static Functions
 
@@ -1681,6 +2012,237 @@ Render a html input element in the draw function
 
 Returns HTMLElement
 
+### grid
+Render a html div element with a grid layout
+
+| Parameter           | Type    | Description                                                  |
+| ------------------- | ------- | ------------------------------------------------------------ |
+| gridTemplateColumns | float[] | The sizes of the columns                                     |
+| children            | void()  | The children of the HTML element, optional, defaults to null |
+
+Returns HTMLElement
+
+### radio
+Render a html radio buttom element in the draw function.
+The model variable you pass in will be updated when the user clicks the radio button.
+
+| Parameter | Type    | Description                                                                                   |
+| --------- | ------- | --------------------------------------------------------------------------------------------- |
+| model     | int     | The variable that holds the value. This will be updated when the user clicks the radio button |
+| value     | int     | The value of this state of the radio button                                                   |
+| image     | Image   | The image to display                                                                          |
+| data      | dynamic | The data attributes of the element, optional, defaults to null                                |
+
+
+### radio
+Render a html radio buttom element in the draw function.
+The model variable you pass in will be updated when the user clicks the radio button.
+
+| Parameter | Type    | Description                                                                                   |
+| --------- | ------- | --------------------------------------------------------------------------------------------- |
+| model     | int     | The variable that holds the value. This will be updated when the user clicks the radio button |
+| value     | int     | The value of this state of the radio button                                                   |
+| image     | Image   | The image to display                                                                          |
+| onInput   | void()  | Called when the user clicks the radio button                                                  |
+| data      | dynamic | The data attributes of the element, optional, defaults to null                                |
+
+
+### toggle
+Render a html element in the draw function that toggles between two images when the user click it.
+The model variable you pass in will be updated when the user clicks the toggle button.
+
+| Parameter | Type    | Description                                                                                    |
+| --------- | ------- | ---------------------------------------------------------------------------------------------- |
+| model     | bool    | The variable that holds the value. This will be updated when the user clicks the toggle button |
+| images    | Image[] | A list with one image per state of the toggle                                                  |
+| data      | dynamic | The data attributes of the element, optional, defaults to null                                 |
+
+
+### toggle
+Render a html element in the draw function that toggles between two images when the user click it.
+The model variable you pass in will be updated when the user clicks the toggle button.
+
+| Parameter | Type    | Description                                                                                    |
+| --------- | ------- | ---------------------------------------------------------------------------------------------- |
+| model     | bool    | The variable that holds the value. This will be updated when the user clicks the toggle button |
+| images    | Image[] | A list with one image per state of the toggle                                                  |
+| onInput   | void()  | Called when the user clicks the toggle button                                                  |
+| data      | dynamic | The data attributes of the element, optional, defaults to null                                 |
+
+
+### field
+Render a html input element in the draw function.
+The model variable you pass in will be updated automatically after every keystroke.
+
+| Parameter   | Type      | Description                                                                                                      |
+| ----------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| model       | string    | The variable that holds the value. This will be updated when the user changed the text, optional, defaults to "" |
+| placeholder | string    | The placeholder text to display in the field, optional, defaults to ""                                           |
+| type        | InputType | The type of the input field, optional, defaults to text                                                          |
+| focused     | bool      | Whether the cursor should be placed in the field, optional, defaults to false                                    |
+| data        | dynamic   | The data attributes of the element, optional, defaults to {}                                                     |
+
+
+### field
+Render a html input element in the draw function.
+The model variable you pass in will be updated automatically after every keystroke.
+
+| Parameter | Type   | Description                                                                                                      |
+| --------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| model     | string | The variable that holds the value. This will be updated when the user changed the text, optional, defaults to "" |
+| focused   | bool   | Whether the cursor should be placed in the field, optional, defaults to false                                    |
+| onEnter   | void() | Called when the user presses the enter key, optional, defaults to null                                           |
+
+
+### field
+Render a manual html input element in the draw function.
+If you specify a onChange handler, the model won't be updated automatically.
+
+| Parameter                | Type               | Description                                                                                                      |
+| ------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| text                     | string             | The variable that holds the value. This will be updated when the user changed the text, optional, defaults to "" |
+| focused                  | bool               | Whether the cursor should be placed in the field, optional, defaults to false                                    |
+| onChange                 | void(string value) | If you specify a onChange handler, the model won't be updated automatically                                      |
+| updateWithEveryKeystroke | bool               | Should onChange be called with every keystroke?, optional, defaults to true                                      |
+
+
+### editableText
+Render a html editable text element in the draw function.
+The model variable you pass in will be updated automatically.
+
+| Parameter                | Type               | Description                                                                                                      |
+| ------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| model                    | string             | The variable that holds the value. This will be updated when the user changed the text, optional, defaults to "" |
+| onChanged                | void(string value) | Called after the model changed, optional, defaults to null                                                       |
+| tabIndex                 | int                | Optional parameter, defaults to -1                                                                               |
+| data                     | dynamic            | The data attributes of the element, optional, defaults to {}                                                     |
+| updateWithEveryKeystroke | bool               | Should onChange be called with every keystroke?, optional, defaults to false                                     |
+
+
+### editableText
+Render a html editable text element in the draw function.
+The model variable you pass in will be updated automatically.
+
+| Parameter                | Type               | Description                                                                                                      |
+| ------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| model                    | string             | The variable that holds the value. This will be updated when the user changed the text, optional, defaults to "" |
+| onChanged                | void(string value) | Called after the model changed, optional, defaults to null                                                       |
+| onClick                  | void()             | Optional parameter, defaults to null                                                                             |
+| tabIndex                 | int                | Optional parameter, defaults to -1                                                                               |
+| data                     | dynamic            | The data attributes of the element, optional, defaults to {}                                                     |
+| updateWithEveryKeystroke | bool               | Should onChange be called with every keystroke?, optional, defaults to false                                     |
+
+
+### textarea
+Render a html textarea element in the draw function.
+The model variable you pass in will be updated automatically after every keystroke.
+
+| Parameter | Type   | Description                                                                                                      |
+| --------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| model     | string | The variable that holds the value. This will be updated when the user changed the text, optional, defaults to "" |
+| focused   | bool   | Whether the cursor should be placed in the field, optional, defaults to false                                    |
+
+
+### canvas
+Render a html canvas element in the draw function.
+You can draw on the canvas in an indented block of code underneath the canvas.
+
+*Example:*
+```
+app
+    draw
+        canvas size:{100,100}
+            drawRectangle pos:{0,0}, size:{100,100}, color:red
+```
+
+| Parameter | Type    | Description        |
+| --------- | ------- | ------------------ |
+| size      | Vector2 | Required parameter |
+| draw      | void()  | Required parameter |
+
+Returns HTMLElement
+
+### drawRectangle
+Draw a rectangle on the canvas in an indented block of code underneath the canvas.
+
+*Example:*
+```
+app
+    draw
+        canvas size:{100,100}
+            drawRectangle pos:{0,0}, size:{100,100}, color:red
+```
+
+| Parameter | Type    | Description                           |
+| --------- | ------- | ------------------------------------- |
+| pos       | Vector2 | Required parameter                    |
+| size      | Vector2 | Required parameter                    |
+| color     | Color   | Optional parameter, defaults to black |
+
+
+### drawText
+Draw text on the canvas in an indented block of code underneath the canvas.
+
+*Example:*
+```
+app
+    draw
+        canvas size:{100,100}
+            drawText text:"Hello, world!", pos:{0,0}, size:30, color:red
+```
+
+| Parameter | Type    | Description                           |
+| --------- | ------- | ------------------------------------- |
+| text      | string  | Required parameter                    |
+| pos       | Vector2 | Required parameter                    |
+| size      | float   | Optional parameter, defaults to 30    |
+| font      | Font    | Optional parameter, defaults to null  |
+| color     | Color   | Optional parameter, defaults to black |
+
+
+## Static Functions
+
+### fileInput
+Render a html element to upload files. The children will determine the look of the element.
+The native html input element itself is hidden.
+Clicking the any of the children will show the file selector dialog.
+
+| Parameter | Type                      | Description                                                                                                                                             |
+| --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| accept    | string                    | The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png", optional, defaults to ".jpg,.jpeg,.png,.webp"                        |
+| capture   | FileInputCaptureMode      | user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera, optional, defaults to environment |
+| multiple  | bool                      | Allow selecting and uploading multiple images at once, optional, defaults to false                                                                      |
+| children  | void()                    | Determines the look of the element, as the native html input element is hidden                                                                          |
+| onChange  | void(HTMLElement element) | Called when the user selected a file, optional, defaults to null                                                                                        |
+
+Returns HTMLElement
+
+### script
+Render a html script element
+
+| Parameter | Type    | Description                        |
+| --------- | ------- | ---------------------------------- |
+| src       | string  | Required parameter                 |
+| data      | dynamic | Optional parameter, defaults to {} |
+
+
+### css
+Render a html link element to include a css stylesheet file
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| src       | string | Required parameter |
+
+
+### style
+Render a html style element to include a css style
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| text      | string | Required parameter |
+
+Returns HTMLElement
+
 ---
 
 # static class http
@@ -1727,9 +2289,39 @@ dynamic result = await http.post "/api/saveUser", user
 
 Returns Promise<dynamic>
 
+### put
+Fetch JSON data from a url with a http PUT request. Returns a promise to the parsed JSON response.
+
+*Example:*
+```
+User user = {name:"John", age:30}
+dynamic result = await http.put "/api/saveUser", user
+```
+
+| Parameter | Type    | Description                                                                    |
+| --------- | ------- | ------------------------------------------------------------------------------ |
+| url       | string  | Required parameter                                                             |
+| body      | dynamic | The body object that will be send as a JSON string, optional, defaults to null |
+
+Returns Promise<dynamic>
+
+### delete
+Fetch JSON data from a url with a http DELETE request. Returns a promise to the parsed JSON response.
+
+*Example:*
+```
+dynamic result = await http.delete "/api/deleteUser/{user.id}"
+```
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| url       | string | Required parameter |
+
+Returns Promise<dynamic>
+
 ---
 
-# static class database
+# static class backend
 Use this static class to login and logout users from the PocketBase backend.
 You can administer the local PocketBase instance at: http://localhost:8090/_
 If you want to dive deeper into PocketBase, you can find the complete documentation at: https://pocketbase.io/docs/
@@ -1742,19 +2334,40 @@ class User
 static class app
     User user
     start
-        user = await database.getAuthenticatedUser
+        user = await backend.getAuthenticatedUser
         refresh
     login: string email, string password
-        user = await database.authWithPassword email, password
+        user = await backend.authWithPassword email, password
         refresh
     logout
-        database.logout
+        backend.logout
         user = null
         refresh
 ```
 
 
 ## Static Functions
+
+### get
+Call a http GET endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
+and automatically includes the auth token
+
+| Parameter | Type   | Description                                                               |
+| --------- | ------ | ------------------------------------------------------------------------- |
+| url       | string | Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept" |
+
+Returns Promise<dynamic>
+
+### post
+Send data to a http POST endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
+and automatically includes the auth token
+
+| Parameter | Type    | Description                                                                              |
+| --------- | ------- | ---------------------------------------------------------------------------------------- |
+| url       | string  | Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"                |
+| body      | dynamic | Object with data to send to the backend, e.g. {offerId: "nx7n98bscxomkl4", amount: 5000} |
+
+Returns Promise<dynamic>
 
 ### getAuthenticatedUser
 Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
@@ -1764,7 +2377,7 @@ Calls the PocketBase authRefresh function to get the authenticated user. Call th
 app
     User user
     start
-        user = await database.getAuthenticatedUser
+        user = await backend.getAuthenticatedUser
         refresh
 ```
 
@@ -1781,7 +2394,7 @@ app
        field model:password, type:password, placeholder:"Password"
        button text:"Login", padding:buttonPadding, color:white, backgroundColor:primaryColor
            onClick:
-               user = await database.authWithPassword email, password
+               user = await backend.authWithPassword email, password
 ```
 
 | Parameter | Type   | Description        |
@@ -1809,7 +2422,7 @@ app
        field model:user.passwordConfirm, type:password, placeholder:"Confirm Password"
        button text:"Signup", padding:buttonPadding, color:white, backgroundColor:primaryColor
            onClick:
-               await database.signupNewUser user
+               await backend.signupNewUser user
 ```
 
 | Parameter | Type    | Description                                                                     |
@@ -1826,7 +2439,7 @@ Log out the current user
 app
     User user
     logout
-        database.logout
+        backend.logout
         user = null
 ```
 
@@ -1845,7 +2458,7 @@ You can also subscribe to changes in the remote PocketBase collection to automat
 The name of the remote PocketBase collection
 
 ### T[] items
-The items you fetch from the database are stored locally in this list
+The items you fetch from the backend are stored locally in this list
 
 ## Member Functions
 
@@ -1988,6 +2601,24 @@ app
 | --------- | ------- | ------------------ |
 | item      | T       | Required parameter |
 | update    | dynamic | Required parameter |
+
+Returns Promise<void>
+
+### addFile
+| Parameter                 | Type                     | Description                           |
+| ------------------------- | ------------------------ | ------------------------------------- |
+| model                     | Reference<string[]>      | Required parameter                    |
+| files                     | File[]                   | Required parameter                    |
+| instantlyUpdateLocalFiles | bool                     | Optional parameter, defaults to false |
+| onError                   | void(File[] failedFiles) | Optional parameter, defaults to null  |
+
+Returns Promise<void>
+
+### removeFile
+| Parameter | Type                | Description        |
+| --------- | ------------------- | ------------------ |
+| model     | Reference<string[]> | Required parameter |
+| file      | string              | Required parameter |
 
 Returns Promise<void>
 
