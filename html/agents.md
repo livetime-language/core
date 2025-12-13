@@ -205,6 +205,12 @@ static class app
 		// Use math.floor after a division if you need an integer
 		int flooredInteger = math.floor(1 / 2)
 
+		// Query
+		Player[] healthyPlayers = players.where.health > 0
+		Player[] topPlayers = (players.orderBy.score).take 10
+		Player[] seniors = (users.where.age > 65).orderBy.age
+		Player[] highscoreList = (player.where.isAlive).orderBy.score
+
 		// Cast
 		string jsonString = "\{value:7\}"
 		dynamic config = json.parse(jsonString)
@@ -270,23 +276,23 @@ static class app
 		div width:"calc(100% - 16px)"
 
 static class helpers
-	// bool(Document doc) defines a function that takes a Document and returns a boolean
+	// bool(Document doc) defines a function that takes a Document as an argument and returns a boolean
 	Document[] filterDocuments: bool(Document doc) predicate
 		return app.documents.where predicate(.)
 
-	// void(Document[] documents) defines a function that takes a list of Documents and doesn't return anything
+	// void(Document[] documents) defines a function that takes a list of Documents as an argument and doesn't return anything
 	async fetchAllDocuments: void(Document[] documents) callback
 		await app.documentsDatabaseTable.fetchAll
 		callback(app.documentsDatabaseTable.items)
 
-	Document getItemByItem: string id
-		return app.documents.find.id == id
-
-	Document[] getAllDoneItems
-		return app.documents.where.state == Done
-
 	bool areAllItemsDone
 		return app.documents.all.state == Done
+
+	Document getName: string id
+		return (app.documents.find.id == id).id
+
+	Document[] getAllDoneItems
+		return (app.documents.where.state == Done).orderBy.created
 
 # Images
 Place images in the folder "assets/pb_public/media". 
