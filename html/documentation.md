@@ -121,8 +121,6 @@ Returns string
 ---
 
 # float
-A number stored as a double precision 64-bit floating point value
-
 
 ## Static Functions
 
@@ -286,8 +284,6 @@ Returns string
 ---
 
 # string
-A sequence of characters
-
 
 ## Member Functions
 
@@ -890,8 +886,6 @@ Returns string
 ---
 
 # static class math
-A collection of mathematical functions and constants
-
 
 ## Static Functions
 
@@ -2553,26 +2547,27 @@ app
             div item.name
 ```
 
-| Parameter | Type   | Description                          |
-| --------- | ------ | ------------------------------------ |
-| filter    | string | Optional parameter, defaults to null |
-| sort      | string | Optional parameter, defaults to null |
-| fields    | string | Optional parameter, defaults to null |
-| expand    | string | Optional parameter, defaults to null |
-| page      | int    | Optional parameter, defaults to 1    |
-| perPage   | int    | Optional parameter, defaults to 1000 |
-| skipTotal | bool   | Optional parameter, defaults to true |
+| Parameter | Type   | Description                                                                                              |
+| --------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| filter    | string | The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true", optional, defaults to null |
+| sort      | string | The PocketBase sort string, e.g. "-created", optional, defaults to null                                  |
+| fields    | string | A comma separated list of fields to fetch, e.g. "name,active,created", optional, defaults to null        |
+| expand    | string | Optional parameter, defaults to null                                                                     |
+| page      | int    | Optional parameter, defaults to 1                                                                        |
+| perPage   | int    | Optional parameter, defaults to 1000                                                                     |
+| skipTotal | bool   | Optional parameter, defaults to true                                                                     |
 
 Returns Promise<T[]>
 
 ### fetchOne
 Fetch and return a single item from the database table
 
-| Parameter | Type   | Description                          |
-| --------- | ------ | ------------------------------------ |
-| filter    | string | Optional parameter, defaults to ""   |
-| sort      | string | Optional parameter, defaults to null |
-| expand    | string | Optional parameter, defaults to null |
+| Parameter | Type   | Description                                                                                       |
+| --------- | ------ | ------------------------------------------------------------------------------------------------- |
+| filter    | string | The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"                      |
+| sort      | string | The PocketBase sort string, e.g. "-created", optional, defaults to null                           |
+| fields    | string | A comma separated list of fields to fetch, e.g. "name,active,created", optional, defaults to null |
+| expand    | string | Optional parameter, defaults to null                                                              |
 
 Returns Promise<T>
 

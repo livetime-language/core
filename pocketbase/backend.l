@@ -230,9 +230,9 @@ DatabaseTable<T>
 	//             for items as item
 	//                 div item.name
 	importance:5 
-	async T[] fetch: string filter = null
-		             string sort = null
-					 string fields = null
+	async T[] fetch: string filter = null // The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
+		             string sort = null   // The PocketBase sort string, e.g. "-created"
+					 string fields = null // A comma separated list of fields to fetch, e.g. "name,active,created"
 		             string expand = null
 		             int page = 1
 		             int perPage = 1000
@@ -243,17 +243,17 @@ DatabaseTable<T>
 		return items
 		
 	// Fetch and return a single item from the database table
-	importance:5 async
-	T fetchOne: string filter = ""
-		              string sort = null
-		              string expand = null
-		let result = await backend.pb.collection(this.name).getList(1, 1, {filter, sort, expand, skipTotal:true})
-		return result.items[0]
+	importance:5 async inline js
+	T fetchOne: string filter          // The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
+		        string sort = null     // The PocketBase sort string, e.g. "-created"
+		        string fields = null   // A comma separated list of fields to fetch, e.g. "name,active,created"
+		        string expand = null
+		backend.pb.collection(this.name).getFirstListItem(filter, {@fields:fields, @sort:sort, @expand:expand, skipTotal:true})
 		
 	// Fetch and return a single item from the database by id
-	importance:5 async
+	importance:5 async inline js
 	T fetchById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
-		return backend.pb.collection(this.name).getOne(id)
+		backend.pb.collection(this.name).getOne(id)
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
