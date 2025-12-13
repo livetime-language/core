@@ -48,7 +48,7 @@ transient skipInit static class backend
 	importance:5 inline js async 
 	dynamic post: string url   // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
 	              dynamic body // Object with data to send to the backend, e.g. {offerId: "nx7n98bscxomkl4", amount: 5000}
-		backend.pb.send(url, {method:"POST", body:body})
+		backend.pb.send(url, {method:"POST", @body:body})
 		
 	// Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
 	// Example:
