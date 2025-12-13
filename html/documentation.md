@@ -454,11 +454,6 @@ An array that grows and shrinks in size as needed
 
 ## Member Functions
 
-### length
-Gets the number of items in the list
-
-Returns int
-
 ### add
 Add an item to the end of the list
 
@@ -586,6 +581,10 @@ app
 
 Returns T
 
+### clear
+Removes all items from the list
+
+
 ### popFirst
 Remove the first item from the list and return it
 
@@ -604,6 +603,20 @@ Apple
 
 Returns T
 
+### length
+Gets the number of items in the list
+
+Returns int
+
+### setLength
+Truncated or expands the list the given number of items
+
+| Parameter | Type | Description                |
+| --------- | ---- | -------------------------- |
+| length    | int  | The new length of the list |
+
+Returns int
+
 ### contains
 Returns whether the list contains the given item
 
@@ -612,19 +625,6 @@ Returns whether the list contains the given item
 | item      | T    | Check if the list contains this item |
 
 Returns bool
-
-### indexOf
-The index of an item in the list
-
-| Parameter | Type | Description                |
-| --------- | ---- | -------------------------- |
-| item      | T    | Get the index of this item |
-
-Returns int
-
-### clear
-Removes all items from the list
-
 
 ### random
 Gets a random item from the list
@@ -636,7 +636,7 @@ Sort the list by a given expression
 
 *Example: Sort all alive players by their score*
 ```
-let topPlayers = (players.where.isAlive).orderBy.score
+let topPlayers = (players.where.isAlive).orderBy.score direction:Descending
 ```
 
 | Parameter  | Type       | Description                    |
@@ -651,7 +651,7 @@ Sort the list by a given expression
 | Parameter  | Type         | Description                                                    |
 | ---------- | ------------ | -------------------------------------------------------------- |
 | expression | float(T a)   | First order by this expression                                 |
-| order      | SortingOrder | Specifies if you want to sort in ascending or descending order |
+| direction  | SortingOrder | Specifies if you want to sort in ascending or descending order |
 
 Returns T[]
 
@@ -661,7 +661,7 @@ Sort the list by a given expression
 | Parameter  | Type         | Description                                                    |
 | ---------- | ------------ | -------------------------------------------------------------- |
 | expression | string(T a)  | First order by this expression                                 |
-| order      | SortingOrder | Specifies if you want to sort in ascending or descending order |
+| direction  | SortingOrder | Specifies if you want to sort in ascending or descending order |
 
 Returns T[]
 
@@ -680,6 +680,15 @@ app
 | condition | bool(T a) | The condition to check |
 
 Returns T
+
+### indexOf
+The index of an item in the list
+
+| Parameter | Type | Description                |
+| --------- | ---- | -------------------------- |
+| item      | T    | Get the index of this item |
+
+Returns int
 
 ### shuffle
 Returns T[]
@@ -725,6 +734,11 @@ Returns T
 
 ### reverse
 Reverses the order of the items of the list in place
+
+Returns T[]
+
+### distinct
+Return a list with all unique items of the original list
 
 Returns T[]
 
@@ -775,7 +789,7 @@ Return a list of all items that meet a specific condition
 
 *Example: Get all players with more than 0 health, ordered by their score*
 ```
-let healthyPlayers = (players.where.health > 0).orderBy.score
+let healthyPlayers = (players.where.health > 0).orderBy.score direction:Descending
 ```
 
 *Example: Get all active enemies in a random order*

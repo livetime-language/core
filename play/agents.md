@@ -391,7 +391,7 @@ app
 		Player[] theLastThreePlayers = players[-3..]
 		
 		// We can order a list like this
-		Player[] playersOrderedByScore = players.orderBy.score
+		Player[] playersOrderedByScore = players.orderBy.score direction:Descending
 
 		// If you need a IntVector2, you need to declare the type, otherwise you will get a IntVector2
 		IntVector2 originGridPos = {0,0}
@@ -437,7 +437,7 @@ app
 		
 		Player[] lastFourPlayers = players[-4..]
 		
-		Player[] top3Players = players.orderBy.score | take 3
+		Player[] top3Players = players.orderBy.score direction:Descending | take 3
 
 		// Does any player have a score of 10?
 		// "any" require an argument, don't make the mistake of writing just "players.any"

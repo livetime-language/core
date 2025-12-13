@@ -722,9 +722,6 @@ enum EachDistinctSortBy: DoNotSort = 0, SortByInteger = 1, SortByString = 2
 // An array that grows and shrinks in size as needed
 js Array
 class List<T>
-	// Gets the number of items in the list
-	importance:5 inline js int length() this.length
-	
 	// ------------------------------------------- Add -------------------------------------------
 
 	// Add an item to the end of the list
@@ -897,6 +894,9 @@ class List<T>
 				return .
 		return null
 	
+	// Removes all items from the list
+	importance:5 inline js void clear := this.length = 0
+	
 	// ------------------------------------------- Pop -------------------------------------------
 		
 	// Remove the last item from the list and return it
@@ -952,6 +952,15 @@ class List<T>
 	importance:5 inline js T popFirst
 		this.shift()
 
+	// ------------------------------------------- Length -------------------------------------------
+
+	// Gets the number of items in the list
+	importance:5 inline js int length() this.length
+
+	// Truncated or expands the list the given number of items
+	importance:5 js int setLength: int length // The new length of the list
+		this.length = length
+
 	// -------------------------------------------- Iterate -------------------------------------------
 				
 	// Do something for each item in a list
@@ -999,12 +1008,9 @@ class List<T>
 				do(key, items, index++)
 			}
 		}
-					
-	js void toggle: T item // The item to add
-		let index = this.indexOf(item)
-		if(index != -1) this.splice(index, 1)
-		else            this.push(item)
-		
+
+	// ------------------------------------------- Contains -------------------------------------------
+
 	// Returns whether the list contains the given item
 	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
 		(typeof(item) == "object" && item.equal ? this.some(a => item.equal(a)) : this.includes(item))
@@ -1020,12 +1026,9 @@ class List<T>
 			if this contains .
 				return false
 		return true
-		
-	// The index of an item in the list
-	importance:5 inline js
-	int indexOf: ensureSingleExecution T item // Get the index of this item
-		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
-		
+
+	// ------------------------------------------- SetList -------------------------------------------
+					
 	inline js void setList: T[] list
 		this.splice(0, this.length, ...list)
 		
@@ -1044,16 +1047,14 @@ class List<T>
 				add .
 				if ++count >= maxCount: break
 			
-	// Truncated or expands the list the given number of items
-	js int setLength: int length // The new length of the list
-		this.length = length
-	
-	// Removes all items from the list
-	importance:5 inline js void clear := this.length = 0
-	
+	// ------------------------------------------- Clone or Convert -------------------------------------------
+
 	// Create a shallow clone of the list
 	inline js T[] clone() [...this]
 	
+	// Returns true if the list is not null and not empty	
+	inline js bool toBool := (this != null && this.length != 0) 
+
 	// Create a string representation of the list
 	js string toString()
 		let result = "";
@@ -1062,6 +1063,8 @@ class List<T>
 			result += item;
 		}
 		return "["+result+"]"
+
+	// ------------------------------------------- Random -------------------------------------------
 		
 	// Gets a random item from the list
 	importance:5 T random()
@@ -1088,6 +1091,8 @@ class List<T>
 		T item = filteredList[index]
 		this.remove(item)
 		return item
+
+	// ------------------------------------------- Next/Prev -------------------------------------------
 		
 	T next: T currentItem
 		int index = indexOf(currentItem)
@@ -1108,38 +1113,20 @@ class List<T>
 	T prev: T currentItem
 		int index = indexOf(currentItem)
 		return index != -1 ? this.get((index-1) mod length) : this.get(length-1)
-		
-	T pickWithinRangeOrClosest: float(T a) selector
-		                        float min = -float.infinity
-		                        float max = float.infinity
-		float closestDistance = float.infinity
-		int closestIndex = -1
-		T closestItem = null
-		for this
-			let value = selector(.)
-			float distance
-			if value > max: distance = value - max; else
-			if value < min: distance = min - value; else
-				            this.removeAt(i); return .
-				
-			if distance < closestDistance
-				closestDistance = distance
-				closestIndex = i
-				closestItem = .
-		
-		if(closestIndex != -1) this.removeAt(closestIndex)
-		return closestItem
+
+	// ------------------------------------------- Transform -------------------------------------------
 			
-	// Returns true if the list is not null and not empty	
-	inline js bool toBool := (this != null && this.length != 0) 
-	
 	// Reverses the order of the items of the list in place
 	importance:4 inline js T[] reverse() this.reverse()
-		
-	inline js T[] reversed() [...this].reverse()
-		
+				
 	// Return a list with all unique items of the original list
-	inline js T[] distinct() [...new Set(this)]
+	importance:4 inline js T[] distinct() [...new Set(this)]
+
+	// Get the selected field or expression for each item and flattens the result
+	inline js TValue[] flatten: TValue[](T it) selector
+		this.flatMap(selector)
+
+	// -------------------------------------------- Move items -------------------------------------------
 	
 	// Moves an item to the end of the list
 	importance:3 js void moveToBack: T item // The item to move to the end of the list
@@ -1173,7 +1160,7 @@ class List<T>
 	
 	// Sort the list by a given expression
 	// Example: Sort all alive players by their score
-	//    let topPlayers = (players.where.isAlive).orderBy.score
+	//    let topPlayers = (players.where.isAlive).orderBy.score direction:Descending
 	importance:5
 	T[] orderBy: float(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
@@ -1199,15 +1186,15 @@ class List<T>
 		
 	// Sort the list by a given expression
 	importance:5 T[] orderBy: float(T a) expression // First order by this expression
-		                      SortingOrder order    // Specifies if you want to sort in ascending or descending order
-		if order == Ascending: return this.sort(expression(a) - expression(b))
-		else                   return this.sort(expression(b) - expression(a))
+		                      SortingOrder direction    // Specifies if you want to sort in ascending or descending order
+		if direction == Ascending: return this.sort(expression(a) - expression(b))
+		else                       return this.sort(expression(b) - expression(a))
 				
 	// Sort the list by a given expression
 	importance:5 T[] orderBy: string(T a) expression // First order by this expression
-		                      SortingOrder order    // Specifies if you want to sort in ascending or descending order
-		if order == Ascending: return this.sort(expression(a) compareTo expression(b))
-		else                   return this.sort(expression(b) compareTo expression(a))
+		                      SortingOrder direction    // Specifies if you want to sort in ascending or descending order
+		if direction == Ascending: return this.sort(expression(a) compareTo expression(b))
+		else                       return this.sort(expression(b) compareTo expression(a))
 
 	// ------------------------------------------- Query -------------------------------------------
 				
@@ -1244,16 +1231,20 @@ class List<T>
 
 	// Return a list of all items that meet a specific condition
 	// Example: Get all players with more than 0 health, ordered by their score
-	//     let healthyPlayers = (players.where.health > 0).orderBy.score
+	//     let healthyPlayers = (players.where.health > 0).orderBy.score direction:Descending
 	// Example: Get all active enemies in a random order
 	//    let activeEnemies = (enemies.where.isActive).shuffle
 	importance:4 inline js 
 	T[] where: bool(T a) condition // The condition to check
 		this.filter(condition)
+
+	// Return a list containing the first N items from the list
+	// Example: Get the top 3 players by score
+	//     let topPlayers = (players.orderBy.score direction:Descending).take 3
+	importance:3 inline js T[] take: int count
+		this.slice(0, count)
 		
-	// Get the selected field or expression for each item and flattens the result
-	inline js TValue[] flatten: TValue[](T it) selector
-		this.flatMap(selector)
+	// ------------------------------------------- Find -------------------------------------------
 		
 	// Find the first item thats meets a condition
 	// Example: Find the name of the player with a specific id
@@ -1300,18 +1291,38 @@ class List<T>
 			let value = selector(it)
 			if value != null: return value
 		return null
+
+	T findWithinRangeOrClosest: float(T a) selector
+		                        float min = -float.infinity
+		                        float max = float.infinity
+		float closestDistance = float.infinity
+		int closestIndex = -1
+		T closestItem = null
+		for this
+			let value = selector(.)
+			float distance
+			if value > max: distance = value - max; else
+			if value < min: distance = min - value; else
+				            this.removeAt(i); return .
+				
+			if distance < closestDistance
+				closestDistance = distance
+				closestIndex = i
+				closestItem = .
 		
-	// Does the list have an item that meets the given condition?
-	bool has: bool(T a) condition // The condition to check
-		      int startIndex = 0  // Start searching at this index
-		for startIndex to length
-			if condition(this[.])
-				return true
-		return false
+		if(closestIndex != -1) this.removeAt(closestIndex)
+		return closestItem
+
+	// ------------------------------------------- Index Of -------------------------------------------
+		
+	// The index of an item in the list
+	importance:5 inline js
+	int indexOf: ensureSingleExecution T item // Get the index of this item
+		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
 		
 	// Find the index of the item the meets the given condition
 	importance:3 int indexWhere: bool(T a) condition // The condition to check
-		            int startIndex = 0  // Start searching at this index
+		                         int startIndex = 0  // Start searching at this index
 		for startIndex to length
 			if condition(this[.])
 				return i
@@ -1339,10 +1350,7 @@ class List<T>
 			if . != item
 				result.add .
 		return result
-		
-	importance:3 inline js T[] take: int count
-		this.slice(0, count)
-		
+					
 	importance:2 int total: int(T it) selector
 		let sum = 0
 		for this: sum += selector(.)
@@ -1730,6 +1738,12 @@ class List<T>
 	// Subtract 1 from an item of the list
 	inline js T decrementItem: int index // The index of the item to change
 		this[index]--
+
+	// Adds the item if it is not in the list, otherwise removes it
+	js void toggle: T item // The item to add
+		let index = this.indexOf(item)
+		if(index != -1) this.splice(index, 1)
+		else            this.push(item)
 		
 immutable ImmutableList<T>
 	T[] list
