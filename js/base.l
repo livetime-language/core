@@ -1169,6 +1169,10 @@ class List<T>
 	T[] orderBy: string(T a) expression // First order by this expression
 		return this.sort(expression(a) compareTo expression(b))
 		
+	// Sort by TimeString
+	T[] orderBy: TimeString(T a) expression // First order by this expression
+		return this.sort(string(expression(a)) compareTo string(expression(b)))
+		
 	// Sort by float then by float
 	T[] orderBy: float(T it) expression           // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
