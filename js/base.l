@@ -358,6 +358,8 @@ immutable struct float
 	// Positiv infinity
 	const importance:4 inline js
 	float infinity := Number.POSITIVE_INFINITY
+
+	const inline js float notANumber := Number.NaN 
 	
 	const inline js float epsilon := Number.EPSILON
 	
