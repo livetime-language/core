@@ -416,16 +416,16 @@ transient skipInit global unit graphics
 	//             drawImage Idle, position:{0,0}, size:32, frame:0, visibleFor:me
 	// Image: drawImage0.png
 		
-	global js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
-		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                      implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                      implicit Player[] visibleFor = null // Only this player or list of players will see the image
-		                      implicit frame = 0                  // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = 0                  // Higher layers are drawn in front of lower layers
-		                      alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
-		                      Color color = White                 // Tint the image with this color
-		                      HorizontalAlignment align = Center  // The horizontal alignment of the image
-		                      VerticalAlignment valign = Middle   // The vertical alignment of the image
+	global js void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                      Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                      implicit layer = 0	// Higher layers are drawn in front of lower layers
+		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                      Color color = White	// Tint the image with this color
+		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
+		                      VerticalAlignment valign = Middle	// The vertical alignment of the image
 		                      SourceCodeLocation location
 		if(!image?.texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
