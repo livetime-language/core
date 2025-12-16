@@ -718,7 +718,6 @@ immutable class string
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum SortingOrder: Ascending, Descending
 enum EachDistinctSortBy: DoNotSort = 0, SortByInteger = 1, SortByString = 2
 	
 // An array that grows and shrinks in size as needed
@@ -1161,19 +1160,34 @@ class List<T>
 		this.sort(comparer)
 	
 	// Sort the list by a given expression
-	// Example: Sort all alive players by their score
-	//    let topPlayers = (players.where.isAlive).orderBy.score direction:Descending
+	// Example:
+	//    let healthyPlayers = (players.where.health > 0).orderBy.health
 	importance:5
 	T[] orderBy: float(T a) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
-		
+
+	// Sort the list by a given expression in descending order
+	// Example:
+	//    let bestPlayers = (players.where.isAlive).orderByDescending.score
+	importance:5
+	T[] orderByDescending: float(T a) expression // First order by this expression
+		return this.sort(expression(b) - expression(a))
+
 	// Sort by string
 	T[] orderBy: string(T a) expression // First order by this expression
 		return this.sort(expression(a) compareTo expression(b))
 		
-	// Sort by TimeString
+	// Sort by string in descending order
+	T[] orderByDescending: string(T a) expression // First order by this expression
+		return this.sort(expression(b) compareTo expression(a))
+		
+	// Order by TimeString
 	T[] orderBy: TimeString(T a) expression // First order by this expression
 		return this.sort(string(expression(a)) compareTo string(expression(b)))
+		
+	// Order by TimeString in descending order
+	T[] orderByDescending: TimeString(T a) expression // First order by this expression
+		return this.sort(string(expression(b)) compareTo string(expression(a)))
 		
 	// Sort by float then by float
 	T[] orderBy: float(T it) expression           // First order by this expression
@@ -1189,18 +1203,6 @@ class List<T>
 	T[] orderBy: string(T it) expression          // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) compareTo expression(b) || thenBy(a) - thenBy(b))
-		
-	// Sort the list by a given expression
-	importance:5 T[] orderBy: float(T a) expression // First order by this expression
-		                      SortingOrder direction    // Specifies if you want to sort in ascending or descending order
-		if direction == Ascending: return this.sort(expression(a) - expression(b))
-		else                       return this.sort(expression(b) - expression(a))
-				
-	// Sort the list by a given expression
-	importance:5 T[] orderBy: string(T a) expression // First order by this expression
-		                      SortingOrder direction    // Specifies if you want to sort in ascending or descending order
-		if direction == Ascending: return this.sort(expression(a) compareTo expression(b))
-		else                       return this.sort(expression(b) compareTo expression(a))
 
 	// ------------------------------------------- Query -------------------------------------------
 				
@@ -1237,7 +1239,7 @@ class List<T>
 
 	// Return a list of all items that meet a specific condition
 	// Example: Get all players with more than 0 health, ordered by their score
-	//     let healthyPlayers = (players.where.health > 0).orderBy.score direction:Descending
+	//     let healthyPlayers = (players.where.health > 0).orderByDescending.score
 	// Example: Get all active enemies in a random order
 	//    let activeEnemies = (enemies.where.isActive).shuffle
 	importance:4 inline js 
@@ -1246,8 +1248,8 @@ class List<T>
 
 	// Return a list containing the first N items from the list
 	// Example: Get the top 3 players by score
-	//     let topPlayers = (players.orderBy.score direction:Descending).take 3
-	importance:3 inline js T[] take: int count
+	//     let youngestPlayers = (players.orderBy.age).take 3
+	importance:4 inline js T[] take: int count
 		this.slice(0, count)
 		
 	// ------------------------------------------- Find -------------------------------------------

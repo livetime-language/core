@@ -242,7 +242,7 @@ app
 			print "No defence player"
 		
 		// Order players by score
-		players.orderBy.score order:Descending
+		players.orderByDescending.score
 
 // Always put classes, structs and enums outside of classes. You can't put them inside a class like "app".
 enum Role: Offence, Defence
@@ -391,7 +391,7 @@ app
 		Player[] theLastThreePlayers = players[-3..]
 		
 		// We can order a list like this
-		Player[] playersOrderedByScore = players.orderBy.score direction:Descending
+		Player[] playersOrderedByScore = players.orderByDescending.score
 
 		// If you need a IntVector2, you need to declare the type, otherwise you will get a IntVector2
 		IntVector2 originGridPos = {0,0}
@@ -437,7 +437,7 @@ app
 		
 		Player[] lastFourPlayers = players[-4..]
 		
-		Player[] top3Players = players.orderBy.score direction:Descending | take 3
+		Player[] top3Players = players.orderByDescending.score | take 3
 
 		// Does any player have a score of 10?
 		// "any" require an argument, don't make the mistake of writing just "players.any"

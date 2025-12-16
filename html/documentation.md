@@ -634,9 +634,9 @@ Returns T
 ### orderBy
 Sort the list by a given expression
 
-*Example: Sort all alive players by their score*
+*Example:*
 ```
-let topPlayers = (players.where.isAlive).orderBy.score direction:Descending
+let healthyPlayers = (players.where.health > 0).orderBy.health
 ```
 
 | Parameter  | Type       | Description                    |
@@ -645,23 +645,17 @@ let topPlayers = (players.where.isAlive).orderBy.score direction:Descending
 
 Returns T[]
 
-### orderBy
-Sort the list by a given expression
+### orderByDescending
+Sort the list by a given expression in descending order
 
-| Parameter  | Type         | Description                                                    |
-| ---------- | ------------ | -------------------------------------------------------------- |
-| expression | float(T a)   | First order by this expression                                 |
-| direction  | SortingOrder | Specifies if you want to sort in ascending or descending order |
+*Example:*
+```
+let bestPlayers = (players.where.isAlive).orderByDescending.score
+```
 
-Returns T[]
-
-### orderBy
-Sort the list by a given expression
-
-| Parameter  | Type         | Description                                                    |
-| ---------- | ------------ | -------------------------------------------------------------- |
-| expression | string(T a)  | First order by this expression                                 |
-| direction  | SortingOrder | Specifies if you want to sort in ascending or descending order |
+| Parameter  | Type       | Description                    |
+| ---------- | ---------- | ------------------------------ |
+| expression | float(T a) | First order by this expression |
 
 Returns T[]
 
@@ -789,7 +783,7 @@ Return a list of all items that meet a specific condition
 
 *Example: Get all players with more than 0 health, ordered by their score*
 ```
-let healthyPlayers = (players.where.health > 0).orderBy.score direction:Descending
+let healthyPlayers = (players.where.health > 0).orderByDescending.score
 ```
 
 *Example: Get all active enemies in a random order*
@@ -800,6 +794,20 @@ let activeEnemies = (enemies.where.isActive).shuffle
 | Parameter | Type      | Description            |
 | --------- | --------- | ---------------------- |
 | condition | bool(T a) | The condition to check |
+
+Returns T[]
+
+### take
+Return a list containing the first N items from the list
+
+*Example: Get the top 3 players by score*
+```
+let youngestPlayers = (players.orderBy.age).take 3
+```
+
+| Parameter | Type | Description        |
+| --------- | ---- | ------------------ |
+| count     | int  | Required parameter |
 
 Returns T[]
 

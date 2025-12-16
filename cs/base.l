@@ -321,8 +321,6 @@ struct Array
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum SortingOrder: Ascending, Descending
-	
 // A data container that grows in size as needed
 cs System.Collections.Generic List
 class List<T>
@@ -591,12 +589,6 @@ class List<T>
 		
 	// T[] orderBy: string(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) compareTo expression(b))
-		
-	// // Sort the list by a given expression
-	// T[] orderBy: float(T a) expression // First order by this expression
-	// 	         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-	// 	if order == Ascending: return this.sort(expression(a) - expression(b))
-	// 	else                   return this.sort(expression(b) - expression(a))
 		
 	// Returns true if the given condition is true for any item in the list
 	inline cs(System.Linq) bool any: bool(T a) predicate // The condition to check

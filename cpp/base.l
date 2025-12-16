@@ -429,8 +429,6 @@ immutable struct string
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum SortingOrder: Ascending, Descending
-	
 // A data container that grows in size as needed
 cpp vector, std::vector
 struct List<T>
@@ -791,20 +789,7 @@ struct List<T>
 	// Sort the list by a given expression
 	inline cpp(algorithm) void orderBy: float(T a) expression // First order by this expression
 		std::stable_sort(this.begin(), this.end(), [=](auto a, auto b) { return expression(a) < expression(b); });
-		
-	// T[] orderBy: float(T it) expression           // First order by this expression
-	// 	         label nocolon float(T it) thenBy // Then order by this expression
-	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
-		
-	// T[] orderBy: string(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) compareTo expression(b))
-		
-	// // Sort the list by a given expression
-	// T[] orderBy: float(T a) expression // First order by this expression
-	// 	         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-	// 	if order == Ascending: return this.sort(expression(a) - expression(b))
-	// 	else                   return this.sort(expression(b) - expression(a))
-		
+				
 	// Returns true if the given condition is true for any item in the list
 	inline cpp bool any: bool(T a) predicate // The condition to check
 		std::any_of(this.begin(), this.end(), predicate)

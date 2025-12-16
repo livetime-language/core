@@ -208,9 +208,9 @@ static class app
 
 		// Query
 		Player[] healthyPlayers = players.where.health > 0
-		Player[] topPlayers = (players.orderBy.score direction:Descending).take 10
+		Player[] top10Players = (players.orderByDescending.score).take 10
 		Player[] seniors = (users.where.age > 65).orderBy.age
-		Player[] highscoreList = (player.where.isAlive).orderBy.score direction:Descending
+		Player[] highscoreList = (player.where.isAlive).orderByDescending.score
 
 		// Cast
 		string jsonString = "\{value:7\}"
