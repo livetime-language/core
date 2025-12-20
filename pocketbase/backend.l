@@ -411,7 +411,7 @@ DatabaseTable<T>
 		html.refresh();
 		await backend.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
 
-	private js Promise<string> getDataUrlForFile: File file
+	static js Promise<string> getDataUrlForFile: File file
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 			reader.onload = e => resolve(e.target.result);
