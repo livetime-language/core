@@ -128,6 +128,48 @@ global static class html
 		element.hasChildren = children != null
 		currentNode = nextNode
 		return element
+
+	// Adds a css style rule
+	// Example:
+	//    app
+	//        draw
+	//            html.style "h1" color:primaryColor
+	importance:4
+	global js void style: string selector
+	                      expand Style style
+		let rule = selector + " { "
+		for(let key in style) {
+			rule += html.camelToKebabCase(key) + ": " + style[key].toString() + "; ";
+		}
+		rule += " }";
+		html.currentStyleSheet.insertRule(rule);
+
+	// Adds a css style rule string
+	// Example:
+	//    app
+	//        draw
+	//            html.style "h1", "color:primaryColor"
+	importance:1
+	global js void style: string selector
+	                      string ruleString
+		html.currentStyleSheet.insertRule(selector + " { " + ruleString + " }");
+
+	// Convert a camelCase string to a kebab-case string, for example "backgroundColor" becomes "background-color"
+	string camelToKebabCase(string str)
+		let result = ""
+		for str as char
+			if char >= "A" and char <= "Z"
+				if result.length > 0: result += "-"
+				result += char.toLowerCase()
+			else
+				result += char
+		return result
+
+	// Close all open details elements on the page
+	js void closeDetails
+		document.querySelectorAll("details[open]").forEach((detail) => {
+			detail.removeAttribute("open");
+		});
 	
 	// Render an image html element within the draw function. 
 	// Place an image in the folder "assets/pb_public/media" and it will automatically show up in the auto completions (without the file extension).
@@ -273,12 +315,12 @@ global static class html
 	// Render a html anchor element to link to a url
 	importance:5
 	global link: string text = null
-		         string href = "#"
+		         string to = "#"
 		         expand Attributes attributes = {} // The attributes of the HTML element
 		         expand Style style = null         // The css style of the HTML element
 		         SourceCodeLocation location
 		let element = div text, tag:"a", attributes, style, location
-		element.href = href
+		element.href = to
 		return element
 
 	// Render a html span element to display text
@@ -613,7 +655,7 @@ global static class html
 				parseInline text.substring(0, linkStart)
 				let url = text.substring(textEnd + 2, urlEnd)
 				let label = text.substring(linkStart + 1, textEnd)
-				link label, href:url, textDecoration:underline
+				link label, to:url, textDecoration:underline
 				parseInline text.substring(urlEnd + 1)
 				return
 
@@ -654,9 +696,6 @@ global static class html
 		element.rel = "stylesheet" 
 		if !element.href.endsWith(src): element.href = Platform.basePath + src
 		
-	// Render a html style element to include a css style
-	importance:4 style: string text
-		return div tag:"style" text
 		
 	// Render a html video element to display a video
 	video: string src                        // The file of the video to display 

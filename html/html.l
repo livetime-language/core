@@ -355,6 +355,7 @@ global priority low skipInit static class html
 	private HTMLElement parentNode
 	private HTMLElement currentNode
 	private HTMLElement currentOverlay
+	private dynamic currentStyleSheet
 
 	// Call refresh to re-render the html after you changed any data.
 	// Example:
@@ -364,6 +365,7 @@ global priority low skipInit static class html
 	//             button "You clicked this button {counter} times", onClick:counter++; refresh
 	global void refresh
 		Platform.resetStateIndex
+		currentStyleSheet.replaceSync("")
 		nodesCreated = nodesUpdated = 0
 		parentNode = documentBody
 		currentNode = parentNode.firstChild
@@ -397,6 +399,7 @@ global priority low skipInit static class html
 	
 	init
 		initHandlers
+		initStyleSheet
 		initGlobalEventHandlers
 	
 	private js void initHandlers
@@ -404,6 +407,10 @@ global priority low skipInit static class html
 			html.resize();
 			html.refresh();
 		}
+
+	private js void initStyleSheet
+		this.currentStyleSheet = new CSSStyleSheet()
+		document.adoptedStyleSheets = [...document.adoptedStyleSheets, this.currentStyleSheet]
 
 	internal js void reset
 		while(document.body.nextSibling) 
@@ -444,7 +451,7 @@ global priority low skipInit static class html
 			Platform.scale = Platform.isDebug ? Platform.debugScale : 1
 			body.style.zoom = Platform.scale
 		}
-		body.style = "background-color: white; color: black; font:12px OpenSans"
+		body.style = "background-color: white; color: black; font:14px/1.8 OpenSans"
 		body.className = Platform.isMobile ? "mobile" : ""
 		body.style.touchAction = "none"
 		body.style.overflow = html.overflow
