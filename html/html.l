@@ -451,7 +451,7 @@ global priority low skipInit static class html
 			Platform.scale = Platform.isDebug ? Platform.debugScale : 1
 			body.style.zoom = Platform.scale
 		}
-		body.style = "background-color: white; color: black; font:14px/1.8 OpenSans"
+		body.style = "background-color: white; color: black; font:16px/2 OpenSans"
 		body.className = Platform.isMobile ? "mobile" : ""
 		body.style.touchAction = "none"
 		body.style.overflow = html.overflow
