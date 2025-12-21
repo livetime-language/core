@@ -381,10 +381,22 @@ class Color
 		   int alpha = 255
 		this.colorString = "#" + componentToHex(red) + componentToHex(green) + componentToHex(blue) + componentToHex(alpha)
 			
-	global static Color hsl: float hue
-		                            float saturation
-		                            float lightness
-		return new Color(colorString:"hsl(" + hue + ", " + saturation + "%, " + lightness + "%)")
+	// Creates a color from an hue and a saturation and lightness percentage
+	// Example:
+	//     const primaryColor = Color.hsl(34, 95%, 55%)
+	static Color hsl: float hue            // A value between 0 and 360, e.g. 34
+		              Dimension saturation // A value between 0 and 100 followed by a "%" sign, e.g. 50%
+		              Dimension lightness  // A value between 0 and 100 followed by a "%" sign, e.g. 50%
+		return new Color(colorString:"hsl(" + hue + ", " + saturation + ", " + lightness + ")")
+
+	// Creates a color from an hue and a saturation and lightness percentage and an alpha value
+	// Example:
+	//     const primaryColor = Color.hsla(34, 95%, 55%, 0.5)
+	static Color hsla: float hue            // A value between 0 and 360, e.g. 34
+		               Dimension saturation // A value between 0 and 100 followed by a "%" sign, e.g. 50%
+		               Dimension lightness  // A value between 0 and 100 followed by a "%" sign, e.g. 50%
+		               float alpha          // A value between 0 and 1, e.g. 0.5 (0: fully transparent, 1: fully opaque)
+		return new Color(colorString:"hsla(" + hue + ", " + saturation + ", " + lightness + ", " + alpha + ")")
 
 	static js string componentToHex: int c
 		var hex = c.toString(16);
