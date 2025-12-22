@@ -420,7 +420,8 @@ global priority low skipInit static class html
 	
 	internal js void resize
 		let body = document.body
-		if(Platform.referenceSizes?.length > 0) {
+		body.style = "background-color: white; color: black; font:16px/2 OpenSans; touch-action: none; overflow: "+html.overflow
+		if(Platform.referenceSizes && Platform.referenceSizes.length > 0) {
 			let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : screen.width
 			Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
 			let referenceWidth = 0
@@ -451,10 +452,7 @@ global priority low skipInit static class html
 			Platform.scale = Platform.isDebug ? Platform.debugScale : 1
 			body.style.zoom = Platform.scale
 		}
-		body.style = "background-color: white; color: black; font:16px/2 OpenSans"
 		body.className = Platform.isMobile ? "mobile" : ""
-		body.style.touchAction = "none"
-		body.style.overflow = html.overflow
 	
 	enableScrolling: bool value
 		let style = documentBody.style
