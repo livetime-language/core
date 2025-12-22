@@ -1262,12 +1262,19 @@ class List<T>
 	importance:5 inline js T find: bool(T a) condition // The condition to check
 		this.find(condition)
 		
+	inline js T find: backwards bool(T a) condition // The condition to check
+		this.findLast(condition)
+		
 	inline js T findLast: bool(T a) condition // The condition to check
 		this.findLast(condition)
 		
 	inline js T find: bool(T a) condition // The condition to check
 		              int startIndex      // Start searching at this index
 		Array.findStartingAtIndex(this, condition, startIndex)
+		
+	inline js T find: backwards bool(T a) condition // The condition to check
+		              int startIndex                // Start searching at this index
+		Array.findLastStartingAtIndex(this, condition, startIndex)
 		
 	inline js T findLast: bool(T a) condition // The condition to check
 		                  int startIndex                // Start searching at this index
