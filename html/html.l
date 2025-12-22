@@ -393,7 +393,7 @@ global priority low skipInit static class html
 	
 	js HTMLElement getElementAt(float x, float y) 
 		let element = document.elementFromPoint(x, y)
-		while(!element.id && element.parentElement)
+		while(element && !element.id && element.parentElement)
 			element = element.parentElement
 		return element
 	
