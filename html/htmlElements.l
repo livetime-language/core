@@ -476,10 +476,10 @@ global static class html
 	// The native html input element itself is hidden. 
 	// Clicking the any of the children will show the file selector dialog.
 	importance:4
-	HTMLElement fileInput: string accept = ".jpg,.jpeg,.png,.webp"     // The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
+	HTMLElement fileInput: string accept = "image/*"                   // The file extension or mime types that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
 	                       FileInputCaptureMode capture = environment  // user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera
 		                   bool multiple = false                       // Allow selecting and uploading multiple images at once
-			               void() children                             // Determines the look of the element, as the native html input element is hidden
+			               void() children = null                      // Determines the look of the element, as the native html input element is hidden
 		                   void(HTMLElement element) onChange = null   // Called when the user selected a file
 		                   SourceCodeLocation location
 		dynamic data = {type:"file" accept capture}
@@ -487,7 +487,8 @@ global static class html
 		let element = div tag:"input", data, display:none, location
 		element.onchange = onChange(element)
 		element.setAttribute("capture", "environment")
-		div children, onClick: element.click
+		// This causes the change event not to fire in Nomand's Guide to the Galaxy on mobile
+		if children != null: div children, onClick: element.click
 		return element
 		
 	// Render a html editable text element in the draw function.
