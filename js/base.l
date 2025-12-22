@@ -2411,7 +2411,7 @@ global skipInit unit math
 		if targetValue > value: return math.min(value + speed, targetValue) else
 		if targetValue < value: return math.max(value - speed, targetValue)
 	
-	// Returns the sine of an angle in radians
+	// Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
 	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi] using true modulo for stability
 		float x = angle mod math.twoPi
@@ -2431,7 +2431,7 @@ global skipInit unit math
 		float s = x * (1 + x2 * (-0.16666666666666666 + x2 * (0.008333333333333333 + x2 * (-0.0001984126984126984))))
 		return negate ? -s : s
 
-	// Returns the cosine of an angle in radians
+	// Platform-indepentant cosine of an angle in radians. Returns the exact same value on all platforms.
 	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi]
 		float x = angle mod math.twoPi
@@ -2450,29 +2450,43 @@ global skipInit unit math
 		float c = 1 + x2 * (-0.5 + x2 * (0.041666666666666664 + x2 * (-0.001388888888888889 + x2 * (0.000024801587301587304))))
 		return negate ? -c : c
 	
-	// Returns the tangent of an angle in radians
+	// Platform-indepentant tangent of an angle in radians. Returns the exact same value on all platforms.
 	importance:5 float tan: float angle // The angle in radians (one full rotation is 2*pi)
 		return sin(angle) / cos(angle)
 			
-	float atan: float x
-		float absX = math.abs(x)
-		// Use range reduction for better accuracy
-		// For |x| > 1, use identity: atan(x) = π/2 - atan(1/x)
-		bool useReduction = absX > 1
-		if useReduction
-			absX = 1 / absX
+	// Platform-indepentant inverse tangent of x in radians. Returns the exact same value on all platforms.
+	importance:5 float atan: float x
+		// Uses polynomial approximation in z = x/(x + pi/3) space
+		// Max error: 4.07e-9 on [0, 1] interval
+		// https://stackoverflow.com/questions/42537957/fast-accurate-atan-arctan-approximation-algorithm
+
+		// Handle negative values using atan(-x) = -atan(x)
+		if x < 0: return -atan(-x)
 		
-		// Polynomial approximation for range [0, 1]
-		// More accurate minimax polynomial
-		float x2 = absX * absX
-		float result = absX * (0.99997726 + x2 * (-0.33262347 + x2 * (0.19354346 + x2 * (-0.04432514))))
+		// Handle large values using atan(x) = pi/2 - atan(1/x)
+		if x > 1: return math.halfPi - atan(1 / x)
 		
-		// Apply range reduction
-		if useReduction
-			result = math.pi / 2 - result
+		// Transform to z-space: z = x / (x + pi/3)
+		float z = x / (x + 1.0471975511965976) // pi/3
 		
-		return x < 0 ? -result : result
+		// Evaluate polynomial using Horner's method for efficiency
+		// Coefficients for 11th degree approximation
+		float result = 14.183376881192657             // z11
+		result = result * z - 60.11210171537528       // z10
+		result = result * z + 82.10190353000648       // z9
+		result = result * z - 49.09950369422959       // z8
+		result = result * z + 17.33961311116544       // z7
+		result = result * z - 5.8773286456840355      // z6
+		result = result * z - 0.33989938855441837     // z5
+		result = result * z - 0.16312555173050677     // z4
+		result = result * z + 0.6678082665364844      // z3
+		result = result * z + 1.047102380719068       // z2
+		result = result * z + 1.0471985201240248      // z1
+		result = result * z + 0.0                     // z0
 		
+		return result
+		
+	// Platform-indepentant inverse tangent of y/x in radians. Returns the exact same value on all platforms.
 	float atan2: float y
 	             float x
 		if (x >= 0) { // -pi/2 .. pi/2
@@ -2504,6 +2518,21 @@ global skipInit unit math
 				}
 			}
 		}
+
+	// Platform-dependant sine of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeSin(float angleInRadians) Math.sin(angleInRadians)
+
+	// Platform-dependant cosine of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeCos(float angleInRadians) Math.cos(angleInRadians)
+
+	// Platform-dependant tangent of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeTan(float angleInRadians) Math.tan(angleInRadians)
+
+	// Platform-dependant invers tangent of value in radians. Returns slightly different values on different platforms.
+	inline js float nativeAtan(float value) Math.atan(value)
+
+	// Platform-dependant invers tangent of y/x in radians. Returns slightly different values on different platforms.
+	inline js float nativeAtan2(float y, float x) Math.atan2(y, x)
 		
 	// ------------------------------------------------------- log, pow, exp -------------------------------------------------------
 	
