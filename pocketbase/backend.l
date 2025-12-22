@@ -359,11 +359,11 @@ DatabaseTable<T>
 		
 	// ------------------------------------------------------- Files -------------------------------------------------------
 		
-	importance:4
-	async js void addFile: Reference<string[]> model
-		                   File[] files
-						   bool instantlyUpdateLocalFiles = false
-						   void(File[] failedFiles) onError = null
+	importance:5
+	async js void addFiles: Reference<string[]> model
+		                    implicit File[] files
+						    bool instantlyUpdateLocalFiles = false
+						    void(File[] failedFiles) onError = null
 		let prevBusy = this.busy;
 		this.busy = true;
 		let failedFiles = []
@@ -386,6 +386,7 @@ DatabaseTable<T>
 					model.container[model.key] = result[model.key];
 					if(i < files.length-1) html.refresh();
 				} catch(e) {
+					alert(e.message)
 					failedFiles.push(file)
 				}
 			}
@@ -404,6 +405,34 @@ DatabaseTable<T>
 		}
 
 	importance:4
+	async js void addFilesFromUrls: Reference<string[]> model
+		                            implicit string[] urls
+						            void(string[] failedUrls) onError = null
+		let prevBusy = this.busy;
+		this.busy = true;
+		let failedUrls = []
+		try {
+			for(let i=0; i<urls.length; i++) {
+				try {
+					let url = urls[i]
+					let response = await fetch(url);
+					let imageBlob = await response.blob();
+					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]});
+					model.container[model.key] = result[model.key];
+					if(i < urls.length-1) html.refresh();
+				} catch(e) {
+					failedUrls.push(file)
+				}
+			}
+		} finally {
+			this.busy = prevBusy;
+			html.refresh();
+			if(failedUrls.length > 0 && onError != null) {
+				onError(failedUrls)
+			}
+		}
+
+	importance:4
 	async js void removeFile: Reference<string[]> model
 		                      string file
 		let listOfFiles = model.container[model.key];
@@ -417,59 +446,6 @@ DatabaseTable<T>
 			reader.onload = e => resolve(e.target.result);
 			reader.readAsDataURL(file);	
 		})
-		
-	// Create and upload files #deprecated
-	importance:0
-	async js void upload: T item, string fileFieldName = "images", File[] files
-		const formData = new FormData();
-		for(let file of files) {
-			formData.append(fileFieldName, file);
-		}
-		let newItem
-		if(item.id) {
-			newItem = await backend.pb.collection(this.name).update(item.id, formData)
-		} else {
-			for(let key in item) {
-				if(key != fileFieldName) {
-					let value = item[key];
-					let type = typeof(value);
-					if(type != "function" && type != "undefined") {
-						formData.append(key, value);
-					}
-				}
-			}
-			newItem = await backend.pb.collection(this.name).create(formData);
-			item.id = newItem.id;
-		}
-		item[fileFieldName] = newItem[fileFieldName]
-		return newItem;
-
-	// Create and upload files from urls #deprecated
-	importance:0
-	async js void uploadFromUrls: T item, string fileFieldName = "images", string[] urls
-		const formData = new FormData();
-		for(let url of urls) {
-			const response = await fetch(url);
-			const imageBlob = await response.blob();
-			formData.append('images', imageBlob, 'moved-image.jpg');
-		}
-		if(item.id) {
-			newItem = await backend.pb.collection(this.name).update(item.id, formData)
-		} else {
-			for(let key in item) {
-				if(key != fileFieldName) {
-					let value = item[key];
-					let type = typeof(value);
-					if(type != "function" && type != "undefined") {
-						formData.append(key, value);
-					}
-				}
-			}
-			newItem = await backend.pb.collection(this.name).create(formData);
-			item.id = newItem.id;
-		}
-		item[fileFieldName] = newItem[fileFieldName]
-		return newItem;
 
 	// ------------------------------------------------------- Access local items -------------------------------------------------------
 	
