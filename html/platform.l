@@ -34,6 +34,8 @@ skipInit global unit Platform
 	public inline js string protocolAndHost() (location.host && !Platform.isDebug ? location.origin : "http://localhost")
 	public inline js string referrer := document.referrer
 	public inline js dynamic networkInformation() navigator.connection
+	public inline js void reload() location.reload(/*forceReload=*/true)
+	public inline js int buildVersion() _buildVersion
 
 	// Encode
 	public inline js string encodeURIComponent(string value) encodeURIComponent(value)
