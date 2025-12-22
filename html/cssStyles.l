@@ -420,6 +420,21 @@ importance:5 class Margin
 	Margin: string marginString
 		this.marginString = marginString
 
+importance:5 class BackgroundSize
+	global const BackgroundSize contain = {sizeString:"contain"} // Scales the image as large as possible within its container without cropping or stretching the image. If the container is larger than the image, this will result in image tiling, unless the background-repeat property is set to no-repeat.
+	global const BackgroundSize cover = {sizeString:"cover"} // Scales the image (while preserving its ratio) to the smallest possible size to fill the container (that is: both its height and width completely cover the container), leaving no empty space. If the proportions of the background differ from the element, the image is cropped either vertically or horizontally.
+	global const BackgroundSize auto = {sizeString:"auto"} // Scales the background image in the corresponding direction such that its intrinsic proportions are maintained.
+
+	string sizeString
+	toString := sizeString
+
+	Margin: implicit Dimension x = 0 px // Margin on the top and bottom of the element
+		    implicit Dimension y = 0 px // Margin on the left and right of the element
+		sizeString = "{x} {y}"
+
+	BackgroundSize: string sizeString
+		this.sizeString = sizeString
+
 importance:5 class FontWeight
 	global const FontWeight normal = {fontWeightString:"normal"} // Normal font weight. Same as 400.
 	global const FontWeight bold = {fontWeightString:"bold"} // Bold font weight. Same as 700.
@@ -505,7 +520,7 @@ importance:5 dynamic Style
 	string backgroundRepeat // How to repeat (tile) a background-image
 	string backgroundClip // The painting area of the background
 	string backgroundOrigin // The positioning area of the background images
-	Vector2 backgroundSize // The size of the background image
+	BackgroundSize backgroundSize // The size of the background image
 	string backfaceVisibility // Whether or not an element should be visible when not facing the screen
 	// The border of an element. 
 	// Example:
