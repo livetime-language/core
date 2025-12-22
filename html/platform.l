@@ -279,31 +279,39 @@ skipInit global unit Platform
 	js async void onDeviceOrientation: void(Angle angle) do
 		                               void(string error) else = null
 		if(window.ondeviceorientationabsolute !== undefined) {
-			window.ondeviceorientationabsolute = e => do(new Angle(1 - (e.alpha || 0)/360, "turn"));
+			window.ondeviceorientationabsolute = e => {
+				do(new Angle(e.alpha, "deg"));
+			}
 		} else {
 			try {
+				window.ondeviceorientation = e => {
+					do(new Angle(e.alpha, "deg"));
+				}
+			} catch(e) {
 				let response = await DeviceOrientationEvent.requestPermission();
 				if (response == "granted") {
-					window.ondeviceorientation = e => do(new Angle(1 - (e.webkitCompassHeading || e.alpha || 0)/360, "turn"));
 				} else {
 					else?.(response);
 				}
-			} catch(e) {
 				else?.(e.message);
 			}
 		}
 		
-	js void onCurrentLocation: void(Vector2 location) do
+	js void onCurrentLocation: void(Vector2 location, Angle heading) do
 		                       void(string error) else = null
 		                       enableHighAccuracy = true
 		                       maximumAge = 5000
 		                       timeout = 5000
-		navigator.geolocation.watchPosition(pos => {
-			do(new Vector2(pos.coords.longitude, pos.coords.latitude, "geo"))
-		}, e => {
-			do(new Vector2(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, "geo"))
+		try {
+			navigator.geolocation.watchPosition(pos => {
+				do(new Vector2(pos.coords.longitude, pos.coords.latitude, "geo"), new Angle(pos.coords.heading, "deg"))
+			}, e => {
+				do(new Vector2(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, "geo"), new Angle(float.null, "deg"))
+				else?.(e.message)
+			}, {maximumAge, timeout, enableHighAccuracy})
+		} catch(e) {
 			else?.(e.message)
-		}, {maximumAge, timeout, enableHighAccuracy})
+		}
 		
 enum lowercase string DataTransferItemKind: String, File
 		

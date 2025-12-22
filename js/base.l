@@ -413,6 +413,7 @@ immutable struct float
 		
 	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
 	const inline js int undefined := undefined
+	const inline js int null := null
 	
 	
 // A sequence of characters
