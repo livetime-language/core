@@ -679,7 +679,7 @@ immutable class string
 		let result = ""
 		let prevChar = " "
 		for this
-			if prevChar == " " and ("a" <= . <= "z"): result += .toUpperCase
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z"): result += .toUpperCase
 			else                                      result += .
 			prevChar = .
 		return result
@@ -688,6 +688,13 @@ immutable class string
 		let result = ""
 		for this
 			if "a" <= . <= "z" or "A" <= . <= "Z"
+				result += .
+		return result
+		
+	string onlyLettersAndPunctuation
+		let result = ""
+		for this
+			if ("a" <= . <= "z") or ("A" <= . <= "Z") or . == " " or . == "-" or . == "," or . == "." or . == "!" or . == "?" or . == ";" or . == ":"
 				result += .
 		return result
 		
