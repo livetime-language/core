@@ -384,7 +384,7 @@ DatabaseTable<T>
 				try {
 					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
 					model.container[model.key] = result[model.key];
-					if(i < files.length-1) html.refresh();
+					// if(i < files.length-1) html.refresh();
 				} catch(e) {
 					alert(e.message)
 					failedFiles.push(file)
@@ -398,7 +398,7 @@ DatabaseTable<T>
 				}
 			}
 			this.busy = prevBusy;
-			html.refresh();
+			// html.refresh();
 			if(failedFiles.length > 0 && onError != null) {
 				onError(failedFiles)
 			}
@@ -419,14 +419,14 @@ DatabaseTable<T>
 					let imageBlob = await response.blob();
 					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]});
 					model.container[model.key] = result[model.key];
-					if(i < urls.length-1) html.refresh();
+					// if(i < urls.length-1) html.refresh();
 				} catch(e) {
 					failedUrls.push(file)
 				}
 			}
 		} finally {
 			this.busy = prevBusy;
-			html.refresh();
+			// html.refresh();
 			if(failedUrls.length > 0 && onError != null) {
 				onError(failedUrls)
 			}
