@@ -52,7 +52,10 @@ skipInit global unit Platform
 		app.init?.()
 		
 	private async inline js void initBackend
-		if(typeof(backend) != "undefined") await backend.connect2()
+		if(typeof(backend) != "undefined") {
+			await backend.connect2()
+			backend.onDataChange = () => html.refresh()
+		}
 			
 	async start: bool isDebug
 		try
