@@ -74,7 +74,7 @@ transient skipInit unit Platform
 		if(app.init) app.init();
 			
 	private async inline js void initBackend
-		if(typeof(pocketBase) != "undefined") await pocketBase.connect2()
+		if(typeof(backend) != "undefined") await backend.connect2()
 
 	// This is called when the application starts for the first time	
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
