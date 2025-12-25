@@ -23,6 +23,7 @@ transient skipInit static class backend
 	string url, libUrl
 	dynamic pb
 	DatabaseTable<User> users
+	void() onDataChange = null
 	
 	// Called automatically in Platform.start
 	internal async void connect: string url
@@ -307,7 +308,6 @@ DatabaseTable<T>
 		                     string sort = null
 					         string fields = null
 		                     string expand = null
-							 bool refreshHtmlOnChange = true
 		                     int perPage = 10000
 					         bool skipTotal = true
 							 void() onChange = null
@@ -324,13 +324,13 @@ DatabaseTable<T>
 				this.items.removeWhere(i => i.id == e.record.id);
 			}
 			onChange?.();
-			if(refreshHtmlOnChange) html.refresh();
+			backend.onDataChange?.();
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		let result = await backend.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
 		this.items = result.items
 		if(this.items.length > 0) {
 			onChange?.();
-			if(refreshHtmlOnChange) html.refresh();
+			backend.onDataChange?.();
 		}
 		return this.items
 
@@ -348,7 +348,7 @@ DatabaseTable<T>
 				Object.assign(model, e.record);
 				onChange?.();
 			}
-			html.refresh();
+			backend.onDataChange?.();
 		}, {@fields:fields, @expand:expand})
 		var model = await backend.pb.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
 		return model;
@@ -376,7 +376,7 @@ DatabaseTable<T>
 					localFiles.push(dataUrl);
 					addedDateUrls.push(dataUrl);
 				}
-				html.refresh();
+				backend.onDataChange?.();
 			}
 
 			for(let i=0; i<files.length; i++) {
@@ -384,7 +384,7 @@ DatabaseTable<T>
 				try {
 					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
 					model.container[model.key] = result[model.key];
-					// if(i < files.length-1) html.refresh();
+					if(i < files.length-1) backend.onDataChange?.();
 				} catch(e) {
 					alert(e.message)
 					failedFiles.push(file)
@@ -398,7 +398,7 @@ DatabaseTable<T>
 				}
 			}
 			this.busy = prevBusy;
-			// html.refresh();
+			backend.onDataChange?.();
 			if(failedFiles.length > 0 && onError != null) {
 				onError(failedFiles)
 			}
@@ -437,7 +437,7 @@ DatabaseTable<T>
 		                      string file
 		let listOfFiles = model.container[model.key];
 		listOfFiles.remove(file);
-		html.refresh();
+		backend.onDataChange?.();
 		await backend.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
 
 	static js Promise<string> getDataUrlForFile: File file

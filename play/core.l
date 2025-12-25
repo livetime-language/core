@@ -653,7 +653,7 @@ internal transient skipInit unit core
 		print "#database opening from db {room.toJson}"
 		dynamic[] rooms = await inputStore.getAllFromIndex "roomId", roomId
 		rooms.orderBy.start
-		for rooms as room
+		forDynamic rooms as room
 			int userId = room.userId
 			int start = .start
 			dynamic inputs = .inputs
