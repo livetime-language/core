@@ -60,6 +60,9 @@ transient skipInit unit Platform
 			return ""
 		}
 		
+	js void removeLocalStorageItem: string key
+		localStorage.removeItem(key)
+			
 	inline js void vibrate: int duration = 100
 		if(navigator.vibrate) navigator.vibrate(duration)
 		
