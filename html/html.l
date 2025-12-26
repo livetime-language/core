@@ -1,5 +1,5 @@
 js HTMLElement
-class HTMLElement
+dynamic HTMLElement
 	string id // A unique string to indentify a specic element, often used to style a single element
 	
 	// A string to assign a class to one or more elements, often used to style several elements
