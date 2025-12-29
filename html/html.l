@@ -420,7 +420,7 @@ global priority low skipInit static class html
 	
 	internal js void resize
 		let body = document.body
-		body.style = "background-color: white; color: black; font:16px/2 OpenSans; touch-action: none; overflow: "+html.overflow
+		body.style = "background-color: white; color: black; font:16px/1.7 OpenSans; touch-action: none; overflow: "+html.overflow
 		if(Platform.referenceSizes && Platform.referenceSizes.length > 0) {
 			let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : screen.width
 			Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
