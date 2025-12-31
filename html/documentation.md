@@ -986,7 +986,7 @@ Returns the largest of the given values
 Returns float
 
 ### sin
-Returns the sine of an angle in radians
+Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
 
 | Parameter | Type  | Description                                      |
 | --------- | ----- | ------------------------------------------------ |
@@ -995,7 +995,7 @@ Returns the sine of an angle in radians
 Returns float
 
 ### cos
-Returns the cosine of an angle in radians
+Platform-indepentant cosine of an angle in radians. Returns the exact same value on all platforms.
 
 | Parameter | Type  | Description                                      |
 | --------- | ----- | ------------------------------------------------ |
@@ -1004,11 +1004,20 @@ Returns the cosine of an angle in radians
 Returns float
 
 ### tan
-Returns the tangent of an angle in radians
+Platform-indepentant tangent of an angle in radians. Returns the exact same value on all platforms.
 
 | Parameter | Type  | Description                                      |
 | --------- | ----- | ------------------------------------------------ |
 | angle     | float | The angle in radians (one full rotation is 2*pi) |
+
+Returns float
+
+### atan
+Platform-indepentant inverse tangent of x in radians. Returns the exact same value on all platforms.
+
+| Parameter | Type  | Description        |
+| --------- | ----- | ------------------ |
+| x         | float | Required parameter |
 
 Returns float
 
@@ -1094,6 +1103,21 @@ Automatically adjust the value to distribute the space evenly
 
 ### Border none
 Display no border
+
+---
+
+# class BackgroundSize
+
+## Constants
+
+### BackgroundSize contain
+Scales the image as large as possible within its container without cropping or stretching the image. If the container is larger than the image, this will result in image tiling, unless the background-repeat property is set to no-repeat.
+
+### BackgroundSize cover
+Scales the image (while preserving its ratio) to the smallest possible size to fill the container (that is: both its height and width completely cover the container), leaving no empty space. If the proportions of the background differ from the element, the image is cropped either vertically or horizontally.
+
+### BackgroundSize auto
+Scales the background image in the corresponding direction such that its intrinsic proportions are maintained.
 
 ---
 
@@ -1192,7 +1216,7 @@ The painting area of the background
 ### string backgroundOrigin
 The positioning area of the background images
 
-### Vector2 backgroundSize
+### BackgroundSize backgroundSize
 The size of the background image
 
 ### string backfaceVisibility
@@ -1999,7 +2023,7 @@ Render a html anchor element to link to a url
 | Parameter | Type   | Description                          |
 | --------- | ------ | ------------------------------------ |
 | text      | string | Optional parameter, defaults to null |
-| href      | string | Optional parameter, defaults to "#"  |
+| to        | string | Optional parameter, defaults to "#"  |
 
 Returns HTMLElement
 
@@ -2027,6 +2051,21 @@ Render a html input element in the draw function
 | styleWhenFocused | Style              | The css style to apply when the element is focused, optional, defaults to null                                                  |
 
 Returns HTMLElement
+
+### style
+Adds a css style rule
+
+*Example:*
+```
+app
+    draw
+        html.style "h1" color:primaryColor
+```
+
+| Parameter | Type   | Description        |
+| --------- | ------ | ------------------ |
+| selector  | string | Required parameter |
+
 
 ### grid
 Render a html div element with a grid layout
@@ -2225,10 +2264,10 @@ Clicking the any of the children will show the file selector dialog.
 
 | Parameter | Type                      | Description                                                                                                                                             |
 | --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| accept    | string                    | The file extension that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png", optional, defaults to ".jpg,.jpeg,.png,.webp"                        |
+| accept    | string                    | The file extension or mime types that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png", optional, defaults to "image/*"                        |
 | capture   | FileInputCaptureMode      | user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera, optional, defaults to environment |
 | multiple  | bool                      | Allow selecting and uploading multiple images at once, optional, defaults to false                                                                      |
-| children  | void()                    | Determines the look of the element, as the native html input element is hidden                                                                          |
+| children  | void()                    | Determines the look of the element, as the native html input element is hidden, optional, defaults to null                                              |
 | onChange  | void(HTMLElement element) | Called when the user selected a file, optional, defaults to null                                                                                        |
 
 Returns HTMLElement
@@ -2249,15 +2288,6 @@ Render a html link element to include a css stylesheet file
 | --------- | ------ | ------------------ |
 | src       | string | Required parameter |
 
-
-### style
-Render a html style element to include a css style
-
-| Parameter | Type   | Description        |
-| --------- | ------ | ------------------ |
-| text      | string | Required parameter |
-
-Returns HTMLElement
 
 ---
 
@@ -2621,13 +2651,22 @@ app
 
 Returns Promise<void>
 
-### addFile
+### addFiles
 | Parameter                 | Type                     | Description                           |
 | ------------------------- | ------------------------ | ------------------------------------- |
 | model                     | Reference<string[]>      | Required parameter                    |
 | files                     | File[]                   | Required parameter                    |
 | instantlyUpdateLocalFiles | bool                     | Optional parameter, defaults to false |
 | onError                   | void(File[] failedFiles) | Optional parameter, defaults to null  |
+
+Returns Promise<void>
+
+### addFilesFromUrls
+| Parameter | Type                      | Description                          |
+| --------- | ------------------------- | ------------------------------------ |
+| model     | Reference<string[]>       | Required parameter                   |
+| urls      | string[]                  | Required parameter                   |
+| onError   | void(string[] failedUrls) | Optional parameter, defaults to null |
 
 Returns Promise<void>
 
