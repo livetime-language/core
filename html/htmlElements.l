@@ -129,6 +129,23 @@ global static class html
 		currentNode = nextNode
 		return element
 
+	// Set the children of a html element with a given id within the draw function.
+	// Useful for filling a placeholder of a template
+	// Example:
+	//     		div app.getText("contractTemplate")
+	//          html.setChildrenOf "goodProfile"
+	//              div text:"Good Profile"
+	setChildrenOf: string id	// The id of the element to set the children of
+		           void() children	// A block of code that renders the children of the element
+		           SourceCodeLocation location
+		let prevParentNode = parentNode
+		let prevCurrentNode = currentNode
+		parentNode = get id
+		currentNode = parentNode.firstChild
+		children()
+		parentNode = prevParentNode
+		currentNode = prevCurrentNode
+
 	// Adds a css style rule
 	// Example:
 	//    app
