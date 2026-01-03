@@ -9,7 +9,7 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 LiveTime uses inline styles for all html elements. 
 Very important: To re-render the html after changing data, you need to call refresh.
 
-Always write the simplest possible and most efficient code.
+Always write the shortest, simplest possible and most efficient code.
 Avoid code duplication. Do not overengineer. Keep it simple.
 Do not spread out the code over too many functions.
 Elements that are grouped together visually should be in the same function.
@@ -304,15 +304,16 @@ app
 		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
 
 # More information
-Read "lib/core/html/documentation.md" for the full LiveTime documention. Read this file if you encounter problems.
-The folder "lib/core/js" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
-The folder "lib/core/html" contains the implementation of the LiveTime HTML framework (div, img, button, etc).
-The folder "lib/core/pocketbase" contains the PocketBase API (backend, DatabaseTable, etc)
+Read the full LiveTime library documentation "lib/core/html/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
+
+"lib/core/js/" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
+"lib/core/html/" contains the implementation of the LiveTime HTML framework (html, div, img, button, etc).
+"lib/core/pocketbase/" contains the PocketBase API (backend, DatabaseTable, etc)
 
 # Always check if everything is correct
 Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
 
-1. Double check you wrote the simples possible, most efficient code with minimal code duplication.
+1. Double check you wrote the shortest, simples possible, most efficient code with minimal code duplication.
 2. Double check you are calling refresh after changing data.
 3. Double check you fixed all linter errors.
 4. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
