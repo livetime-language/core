@@ -390,6 +390,7 @@ global priority low skipInit static class html
 	inline js HTMLElement get(string id) document.getElementById(id)
 	inline js HTMLElement documentBody() document.body
 	inline js HTMLElement activeElement() document.activeElement
+	inline js void setTitle(string title) (document.@title = title)
 	
 	js HTMLElement getElementAt(float x, float y) 
 		let element = document.elementFromPoint(x, y)

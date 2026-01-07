@@ -65,23 +65,23 @@ global static class html
 		setDataAttributes element, data
 		
 		if attributes != null
-			if attributes.id and attributes.id != element.id:           element.id = attributes.id
-			if attributes.class and attributes.class != element.class:  element.class = attributes.class
-			if attributes.title and attributes.title != element.title:  element.title = attributes.title
-			if attributes.tabIndex:                                     element.set("tabindex", attributes.tabIndex.toString)
+			if attributes.id and attributes.id != element.id:	element.id = attributes.id
+			if attributes.class and attributes.class != element.class:	element.class = attributes.class
+			if attributes.title and attributes.title != element.title:	element.title = attributes.title
+			if attributes.tabIndex:	element.set("tabindex", attributes.tabIndex.toString)
 			
-			if attributes.onClick != null:      element.onclick = attributes.onClick
-			if attributes.onRightClick != null: element.oncontextmenu = attributes.onRightClick
-			if attributes.onPointerDown != null:element.onpointerdown = attributes.onPointerDown
-			if attributes.onPointerOver != null:element.onpointerover = attributes.onPointerOver
-			if attributes.onPointerOut != null: element.onpointerout  = attributes.onPointerOut
+			if attributes.onClick != null: 	element.onclick = attributes.onClick
+			if attributes.onRightClick != null:	element.oncontextmenu = attributes.onRightClick
+			if attributes.onPointerDown != null:	element.onpointerdown = attributes.onPointerDown
+			if attributes.onPointerOver != null:	element.onpointerover = attributes.onPointerOver
+			if attributes.onPointerOut != null: 	element.onpointerout  = attributes.onPointerOut
 
-			if attributes.onKeyDown != null:    element.onkeydown = attributes.onKeyDown
-			if attributes.onKeyUp != null:      element.onkeyup = attributes.onKeyUp
+			if attributes.onKeyDown != null:	element.onkeydown = attributes.onKeyDown
+			if attributes.onKeyUp != null:	element.onkeyup = attributes.onKeyUp
 
 			if styleWhenFocused == null
-				if attributes.onBlur != null:   element.onblur = attributes.onBlur
-				if attributes.onFocus != null:  element.onfocus = attributes.onFocus
+				if attributes.onBlur != null:	element.onblur = attributes.onBlur
+				if attributes.onFocus != null:	element.onfocus = attributes.onFocus
 			
 		element.sourceLocation = sourceLocation
 		if styleWhenHovering != null
