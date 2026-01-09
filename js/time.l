@@ -286,7 +286,23 @@ immutable class DateTime
 			second: math.floor (outputTime mod 60000) / 1000
 			timezoneOffset: outputTimezone
 		}
-		
+	
+	// Create a DateTime object from a string like "2026-12-31 23:59:59" or "2026-12-31 23.59.59.999"
+	static DateTime fromString: string timeString
+		                        int inputTimezone = DateTime.localTimezoneOffset
+		                        int outputTimezone = DateTime.localTimezoneOffset
+		return fromValues(
+			year: (cast timeString[0..4]) or 1970
+			month: (cast timeString[5..7]) or 1
+			day: (cast timeString[8..10]) or 1
+			hour: (cast timeString[11..13]) or 0
+			minute: (cast timeString[14..16]) or 0
+			second: (cast timeString[17..19]) or 0
+			milliseconds: (cast timeString[20..23]) or 0
+			inputTimezone: inputTimezone
+			outputTimezone: outputTimezone
+		)
+
 	static DateTime fromValues: int year
 		                        int month
 		                        int day

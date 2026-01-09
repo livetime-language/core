@@ -51,7 +51,6 @@ global static class html
 				nextNode = currentNode
 				if nextNode: parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
-				// TEMP: TO THINK ABOUT
 				if focusInitially
 					delay 0: element.focus
 				nodesCreated++
