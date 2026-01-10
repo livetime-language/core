@@ -226,7 +226,7 @@ skipInit class Image
 	string src
 	string basePath = Platform.basePath
 	
-	toString := "url({basePath}{src})"
+	toString := "url('{basePath}{src}')"
 	
 skipInit class Font
 	string name
