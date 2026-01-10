@@ -1,19 +1,21 @@
 file
-	js async void save: dynamic object
+	inline js string homeDirectory() require("os").homedir()
+	
+	js async void save: string text
 		                string to
 		const fs = require("fs").promises;
-		await fs.writeFile(to, JSON.stringify(object, null, "\t"))
+		await fs.writeFile(to, text)
 		
 	js async void save: ArrayBuffer buffer
 		                string to
 		const fs = require("fs").promises;
 		const { Buffer } = require('node:buffer');
 		await fs.writeFile(to, Buffer.from(buffer), {encoding:null})
-		
-	js async void save: string text
+
+	js async void save: dynamic object
 		                string to
 		const fs = require("fs").promises;
-		await fs.writeFile(to, text)
+		await fs.writeFile(to, JSON.stringify(object, null, "\t"))
 		
 	js void download: string text
 		              string to
@@ -28,8 +30,8 @@ file
 	inline js async string[] readDirectory: string path
 		require("fs").promises.readdir(path)
 		
-	inline js async string[] getInfo: string path
-		require("fs").promises.stat(filePath)
+	inline js async FileInfo getInfo: string path
+		require("fs").promises.stat(path)
 		
 	js async string[] readDirectorySortedByTime: string path
 		try {
@@ -91,27 +93,34 @@ file
 				processLine(results)
 		if then != null: then()
 	
+	async string[] readTsv: string filename, void(string[] values) processLine
+		let content = await read(filename)
+		for content.split("\n")[1..] as line
+			if line
+				let values = line.split("\t")
+					processLine(values)
+	
 interface ArrayBuffer
 immutable struct FileFilter
 	string name
 	string[] extensions
 	
 interface FileInfo
-	int dev
-	int ino
-	int mode
-	int nlink
-	int uid
-	int gid
-	int rdev
-	int size
-	int blksize
-	int blocks
-	float atimeMs     // The time the file was last accessed in milliseconds
-	float mtimeMs     // The time the file was last modified in milliseconds
-	float ctimeMs     // The time the file was last changed in milliseconds
-	float birthtimeMs // The time the file was created in milliseconds
-	string atime     // The time the file was last accessed as a string
-	string mtime     // The time the file was last modified as a string
-	string ctime     // The time the file was last changed as a string
-	string birthtime // The time the file was created as a string
+	int	dev
+	int	ino
+	int	mode
+	int	nlink
+	int	uid
+	int	gid
+	int	rdev
+	int	size
+	int	blksize
+	int	blocks
+	float	atimeMs	// The time the file was last accessed in milliseconds
+	float	mtimeMs	// The time the file was last modified in milliseconds
+	float	ctimeMs	// The time the file was last changed in milliseconds
+	float	birthtimeMs	// The time the file was created in milliseconds
+	string	atime	// The time the file was last accessed as a string
+	string	mtime	// The time the file was last modified as a string
+	string	ctime	// The time the file was last changed as a string
+	string	birthtime	// The time the file was created as a string
