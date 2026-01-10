@@ -198,14 +198,28 @@ string PlainTimeString
 class string
 	implicit inline PlainTimeString toPlainTimeString := this
 	implicit inline TimeString toTimeString := this
-		
+
+struct float
+	inline DateTime toDateTime() DateTime.fromTime(this)
+	inline DateTime toDateTimeWithoutTimezone() DateTime.fromTime(this, outputTimezone:0)
+
+class string
+	inline DateTime toDateTime() DateTime.fromString(this)
+	inline DateTime toDateTimeWithoutTimezone() DateTime.fromString(this, inputTimezone:0, outputTimezone:0)
+
 // Calculate dates using pure math for better performance without using the Date class
-immutable class DateTime
+immutable skipInit class DateTime
 	static inline js float preciseTime := performance.now()
 
 	static internal inline js float realTime := Date.now()
 
-	static int localTimezoneOffset
+	static int localTimezoneOffset, defaultTimezoneOffset
+
+	init
+		initTimezoneOffsets
+
+	static js void initTimezoneOffsets
+		DateTime.localTimezoneOffset = DateTime.defaultTimezoneOffset = new Date().getTimezoneOffset() * 60000
 
 	const dayNames = [
 		["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -245,14 +259,14 @@ immutable class DateTime
 	string twoDigitMinute := (this.minute < 10 ? "0"+this.minute : this.minute.toString())
 	string twoDigitSecond := (this.second < 10 ? "0"+this.second : this.second.toString())
 
-	static DateTime current() DateTime.fromTime(Time.now)
+	static inline DateTime current() DateTime.fromTime(Time.now)
 		
 	static DateTime fromTimeInSeconds: float timeInSeconds
-		                               int outputTimezone = DateTime.localTimezoneOffset
+		                               int outputTimezone = DateTime.defaultTimezoneOffset
 		return fromTime(timeInSeconds*1000, outputTimezone)
 		
 	static DateTime fromTime: float time
-		                      int outputTimezone = DateTime.localTimezoneOffset
+		                      int outputTimezone = DateTime.defaultTimezoneOffset
 		if not time: return {0, 1970, 1, 1, 4, 0, 0, 0}
 		const outputTime = time - outputTimezone
 		const daysSinceEpoch = math.floor(outputTime / 86400000)
@@ -289,8 +303,8 @@ immutable class DateTime
 	
 	// Create a DateTime object from a string like "2026-12-31 23:59:59" or "2026-12-31 23.59.59.999"
 	static DateTime fromString: string timeString
-		                        int inputTimezone = DateTime.localTimezoneOffset
-		                        int outputTimezone = DateTime.localTimezoneOffset
+		                        int inputTimezone = DateTime.defaultTimezoneOffset
+		                        int outputTimezone = DateTime.defaultTimezoneOffset
 		return fromValues(
 			year: (cast timeString[0..4]) or 1970
 			month: (cast timeString[5..7]) or 1
@@ -303,15 +317,15 @@ immutable class DateTime
 			outputTimezone: outputTimezone
 		)
 
-	static DateTime fromValues: int year
-		                        int month
-		                        int day
-		                        int hour
-		                        int minute
+	static DateTime fromValues: int year = 1970
+		                        int month = 1
+		                        int day = 1
+		                        int hour = 0
+		                        int minute = 0
 		                        int second = 0
 		                        int milliseconds = 0
-		                        int inputTimezone = DateTime.localTimezoneOffset
-		                        int outputTimezone = DateTime.localTimezoneOffset
+		                        int inputTimezone = DateTime.defaultTimezoneOffset
+		                        int outputTimezone = DateTime.defaultTimezoneOffset
 		const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 		
 		// Calculate the number of days since the epoch for full years
@@ -417,7 +431,7 @@ immutable class DateTime
 	// 2024-10-17 15:23:30+02:00
 	// 2024-10-17 15:23:30Z
 	static DateTime fromIsoString: string str
-		                           int outputTimezone = DateTime.localTimezoneOffset
+		                           int outputTimezone = DateTime.defaultTimezoneOffset
 		if not str or str.length < 19: return null
 		let hasMilliseconds = str[19] == "."
 		let timezoneIndex = hasMilliseconds ? 24 : 20

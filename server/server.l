@@ -4,7 +4,7 @@ skipInit unit Platform
 		
 	inline js void initPlatform
 		Platform.init()
-		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
+		DateTime.init()
 		
 	inline js void initApplication
 		init()
