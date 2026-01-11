@@ -47,7 +47,7 @@ skipInit global unit Platform
 		Font.init?.();
 		Sound.init?.();
 		audio.init();
-		DateTime.init();
+		PlainDate.init();
 		html.init();
 		app.init?.()
 		

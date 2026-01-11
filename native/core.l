@@ -19,7 +19,7 @@ skipInit unit core
 		// for input.internalUsers if .
 		// 	.inputs.reset
 		// 	.startInputFrame 0
-		startTime = DateTime.realTime
+		startTime = PlainDate.realTime
 		// startTime = serverStartTime = currentTime
 		// frames = 0
 		// frameWithNewWatches = 0
@@ -90,7 +90,7 @@ skipInit unit core
 		app::start();
 		
 	animationFrame
-		Time.now = DateTime.realTime
+		Time.now = PlainDate.realTime
 		let targetFrame = math.floor((Time.now - startTime)/frameTime)+1
 		// print "animation frame", Time.now, startTime, Time.now - startTime, frame, targetFrame
 		if frame < targetFrame

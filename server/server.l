@@ -4,7 +4,7 @@ skipInit unit Platform
 		
 	inline js void initPlatform
 		Platform.init()
-		DateTime.init()
+		PlainDate.init()
 		
 	inline js void initApplication
 		init()
@@ -76,7 +76,7 @@ global skipInit unit math
 			return math.floor(math.random() * 16).toString(16);  
 		}); 
 	
-DateTime
+PlainDate
 	// The number of milliseconds elapsed since January 1, 1970
 	static inline js float now := Date.now()
 	

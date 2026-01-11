@@ -40,7 +40,7 @@ transient skipInit unit Platform
 		$Image.init?.();
 		Font.init?.();
 		Sound.init?.();
-		DateTime.init();
+		PlainDate.init();
 		
 	private js void initPlatform
 		statistics.init();
@@ -79,7 +79,7 @@ transient skipInit unit Platform
 	// This is called when the application starts for the first time	
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
 		try
-			let now = DateTime.preciseTime
+			let now = PlainDate.preciseTime
 			this.nextHeartbeatTime = 0
 			heartbeat "start"
 			
@@ -122,7 +122,7 @@ transient skipInit unit Platform
 			openMedia
 				try
 					this.engineStarted = true
-					statistics.loadTime = DateTime.preciseTime - statistics.startTime
+					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
 					startInterval
 					if isDebug || isLocal || roomId == "local" || url.startsWith("file"): core.startLocal
 					else                                                                  core.join gameId, roomId, userId

@@ -2631,9 +2631,9 @@ struct RollingList
 		values[(index++ mod length)] = value
 		
 	measure: void() do
-		let startTime = DateTime.preciseTime
+		let startTime = PlainDate.preciseTime
 		do
-		values[index++ mod length] = DateTime.preciseTime - startTime
+		values[index++ mod length] = PlainDate.preciseTime - startTime
 	
 	average
 		if values.length == 0: return 0.0

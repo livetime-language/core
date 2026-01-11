@@ -451,7 +451,7 @@ internal transient skipInit unit core
 			
 		try
 			Framework.tick
-			tickTimes.add tickTime = DateTime.measure
+			tickTimes.add tickTime = PlainDate.measure
 				if lobby.inLobby:      lobby.tick; else
 				if awardScreen.active: awardScreen.tick; else
 				                       appTick
@@ -459,7 +459,7 @@ internal transient skipInit unit core
 			onError error
 			
 		if draw and not Platform.waitingForInitialData
-			drawTimes.add drawTime = DateTime.measure
+			drawTimes.add drawTime = PlainDate.measure
 				graphics.finishFrame
 			if Platform.mode != Manipulator: input.updateCursor
 		audio.finishFrame
@@ -493,7 +493,7 @@ internal transient skipInit unit core
 			replay prevSnapshotFrame to frame
 
 	private rewind: Buffer snapshot
-		restoreTime = DateTime.measure
+		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
 			
@@ -504,7 +504,7 @@ internal transient skipInit unit core
 					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
-		replayTime = DateTime.measure
+		replayTime = PlainDate.measure
 			frame = replayFrom = from
 			while frame < to
 				step fastForward:true, draw:false			
@@ -526,7 +526,7 @@ internal transient skipInit unit core
 			
 	private saveState: Buffer snapshot
 		snapshot.reset
-		saveTime = DateTime.measure
+		saveTime = PlainDate.measure
 			Snapshot.serialize snapshot
 			if Platform.logSerialize
 				serializeLogs[frame mod 100] = Snapshot.serializeLog
@@ -896,13 +896,13 @@ skipInit transient unit statistics
 	float nextSendTime = float.maxValue
 	
 	scheduleSendIn: float delay
-		nextSendTime = math.min(nextSendTime, DateTime.realTime + delay)
+		nextSendTime = math.min(nextSendTime, PlainDate.realTime + delay)
 	
 	tick
-		if DateTime.realTime > nextSendTime
+		if PlainDate.realTime > nextSendTime
 			if not sessionStarted: startSession
 			else                   saveStatistics
-			nextSendTime = DateTime.realTime + core.sendStatisticsEvery
+			nextSendTime = PlainDate.realTime + core.sendStatisticsEvery
 	
 	// Log game events (like scores, playtimes, etc)
 	log: dynamic value

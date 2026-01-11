@@ -9,7 +9,7 @@ internal transient skipInit unit ServerNetwork
 	int retries
 	
 	tick
-		let now = DateTime.realTime
+		let now = PlainDate.realTime
 		// Reconnect to server: Try to connect again if we aren't connected 5 seconds after starting to connect
 		// We use a central place to reconnect and no intervals, timeouts or reloads to make it easier to reason about
 		if not connected and now > startToConnectTime + 5000
