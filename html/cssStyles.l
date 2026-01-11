@@ -462,6 +462,7 @@ class string
 	implicit inline Padding toPadding() new Padding(paddingString:this)
 	implicit inline Margin toMargin() new Margin(marginString:this)
 	implicit inline FontWeight toFontWeight() new FontWeight(fontWeightString:this)
+	implicit inline Image toImage() new Image(src:this)
 
 enum string FileInputCaptureMode
 	none = "" // Do not capture an image with the camera

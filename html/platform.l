@@ -47,7 +47,7 @@ skipInit global unit Platform
 		Font.init?.();
 		Sound.init?.();
 		audio.init();
-		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
+		DateTime.init();
 		html.init();
 		app.init?.()
 		

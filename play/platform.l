@@ -40,7 +40,7 @@ transient skipInit unit Platform
 		$Image.init?.();
 		Font.init?.();
 		Sound.init?.();
-		DateTime.localTimezoneOffset = new Date().getTimezoneOffset() * 60000
+		DateTime.init();
 		
 	private js void initPlatform
 		statistics.init();
@@ -271,9 +271,6 @@ transient skipInit unit Platform
 	inline js void debugger
 		debugger
 		
-	js void openDevTools
-		require('@electron/remote/main').remote.getCurrentWindow().toggleDevTools()
-
 	inline js string getHostnameFromUrl: string url
 		new URL(url).hostname
 
