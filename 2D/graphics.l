@@ -516,7 +516,7 @@ transient skipInit global unit graphics
 		                   alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                 // Tint the image with this color
 		                   SourceCodeLocation location
-		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) mod image.frames.length;
+		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond) mod image.frames.length;
 		drawImage image, position, frame, size, visibleFor, layer, alpha, color, location
 	
 	// Draw an image, animate it and flip it horizontally or vertically.
@@ -538,7 +538,7 @@ transient skipInit global unit graphics
 		                   flipX = false                         // Mirror the image horizontally
 		                   flipY = false                         // Mirror the image vertically
 		                   SourceCodeLocation location
-		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.targetFps) mod image.frames.length;
+		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond) mod image.frames.length;
 		drawImage image, position, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
 	
 	global importance:4 void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here

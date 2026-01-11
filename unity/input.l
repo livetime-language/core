@@ -462,7 +462,7 @@ skipInit unit Input
 							
 		// 				// If we are still connected to that user, we disagree to their removal
 		// 				// by posting the "StillConnected" message
-		// 				if lostInternalUser.dataChannel and Core.frame < lostInternalUser.inputFrame + Core.targetFps * 5
+		// 				if lostInternalUser.dataChannel and Core.frame < lostInternalUser.inputFrame + Core.ticksPerSecond * 5
 		// 					Core.log "Lost {lostUserId} by {userId} -> We are still connected, sending StillConnected", lostInternalUser.dataChannel, Core.frame, lostInternalUser.inputFrame, isCertain
 		// 					handleStillConnected lostUserId
 		// 				else

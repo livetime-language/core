@@ -22,8 +22,8 @@ internal transient skipInit unit core
 	bool enableAudioForStaging = false
 		
 	SendInputsMode sendInputsMode = Peer
-	internal const targetFps = 30
-	const frameTime = 1000/targetFps
+	internal const ticksPerSecond = 30
+	const frameTime = 1000/ticksPerSecond
 	
 	NetworkMode mode                // Whether we are in local or connected mode
 	visible string errorMessage     // The error message if we caught any exceptions in the main loop
@@ -235,7 +235,7 @@ internal transient skipInit unit core
 		let targetFrame = math.floor((now - startTime)/frameTime)+1
 		if verbose: core.log "----- #{frame} -> #{targetFrame} -----"
 		
-		if mode == Local && targetFrame > frame + targetFps*2
+		if mode == Local && targetFrame > frame + ticksPerSecond*2
 			// After a long pause in local mode, we do not want to process all missed frames, so we adjust the start time
 			let prevTargetFrame = targetFrame
 			targetFrame = frame

@@ -175,7 +175,7 @@ transient skipInit unit Platform
 		if(window.tick) return
 			
 		if(Platform.intervalMode == 0) {
-			Platform.interval = setInterval(() => Platform.tick(), 1000/core.targetFps)
+			Platform.interval = setInterval(() => Platform.tick(), 1000/core.ticksPerSecond)
 		} else {
 			window.tick = function() {
 				Platform.tick();

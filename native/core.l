@@ -4,8 +4,8 @@ skipInit unit core
 	NetworkMode mode = Local
 	int frame
 	float startTime // The time the application started in milliseconds
-	internal const targetFps = 30
-	const frameTime = 1000/targetFps
+	internal const ticksPerSecond = 30
+	const frameTime = 1000/ticksPerSecond
 	
 	startLocal
 		// mode = Local

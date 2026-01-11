@@ -12,7 +12,7 @@ class ReferenceSize
 enum TickMode: Interval, AnimationFrame
 	
 skipInit global unit Platform
-	public targetFps = 0
+	public ticksPerSecond = 0
 	public TickMode tickMode = Interval
 	public resetWhenCodeChanged = true
 		
@@ -67,7 +67,7 @@ skipInit global unit Platform
 				{1920}
 				{960 forWidthBelow:600 isMobile:true}
 			]
-			this.targetFps = 0
+			this.ticksPerSecond = 0
 			this.tickMode = Interval
 			this.resetWhenCodeChanged = true
 			
@@ -131,9 +131,9 @@ skipInit global unit Platform
 		if(window._tickInterval) {
 			clearInterval(_tickInterval)
 		}
-		if(Platform.targetFps) {
+		if(Platform.ticksPerSecond) {
 			if(Platform.tickMode == 0) {
-				_tickInterval = setInterval(() => Platform.tick(), 1000/Platform.targetFps)
+				_tickInterval = setInterval(() => Platform.tick(), 1000/Platform.ticksPerSecond)
 			} else {
 				window.tick = function() {
 					Platform.tick();

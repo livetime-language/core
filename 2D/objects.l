@@ -283,7 +283,7 @@ Object Effect
 		if size.x == 0 and size.y == 0: size = image.size
 	
 	internal override tick
-		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
+		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.ticksPerSecond)
 		if alpha and frame < image.frames.length
 			drawImage image, position, size, alpha, visibleFor, layer, frame, location
 		else

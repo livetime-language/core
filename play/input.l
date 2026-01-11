@@ -71,12 +71,12 @@ internal transient class InternalUser
 		int ahead = frame - inputFrame
 		
 		// Get the maximum number of frames we were ahead in the last 10 seconds
-		if ahead < 50: aheadHistory.add ahead, maxLength:10*core.targetFps
+		if ahead < 50: aheadHistory.add ahead, maxLength:10*core.ticksPerSecond
 		// int maxAhead = aheadHistory.max .
 		int maxAhead = aheadHistory.percentile 80
 		
 		// Calculate a rolling average of the last 10 minutes
-		maxAheadHistory.add maxAhead maxLength:10*60*core.targetFps
+		maxAheadHistory.add maxAhead maxLength:10*60*core.ticksPerSecond
 		bufferFrames = math.ceil(maxAheadHistory.average)
 		smoothFrame = frame - bufferFrames
 		

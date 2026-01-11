@@ -778,7 +778,7 @@ skipInit global unit input
 	// 	if core.mode < Local or !lobby.inLobby: return
 	// 	for players <- player
 	// 		let internalUser = internalUsers[.id]
-	// 			if player.lostAtFrame and core.frame > player.lostAtFrame + core.targetFps * 3
+	// 			if player.lostAtFrame and core.frame > player.lostAtFrame + core.ticksPerSecond * 3
 	// 				// If a player was lost by anybody and nobody who is still connected to that player
 	// 				// disagrees within a certrain time, we remove this player
 	// 				core.log "Removing player {player.id} at frame {core.frame}, player was lost at frame {player.lostAtFrame} and nobody disagreed", isCertain
@@ -787,7 +787,7 @@ skipInit global unit input
 	// 				internalUser.active = false
 	// 				updatePlayers
 	// 			else	
-	// 			if core.frame > internalUser.inputFrame + core.targetFps * 8
+	// 			if core.frame > internalUser.inputFrame + core.ticksPerSecond * 8
 	// 			and core.frame > internalUser.nextLostMessageAtFrame
 	// 				// If we lost the connection to a player, we post a lost message to everybody every 12 seconds
 	// 				core.log "Sending lost message for player {player.id} at frame {core.frame}", internalUser.inputFrame
@@ -795,7 +795,7 @@ skipInit global unit input
 	// 				inputs.writeInt32 localUser.inputFrame
 	// 				inputs.writeInt16 cast InputType.Lost
 	// 				inputs.writeInt16 player.id
-	// 				internalUser.nextLostMessageAtFrame = core.frame + core.targetFps * 12
+	// 				internalUser.nextLostMessageAtFrame = core.frame + core.ticksPerSecond * 12
 					
 	// 				// Send logfiles to server
 	// 				Platform.setTimeout 7 seconds: statistics.saveStatistics
@@ -1057,7 +1057,7 @@ skipInit global unit input
 							
 	// 					// If we are still connected to that player, we disagree to their removal
 	// 					// by posting the "StillConnected" message
-	// 					if lostInternalUser.dataChannel and core.frame < lostInternalUser.inputFrame + core.targetFps * 5
+	// 					if lostInternalUser.dataChannel and core.frame < lostInternalUser.inputFrame + core.ticksPerSecond * 5
 	// 						core.log "Lost {lostUserId} by {userId} -> We are still connected, sending StillConnected", lostInternalUser.dataChannel, core.frame, lostInternalUser.inputFrame, isCertain
 	// 						handleStillConnected lostUserId
 	// 					else
