@@ -229,21 +229,23 @@ immutable class DateTime
 	const daysInMonthCommon = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 	const daysInMonthLeap = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-	float time
-	int year
-	int month
-	int day
-	int dayOfWeek
-	int hour
-	int minute
-	int second
-	int timezoneOffset
+	float	time
+	int	year
+	int	month
+	int	day
+	int	dayOfWeek
+	int	hour
+	int	minute
+	int	second
+	int	milliseconds
+	int	timezoneOffset
 	
-	string twoDigitDay    := (this.day < 10 ? "0"+this.day : this.day.toString())
-	string twoDigitMonth  := (this.month < 10 ? "0"+this.month : this.month.toString())
-	string twoDigitHour   := (this.hour < 10 ? "0"+this.hour : this.hour.toString())
-	string twoDigitMinute := (this.minute < 10 ? "0"+this.minute : this.minute.toString())
-	string twoDigitSecond := (this.second < 10 ? "0"+this.second : this.second.toString())
+	string twoDigitDay	:= (this.day < 10 ? "0"+this.day : this.day.toString())
+	string twoDigitMonth	:= (this.month < 10 ? "0"+this.month : this.month.toString())
+	string twoDigitHour	:= (this.hour < 10 ? "0"+this.hour : this.hour.toString())
+	string twoDigitMinute	:= (this.minute < 10 ? "0"+this.minute : this.minute.toString())
+	string twoDigitSecond	:= (this.second < 10 ? "0"+this.second : this.second.toString())
+	string threeDigitMilliseconds	:= (this.milliseconds < 10 ? "00"+this.milliseconds : this.milliseconds < 100 ? "0"+this.milliseconds : this.milliseconds.toString())
 
 	static DateTime current() DateTime.fromTime(Time.now)
 		
@@ -284,6 +286,7 @@ immutable class DateTime
 			hour: math.floor (outputTime mod 86400000) / 3600000
 			minute: math.floor (outputTime mod 3600000) / 60000
 			second: math.floor (outputTime mod 60000) / 1000
+			milliseconds: math.floor (outputTime mod 1000)
 			timezoneOffset: outputTimezone
 		}
 	
@@ -423,22 +426,22 @@ immutable class DateTime
 		let timezoneIndex = hasMilliseconds ? 24 : 20
 		let timezoneSign = str[timezoneIndex-1]
 		return DateTime.fromValues(
-			year:   cast str[ 0.. 4]
-			month:  cast str[ 5.. 7]
-			day:    cast str[ 8..10]
-			hour:   cast str[11..13]
-			minute: cast str[14..16]
-			second: cast str[17..19]
-			milliseconds: hasMilliseconds ? cast str[20..23] : 0
-			inputTimezone: timezoneSign == "Z" ? 0 : (cast str[timezoneIndex..timezoneIndex+2])*3600000*(timezoneSign == "-" ? 1:-1)
+			year:	cast str[ 0.. 4]
+			month:	cast str[ 5.. 7]
+			day:	cast str[ 8..10]
+			hour:	cast str[11..13]
+			minute:	cast str[14..16]
+			second:	cast str[17..19]
+			milliseconds:	hasMilliseconds ? cast str[20..23] : 0
+			inputTimezone:	timezoneSign == "Z" ? 0 : (cast str[timezoneIndex..timezoneIndex+2])*3600000*(timezoneSign == "-" ? 1:-1)
 			outputTimezone
 		)
 		
 	implicit PlainTimeString toPlainTimeString
-		return cast "{year}-{twoDigitMonth}-{twoDigitDay} {twoDigitHour}:{twoDigitMinute}:{twoDigitSecond}"
+		return cast "{year}-{twoDigitMonth}-{twoDigitDay} {twoDigitHour}:{twoDigitMinute}:{twoDigitSecond}.{threeDigitMilliseconds}Z"
 	
 	implicit TimeString toTimeString
-		return cast "{year}-{twoDigitMonth}-{twoDigitDay} {twoDigitHour}:{twoDigitMinute}:{twoDigitSecond}"
+		return cast "{year}-{twoDigitMonth}-{twoDigitDay} {twoDigitHour}:{twoDigitMinute}:{twoDigitSecond}.{threeDigitMilliseconds}Z"
 	
 	static measure: void() do
 		let startTime = preciseTime
