@@ -1,46 +1,46 @@
-enum string PlainDateFormatWeekday
+enum string DateTimeFormatWeekday
 	long	// Thursday
 	short	// Thu
 	narrow	// T
 
-enum string PlainDateFormatEra
+enum string DateTimeFormatEra
 	long	// Anno Domini
 	short	// AD
 	narrow	// A
 
-enum string PlainDateFormatYear
+enum string DateTimeFormatYear
 	numeric	// 2026
 	twoDigit = "2-digit"	// 26
 
-enum string PlainDateFormatMonth
+enum string DateTimeFormatMonth
 	numeric	// 3
 	twoDigit = "2-digit"	// 03
 	long	// March
 	short	// Mar
 	narrow	// M
 
-enum string PlainDateFormatDay
+enum string DateTimeFormatDay
 	numeric	// 20
 	twoDigit = "2-digit"	// 20
 
-enum string PlainDateFormatDayPeriod
+enum string DateTimeFormatDayPeriod
 	narrow	// at night
 	short	// at night
 	long	// at night
 
-enum string PlainDateFormatHour
+enum string DateTimeFormatHour
 	numeric	// 1
 	twoDigit = "2-digit"	// 01
 
-enum string PlainDateFormatMinute
+enum string DateTimeFormatMinute
 	numeric	// 5
 	twoDigit = "2-digit"	// 05
 
-enum string PlainDateFormatSecond
+enum string DateTimeFormatSecond
 	numeric	// 7
 	twoDigit = "2-digit"	// 07
 
-enum string PlainDateFormatTimeZoneName
+enum string DateTimeFormatTimeZoneName
 	short	// PST
 	long	// Pacific Standard Time
 	shortOffset	// GMT-8
@@ -48,54 +48,54 @@ enum string PlainDateFormatTimeZoneName
 	shortGeneric	// PT
 	longGeneric	// Pacific Time
 
-enum string PlainDateFormatLocaleMatcher
+enum string DateTimeFormatLocaleMatcher
 	lookup	// locale matching algorithm
 	bestFit = "best fit"	// locale matching algorithm (default)
 
-enum string PlainDateFormatHourCycle
+enum string DateTimeFormatHourCycle
 	h11	// 0-11 hour cycle
 	h12	// 1-12 hour cycle
 	h23	// 0-23 hour cycle
 	h24	// 1-24 hour cycle
 
-enum string PlainDateFormatDateStyle
+enum string DateTimeFormatDateStyle
 	full	// Sunday, 20 December 2020
 	long	// December 20, 2020
 	medium	// Dec 20, 2020
 	short	// 12/20/2020
 
-enum string PlainDateFormatTimeStyle
+enum string DateTimeFormatTimeStyle
 	full	// 2:23:16 PM GMT+11
 	long	// 2:23:16 PM GMT+11
 	medium	// 2:23:16 PM
 	short	// 2:23 PM
 
-dynamic PlainDateFormatOptions
-	PlainDateFormatLocaleMatcher	localeMatcher	// Algorithm to use for locale matching
+dynamic DateTimeFormatOptions
+	DateTimeFormatLocaleMatcher	localeMatcher	// Algorithm to use for locale matching
 	string	calendar	// "chinese", "gregory", "persian", etc.
 	string	numberingSystem	// "arab", "hans", "mathsans", etc.
 	bool	hour12	// true: 12-hour time, false: 24-hour time
-	PlainDateFormatHourCycle	hourCycle	// h11, h12, h23, or h24
+	DateTimeFormatHourCycle	hourCycle	// h11, h12, h23, or h24
 	string	timeZone	// IANA time zone name, e.g. "UTC", "America/New_York", "Europe/Berlin"
-	PlainDateFormatWeekday	weekday	// long: Thursday, short: Thu, narrow: T
-	PlainDateFormatEra	era	// long: Anno Domini, short: AD, narrow: A
-	PlainDateFormatYear	year	// numeric: 2026, 2-digit: 26
-	PlainDateFormatMonth	month	// numeric: 3, 2-digit: 03, long: March, short: Mar, narrow: M
-	PlainDateFormatDay	day	// numeric: 20, 2-digit: 20
-	PlainDateFormatDayPeriod	dayPeriod	// Only works with 12-hour clock. narrow/short: at night, long: at night
-	PlainDateFormatHour	hour	// numeric: 1, 2-digit: 01
-	PlainDateFormatMinute	minute	// numeric: 5, 2-digit: 05
-	PlainDateFormatSecond	second	// numeric: 7, 2-digit: 07
+	DateTimeFormatWeekday	weekday	// long: Thursday, short: Thu, narrow: T
+	DateTimeFormatEra	era	// long: Anno Domini, short: AD, narrow: A
+	DateTimeFormatYear	year	// numeric: 2026, 2-digit: 26
+	DateTimeFormatMonth	month	// numeric: 3, 2-digit: 03, long: March, short: Mar, narrow: M
+	DateTimeFormatDay	day	// numeric: 20, 2-digit: 20
+	DateTimeFormatDayPeriod	dayPeriod	// Only works with 12-hour clock. narrow/short: at night, long: at night
+	DateTimeFormatHour	hour	// numeric: 1, 2-digit: 01
+	DateTimeFormatMinute	minute	// numeric: 5, 2-digit: 05
+	DateTimeFormatSecond	second	// numeric: 7, 2-digit: 07
 	int	fractionalSecondDigits	// 1, 2, or 3 digits for fractional seconds
-	PlainDateFormatTimeZoneName	timeZoneName	// short: PST, long: Pacific Standard Time, shortOffset: GMT-8, etc.
-	PlainDateFormatDateStyle	dateStyle	// Shortcut for date formatting: full, long, medium, short
-	PlainDateFormatTimeStyle	timeStyle	// Shortcut for time formatting: full, long, medium, short
+	DateTimeFormatTimeZoneName	timeZoneName	// short: PST, long: Pacific Standard Time, shortOffset: GMT-8, etc.
+	DateTimeFormatDateStyle	dateStyle	// Shortcut for date formatting: full, long, medium, short
+	DateTimeFormatTimeStyle	timeStyle	// Shortcut for time formatting: full, long, medium, short
 
 // Formats a date and time according to language, locale, and time zone.
 // This is quite complex, because the start of daylight saving time is different in every country and changes every year.
-js(Intl.PlainDateFormat) class PlainDateFormat
-	inline js PlainDateFormat: PlainDateFormatOptions options
-		new Intl.PlainDateFormat(Loca.locale, options)
+js(Intl.DateTimeFormat) class DateTimeFormat
+	inline js DateTimeFormat: DateTimeFormatOptions options
+		new Intl.DateTimeFormat(Loca.locale, options)
 
 	inline js string format: TimeString timeString
 		this.format(new Date(timeString))
@@ -134,57 +134,57 @@ struct float
 	// (31.12.)
 	inline string dayMonthString
 		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat dayMonthFormat
+	private static DateTimeFormat dayMonthFormat
 		
 	// (31.12.2000)
 	inline string dayMonthYearString
 		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayMonthYearFormat
+	private static DateTimeFormat dayMonthYearFormat
 		
 	// (31 December 2000)
 	inline string dayMonthNameYearString
 		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayMonthNameYearFormat
+	private static DateTimeFormat dayMonthNameYearFormat
 		
 	// (31 Dec)
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
-	private static PlainDateFormat dayShortMonthNameFormat
+	private static DateTimeFormat dayShortMonthNameFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
 		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthNameYearFormat
+	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
 		
 	// (Monday, December 31)
 	inline string dayOfWeekDayMonthString
 		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthFormat
+	private static DateTimeFormat dayOfWeekDayMonthFormat
 		
 	// (Monday)
 	inline string dayOfWeekString
 		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekFormat
+	private static DateTimeFormat dayOfWeekFormat
 		
 	// (Mon)
 	inline string dayOfWeekShortString
 		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekShortFormat
+	private static DateTimeFormat dayOfWeekShortFormat
 		
 	// (12:59 pm)
 	inline string hourMinuteString
 		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat hourMinuteFormat
+	private static DateTimeFormat hourMinuteFormat
 		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
 		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthAtHourMinuteFormat
+	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
 		
 	// (Monday, 31 December 2000, 12:59 pm)
 	inline string dayOfWeekDayMonthYearHourMinuteString
 		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthYearHourMinuteFormat
+	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
 
 class string
 	implicit inline TimeString toTimeString() this
@@ -201,57 +201,57 @@ string TimeString
 	// (31.12.)
 	inline string dayMonthString
 		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat dayMonthFormat
+	private static DateTimeFormat dayMonthFormat
 		
 	// (31.12.2000)
 	inline string dayMonthYearString
 		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayMonthYearFormat
+	private static DateTimeFormat dayMonthYearFormat
 		
 	// (31 December 2000)
 	inline string dayMonthNameYearString
 		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayMonthNameYearFormat
+	private static DateTimeFormat dayMonthNameYearFormat
 		
 	// (31 Dec)
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
-	private static PlainDateFormat dayShortMonthNameFormat
+	private static DateTimeFormat dayShortMonthNameFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
 		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthNameYearFormat
+	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
 		
 	// (Monday, December 31)
 	inline string dayOfWeekDayMonthString
 		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthFormat
+	private static DateTimeFormat dayOfWeekDayMonthFormat
 		
 	// (Monday)
 	inline string dayOfWeekString
 		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekFormat
+	private static DateTimeFormat dayOfWeekFormat
 		
 	// (Mon)
 	inline string dayOfWeekShortString
 		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekShortFormat
+	private static DateTimeFormat dayOfWeekShortFormat
 		
 	// (12:59 pm)
 	inline string hourMinuteString
 		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat hourMinuteFormat
+	private static DateTimeFormat hourMinuteFormat
 		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
 		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthAtHourMinuteFormat
+	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
 		
 	// (Monday, 31 December 2000, 12:59 pm)
 	inline string dayOfWeekDayMonthYearHourMinuteString
 		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
-	private static PlainDateFormat dayOfWeekDayMonthYearHourMinuteFormat
+	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
 	
 // Represents a point in time using the JavaScript Date class.
 // It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
@@ -319,56 +319,56 @@ js(Date) internal transient class Date
 		// (31.12.)
 	inline string dayMonthString
 		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(this)
-	private static PlainDateFormat dayMonthFormat
+	private static DateTimeFormat dayMonthFormat
 		
 	// (31.12.2000)
 	inline string dayMonthYearString
 		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(this)
-	private static PlainDateFormat dayMonthYearFormat
+	private static DateTimeFormat dayMonthYearFormat
 		
 	// (31 December 2000)
 	inline string dayMonthNameYearString
 		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(this)
-	private static PlainDateFormat dayMonthNameYearFormat
+	private static DateTimeFormat dayMonthNameYearFormat
 		
 	// (31 Dec)
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
-	private static PlainDateFormat dayShortMonthNameFormat
+	private static DateTimeFormat dayShortMonthNameFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
 		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(this)
-	private static PlainDateFormat dayOfWeekDayMonthNameYearFormat
+	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
 		
 	// (Monday, December 31)
 	inline string dayOfWeekDayMonthString
 		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(this)
-	private static PlainDateFormat dayOfWeekDayMonthFormat
+	private static DateTimeFormat dayOfWeekDayMonthFormat
 		
 	// (Monday)
 	inline string dayOfWeekString
 		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(this)
-	private static PlainDateFormat dayOfWeekFormat
+	private static DateTimeFormat dayOfWeekFormat
 		
 	// (Mon)
 	inline string dayOfWeekShortString
 		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(this)
-	private static PlainDateFormat dayOfWeekShortFormat
+	private static DateTimeFormat dayOfWeekShortFormat
 		
 	// (12:59 pm)
 	inline string hourMinuteString
 		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(this)
-	private static PlainDateFormat hourMinuteFormat
+	private static DateTimeFormat hourMinuteFormat
 		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
 		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(this)
-	private static PlainDateFormat dayOfWeekDayMonthAtHourMinuteFormat
+	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
 		
 	// (Monday, 31 December 2000, 12:59 pm)
 	inline string dayOfWeekDayMonthYearHourMinuteString
 		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(this)
-	private static PlainDateFormat dayOfWeekDayMonthYearHourMinuteFormat
+	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
 
 	
