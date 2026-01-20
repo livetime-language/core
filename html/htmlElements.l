@@ -48,6 +48,7 @@ global static class html
 			if !currentNode or (currentNode.tagName?.toLowerCase != tag or currentNode.sourceLocation != sourceLocation)
 				// Create new element
 				element = HTMLElement.create tag
+				element.sourceLocation = sourceLocation
 				nextNode = currentNode
 				if nextNode: parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
@@ -82,7 +83,6 @@ global static class html
 				if attributes.onBlur != null:	element.onblur = attributes.onBlur
 				if attributes.onFocus != null:	element.onfocus = attributes.onFocus
 			
-		element.sourceLocation = sourceLocation
 		if styleWhenHovering != null
 			Style styleWhenNotHovering = getStyleToRevert originalStyle:style, styleWhenHovering
 			element.onpointerover = setStyle(element, styleWhenHovering)
@@ -772,15 +772,17 @@ global static class html
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
 
-	global overlay: expand Attributes attributes = {} // The attributes of the element
+	global overlay: void() children = null            // The children of the element
+	                void() onClickOutside = null
+		            expand Attributes attributes = {} // The attributes of the element
 		            expand Style style = null         // Apply this css style to the element
-		            void() children = null            // The children of the element
 		            SourceCodeLocation location
 		HTMLElement element, nextNode
 		string sourceLocation = location?.toString
 		
 		if !currentOverlay or currentOverlay.sourceLocation != sourceLocation
 			element = HTMLElement.create "div"
+			element.sourceLocation = sourceLocation
 			nextNode = currentOverlay
 			if nextNode: documentBody.parentNode.insertBefore element, nextNode
 			else         documentBody.parentNode.appendChild element
@@ -802,7 +804,10 @@ global static class html
 			if attributes.class != null:        element.class = attributes.class
 			if attributes.onClick != null:      element.onclick = attributes.onClick
 			if attributes.onRightClick != null: element.oncontextmenu = attributes.onRightClick
-				
+		
+		if onClickOutside != null
+			element.onclick = if .target == element: onClickOutside()
+
 		let prevParentNode = parentNode
 		let prevCurrentNode = currentNode
 		parentNode = element
