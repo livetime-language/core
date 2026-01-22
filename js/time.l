@@ -331,6 +331,11 @@ js(Date) internal transient class Date
 		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(this)
 	private static DateTimeFormat dayMonthNameYearFormat
 		
+	// (31 Dec 2000)
+	inline string dayShortMonthNameYearString
+		(dayShortMonthNameYearFormat?.locale == Loca.locale ? dayShortMonthNameYearFormat : (dayShortMonthNameYearFormat = {options:{day:numeric, month:short, year:numeric}})).format(this)
+	private static DateTimeFormat dayShortMonthNameYearFormat
+		
 	// (31 Dec)
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
@@ -360,6 +365,11 @@ js(Date) internal transient class Date
 	inline string hourMinuteString
 		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(this)
 	private static DateTimeFormat hourMinuteFormat
+		
+	// (12:59:00 pm)
+	inline string hourMinuteSecondString
+		(hourMinuteSecondFormat?.locale == Loca.locale ? hourMinuteSecondFormat : (hourMinuteSecondFormat = {options:{hour:numeric, minute:twoDigit, second:twoDigit}})).format(this)
+	private static DateTimeFormat hourMinuteSecondFormat
 		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
