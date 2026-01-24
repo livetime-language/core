@@ -576,7 +576,7 @@ internal transient skipInit unit core
 			
 	internal saveLogs
 		// Ensure that current eventLog is added to the table even if we haven't processed a single frame
-		file.saveText "{input.localUser.id} {Platform.appName} {Date.now.invariantDayMonthYearHourMinuteSecondString} v{Platform.buildVersion}.csv", logs
+		file.saveText "{input.localUser.id} {Platform.appName} {Date.now.isoString} v{Platform.buildVersion}.csv", logs
 			
 	saveEventStream
 		Buffer buffer = {}
@@ -733,7 +733,7 @@ internal transient skipInit unit core
 		isPremiere = true
 		initAll
 		log "{Platform.url}"
-		log "{Date.realtime.dayMonthYearHourMinuteSecondString} v{Platform.buildVersion}"
+		log "{Date.realtime.dayMonthNameYearString} {Date.realtime.hourMinuteSecondString} v{Platform.buildVersion}"
 		log "{Platform.userAgent}"
 		startInLobby = true
 		this.gameId = gameId
