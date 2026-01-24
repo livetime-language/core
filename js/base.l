@@ -1879,6 +1879,7 @@ interface object
 	inline js string toJson() JSON.stringify(this)
 	// inline js string toString() object_stringify(this, 3)
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
+	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
 		
 	static internal js string stringify: object subject, int depth = 0 
 		switch(typeof subject)
