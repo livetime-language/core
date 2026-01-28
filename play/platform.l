@@ -37,15 +37,13 @@ transient skipInit unit Platform
 	private inline js void initMedia
 		_constCache = [null]
 		audio.init();
-		$Image.init?.();
-		Font.init?.();
-		Sound.init?.();
-		PlainDate.init();
+		media.init();
 		
 	private js void initPlatform
 		statistics.init();
 		debug.init();
 		IndexedDB?.init();
+		PlainDate.init();
 		Platform.init();
 		graphics.init();
 		math.init();
