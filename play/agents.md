@@ -6,13 +6,10 @@ alwaysApply: true
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
-# Avoid unwanted overlaps
-Before you start adding anything on the screen, review what's currently on screen and make sure nothing you draw overlaps with something it shouldn't overlap with.
-
-{currentlyOnScreen}
+Always write the shortest, simplest possible and most efficient code.
+Avoid code duplication. Do not overengineer. Keep it simple.
 
 # Example game implementing the board game "Go" in the LiveTime programming language
-´´´
 enum Phase: PlacePiece, GameOver
 
 app
@@ -158,12 +155,7 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-´´´
-
-
-
 # Another example game in the LiveTime programming language
-´´´
 app
 	int round
 	Player currentPlayer
@@ -330,150 +322,137 @@ class Box
 	tick
 		// Draw blue box with white outline
 		drawRectangle rect.position, rect.size, Color("#0000ff"), outlineColor:Color("#ffffff"), outlineWidth:5
-´´´
 
+# Basics of the LiveTime programming language
+enum State
+	InProgress
+	Done
 
-# The LiveTime programming language
-```
-app	
-	int[] getNumbers: int start, int end
-		int[] list
-		// In for loops and lambdas, use . to access the current value
-		for start to end
-			if . % 2 == 0: list.add .
-		return list
-		
-	// We write the return type in front of the function.
-	// The function getSum takes a list of integers and returns an integer
-	int getSum: int[] list
-		int sum
-		for list
-			sum += .
-		return sum
+class Document
+	string id
+	float created
+	State state
 
-	samples
+static class app
+	Color primaryColor = #0000ff
+	Document[] documents
+
+	start
+		// List (array that grows in size as needed)
+		Document[] documents = [
+			{created:DateTime.now, state:InProgress}
+		]
+		Document doc = {id:"002e", created:DateTime.now, state:Done}
+		documents.add doc
+		documents.remove doc
+		documents.orderBy.created
+		documents.clear
+		let firstTwoItems = documents[..2]
+		let lastTwoItems = documents[-2..]
+
+		// Dictionary (hashtable that maps keys to values)
+		Document[string] documentsById
+		documentsById["002f"] = {id:"002f"}
+		documentsById.remove "002f"
+		documentsById.clear
+		for documents as doc
+			documentsById[doc.id] = doc
+		for documentsById as doc, id
+			print "id:{id} created:{doc.created.toDayMonthYearString}"
+
+		// Conditions
+		if documents.length > 0
+			print "There are {documents.length} documents."
+		else
+			print "There are no documents."
+
+		// Iterate over a List
+		for documents as doc
+			print doc.id
+
+		// Iterate over an integer range
+		// Prints 01234
+		for 0 to 5 as i
+			print i
+
+		// If you leave out the lower bound, it defaults to 0
+		// If you leave out the index variable, it defaults to i
+		for 5
+			print i
+
+		// You can use "." to refer to the current item while iterating
+		for documents
+			print .
+
+		// Prints 01234
+		for 5
+			print .
+			
+		// Use the "backwards" keyword to iterate backwards
+		// Prints 43210
+		for 5 backwards as i
+			print i
+
+		// Iterate over a List by index
+		for documents.length as i
+			print documents[i].state
+
+		// Iterate over a Dictionary
+		for documentsById as value, key
+			print "{key}: {value}"
+
 		// If you divide an integer by an integer in LiveTime, you always get a float
 		float fraction = 1 / 2
 
 		// Use math.floor after a division if you need an integer
 		int flooredInteger = math.floor(1 / 2)
-		
-		// If you divide an IntVector2 (interger vector) by a value, you always get a Vector2 (float vector)
-		IntVector2 gridPos = {0,0}
-		Vector2 startPos = gridPos / 2
-		
-		// Use round to round an integer vector (IntVector2) to a float vector (Vector2)
-		// You can also use floor or ceil
-		Direction dir = Up
-		IntVector2 centerGridPos = (startPos - dir.vector * (cellCount.x - 1) / 2).round
-		
-		// Use a "for" loop to iterate over a list
-		// Use "." to get the current item while iterating
-		// Use "i" to get the index of the current item while iterating
-		// In LiveTime, each player always has an "index", a "color" and a "score" by default.
-		for players
-			print "The Player with the index {i} has the color {.color} and the score {.score}"
 
-		// In a for loop, we can also specify the lower inclusiv bound and the upper exclusive bound. This will iterate from 0 to 7:
-		for 0 to 8 as i
-			print i
+		// Query
+		Player[] healthyPlayers = players.where.health > 0
+		Player[] top10Players = (players.orderByDescending.score).take 10
+		Player[] seniors = (users.where.age > 65).orderBy.age
+		Player[] highscoreList = (player.where.isAlive).orderByDescending.score
 
-		// In a for loop, the lower bound is 0 by default, and the current index is named "i" by default, so we can leave them out. This will iterate from 0 to 7:
-		for 8
-			print i
+		// Cast
+		string jsonString = "\{value:7\}"
+		dynamic config = json.parse(jsonString)
+		int value = (int)config.value
 
-		// This iterates from -1 (inclusive) to 2 (exclusiv), so it prints -1, 0, 1,
-		for -1 to 2
-			print "{i}, "
-
-		// We can slice a list like this
-		Player[] theFirstTwoPlayers = players[..2]
-		Player[] theLastThreePlayers = players[-3..]
+		// In LiveTime, the % symbol is used for percentages, like in css, e.g. width:100%
+		// To calucate the remainder of a division, use mod or remainder. 
+		// mod returns the remainder after a floored division, always producing a result with the same sign as the divisor, like in Python.
+		float bufferSize = 100
+		let a = 107 mod bufferSize // a = 7
+		let b = -1 mod bufferSize  // b = 99
 		
-		// We can order a list like this
-		Player[] playersOrderedByScore = players.orderByDescending.score
-
-		// If you need a IntVector2, you need to declare the type, otherwise you will get a IntVector2
-		IntVector2 originGridPos = {0,0}
-
-		// Vector2 and IntVector2 are structs and therefore value types, so they can't be null. But you can set them to Vector2.None or IntVector2.none
-		IntVector2 currentGridPos = IntVector2.none
-
-		// Set enum value 
-		phase = PlacePiece
-
-		// Time.now returns the current time in milliseconds
-		Time halfASecondFromNow = Time.now + 500 milliseconds
-
-		// Print name and score of first 2 players
-		for 2
-			Player player = players[.]
-			print "{player.name}: {player.score}"
-			
-		// Create a list of all scores of all players
-		int[] listOfScores = players.select.score
-		
-		// Are all players alive?
-		bool areAllPlayersAlive = players.all.alive
-		
-		// Iterate players in reverse order and print player names
-		for players backwards
-			print .name
-			
-		// Create a list of all number between 10 and 100
-		int[] numbers = for 10..100 .
-		
-		// Get players with even index and a score more than 3
-		Player[] evenPlayers = players.where.index % 2 == 0 and .score > 3
-		
-		int totalScoreOfAlivePlayer = players.where.alive | total.score
-		
-		// Find player with highest score
-		Player winner = players.withMax.score
-		
-		int maxScore = math.max players[0].score, players[1].score
-		
-		Player[] firstThreePlayers = players[..3]
-		
-		Player[] lastFourPlayers = players[-4..]
-		
-		Player[] top3Players = players.orderByDescending.score | take 3
-
-		// Does any player have a score of 10?
-		// "any" require an argument, don't make the mistake of writing just "players.any"
-		bool hasAnybodyAScoreOf10 = players.any.score == 10
-
-		// Are all players alive?
-		bool areAllPlayersAlive = players.all.alive
-		
-		delay 1 seconds
-			print "1 second later"
-			
-	// The "tick" function is called on every frame (30 times per second)
+# Images
+Place images in the "media" folder.  If you place "Example.png" in this folder, you can use "Example" in drawImage. For example:
+app
 	tick
-		// In LiveTime, all drawing functions center the subject at the given position
+		drawImage Example, position:{0,0} // draws the image "media/Example.png"
 
-		// Draw a filled rectangle centered at {10,20} with a size of {100,100}
-		drawRectangle position:{10,20}, size:{100,100}, color:currentPlayer.color
+# More information
+Read the full LiveTime library documentation "lib/core/play/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
 
-		// Draw a rectangle outline centered at {30,40} with a line width of 10
-		drawRectangle position:{30,40}, size:{100,100}, outlineColor:currentPlayer.color, outlineWidth:10
+"lib/core/js/" contains the LiveTime standard libaray (int, float, string, List, Dictionary, etc).
+"lib/core/play/" contains the LiveTime graphics and input library (drawImage, drawRectangle, onTouchDown, onTouchUp, player.gameController, etc).
 
-		// If you put the images "Cat0.png" and "Cat1.png" in the media folder, you get the image Cat with 2 frames
-		// Draw frame 0 of the Cat image and center it at {5,5}
-		drawImage Cat, positon:{5,5}, frame:0
+# MOST IMPORTANT: When you are done writing code, test if it is working!
+1. Double check you wrote the shortest, simplest possible and most efficient code.
 
-		// Draw frame 1 of the Cat image mirrored horizontally
-		drawImage Cat, positon:{5,5}, frame:1, flipX:true
+2. Your code should contain print statements that output all relevant information to verify that everything works as specified. In case something isn't working, your print statements need to output everything you need to find the cause of the problem. For example:
+Player
+	tick
+		print "Player {color} moves in {direction} to {position}"
 
-```
+3. Write a unit test function in 'src/tests.l' that simulates user inputs to test all the functionality you implemented. For example:
+tests
+	playerShouldMoveRight
+		setGameController playerIndex:0 leftStick:{1,0}
+		wait 500 milliseconds		
 
-# Check errors and fix all problems
-Always look at the linter errors and fix all problems! Don't stop until all errors are fixed!
+4. Use the RunTest tool to run the test function you wrote (e.g. 'tests.playerShouldMoveRight') and get the debug logs that your print statements output.
 
-# MOST IMPORTANTLY: Always Run, Test and Debug
-To test and verify the app, add debug logs using print statements for everything that is happening in the app. For example, print debug logs for all user actions like clicks. Print the position of all moving objects during every frame of an animation to make sure all animations are correct and smooth.
+5. Carefully analyze the debug logs and check if everything is working.
 
-When you are done, use the "Run and Test" MCP server to thoroughly test all possible cases. Make sure you test all the code and all edge cases. Thoroughly review the debug logs and what is currently on screen.
-
-Fix all errors and bugs you encounter.
+6. Fix all problems and repeat until you verified everything works as specified.

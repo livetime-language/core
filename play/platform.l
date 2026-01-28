@@ -143,14 +143,23 @@ transient skipInit unit Platform
 	// Since the const cache is cleared when the code changes, we reinitialize the media
 	private async replay
 		try
-			heartbeat "replay"
-			initMedia
-			initBackend
-			openMedia
-				goToCurrentFrame
+			core.runTest
+			// heartbeat "replay"
+			// initMedia
+			// initBackend
+			// openMedia
+			// 	core.runTest
+			// 	goToCurrentFrame
 		catch
 			sendErrorToEditor .
 			sendFinished
+
+	private runTest: string testFunction
+		try
+			core.runTest testFunction
+		catch
+			sendErrorToEditor .
+		sendToEditor({type:"finishedTest", testFunction})
 			
 	generateIntegrationTest: GenerateIntegrationTestMode mode
 		input.generateIntegrationTest = mode

@@ -29,7 +29,7 @@ internal transient skipInit unit core
 	visible string errorMessage     // The error message if we caught any exceptions in the main loop
 	public float startTime          // The time the room was created, syncroniced between all clients
 	public float serverStartTime     // Used to calculate the same Time.now from core.frame for all users in core.step
-	visible int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
+	int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
 	internal int frames             // Total number of frames we have inputs for
 	internal int frameWithNewWatches// First frame with new watches, do not send watches for frames below this
 	int watchIndex
@@ -203,6 +203,16 @@ internal transient skipInit unit core
 		replay frame to targetFrame
 		adjustStartTime
 		animationFrame
+		isPremiere = true
+
+	runTest: string testFunction = "main"
+		isPremiere = false
+		reset
+		let parts = testFunction.split(".")
+		if parts.length < 2: parts = ["tests", testFunction or "main"]
+		dynamic test = globals[parts[0]][parts[1]]
+		if test != null: test()
+		graphics.finishFrame
 		isPremiere = true
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
@@ -831,12 +841,14 @@ global transient unit System
 	// Prints a message to the console
 	global js void print: logstring text // The text, variables or expressions to print
 		                  SourceCodeLocation location
-		// (location ? log(text, location.start, location.file) : log(text))
 		core.log(text);
-		if(Platform.isDebug) {
-			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
-			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location ? location.start : 0, file:location ? location.file: ""});
+		if(Platform.isDebug && location) {
+			_sendToEditor({type:"log", text, file:location.file, start:location.start});
 		}
+		// if(Platform.isDebug) {
+		// 	var stringValue = typeof text === "string" ? text : JSON.stringify(text);
+		// 	if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location ? location.start : 0, file:location ? location.file: ""});
+		// }
 
 internal class StatisticsGraph
 	int userIndex = -1
