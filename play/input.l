@@ -114,7 +114,7 @@ priority class Player
 	internal Key[] keysCurrentlyDown
 	
 	// Controller input
-	visible GameController controller = {}
+	visible GameController gameController = {}
 	internal int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
 	internal bool isReadyInLobby
@@ -347,8 +347,8 @@ internal DigitalButton
 	Key key
 	
 	bool state, prevState
-	bool down := state and not prevState
-	bool up   := not state and prevState
+	bool wasJustPressed := state and not prevState
+	bool wasJustReleased := not state and prevState
 	
 	toString := name
 	
@@ -803,7 +803,7 @@ skipInit global unit input
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
-			player?.controller.startFrame
+			player?.gameController.startFrame
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
@@ -920,7 +920,7 @@ skipInit global unit input
 					internalUser.navigations.add inputs.readString
 				else
 				if inputType == GameController
-					GameController c = player.controller
+					GameController c = player.gameController
 					
 					// Controller axix
 					c.leftStick.x = inputs.readFloat32
@@ -1003,14 +1003,14 @@ skipInit global unit input
 		// 		let down  = .controllerKeyDownFrame[1]
 		// 		let left  = .controllerKeyDownFrame[2]
 		// 		let up    = .controllerKeyDownFrame[3]
-		// 		if right or left: .controller.leftStick.x = right >= left ? 1 : -1
-		// 		if down  or up:   .controller.leftStick.y = down  >= up   ? 1 : -1
-		// 		if .controllerKeyDownFrame[4]: .controller.a.state = true
-		// 		if .controllerKeyDownFrame[5]: .controller.b.state = true
-		// 		if .controllerKeyDownFrame[6]: .controller.x.state = true
-		// 		if .controllerKeyDownFrame[7]: .controller.y.state = true
-		// 		.controller.inMotion = math.abs(.controller.leftStick.x) >= GameController.deadZone
-		// 		                    or math.abs(.controller.leftStick.y) >= GameController.deadZone
+		// 		if right or left: .gameController.leftStick.x = right >= left ? 1 : -1
+		// 		if down  or up:   .gameController.leftStick.y = down  >= up   ? 1 : -1
+		// 		if .controllerKeyDownFrame[4]: .gameController.a.state = true
+		// 		if .controllerKeyDownFrame[5]: .gameController.b.state = true
+		// 		if .controllerKeyDownFrame[6]: .gameController.x.state = true
+		// 		if .controllerKeyDownFrame[7]: .gameController.y.state = true
+		// 		.gameController.inMotion = math.abs(.gameController.leftStick.x) >= GameController.deadZone
+		// 		                    or math.abs(.gameController.leftStick.y) >= GameController.deadZone
 				
 		for players -> p
 			// Left stick
@@ -1018,13 +1018,13 @@ skipInit global unit input
 			let down  = .controllerKeyDownFrame[ControllerButton.Down]
 			let left  = .controllerKeyDownFrame[ControllerButton.Left]
 			let up    = .controllerKeyDownFrame[ControllerButton.Up]
-			if right or left: .controller.leftStick.x = right >= left ? 1 : -1
-			if down  or up:   .controller.leftStick.y = down  >= up   ? 1 : -1
-			.controller.inMotion = math.abs(.controller.leftStick.x) >= GameController.deadZone
-			                    or math.abs(.controller.leftStick.y) >= GameController.deadZone
+			if right or left: .gameController.leftStick.x = right >= left ? 1 : -1
+			if down  or up:   .gameController.leftStick.y = down  >= up   ? 1 : -1
+			.gameController.inMotion = math.abs(.gameController.leftStick.x) >= GameController.deadZone
+			                    or math.abs(.gameController.leftStick.y) >= GameController.deadZone
 			
 			// Buttons
-			for .controller.buttons
+			for .gameController.buttons
 				if p.controllerKeyDownFrame[i]: 
 					.state = true
 					
@@ -1042,7 +1042,7 @@ skipInit global unit input
 			
 		if core.mode == Local and not core.simulateConnection
 			if players.length >= 1
-				GameController c = players[0].controller
+				GameController c = players[0].gameController
 				if c.type == Keyboard
 					c.up.assign    "↑"     Up
 					c.right.assign "→"     Right
@@ -1052,7 +1052,7 @@ skipInit global unit input
 					c.b.assign     "X"     X
 			
 			if players.length >= 2
-				GameController c = players[1].controller
+				GameController c = players[1].gameController
 				if c.type == Keyboard
 					c.up.assign    "W"     W
 					c.right.assign "D"     D
@@ -1062,7 +1062,7 @@ skipInit global unit input
 					c.b.assign     "G"     G
 			
 			if players.length >= 3
-				GameController c = players[2].controller
+				GameController c = players[2].gameController
 				if c.type == Keyboard
 					c.up.assign    "I"     I
 					c.right.assign "L"     L
@@ -1074,13 +1074,13 @@ skipInit global unit input
 			controllerButtonMap.clear
 			for players -> player
 				player.controllerKeyDownFrame.clear
-				for .controller.buttons
+				for .gameController.buttons
 					controllerButtonMap[.key] = {userId:player.id, buttonIndex:i}
 					player.controllerKeyDownFrame.add 0
 		else
 			controllerButtonMap.clear
 			for players
-				GameController c = .controller
+				GameController c = .gameController
 				if c.type == Keyboard
 					c.up.assign    "↑"     Up
 					c.right.assign "→"     Right
@@ -1092,7 +1092,7 @@ skipInit global unit input
 			controllerButtonMap.clear
 			// TODO: Research why this is sometimes called before we have a local player
 			if localPlayer
-				for localPlayer.controller.buttons
+				for localPlayer.gameController.buttons
 					controllerButtonMap[.key] = {userId:localPlayer.id, buttonIndex:i}
 				
 			controllerButtonMap[W] = {userId:localUser.id, buttonIndex:1}

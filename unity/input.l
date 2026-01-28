@@ -35,7 +35,7 @@ class CoreUser
 	bool enableTouch = true
 	
 	// Controller
-	visible GameController controller = {}
+	visible GameController gameController = {}
 	Key[] mapKeyToController = [Right, Down, Left, Up, Space, X, Alt, Ctrl]
 	int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
@@ -44,10 +44,10 @@ class CoreUser
 	int lostAtFrame
 	
 	CoreUser
-		controller.a.name = "SPACE"
-		controller.b.name = "X"
-		controller.x.name = "ALT"
-		controller.y.name = "CTRL"
+		gameController.a.name = "SPACE"
+		gameController.b.name = "X"
+		gameController.x.name = "ALT"
+		gameController.y.name = "CTRL"
 
 	internal clearEvents
 		bool hasToch = touches.any.type == Touch
@@ -301,7 +301,7 @@ skipInit unit Input
 			let userId = internalUser.id
 			let user = usersById[userId]
 			// if Core.logging: Core.parseLog += " <{userId}>"
-			user?.controller.startFrame
+			user?.gameController.startFrame
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
@@ -416,7 +416,7 @@ skipInit unit Input
 		// 			internalUser.navigations.add inputs.readString
 		// 		else
 		// 		if inputType == GameController
-		// 			GameController c = user.controller
+		// 			GameController c = user.gameController
 					
 		// 			// Controller axix
 		// 			c.leftStick.x = inputs.readFloat32
@@ -512,14 +512,14 @@ skipInit unit Input
 		// 		let down  = .controllerKeyDownFrame[1]
 		// 		let left  = .controllerKeyDownFrame[2]
 		// 		let up    = .controllerKeyDownFrame[3]
-		// 		if right or left: .controller.leftStick.x = right >= left ? 1 : -1
-		// 		if down  or up:   .controller.leftStick.y = down  >= up   ? 1 : -1
-		// 		if .controllerKeyDownFrame[4]: .controller.a.state = true
-		// 		if .controllerKeyDownFrame[5]: .controller.b.state = true
-		// 		if .controllerKeyDownFrame[6]: .controller.x.state = true
-		// 		if .controllerKeyDownFrame[7]: .controller.y.state = true
-		// 		.controller.inMotion = Math.abs(.controller.leftStick.x) >= GameController.deadZone
-		// 		                    or Math.abs(.controller.leftStick.y) >= GameController.deadZone
+		// 		if right or left: .gameController.leftStick.x = right >= left ? 1 : -1
+		// 		if down  or up:   .gameController.leftStick.y = down  >= up   ? 1 : -1
+		// 		if .controllerKeyDownFrame[4]: .gameController.a.state = true
+		// 		if .controllerKeyDownFrame[5]: .gameController.b.state = true
+		// 		if .controllerKeyDownFrame[6]: .gameController.x.state = true
+		// 		if .controllerKeyDownFrame[7]: .gameController.y.state = true
+		// 		.gameController.inMotion = Math.abs(.gameController.leftStick.x) >= GameController.deadZone
+		// 		                    or Math.abs(.gameController.leftStick.y) >= GameController.deadZone
 						
 	updateUserIndices
 	// 	users.orderBy.id
