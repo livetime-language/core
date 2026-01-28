@@ -292,7 +292,7 @@ internal transient skipInit unit core
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 		
-		let str = new Date().hourMinuteSecondMillisecondString() + " " + text
+		let str = new Date().toString() + " " + text
 		statistics.systemLogs.push(str)
 		debug.logs.push(str)
 		console.log(str)

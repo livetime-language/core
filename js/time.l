@@ -371,6 +371,11 @@ js(Date) internal transient class Date
 		(hourMinuteSecondFormat?.locale == Loca.locale ? hourMinuteSecondFormat : (hourMinuteSecondFormat = {options:{hour:numeric, minute:twoDigit, second:twoDigit}})).format(this)
 	private static DateTimeFormat hourMinuteSecondFormat
 		
+	// (12:59:00.999 pm)
+	inline string hourMinuteSecondMillisecondString
+		(hourMinuteSecondMillisecondFormat?.locale == Loca.locale ? hourMinuteSecondMillisecondFormat : (hourMinuteSecondMillisecondFormat = {options:{hour:numeric, minute:twoDigit, second:twoDigit, fractionalSecondDigits:3}})).format(this)
+	private static DateTimeFormat hourMinuteSecondMillisecondFormat
+		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
 		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(this)
