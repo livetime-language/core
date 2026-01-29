@@ -23,7 +23,7 @@ tests
 		setGameController playerIndex:0 leftStick:{1,0}
 		wait 500 milliseconds		
 
-4. Use the RunTest tool to run the test function you wrote (e.g. 'tests.playerShouldMoveRight') and get the debug logs that your print statements output.
+4. Use the LiveTime RunTest tool to run the test function you wrote (e.g. 'tests.playerShouldMoveRight') and get the debug logs that your print statements output.
 
 5. Carefully analyze the debug logs and check if everything is working.
 
