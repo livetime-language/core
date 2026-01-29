@@ -142,17 +142,17 @@ transient skipInit unit Platform
 	// This is called after every code change to replay all inputs with the new code
 	// Since the const cache is cleared when the code changes, we reinitialize the media
 	private async replay
-		try
-			core.runTest
-			// heartbeat "replay"
-			// initMedia
-			// initBackend
-			// openMedia
-			// 	core.runTest
-			// 	goToCurrentFrame
-		catch
-			sendErrorToEditor .
-			sendFinished
+		goToCurrentFrame
+		// try
+		// 	heartbeat "replay"
+		// 	initMedia
+		// 	initBackend
+		// 	openMedia
+		// 		core.runTest
+		// 		goToCurrentFrame
+		// catch
+		// 	sendErrorToEditor .
+		// 	sendFinished
 
 	private runTest: string testFunction
 		try
