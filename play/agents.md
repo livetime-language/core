@@ -9,6 +9,140 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 Always write the shortest, simplest possible and most efficient code.
 Avoid code duplication. Do not overengineer. Keep it simple.
 
+# When you are done writing code, test if it is working!
+1. Double check you wrote the shortest, simplest possible and most efficient code.
+
+2. Your code should contain print statements that output all relevant information to verify that everything works as specified. In case something isn't working, your print statements need to output everything you need to find the cause of the problem. For example:
+Player
+	tick
+		print "Player {color} moves in {direction} to {position}"
+
+3. Write a unit test function in 'src/tests.l' that simulates user inputs to test all the functionality you implemented. For example:
+tests
+	playerShouldMoveRight
+		setGameController playerIndex:0 leftStick:{1,0}
+		wait 500 milliseconds		
+
+4. Use the RunTest tool to run the test function you wrote (e.g. 'tests.playerShouldMoveRight') and get the debug logs that your print statements output.
+
+5. Carefully analyze the debug logs and check if everything is working.
+
+6. Fix all problems and repeat until you verified everything works as specified.
+
+# Basics of the LiveTime programming language
+enum State
+	InProgress
+	Done
+
+class Document
+	string id
+	float created
+	State state
+
+static class app
+	Color primaryColor = #0000ff
+	Document[] documents
+
+	start
+		// List (array that grows in size as needed)
+		Document[] documents = [
+			{created:DateTime.now, state:InProgress}
+		]
+		Document doc = {id:"002e", created:DateTime.now, state:Done}
+		documents.add doc
+		documents.remove doc
+		documents.orderBy.created
+		documents.clear
+		let firstTwoItems = documents[..2]
+		let lastTwoItems = documents[-2..]
+
+		// Dictionary (hashtable that maps keys to values)
+		Document[string] documentsById
+		documentsById["002f"] = {id:"002f"}
+		documentsById.remove "002f"
+		documentsById.clear
+		for documents as doc
+			documentsById[doc.id] = doc
+		for documentsById as doc, id
+			print "id:{id} created:{doc.created.toDayMonthYearString}"
+
+		// Conditions
+		if documents.length > 0
+			print "There are {documents.length} documents."
+		else
+			print "There are no documents."
+
+		// Iterate over a List
+		for documents as doc
+			print doc.id
+
+		// Iterate over an integer range
+		// Prints 01234
+		for 0 to 5 as i
+			print i
+
+		// If you leave out the lower bound, it defaults to 0
+		// If you leave out the index variable, it defaults to i
+		for 5
+			print i
+
+		// You can use "." to refer to the current item while iterating
+		for documents
+			print .
+
+		// Prints 01234
+		for 5
+			print .
+			
+		// Use the "backwards" keyword to iterate backwards
+		// Prints 43210
+		for 5 backwards as i
+			print i
+
+		// Iterate over a List by index
+		for documents.length as i
+			print documents[i].state
+
+		// Iterate over a Dictionary
+		for documentsById as value, key
+			print "{key}: {value}"
+
+		// If you divide an integer by an integer in LiveTime, you always get a float
+		float fraction = 1 / 2
+
+		// Use math.floor after a division if you need an integer
+		int flooredInteger = math.floor(1 / 2)
+
+		// Query
+		Player[] healthyPlayers = players.where.health > 0
+		Player[] top10Players = (players.orderByDescending.score).take 10
+		Player[] seniors = (users.where.age > 65).orderBy.age
+		Player[] highscoreList = (player.where.isAlive).orderByDescending.score
+
+		// Cast
+		string jsonString = "\{value:7\}"
+		dynamic config = json.parse(jsonString)
+		int value = (int)config.value
+
+		// In LiveTime, the % symbol is used for percentages, like in css, e.g. width:100%
+		// To calucate the remainder of a division, use mod or remainder. 
+		// mod returns the remainder after a floored division, always producing a result with the same sign as the divisor, like in Python.
+		float bufferSize = 100
+		let a = 107 mod bufferSize // a = 7
+		let b = -1 mod bufferSize  // b = 99
+		
+# Images
+Place images in the "media" folder.  If you place "Example.png" in this folder, you can use "Example" in drawImage. For example:
+app
+	tick
+		drawImage Example, position:{0,0} // draws the image "media/Example.png"
+
+# More information
+Read the full LiveTime library documentation "lib/core/play/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
+
+"lib/core/js/" contains the LiveTime standard libaray (int, float, string, List, Dictionary, etc).
+"lib/core/play/" contains the LiveTime graphics and input library (drawImage, drawRectangle, onTouchDown, onTouchUp, player.gameController, etc).
+
 # Example game implementing the board game "Go" in the LiveTime programming language
 enum Phase: PlacePiece, GameOver
 
@@ -322,137 +456,3 @@ class Box
 	tick
 		// Draw blue box with white outline
 		drawRectangle rect.position, rect.size, Color("#0000ff"), outlineColor:Color("#ffffff"), outlineWidth:5
-
-# Basics of the LiveTime programming language
-enum State
-	InProgress
-	Done
-
-class Document
-	string id
-	float created
-	State state
-
-static class app
-	Color primaryColor = #0000ff
-	Document[] documents
-
-	start
-		// List (array that grows in size as needed)
-		Document[] documents = [
-			{created:DateTime.now, state:InProgress}
-		]
-		Document doc = {id:"002e", created:DateTime.now, state:Done}
-		documents.add doc
-		documents.remove doc
-		documents.orderBy.created
-		documents.clear
-		let firstTwoItems = documents[..2]
-		let lastTwoItems = documents[-2..]
-
-		// Dictionary (hashtable that maps keys to values)
-		Document[string] documentsById
-		documentsById["002f"] = {id:"002f"}
-		documentsById.remove "002f"
-		documentsById.clear
-		for documents as doc
-			documentsById[doc.id] = doc
-		for documentsById as doc, id
-			print "id:{id} created:{doc.created.toDayMonthYearString}"
-
-		// Conditions
-		if documents.length > 0
-			print "There are {documents.length} documents."
-		else
-			print "There are no documents."
-
-		// Iterate over a List
-		for documents as doc
-			print doc.id
-
-		// Iterate over an integer range
-		// Prints 01234
-		for 0 to 5 as i
-			print i
-
-		// If you leave out the lower bound, it defaults to 0
-		// If you leave out the index variable, it defaults to i
-		for 5
-			print i
-
-		// You can use "." to refer to the current item while iterating
-		for documents
-			print .
-
-		// Prints 01234
-		for 5
-			print .
-			
-		// Use the "backwards" keyword to iterate backwards
-		// Prints 43210
-		for 5 backwards as i
-			print i
-
-		// Iterate over a List by index
-		for documents.length as i
-			print documents[i].state
-
-		// Iterate over a Dictionary
-		for documentsById as value, key
-			print "{key}: {value}"
-
-		// If you divide an integer by an integer in LiveTime, you always get a float
-		float fraction = 1 / 2
-
-		// Use math.floor after a division if you need an integer
-		int flooredInteger = math.floor(1 / 2)
-
-		// Query
-		Player[] healthyPlayers = players.where.health > 0
-		Player[] top10Players = (players.orderByDescending.score).take 10
-		Player[] seniors = (users.where.age > 65).orderBy.age
-		Player[] highscoreList = (player.where.isAlive).orderByDescending.score
-
-		// Cast
-		string jsonString = "\{value:7\}"
-		dynamic config = json.parse(jsonString)
-		int value = (int)config.value
-
-		// In LiveTime, the % symbol is used for percentages, like in css, e.g. width:100%
-		// To calucate the remainder of a division, use mod or remainder. 
-		// mod returns the remainder after a floored division, always producing a result with the same sign as the divisor, like in Python.
-		float bufferSize = 100
-		let a = 107 mod bufferSize // a = 7
-		let b = -1 mod bufferSize  // b = 99
-		
-# Images
-Place images in the "media" folder.  If you place "Example.png" in this folder, you can use "Example" in drawImage. For example:
-app
-	tick
-		drawImage Example, position:{0,0} // draws the image "media/Example.png"
-
-# More information
-Read the full LiveTime library documentation "lib/core/play/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
-
-"lib/core/js/" contains the LiveTime standard libaray (int, float, string, List, Dictionary, etc).
-"lib/core/play/" contains the LiveTime graphics and input library (drawImage, drawRectangle, onTouchDown, onTouchUp, player.gameController, etc).
-
-# MOST IMPORTANT: When you are done writing code, test if it is working!
-1. Double check you wrote the shortest, simplest possible and most efficient code.
-
-2. Your code should contain print statements that output all relevant information to verify that everything works as specified. In case something isn't working, your print statements need to output everything you need to find the cause of the problem. For example:
-Player
-	tick
-		print "Player {color} moves in {direction} to {position}"
-
-3. Write a unit test function in 'src/tests.l' that simulates user inputs to test all the functionality you implemented. For example:
-tests
-	playerShouldMoveRight
-		setGameController playerIndex:0 leftStick:{1,0}
-		wait 500 milliseconds		
-
-4. Use the RunTest tool to run the test function you wrote (e.g. 'tests.playerShouldMoveRight') and get the debug logs that your print statements output.
-
-5. Carefully analyze the debug logs and check if everything is working.
-
-6. Fix all problems and repeat until you verified everything works as specified.
