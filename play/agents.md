@@ -138,9 +138,10 @@ app
 		drawImage Example, position:{0,0} // draws the image "media/Example.png"
 
 # More information
-Read the full LiveTime library documentation "lib/core/play/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
+When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/" and "lib/core/play/".
 
 "lib/core/js/" contains the LiveTime standard libaray (int, float, string, List, Dictionary, etc).
+
 "lib/core/play/" contains the LiveTime graphics and input library (drawImage, drawRectangle, onTouchDown, onTouchUp, player.gameController, etc).
 
 # Example game implementing the board game "Go" in the LiveTime programming language
