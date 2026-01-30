@@ -272,7 +272,7 @@ transient skipInit global unit graphics
 		this.referenceSize = referenceSize
 	
 	internal js void onResize
-		graphics.canvas = document.getElementById("canvas");
+		graphics.canvas = document.querySelector("canvas");
 		if(!graphics.canvas) {
 			graphics.canvas = document.createElement("canvas");
 			document.body.append(graphics.canvas)
