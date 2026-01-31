@@ -507,16 +507,18 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawImage Walk, position:{0,0}, framesPerSecond:10
 	// Image: drawImage2.gif
-	global void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
-		                   Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                   implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                   implicit Player[] visibleFor = null // Only this player or list of players will see the image
-		                   framesPerSecond = 0                 // Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit int layer = 0              // Higher layers are drawn in front of lower layers
-		                   alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
-		                   Color color = White                 // Tint the image with this color
+	global void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                   Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                   implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                   implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", "Walk2.png", ...)
+						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
+		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
+						   implicit int layer = 0	// Higher layers are drawn in front of lower layers
+		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                   Color color = White	// Tint the image with this color
 		                   SourceCodeLocation location
-		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond) mod image.frames.length;
+		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond + frameOffset) mod (frameCount or image.frames.length);
 		drawImage image, position, frame, size, visibleFor, layer, alpha, color, location
 	
 	// Draw an image, animate it and flip it horizontally or vertically.
