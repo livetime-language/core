@@ -2276,6 +2276,8 @@ global transient priority unit System
 
 	// Return an object that contains all global variables and functions
 	global inline js dynamic globals() window
+
+	global inline js void debugger() debugger
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string

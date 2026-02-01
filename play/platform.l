@@ -275,9 +275,6 @@ transient skipInit unit Platform
 		try      { _ }
 		catch(e) { return e.stack }
 		
-	inline js void debugger
-		debugger
-		
 	inline js string getHostnameFromUrl: string url
 		new URL(url).hostname
 
