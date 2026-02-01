@@ -1344,12 +1344,13 @@ class List<T>
 		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
 		
 	// Find the index of the item the meets the given condition
-	importance:3 int indexWhere: bool(T a) condition // The condition to check
-		                         int startIndex = 0  // Start searching at this index
+	importance:3 int indexWhere: bool(T a) condition	// The condition to check
+		                         int startIndex = 0 	// Start searching at this index
+								 int ifNotFound = -1	// The value to return if no item is found
 		for startIndex to length
 			if condition(this[.])
 				return i
-		return -1
+		return ifNotFound
 		
 	// Find the index of the item the meets the given condition
 	int indexWhere: <- bool(T a) condition // The condition to check
