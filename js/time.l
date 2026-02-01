@@ -175,6 +175,10 @@ struct float
 	inline string hourMinuteString
 		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(new Date(this))
 	private static DateTimeFormat hourMinuteFormat
+
+	// (1:59)
+	inline string minuteSecondString
+		"{this.timeMinutes}:{this.timeSeconds.toString.padStart(2, '0')}"
 		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
