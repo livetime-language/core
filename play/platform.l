@@ -117,7 +117,7 @@ transient skipInit unit Platform
 					roomId = roomId.substring(0,dashIndex)
 				
 			await preload
-			openMedia
+			media.openMedia
 				try
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
@@ -147,7 +147,7 @@ transient skipInit unit Platform
 		// 	heartbeat "replay"
 		// 	initMedia
 		// 	initBackend
-		// 	openMedia
+		// 	media.openMedia
 		// 		core.runTest
 		// 		goToCurrentFrame
 		// catch
