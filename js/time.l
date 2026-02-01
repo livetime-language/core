@@ -106,9 +106,9 @@ js(Intl.DateTimeFormat) class DateTimeFormat
 	inline js string locale() this?.resolvedOptions().locale
 	
 struct float	
-	inline js int timeMilliseconds := Math.floor((this mod    1000)          ) 
-	inline js int timeSeconds      := Math.floor((this mod   60000) /    1000) 
-	inline js int timeMinutes      := Math.floor((this mod 3600000) /   60000) 
+	inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
+	inline js int timeSeconds      := Math.floor((this %   60000) /    1000) 
+	inline js int timeMinutes      := Math.floor((this % 3600000) /   60000) 
 	inline js int timeHours        := Math.floor((this            ) / 3600000)
 		
 	inline js int totalSeconds      := Math.floor(this /      1000) 

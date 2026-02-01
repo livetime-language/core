@@ -282,7 +282,7 @@ transient skipInit unit Platform
 		window.location.href = url
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
-static class Time
+skipInit static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 float now
 	
