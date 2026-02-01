@@ -1121,13 +1121,13 @@ transient skipInit global unit graphics
 			if frame == -1: frame = 0
 			if scale != 1.0: textSize = math.round(textSize * scale); effectiveSize *= scale
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
-			if text:  drawText text, position+textOffset, textSize, textColor, visibleFor, layer, effectiveAlpha, location
+			if text:  drawText text, position+textOffset, textSize, textColor, visibleFor, layer:layer+2, effectiveAlpha, location
 			if accentImage
 				if not accentColor
 					if effectiveClickableBy and effectiveClickableBy[0]: accentColor = effectiveClickableBy[0].color
 					else                                                 accentColor = input.localPlayer.color
-				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer, effectiveAlpha, location, color:accentColor
-			if image: drawImage image, position, frame, effectiveSize, visibleFor, layer, effectiveAlpha, location
+				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:layer+1, effectiveAlpha, location, color:accentColor
+			if image: drawImage image, position, frame, effectiveSize, visibleFor, layer:layer, effectiveAlpha, location
 			
 			
 	// ------------------------------------------------------- Rectangle -------------------------------------------------------
