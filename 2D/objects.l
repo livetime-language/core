@@ -356,7 +356,8 @@ Object ParticleSystem
 	gravity = 1.0
 	maxRotationSpeed  = .05
 	mode = ParticleMode.Burst
-	angleSpread = 1.0
+	angleSpread = math.twoPi
+	layer = int.maxValue
 	
 	private int burst
 	internal debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
@@ -376,7 +377,7 @@ Object ParticleSystem
 				nextBurst = float.maxValue
 			else
 				for particlesPerBurst
-					let angle = -math.randomFloat angleSpread
+					let angle = math.randomFloat angleSpread
 					let speedFactor = math.randomFloat(minSpeed to maxSpeed)
 					particles.add Particle
 						pos: position
@@ -387,9 +388,7 @@ Object ParticleSystem
 				nextBurst = ++burst < bursts ? Time.now + burstInterval : float.maxValue
 
 		for particles <-
-			graphics.move .pos
-				graphics.rotate .angle
-					drawImage image, frame:.frame, visibleFor
+			drawImage image, position:.pos, angle:.angle, frame:.frame, visibleFor, layer: layer
 			.pos += .speed
 			.speed.y += gravity
 			.angle += .rotationSpeed
