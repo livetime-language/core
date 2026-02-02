@@ -139,6 +139,11 @@ transient skipInit unit Platform
 	private async js void preload
 		if(app.preload) await app.preload();
 		
+	string runningTestFunction = null
+	private runTest: string testFunction, int id
+		runningTestFunction = testFunction
+		core.runTest testFunction, id
+			
 	// This is called after every code change to replay all inputs with the new code
 	// Since the const cache is cleared when the code changes, we reinitialize the media
 	private async replay
@@ -154,13 +159,6 @@ transient skipInit unit Platform
 		// 	sendErrorToEditor .
 		// 	sendFinished
 
-	private runTest: string testFunction
-		try
-			core.runTest testFunction
-		catch
-			sendErrorToEditor .
-		sendToEditor({type:"finishedTest", testFunction})
-			
 	generateIntegrationTest: GenerateIntegrationTestMode mode
 		input.generateIntegrationTest = mode
 		input.integrationTest = ""
@@ -199,7 +197,7 @@ transient skipInit unit Platform
 				
 	private enterSlideMode(PlatformMode mode) this.mode = mode; sendMode
 	
-	internal stop()    mode = Pause; gizmo.clear; core.stop; sendMode
+	internal stop()    mode = Pause; gizmo.clear; runningTestFunction = null; core.stop; sendMode
 	internal pause()   mode = Pause; gizmo.clear; audio.stop; sendMode
 	internal record()  core.adjustStartTimeIfNeeded; mode = Record; core.record;  gizmo.clear;  sendMode
 	internal play()    core.adjustStartTimeIfNeeded; mode = Play;   gizmo.clear;  sendMode

@@ -205,15 +205,25 @@ internal transient skipInit unit core
 		animationFrame
 		isPremiere = true
 
-	runTest: string testFunction = "main"
-		isPremiere = false
-		reset
-		let parts = testFunction.split(".")
-		if parts.length < 2: parts = ["tests", testFunction or "main"]
-		dynamic test = globals[parts[0]][parts[1]]
-		if test != null: test()
-		graphics.finishFrame
-		isPremiere = true
+	runTest: string testFunction, int id = 0
+		try
+			System.log "Running test {testFunction} (id:{id})"
+			isPremiere = false
+			collectOutput = true
+			reset
+			let parts = testFunction.split(".")
+			if parts.length < 2: parts = ["tests", testFunction or "main"]
+			dynamic test = globals[parts[0]][parts[1]]
+			if test != null: test()
+			if frame == 0: tick draw:true
+			else           graphics.finishFrame
+			isPremiere = true
+			collectOutput = false
+		catch
+			debugLog "error|{error.toString()}||0"
+			System.log(error)
+		Platform.sendToEditor({type:"finishedTest", id, testFunction, output:output})
+
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
