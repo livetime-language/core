@@ -109,6 +109,8 @@ internal transient skipInit unit core
 	// Keep inputs, call init functions, create the local players, reset read positions and start app
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
+		output.clear
+		outputId = 0
 		players.clear
 		input.playersById.clear
 		input.host = null
@@ -153,7 +155,10 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.readPos = 0
 			
-		if !startInLobby and not testLobby: startApp
+		if !startInLobby and not testLobby
+			graphics.startFrame
+			try	startApp
+			catch	onError error
 		if simulateRollback: checkSaveState
 		
 	// Keep event stream running, recreate players, call init function and start app
@@ -224,6 +229,18 @@ internal transient skipInit unit core
 			System.log(error)
 		Platform.sendToEditor({type:"finishedTest", id, testFunction, output:output})
 
+	bool collectOutput
+	string[] output
+	int outputId = -1
+	int replayUntilOutputId = -1
+
+	debugLog: string value
+		System.log "replayUntilOutputId:{replayUntilOutputId} outputId:{outputId} value:{value}"
+		if replayUntilOutputId == -1
+			value += "|{outputId}|{frame}"
+			if collectOutput:	output.add value
+			else	Platform.sendStringToEditor value
+		outputId++
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -459,7 +476,7 @@ internal transient skipInit unit core
 	// This is called in step.
 	internal tick: bool draw
 		Platform.isDrawing = draw
-		graphics.startFrame
+		if frame > 0: graphics.startFrame
 		if draw and not Platform.waitingForInitialData
 			if input.showPointers or Platform.mode == Play
 				players.each drawPointer ., Platform.mode == Play ? input.showPointersDuringPlaybackMode : input.showPointersMode
@@ -841,7 +858,6 @@ internal transient unit Snapshot
 		
 	autoSave() autoSaveAtEndOfStep = true
 	
-	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
 	global inline restart() core.restart
@@ -850,15 +866,16 @@ global transient unit System
 		
 	// Prints a message to the console
 	global js void print: logstring text // The text, variables or expressions to print
+		                  void(bool isSelected) drawDebugInformation = null
 		                  SourceCodeLocation location
-		core.log(text);
-		if(Platform.isDebug && location) {
-			_sendToEditor({type:"log", text, file:location.file, start:location.start});
+		if((core.collectOutput || Platform.isDebug) && location) {
+			if(drawDebugInformation != null && (core.replayUntilOutputId == -1 ||core.outputId <= core.replayUntilOutputId)) {
+				drawDebugInformation(core.outputId == core.replayUntilOutputId)
+			}
+			core.debugLog(`print|${text}|${location.file}|${location.start}`)
+		} else {
+			core.log(text);
 		}
-		// if(Platform.isDebug) {
-		// 	var stringValue = typeof text === "string" ? text : JSON.stringify(text);
-		// 	if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location ? location.start : 0, file:location ? location.file: ""});
-		// }
 
 internal class StatisticsGraph
 	int userIndex = -1

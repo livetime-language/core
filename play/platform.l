@@ -146,8 +146,18 @@ transient skipInit unit Platform
 			
 	// This is called after every code change to replay all inputs with the new code
 	// Since the const cache is cleared when the code changes, we reinitialize the media
-	private async replay
-		goToCurrentFrame
+	private async replay: bool updateMedia, int replayUntilOutputId, int replayUntilFrame
+		core.replayUntilOutputId = replayUntilOutputId
+		System.log "Replay until output id:{replayUntilOutputId} frame:{replayUntilFrame}"
+		if runningTestFunction
+			core.runTest runningTestFunction
+		else
+			try
+				core.goToFrame replayUntilFrame != -1 ? replayUntilFrame : core.frames-1, replayFromStart:true
+			catch
+				core.onError .
+			finally 
+				sendFinished
 		// try
 		// 	heartbeat "replay"
 		// 	initMedia
@@ -168,9 +178,9 @@ transient skipInit unit Platform
 			
 	private goToCurrentFrame
 		try
-			core.goToFrame core.frame-1, replayFromStart:true
+			core.goToFrame core.frames-1, replayFromStart:true
 		catch
-			sendErrorToEditor .
+			core.onError .
 		finally 
 			sendFinished
 			
@@ -238,6 +248,9 @@ transient skipInit unit Platform
 		
 	internal inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)
+		
+	internal inline js void sendStringToEditor: string message
+		if(Platform.isDebug) _sendStringToEditor(message)
 		
 	private inline js void sendFinished
 		console.log("[app] Finished initializing")
