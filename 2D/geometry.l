@@ -945,6 +945,7 @@ immutable Rect
 class Grid<T>
 	IntVector2 size
 	T[] items
+	transient void(T item, IntVector2 pos)[string] itemForCharacter
 	
 	Grid
 		for size.x * size.y: items.add null
@@ -964,6 +965,17 @@ class Grid<T>
 	set: IntVector2 position // The grid position of the value to set
 		 T value             // The value to set
 		items[position.y*size.x + position.x] = value
+
+
+	map: string character
+		 stored void(T item, IntVector2 pos) to
+		itemForCharacter.set(character, to)
+
+	create: string[] strings
+		for strings as line, y
+			for line as char, x
+				let itemFunction = itemForCharacter.get(char)
+					itemFunction(items[y*size.x + x], {x, y})
 		
 	// Do something for each item in the grid
 	inline js void each: inline -> void(
