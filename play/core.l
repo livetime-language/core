@@ -210,9 +210,9 @@ internal transient skipInit unit core
 		animationFrame
 		isPremiere = true
 
-	runTest: string testFunction, int id = 0
+	runTest: string testFunction, int id = -1
 		try
-			System.log "Running test {testFunction} (id:{id})"
+			System.log "Running test {testFunction}"
 			isPremiere = false
 			collectOutput = true
 			reset
@@ -227,12 +227,14 @@ internal transient skipInit unit core
 		catch
 			debugLog "error|{error.toString()}||0"
 			System.log(error)
-		Platform.sendToEditor({type:"finishedTest", id, testFunction, output:output})
+		finally
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, replayUntilOutputId})
 
 	bool collectOutput
 	string[] output
 	int outputId = -1
 	int replayUntilOutputId = -1
+	int replayUntilFrame = -1
 
 	debugLog: string value
 		System.log "replayUntilOutputId:{replayUntilOutputId} outputId:{outputId} value:{value}"

@@ -86,6 +86,8 @@ transient skipInit unit Platform
 			this.engineStarted = false
 			this.isDebug = isDebug
 			this.userCount = userCount
+			core.replayUntilOutputId = -1
+			core.replayUntilFrame = -1
 			initBackend
 			statistics.startTime = now
 			core.simulateConnection = simulateConnection
@@ -141,6 +143,8 @@ transient skipInit unit Platform
 		
 	string runningTestFunction = null
 	private runTest: string testFunction, int id
+		core.replayUntilOutputId = -1
+		core.replayUntilFrame = -1
 		runningTestFunction = testFunction
 		core.runTest testFunction, id
 			
@@ -148,6 +152,7 @@ transient skipInit unit Platform
 	// Since the const cache is cleared when the code changes, we reinitialize the media
 	private async replay: bool updateMedia, int replayUntilOutputId, int replayUntilFrame
 		core.replayUntilOutputId = replayUntilOutputId
+		core.replayUntilFrame = replayUntilFrame
 		System.log "Replay until output id:{replayUntilOutputId} frame:{replayUntilFrame}"
 		if runningTestFunction
 			core.runTest runningTestFunction
