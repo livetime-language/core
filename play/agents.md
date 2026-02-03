@@ -20,7 +20,7 @@ Player
 
 3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem.
 
-4. Write unit tests in the static class "tests" in a file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
+4. Write unit tests in the static class "tests" in a new file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
 
 tests
 	playerShouldMoveRight
