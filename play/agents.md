@@ -157,9 +157,8 @@ tests
 		// Assert
 		expect players[0].gridPos toBe {1,0} 	
 
-		
-# Images
-Place images in the "media" folder.  If you place "Example.png" in this folder, you can use "Example" in drawImage. For example:
+# Images, Sounds, Fonts
+Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media" folder. If you place "Example.png" in this folder, you can use "Example" in drawImage, like this:
 
 app
 	tick
