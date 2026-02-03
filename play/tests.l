@@ -13,8 +13,9 @@ tests
 			core.tick draw:false
 			core.frame++
 
-	expect: T value
-		    nocolon T toBe
+	js void expect: T value
+		    nocolon T toBe = object.undefined
 			SourceCodeLocation location
-		if value != toBe
-			core.debugLog "assert|{value}|{toBe}|{location.file}|{location.start}"
+		let a = value?.toString()
+		let b = toBe?.toString()
+		if(a != b) core.debugLog(`assert|${a}|${b}|${location.file}|${location.start}`)
