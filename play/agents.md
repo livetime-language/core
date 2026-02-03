@@ -1,7 +1,6 @@
 ---
 description: LiveTime Programming Language Examples and Standard Library
-globs: *.l
-alwaysApply: true
+applyTo: "*.l"
 ---
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
@@ -9,25 +8,31 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 Always write the shortest, simplest possible and most efficient code.
 Avoid code duplication. Do not overengineer. Keep it simple.
 
-# When you are done writing code, test if it is working!
-1. Double check you wrote the shortest, simplest possible and most efficient code.
+# When you are done writing code, test if it is working
+1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-2. Your code should contain print statements that output all relevant information to verify that everything works as specified. In case something isn't working, your print statements need to output everything you need to find the cause of the problem. For example:
+2. Your code should contain print statements that output all relevant information to verify that everything works as specified. For example:
+
 Player
 	tick
-		print "Player {color} moves in {direction} to {position}"
+		print "{color} moves in {direction} to {position}"
 
-3. Write a unit test function in 'src/tests.l' that simulates user inputs to test all the functionality you implemented. For example:
+3. In case something isn't working, come up with a list of hypothesis of all possible causes and add print statements that help you identify the true cause of the problem.
+
+4. Write unit tests in a file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
+
 tests
 	playerShouldMoveRight
+		app.createTestLevel
 		setGameController playerIndex:0 leftStick:{1,0}
-		wait 500 milliseconds		
+		wait 500 milliseconds
+		expect players[0].gridPos toBe {1,0} 	
 
-4. Use the LiveTime RunTest tool to run the test function you wrote (e.g. 'tests.playerShouldMoveRight') and get the debug logs that your print statements output.
+5. Use the runTests tool to run the unit test and get the output of your print statements.
 
-5. Carefully analyze the debug logs and check if everything is working.
+6. Carefully analyze the output and check if everything is working.
 
-6. Fix all problems and repeat until you verified everything works as specified.
+7. Fix all problems and repeat until you verified everything works as specified.
 
 # Basics of the LiveTime programming language
 enum State
