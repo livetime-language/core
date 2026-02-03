@@ -994,7 +994,7 @@ class Grid<T>
 		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)}
 
 	// The amount of items in the grid	
-	importance:4 inline int length() items.length
+	importance:4 inline int length() this.items.length
 
 	// Return a list that contains the selected field or expression for each item
 	importance:4 inline js TValue[] select: TValue(T it) selector
