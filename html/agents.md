@@ -15,6 +15,21 @@ Do not spread out the code over too many functions.
 Elements that are grouped together visually should be in the same function.
 Aim for about 1 to 5 draw functions per page.
 
+# When you are done writing code, test if it is working
+1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
+
+2. Double check you are calling refresh after changing data.
+
+3. Double check you fixed all linter errors.
+
+4. Your code should contain print statements that output all relevant information to verify that everything works as specified. For example:
+
+5. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem.
+
+6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+
+7. Fix all problems and repeat until you verified everything works as specified.
+
 # Example application
 // Defines the enum ItemState that stores its values as strings
 enum string ItemState
@@ -36,7 +51,7 @@ class TodoItem
 	ItemState state = NotStarted
 	string text
 
-// Defines the static class app, the main class of every LiveTime application.
+// Defines the static class app, the main class of every application.
 // Static classes have lowercase names. Their members are public and static by default.
 // You can access their members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
 static class app
@@ -307,15 +322,7 @@ app
 Read the full LiveTime library documentation "lib/core/html/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
 
 "lib/core/js/" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
+
 "lib/core/html/" contains the implementation of the LiveTime HTML framework (html, div, img, button, etc).
+
 "lib/core/pocketbase/" contains the PocketBase API (backend, DatabaseTable, etc)
-
-# Always check if everything is correct
-Always add some debug logs that will help you find out what is the problem in case the code isn't working as expected.
-
-1. Double check you wrote the shortest, simples possible, most efficient code with minimal code duplication.
-2. Double check you are calling refresh after changing data.
-3. Double check you fixed all linter errors.
-4. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
-
-Do not finish until all errors are fixed and you verified that everything works as intended.

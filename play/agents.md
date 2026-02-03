@@ -15,11 +15,12 @@ Avoid code duplication. Do not overengineer. Keep it simple.
 
 Player
 	tick
-		print "{color} moves in {direction} to {position}"
+		positon += direction
+		print "Player {index} moves in {direction} to {position}"
 
-3. In case something isn't working, come up with a list of hypothesis of all possible causes and add print statements that help you identify the true cause of the problem.
+3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem.
 
-4. Write unit tests in a file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
+4. Write unit tests in the static class "tests" in a file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
 
 tests
 	playerShouldMoveRight
@@ -39,15 +40,23 @@ enum State
 	InProgress
 	Done
 
+// Defines the class Document
+// Classes have uppercase names. All members are public by default.
 class Document
 	string id
 	float created
 	State state
 
-static class app
+// Defines the static class app, the main class of every application.
+// Static classes have lowercase names. Their members are public and static by default.
+// You can access their members from anywhere like this: app.primaryColor, app.start, app.tick, ...
+app
 	Color primaryColor = #0000ff
 	Document[] documents
 
+	// Defines the member function start of the class app. 
+	// All functions need to be part of a class. There are no top-level functions in LiveTime.
+	// app.start is the entry point of the application.
 	start
 		// List (array that grows in size as needed)
 		Document[] documents = [
@@ -135,9 +144,23 @@ static class app
 		float bufferSize = 100
 		let a = 107 mod bufferSize // a = 7
 		let b = -1 mod bufferSize  // b = 99
+
+// Write units tests in the static class "tests" in a file in the "tests/" folder
+tests
+	playerShouldMoveRight
+		// Simulate player 0 moving the left stick to {1,0} (right)
+		setGameController playerIndex:0 leftStick:{1,0}
+
+		// Wait for 300 milliseonds. At 30 ticks per second, this will execute app.tick 10 times
+		wait 300 milliseconds
+
+		// Assert
+		expect players[0].gridPos toBe {1,0} 	
+
 		
 # Images
 Place images in the "media" folder.  If you place "Example.png" in this folder, you can use "Example" in drawImage. For example:
+
 app
 	tick
 		drawImage Example, position:{0,0} // draws the image "media/Example.png"
@@ -148,6 +171,8 @@ When you want to find a name of a function in the standard library or you have p
 "lib/core/js/" contains the LiveTime standard libaray (int, float, string, List, Dictionary, etc).
 
 "lib/core/play/" contains the LiveTime graphics and input library (drawImage, drawRectangle, onTouchDown, onTouchUp, player.gameController, etc).
+
+"lib/core/play/tests.l" contains the LiveTime unit test framework (setGameController, wait, expect, etcs)
 
 # Example game implementing the board game "Go" in the LiveTime programming language
 enum Phase: PlacePiece, GameOver
@@ -167,8 +192,6 @@ app
 	Player currentPlayer
 	Phase phase = PlacePiece
 	
-	// This defines the function "start" of the class "app". All functions need to part of a class.
-	// There are no top-level functions in LiveTime.
 	// The "start" function is called when the game starts
 	start
 		graphics.drawingOrder = ItemsDrawnFirstWillBeInTheBack
