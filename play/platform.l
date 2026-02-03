@@ -131,11 +131,11 @@ transient skipInit unit Platform
 					if !isDebug: record
 						
 				catch
-					sendErrorToEditor .
+					core.onError .
 				finally 
 					sendFinished
 		catch
-			sendErrorToEditor .
+			core.onError .
 			sendFinished
 	
 	private async js void preload
@@ -171,7 +171,7 @@ transient skipInit unit Platform
 		// 		core.runTest
 		// 		goToCurrentFrame
 		// catch
-		// 	sendErrorToEditor .
+		// 	core.onError .
 		// 	sendFinished
 
 	generateIntegrationTest: GenerateIntegrationTestMode mode
@@ -246,10 +246,6 @@ transient skipInit unit Platform
 	
 	private js void sendMode
 		if(Platform.isDebug) _sendToEditor({type:"setPlatformMode", mode:Platform.mode, frame:core.frame})
-
-	internal inline js void sendErrorToEditor: Error error
-		if(window._sendErrorToEditor) _sendErrorToEditor(error)
-		else                          console.error(error)
 		
 	internal inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)

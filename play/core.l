@@ -225,8 +225,7 @@ internal transient skipInit unit core
 			isPremiere = true
 			collectOutput = false
 		catch
-			debugLog "error|{error.toString()}||0"
-			System.log(error)
+			core.onError .
 		finally
 			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, replayUntilOutputId})
 
@@ -815,8 +814,11 @@ internal transient skipInit unit core
 	onError: Error error
 		errorMessage = error.stack
 		hasErrors = true
-		log "{errorMessage}"
-		Platform.sendErrorToEditor error
+		if(core.collectOutput || Platform.isDebug) {
+			debugLog "error|{errorMessage}||0"
+		} else {
+			core.log errorMessage
+		}
 		
 internal transient unit Snapshot
 	int autoSaveCount

@@ -7,7 +7,7 @@ skipInit debug
 			Platform.stop
 			sendApplicationState
 		catch
-			Platform.sendErrorToEditor .
+			core.onError .
 
 	click: int playerIndex, int x, int y, int framesToWaitAfterwards
 		if playerIndex == int.undefined: playerIndex = 0
