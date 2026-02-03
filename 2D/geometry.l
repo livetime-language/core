@@ -992,7 +992,10 @@ class Grid<T>
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
 		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)}
-		
+
+	// The amount of items in the grid	
+	importance:4 inline int length() items.length
+
 	// Return a list that contains the selected field or expression for each item
 	importance:4 inline js TValue[] select: TValue(T it) selector
 		this.items.map(selector)
