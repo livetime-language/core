@@ -53,6 +53,7 @@ class Document
 app
 	Color primaryColor = #0000ff
 	Document[] documents
+	Player currentPlayer
 
 	// Defines the member function start of the class app. 
 	// All functions need to be part of a class. There are no top-level functions in LiveTime.
@@ -144,6 +145,31 @@ app
 		float bufferSize = 100
 		let a = 107 mod bufferSize // a = 7
 		let b = -1 mod bufferSize  // b = 99
+
+// Handle clicks and touches
+class Item
+	Vector2 size = {240,60}
+	Vector2 position
+	Touch moveTouch
+	Vector2 touchOffset
+	
+	tick
+		// The player app.currentPlayer can drag this item around
+		onTouchDown position, size, by:app.currentPlayer
+			print "Player {touch.by} started dragging {this}"
+			moveTouch = touch
+			touchOffset = position - touch.position
+				
+		onTouchMove moveTouch
+			print "Player {touch.by} is dragging {this}"
+			position = touch.position + touchOffset
+			
+		onTouchUp moveTouch
+			print "Player {touch.by} dropped {this}"
+			moveTouch = null
+									
+		// Draw the item
+		drawRectangle position, size, Color("#404040"), outlineColor:Color("#ffffff"), outlineWidth:5
 
 // Write units tests in the static class "tests" in a file in the "tests/" folder
 tests
