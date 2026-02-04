@@ -219,6 +219,7 @@ app
 	
 	// The "start" function is called when the game starts
 	start
+		print "Starting go example"
 		graphics.drawingOrder = LastDrawnWillBeInFront
 
 		// We always need to display the standard menu
