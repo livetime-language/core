@@ -334,6 +334,11 @@ transient skipInit global unit graphics
 
 	internal finishFrame
 		if(Platform.fastForward) return
+
+		// Draw pointers		
+		if input.showPointers or Platform.mode == Play or core.runningTest
+			players.each drawPointer ., Platform.mode == Play or core.runningTest ? input.showPointersDuringPlaybackMode : input.showPointersMode
+		
 		for input.internalUsers if .
 			.videoElementIndex = 0
 		drawItems

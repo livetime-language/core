@@ -214,7 +214,7 @@ internal transient skipInit unit core
 		try
 			System.log "Running test {testFunction}"
 			isPremiere = false
-			collectOutput = true
+			runningTest = true
 			reset
 			let parts = testFunction.split(".")
 			if parts.length < 2: parts = ["tests", testFunction or "main"]
@@ -227,13 +227,13 @@ internal transient skipInit unit core
 			// else           graphics.finishFrame
 			
 			isPremiere = true
-			collectOutput = false
+			runningTest = false
 		catch
 			core.onError .
 		finally
 			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, replayUntilOutputId})
 
-	bool collectOutput
+	bool runningTest
 	string[] output
 	int outputId = -1
 	int replayUntilOutputId = -1
@@ -243,7 +243,7 @@ internal transient skipInit unit core
 		System.log "replayUntilOutputId:{replayUntilOutputId} outputId:{outputId} value:{value}"
 		if replayUntilOutputId == -1
 			value += "|{outputId}|{frame}"
-			if collectOutput:	output.add value
+			if runningTest:	output.add value
 			else	Platform.sendStringToEditor value
 		outputId++
 
@@ -432,9 +432,6 @@ internal transient skipInit unit core
 			if verbose: core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
 			if debug.waitUntilFrame: print "# Frame {frame}"
 
-			// Set time
-			Time.now = serverStartTime + math.round(frame * frameTime)
-			
 			// Flags
 			Platform.fastForward = fastForward
 			int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) where . != null
@@ -442,7 +439,7 @@ internal transient skipInit unit core
 			
 			// Send current frame to editor	
 			// if Platform.isDebug and !fastForward and (Platform.mode == Record or Platform.mode == Play or Platform.waitingForInitialData): Platform.sendFrame(frame, math.max(frame+1, frames))
-			if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
+			// if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
 			
 			// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
 			checkSaveState
@@ -464,29 +461,20 @@ internal transient skipInit unit core
 			
 		catch
 			onError error
-			
-		// Cleanup
-		for input.internalUsers if .
-			.clearEvent
-		players.each.postprocessEvents
-
-		if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
-		
-		// Advance frame
-		frame++
-		if frames < frame: frames = frame
-		if frame > frameWithNewWatches: frameWithNewWatches = frame
-			
-	// Clear screen, process application tick, and draw all graphics
-	// This is called in step.
+						
+	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
+	// This is all the logic that is executed in a unit test for each frame.
+	// Called in step and in tests
 	internal tick: bool draw
+		// Set time
+		Time.now = serverStartTime + math.round(frame * frameTime)
+			
+		// Start frame
 		Platform.isDrawing = draw
 		if frame > 0: graphics.startFrame
-		if draw and not Platform.waitingForInitialData
-			if input.showPointers or Platform.mode == Play
-				players.each drawPointer ., Platform.mode == Play ? input.showPointersDuringPlaybackMode : input.showPointersMode
 		audio.startFrame
-		
+
+		// Debug info
 		if Platform.showDebugInfo
 			if draw: statistics.tickGraph
 			networkVisualizer.tick
@@ -500,11 +488,23 @@ internal transient skipInit unit core
 		catch
 			onError error
 			
+		// Finish frame
 		if draw and not Platform.waitingForInitialData
 			drawTimes.add drawTime = PlainDate.measure
 				graphics.finishFrame
 			if Platform.mode != Manipulator: input.updateCursor
 		audio.finishFrame
+
+		// Cleanup
+		for input.internalUsers as user: user?.clearEvent
+		players.each.postprocessEvents
+
+		// if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
+		
+		// Advance frame
+		frame++
+		if frames < frame: frames = frame
+		if frame > frameWithNewWatches: frameWithNewWatches = frame
 				
 	js void appTick() if(app.tick) app.tick();
 	js string appDebugString() (app.debugString || "")
@@ -818,7 +818,7 @@ internal transient skipInit unit core
 	onError: Error error
 		errorMessage = error.stack
 		hasErrors = true
-		if(core.collectOutput || Platform.isDebug) {
+		if(core.runningTest || Platform.isDebug) {
 			debugLog "error|{errorMessage}||0"
 		} else {
 			core.log errorMessage
@@ -876,7 +876,7 @@ global transient unit System
 	global js void print: logstring text // The text, variables or expressions to print
 		                  void(bool isSelected) drawDebugInformation = null
 		                  SourceCodeLocation location
-		if((core.collectOutput || Platform.isDebug) && location) {
+		if((core.runningTest || Platform.isDebug) && location) {
 			if(drawDebugInformation != null && (core.replayUntilOutputId == -1 ||core.outputId <= core.replayUntilOutputId)) {
 				drawDebugInformation(core.outputId == core.replayUntilOutputId)
 			}
