@@ -40,6 +40,9 @@ tests
 		while core.frame < targetFrame
 			core.tick draw:false
 
+	printWhatIsOnScreen
+		print "\n{graphics.getWhatIsOnScreen}"
+
 	js void expect: T value
 		    nocolon T toBe = object.undefined
 			SourceCodeLocation location

@@ -232,6 +232,7 @@ internal transient skipInit unit core
 			core.onError .
 		finally
 			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, replayUntilOutputId})
+			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, replayUntilOutputId})
 
 	bool runningTest
 	string[] output
@@ -499,6 +500,8 @@ internal transient skipInit unit core
 		for input.internalUsers as user: user?.clearEvent
 		players.each.postprocessEvents
 
+		// Currently, we use tests.printWhatIsOnScreen to print the screen contents
+		// instead of automatically sending it every time
 		// if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
 		
 		// Advance frame

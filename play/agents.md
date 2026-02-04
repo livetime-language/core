@@ -18,7 +18,7 @@ Player
 		positon += direction
 		print "Player {index} moves in {direction} to {position}"
 
-3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem.
+3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem and fix it.
 
 4. Write unit tests in the static class "tests" in a new file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
 
@@ -27,11 +27,12 @@ tests
 		app.createTestLevel
 		setGameController playerIndex:0 leftStick:{1,0}
 		wait 500 milliseconds
-		expect players[0].gridPos toBe {1,0} 	
+		expect players[0].gridPos toBe {1,0}
+		printWhatIsOnScreen
 
-5. Use the runTests tool to run the unit test and get the output of your print statements.
+5. Use printWhatIsOnScreen in your tests to check if the screen content is correct and nothing overlaps that shouldn't overlap. 
 
-6. Carefully analyze the output and check if everything is working.
+6. Use the runTests tool to run the unit test. Carefully analyze the output and check if everything is working.
 
 7. Fix all problems and repeat until you verified everything works as specified.
 
@@ -181,7 +182,10 @@ tests
 		wait 300 milliseconds
 
 		// Assert
-		expect players[0].gridPos toBe {1,0} 	
+		expect players[0].gridPos toBe {1,0}
+
+		// Use printWhatIsOnScreen in your test and check if the what is shown on screen is correct
+		printWhatIsOnScreen
 
 # Images, Sounds, Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media" folder. If you place "Example.png" in this folder, you can use "Example" in drawImage, like this:
