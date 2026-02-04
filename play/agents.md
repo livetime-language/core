@@ -173,7 +173,7 @@ When you want to find a name of a function in the standard library or you have p
 
 "lib/core/play/tests.l" contains the LiveTime unit test framework (setGameController, wait, expect, etcs)
 
-# Example game implementing the board game "Go" in the LiveTime programming language
+# Example: The board game "Go"
 enum Phase: PlacePiece, GameOver
 
 app
@@ -193,7 +193,7 @@ app
 	
 	// The "start" function is called when the game starts
 	start
-		graphics.drawingOrder = ItemsDrawnFirstWillBeInTheBack
+		graphics.drawingOrder = LastDrawnWillBeInFront
 
 		// We always need to display the standard menu
 		Menu()
@@ -317,24 +317,24 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-# Another example game in the LiveTime programming language
+# Example: Drag-and-Drop
 app
 	int round
 	Player currentPlayer
 	Phase phase
 	
 	init
-		graphics.drawingOrder = ItemsDrawnFirstWillBeInTheBack
+		graphics.drawingOrder = LastDrawnWillBeInFront
 		
 	// List of words
 	const string[] words = ["Apple", "Banana", "Orange"]
 	Box[] boxes
 	Item[] items
 		
-	startGame
-		print "Starting game"
+	start
+		print "Starting drag-and-drop example game"
 		for IntVector2.diagonalDirections as dir
-			boxes.add {rect:{position:{220,280} * dir, size:{420,440}}}
+			boxes.add {rect:{position:{220,260} * dir, size:{400,400}}}
 		nextRound
 
 		// When assigning an enum value to a variable, the enum name must be omitted
@@ -352,23 +352,24 @@ app
 		
 		string[] namesOfAlivePlayers = players.where.alive | orderBy.score | select.name
 
-		// Create item for each word, center them at {0,10} with {400,0} pixels between them
-		forPositions words, center:{0,10}, delta:{400,0}
+		// Create item for each word, center them at {0,0} with {260,0} pixels between them
+		forPositions words, center:{0,0}, delta:{260,0}
 			items.add {position:pos, word:.}
+		print words.length
 			
 		// Make the next player the current player
 		currentPlayer = players next currentPlayer
 			
 	tick
-		items.each.tick
-		boxes.each.tick
 		players.each.tick
+		boxes.each.tick
+		items.each.tick
 		
 		switch phase
 			DragItems
 				// If all items are dropped into boxes, show "Next Round button"
 				if items.all.droppedInBox != null
-					drawButton "Next Round", image:Button, position:{0,0}, visibleFor:currentPlayer
+					drawStandardButton "Next Round", position:{0,0}, visibleFor:currentPlayer
 						print "Player {touch.by} clicked 'Next Round'."
 						phase = Reveal
 						nextRound
@@ -398,7 +399,7 @@ app
 		// Order players by score
 		players.orderByDescending.score
 
-// Always put classes, structs and enums outside of classes. You can't put them inside a class like "app".
+// Always put an enum, class or struct outside of classes. You can not nest them inside a class like "app".
 enum Role: Offence, Defence
 enum Phase: DragItems, Reveal, GameOver
 
@@ -410,10 +411,11 @@ class Player
 	visible Vector2 videoPos = dir * {700,270}
 	
 	tick
-		// In LiveTime, we always show a video feed for each player. Each LiveTime game need to contain this code.
+		// When drawing the player's UI, we need to make sure it doesn't overlap with the board
+		// In LiveTime, we always show a video feed for each player.
 		float radius = 255
 		drawCircle videoPos, size:radius*2, outlineColor:color, outlineWidth:12
-		drawVideo me, videoPos, size:radius*2-75, shape:Circle
+		drawVideo this, videoPos, size:radius*2-75, shape:Circle
 		
 		// Draw the score
 		// When drawing the player's UI, we need to make sure it doesn't overlap with the board
@@ -421,13 +423,11 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-		
-		// Draw yellow player name that's visible the current player instance
-		// When drawing the player's UI, we need to make sure it doesn't overlap with the board
-		drawText name, size:32, Color("#ffff00"), visibleFor:me
+		// Draw information that's only visible to the current player
+		drawText "Your color: {color}", position:{0,-500}, size:32, color:this.color, visibleFor:this
 	
 class Item
-	const Vector2 size = {300,60}
+	const Vector2 size = {240,60}
 	bool moveable = true
 	Vector2 position, originalPosition
 	Touch moveTouch
@@ -441,9 +441,9 @@ class Item
 				// The current player can drag item around with the mouse
 				// Use "by:app.currentPlayer" to ensure only the current player can drag items
 				onTouchDown position, size, by:app.currentPlayer
-					// Start dragging
+					// Start dragging item
 					print "Player {touch.by} started dragging {word} at {touch.position}"
-					Player playerWhoClicked = touch.by
+					Player player = touch.by
 					moveTouch = .
 					originalPosition = position
 					touchOffset = position - .position
@@ -473,8 +473,9 @@ class Item
 				// The background is black in LiveTime, so we need to make sure we use colors that are different from black.
 				drawText "Game Over", position, size:40, Color("#ff0000"), font:OpenSans
 				
-		// Draw blue circle with a radius of 200 with a green outline
-		drawCircle position, size:400, Color("#0000ff"), outlineColor:Color("#00ff00"), outlineWidth:5
+		// Draw gray box with a white outline that's 5 pixels wide
+		drawRectangle position, size, Color("#404040"), outlineColor:Color("#ffffff"), outlineWidth:5
+		drawText word, position, size:28, Color("#ffffff"), font:OpenSans, align:Center
 		
 class Box
 	Rect rect
@@ -482,5 +483,4 @@ class Box
 	bool isOpen
 	
 	tick
-		// Draw blue box with white outline
-		drawRectangle rect.position, rect.size, Color("#0000ff"), outlineColor:Color("#ffffff"), outlineWidth:5
+		drawRectangle rect.position, rect.size, Color("#303030"), outlineColor:Color("#ffffff"), outlineWidth:5
