@@ -561,8 +561,11 @@ skipInit global unit input
 				
 			if(ctrlOrCmd && key == "F10") {core.switchSendInputMode(1); e.preventDefault();} else
 			if(ctrlOrCmd && key == "F11") {core.switchSendInputMode(2); e.preventDefault();} else
-				
-			if(key == "F9") {
+			
+			if(key == "F8") {
+				Platform.stop();
+				e.preventDefault();
+			} else if(key == "F9") {
 				if(e.shiftKey) { core.saveLogs(); }
 				else           { Platform.toggleDebugInfo(); }
 				e.preventDefault();
