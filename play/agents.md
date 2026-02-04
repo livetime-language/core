@@ -179,8 +179,8 @@ enum Phase: PlacePiece, GameOver
 app
 	// In LiveTime, the total screen size is always {1920, 1080}
 	// The background is black by default
-	// We need to display the player video at the left and right side of the screen
-	// That leave a usable area of {700,700} in the middle of the screen
+	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen
+	// We display the videos at the left and right side of the screen, leaving a usable area of {700,700} in the middle of the screen
 	const Vector2 totalBoardSize = {700,700}
 	const int cellCount = 9
 	
