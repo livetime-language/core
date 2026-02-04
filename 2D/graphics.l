@@ -217,8 +217,8 @@ skipInit immutable Image
 	ImageFrame[] frames
 	
 enum DrawingOrder
-	ItemsDrawnFirstWillBeInFront   // Move items to the front of the list to draw them in front
-	ItemsDrawnFirstWillBeInTheBack // Move items to the back of the list to draw them in front
+	FirstDrawnWillBeInFront	// Items drawn first will be in front of items drawn later
+	LastDrawnWillBeInFront	// Items drawn last will be in front of items drawn earlier
 		
 enum ScaleMode: Auto, FixedWidth, FixedHeight, None
 enum AnchorMode: TopLeft, TopCenter, Center
@@ -257,7 +257,7 @@ transient skipInit global unit graphics
 	private const alignmentFactor = [0, .5, 1]
 	
 	public Vector2 referenceSize = {1920, 1080}
-	public importance:4 DrawingOrder drawingOrder = ItemsDrawnFirstWillBeInFront
+	public importance:4 DrawingOrder drawingOrder = FirstDrawnWillBeInFront
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
@@ -347,7 +347,7 @@ transient skipInit global unit graphics
 	private drawItems
 		core.displayItems = items.length
 		gizmo.tick
-		if drawingOrder == ItemsDrawnFirstWillBeInFront
+		if drawingOrder == FirstDrawnWillBeInFront
 			items.sort b.layer - a.layer
 			items.each <- .draw
 		else
