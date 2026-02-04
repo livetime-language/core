@@ -332,10 +332,10 @@ class Player
 	tick
 		IntVector2 a = {0,0}
 
-		// In LiveTime, we always show a video feed for each player. Each LiveTime game need to contain this code.
+		// In LiveTime, we always show a video feed for each player.
 		float radius = 255
 		drawCircle pos, size:radius*2, outlineColor:color, outlineWidth:12
-		drawVideo me, pos, size:radius*2-75, shape:Circle
+		drawVideo this, pos, size:radius*2-75, shape:Circle
 		
 		// Draw the score
 		// When drawing the player's UI, we need to make sure it doesn't overlap with the board
@@ -343,7 +343,7 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-# Example: Drag-and-Drop
+# Example: Drag and Drop
 app
 	int round
 	Player currentPlayer
