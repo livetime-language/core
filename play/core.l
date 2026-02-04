@@ -220,8 +220,12 @@ internal transient skipInit unit core
 			if parts.length < 2: parts = ["tests", testFunction or "main"]
 			dynamic test = globals[parts[0]][parts[1]]
 			if test != null: test()
-			if frame == 0: tick draw:true
-			else           graphics.finishFrame
+			
+			// Execute a full tick after each test to ensure that all events are processed #evaluate
+			tick draw:true
+			// if frame == 0: tick draw:true
+			// else           graphics.finishFrame
+			
 			isPremiere = true
 			collectOutput = false
 		catch
