@@ -243,15 +243,9 @@ immutable struct float
 	importance:4 inline js float atMost: float value
 		(this > value ? value : this)
 
-	importance:4 inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	inline js string format: int fractionDigits, bool grouping = false
-		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
-		
-	inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-				
+	inline js string format: int minFractionDigits = 0, int maxFractionDigits = 2, int minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString("en-US", {@minimumFractionDigits:minFractionDigits, @maximumFractionDigits:maxFractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+						
 	// Returns -1, 0, or 1 depending on the sign of the value
 	importance:4 inline js float sign
 		Math.sign(this)

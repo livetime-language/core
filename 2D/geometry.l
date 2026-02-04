@@ -17,7 +17,7 @@ struct Vector2
 	static importance:4 inline Vector2 Zero() Vector2(0, 0, null)
 		
 	// A string representation of the vector
-	importance:4 string toString() := "\{{x}, {y}\}"
+	importance:4 string toString() := "\{{x.format(maxFractionDigits:1)}, {y.format(maxFractionDigits:1)}\}"
 	
 	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
@@ -925,7 +925,7 @@ immutable Line
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	toString := "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
+	toString := "{start.x.format(maxFractionDigits:2)} {start.y.format(maxFractionDigits:2)} -> {end.x.format(maxFractionDigits:2)} {end.y.format(maxFractionDigits:2)}"
 
 immutable Rect
 	importance:4 Vector2 position, size

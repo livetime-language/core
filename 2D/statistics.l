@@ -7,7 +7,7 @@ skipInit transient unit statistics
 		int graphIndex = 0
 		for graphs -> s
 			if .set != currentSet: continue
-			string text = "{.label}: {.lastValue.format(fractionDigits:1)}"
+			string text = "{.label}: {.lastValue.format(maxFractionDigits:1)}"
 			drawRectangle labelPos, {8,8}, color:.color, align:Left
 			drawText text, labelPos+{11, -2}, align:Left, size:12
 			labelPos.x += graphics.getTextWidth(text, size:12) + 50
