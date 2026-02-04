@@ -101,7 +101,8 @@ priority class Player
 	Vector2 pointerPosition
 	
 	internal Player cloneBaseData := {_id, language, email, name, colorPreferences, id, index}
-	toString := name or (color ? color.name : "Player {index+1}")
+	// toString := name or (color ? color.name : "Player {index+1}")
+	toString := "Player {index}{name ? " ({name})" : color ? " ({color.name})" : ""}"
 	highlightPerspectiveColor := input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input
@@ -835,60 +836,14 @@ skipInit global unit input
 					bool isSmoothPosition = !core.smoothTouchPosition or internalUser.local or frame <= internalUser.smoothFrame
 					
 					if inputType == TouchDown
-						let touch = player.touches.find.id == id
-						if touch
-							// Update the touch in player.touches
-							touch.phase = cast inputType
-							touch.referencePosition = referencePos
-							touch.referenceStartPosition = referencePos
-							touch.type = type
-							// When we touch down, we start a new touch and reset the "handled" flag
-							// This flag is preserved throughout "TouchMove" and "TouchUp", so if we mark the touch
-							// as handled at any point, the flags stays set to "true" until we touch down again
-							touch.handled = false
-							if isSmoothPosition: touch.smoothPosition = referencePos
-						else
-							touch = {id, player, cast inputType, type, referencePos, referencePos, referencePos}
-							player.touches.add touch
-								
-						player.downTouches.ensure touch
-						player.pointerPosition = referencePos
-						internalUser.downTouches.add touch
+						touchDown internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
 						if generateIntegrationTest == Clicks: integrationTest += "\tclick window:{userId} x:{referencePos.x} y:{referencePos.y}\n"
-						appOnTouchDownIfFunctionExists(touch);
 					else
 					if inputType == TouchMove
-						let touch = player.touches.find.id == id
-						if touch
-							// Update the touch in player.touches
-							if touch.phase == Still: touch.phase = cast inputType
-							touch.referencePosition = referencePos
-							touch.type = type
-							if isSmoothPosition: touch.smoothPosition = referencePos
-						else
-							touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
-							player.touches.add touch
-								
-						player.pointerPosition = referencePos
-						internalUser.movingTouches.add touch
-						cursor = Auto
-						appOnTouchMoveIfFunctionExists(touch);
+						touchMove internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
 					else
 					if inputType == TouchUp
-						let touch = player.touches.find.id == id
-						if touch
-							// Update the touch in player.touches
-							touch.phase = cast inputType
-							touch.referencePosition = referencePos
-							touch.type = type
-							if isSmoothPosition: touch.smoothPosition = referencePos
-						else
-							touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
-							player.touches.add touch
-						
-						player.pointerPosition = referencePos
-						internalUser.upTouches.add touch
-						appOnTouchUpIfFunctionExists(touch);
+						touchUp internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
 					else
 					if inputType == Scroll
 						Vector2 delta = {inputs.readInt16, inputs.readInt16}
@@ -1034,6 +989,76 @@ skipInit global unit input
 		if Platform.receivedInitialData
 			Platform.waitingForInitialData -= Platform.receivedInitialData
 			Platform.receivedInitialData = 0
+
+	internal touchDown: InternalUser internalUser
+	                    Player player
+	                    int id
+						Vector2 referencePos
+						TouchType type
+						bool isSmoothPosition
+		let touch = player.touches.find.id == id
+		if touch
+			// Update the touch in player.touches
+			touch.phase = Down
+			touch.referencePosition = referencePos
+			touch.referenceStartPosition = referencePos
+			touch.type = type
+			// When we touch down, we start a new touch and reset the "handled" flag
+			// This flag is preserved throughout "TouchMove" and "TouchUp", so if we mark the touch
+			// as handled at any point, the flags stays set to "true" until we touch down again
+			touch.handled = false
+			if isSmoothPosition: touch.smoothPosition = referencePos
+		else
+			touch = {id, player, Down, type, referencePos, referencePos, referencePos}
+			player.touches.add touch
+				
+		player.downTouches.ensure touch
+		player.pointerPosition = referencePos
+		internalUser.downTouches.add touch
+		appOnTouchDownIfFunctionExists(touch);
+
+	internal touchMove: InternalUser internalUser
+	                    Player player
+	                    int id
+					    Vector2 referencePos
+					    TouchType type
+					    bool isSmoothPosition
+		let touch = player.touches.find.id == id
+		if touch
+			// Update the touch in player.touches
+			if touch.phase == Still: touch.phase = Move
+			touch.referencePosition = referencePos
+			touch.type = type
+			if isSmoothPosition: touch.smoothPosition = referencePos
+		else
+			touch = {id, player, Move, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+			player.touches.add touch
+				
+		player.pointerPosition = referencePos
+		internalUser.movingTouches.add touch
+		cursor = Auto
+		appOnTouchMoveIfFunctionExists(touch);
+
+	internal touchUp: InternalUser internalUser
+	                  Player player
+	                  int id
+					  Vector2 referencePos
+					  TouchType type
+					  bool isSmoothPosition
+		let touch = player.touches.find.id == id
+		if touch
+			// Update the touch in player.touches
+			touch.phase = Up
+			touch.referencePosition = referencePos
+			touch.type = type
+			if isSmoothPosition: touch.smoothPosition = referencePos
+		else
+			touch = {id, player, Up, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+			player.touches.add touch
+		
+		player.pointerPosition = referencePos
+		internalUser.upTouches.add touch
+		appOnTouchUpIfFunctionExists(touch);
 						
 	internal updatePlayers
 		players.orderBy.id
