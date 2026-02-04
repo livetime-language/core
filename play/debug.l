@@ -84,15 +84,7 @@ skipInit debug
 
 		Platform.sendToEditor {type:"state", value:result}
 
-	sendCurrentlyOnScreen
-		string result = "# Currently on screen:\n# Screen topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\} backgroundColor:{graphics.backgroundColor ? graphics.backgroundColor.toString() : "Black"}\n"
-		if graphics.items
-			for graphics.items
-				if not .location.file.startsWith("lib/core/")
-					result += .description + "\n"
-		else
-			result += "# Nothing on screen\n\n"
-
-		Platform.sendToEditor {type:"screen", value:result}
+	sendWhatIsOnScren
+		Platform.sendToEditor {type:"screen", value:graphics.getWhatIsOnScreen}
 
 			

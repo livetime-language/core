@@ -406,6 +406,17 @@ transient skipInit global unit graphics
 		if valign == Bottom: result = " valign:Bottom";
 
 		return result
+
+	getWhatIsOnScreen
+		string result = "--- This is currently on screen ---\n(screen dimensions topLeft:\{{-graphics.referenceSize.x/2},{-graphics.referenceSize.y/2}\} bottomRight:\{{graphics.referenceSize.x/2},{graphics.referenceSize.y/2}\} backgroundColor:{graphics.backgroundColor ? graphics.backgroundColor.toString() : "Black"})\n\n"
+		if graphics.items
+			for graphics.items
+				if not .location.file.startsWith("lib/core/")
+					result += .description + "\n"
+		else
+			result += "Nothing is on screen.\n"
+		return result
+
 	// ------------------------------------------------------- Image -------------------------------------------------------
 	
 	// Draw an image. Place a PNG file in the "media" folder and it will automatically be imported.
@@ -442,7 +453,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-				`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
+				`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
 				f.x1, f.y1, f.w, f.h,
@@ -491,7 +502,7 @@ transient skipInit global unit graphics
 					-halfSizeY,
 					sizeX, sizeY,
 					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
-					`Image ${image.name} position:{${position.x},${position.y}} topLeft:{${position.x-halfSizeX},${position.y-halfSizeY}} bottomRight:{${position.x+halfSizeX},${position.y+halfSizeY}}`,
+					`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
 					f.x1, f.y1, f.w, f.h,
@@ -825,7 +836,7 @@ transient skipInit global unit graphics
 				y + offsetY,
 				sizeX, sizeY, 
 				layer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, text,
-				"Text \"{text}\" position:\{{math.floor(position.x)},{math.floor(position.y)}\} size:{math.floor(sizeX)} topLeft:\{{math.floor(position.x-halfSizeX)},{math.floor(position.y-halfSizeY)}\} bottomRight:\{{math.floor(position.x+halfSizeX)},{math.floor(position.y+halfSizeY)}\} color:{effectiveColor}",
+				"Text \"{text.replaceAll("\n", "\\n").replaceAll("\"", "\\\"")}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(sizeX)} topLeft:\{{math.round(position.x-halfSizeX)},{math.round(position.y-halfSizeY)}\} bottomRight:\{{math.round(position.x+halfSizeX)},{math.round(position.y+halfSizeY)}\} color:{effectiveColor}",
 				location, position.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 
 				outlineColor ? outlineColor.hex : null,
@@ -1015,7 +1026,7 @@ transient skipInit global unit graphics
 				y + offsetY,
 				sizeX, sizeY, 
 				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
-				"Text \"{text}\" position:\{{position.x},{position.y}\} size:{size.x}",
+				"Text \"{text}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(size.x)}",
 				location, position.location, size.location,
 				(color || currentColor).hex, 
 				outlineColor ? outlineColor.hex : null,
@@ -1161,7 +1172,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
-				`Rectangle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:{${Math.floor(sizeX)},${Math.floor(sizeY)}} topLeft:{${Math.floor(position.x-halfSizeX)},${Math.floor(position.y-halfSizeY)}} bottomRight:{${Math.floor(position.x+halfSizeX)},${Math.floor(position.y+halfSizeY)}} color:${color?.hex}`,
+				`Rectangle position:{${Math.round(position.x)},${Math.round(position.y)}} size:{${Math.round(sizeX)},${Math.round(sizeY)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}} color:${color?.hex}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
 				outlineColor ? outlineColor.hex : null,
@@ -1196,7 +1207,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
-				`RoundedRectangle position:${position.x},${position.y} size:${size.x},${size.y}${alignmentDescription(align, valign)}`,
+				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1247,7 +1258,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2, 
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
-				`Circle position:{${Math.floor(position.x)},${Math.floor(position.y)}} size:${Math.floor(sizeX)} topLeft:{${Math.floor(position.x-sizeX/2)},${Math.floor(position.y-sizeY/2)}} bottomRight:{${Math.floor(position.x+sizeX/2)},${Math.floor(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
+				`Circle position:{${Math.round(position.x)},${Math.round(position.y)}} size:${Math.round(sizeX)} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
 				direction == 1,
@@ -1279,7 +1290,7 @@ transient skipInit global unit graphics
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
-				`Line from:{${from.x},${from.y}} to:{${to.x},${to.y}}`,
+				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, from.location, null,
 				to,
 				(color || graphics.currentColor).hex,
@@ -1308,7 +1319,7 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
-				`Line from:{${from.x},${from.y}} to:{${to.x},${to.y}}`,
+				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, position.location, null,
 				points,
 				null, // no fill color, because we want to draw a line instead of a polygon
@@ -1342,7 +1353,7 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
-				`Polygon {points.joinToString(a => "{"+a.x+","+a.y+"}",",")}`,
+				`Polygon {points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1466,7 +1477,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
-				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
+				`Texture "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				sourcePosition.x+texture.size.x/2-sourceSize.x/2,
@@ -1503,7 +1514,7 @@ transient skipInit global unit graphics
 				position.y - sizeY/2,
 				sizeX, sizeY,
 				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
-				`ImageFromUrl "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
+				`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
 				0, 0, texture.size.x, texture.size.y,
@@ -1535,7 +1546,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer, 1, graphics.currentClippingPath, "Clear", 
-				`ClearRectangle position:{${position.x},${position.y}} topLeft:{${position.x-sizeX*.5},${position.y-sizeY*.5}} bottomRight:{${position.x+sizeX*.5},${position.y+sizeY*.5}}`,
+				`ClearRectangle position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX*.5)},${Math.round(position.y-sizeY*.5)}} bottomRight:{${Math.round(position.x+sizeX*.5)},${Math.round(position.y+sizeY*.5)}}`,
 				location, position.location, size.location,
 				"clear", null, 0
 			))
