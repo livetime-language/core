@@ -274,13 +274,13 @@ immutable struct float
 		
 	// ------------------------------------------- Time -------------------------------------------
 		
-	// This is used to make it clear that a time is in milliseconds. All time values in LiveTime should be stored in milliseconds.
+	// Take a time in milliseconds (does not change the value since all time values in LiveTime should be stored in milliseconds).
 	// Example:
 	//     float time = 500 milliseconds
 	importance:3 inline js 
 	float milliseconds := this
 	
-	// Convenience function to convert a time from seconds to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in seconds and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
 	//     float time = 7 seconds
 	//     print "Time in milliseconds: {time}"
@@ -289,7 +289,7 @@ immutable struct float
 	importance:3 inline js
 	float seconds := (this*1000)
 		
-	// Convenience function to convert a time from minutes to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in minutes and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
 	//     float time = 2 minutes
 	//     print "Time in milliseconds: {time}"
@@ -298,7 +298,7 @@ immutable struct float
 	importance:3 inline js
 	float minutes := (this*60000)
 		
-	// Convenience function to convert a time from hours to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in hours and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
 	//     float time = 2 hours
 	//     print "Time in milliseconds: {time}"
@@ -307,7 +307,7 @@ immutable struct float
 	importance:3 inline js
 	float hours := (this*3600000)
 	
-	// Convenience function to convert a time from days to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in days and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
 	//     float time = 2 days
 	//     print "Time in milliseconds: {time}"
@@ -316,7 +316,7 @@ immutable struct float
 	importance:3 inline js
 	float days := (this*86400000)
 	
-	// Convenience function to convert a time from weeks to milliseconds, since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in weeks and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
 	//     float time = 2 weeks
 	//     print "Time in milliseconds: {time}"
@@ -324,6 +324,12 @@ immutable struct float
 	//     Time in milliseconds: 1209600000
 	importance:3 inline js
 	float weeks := (this*604800000)
+	
+	// Take a time in frames (30 frames are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 10 frames
+	importance:3 inline js 
+	float frames := this * 1000 / ticksPerSecond
 	
 	// ------------------------------------------- Operators -------------------------------------------
 
