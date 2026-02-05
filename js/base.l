@@ -81,12 +81,13 @@ immutable struct int
 	const importance:5 minValue = -2147483648
 	
 	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
-	// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
-	// In other words: A negative number modulo a positive value will always be positive. 
+	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
+	// In other words: A negative value mod a positive value will always be positive. 
 	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
 	// Example:
-	//     int a = 107 mod 100 // a =  7
-	//     int b =  -1 mod 100 // b = 99
+	//     int a = 107 mod 100	// a = 7
+	//     int b =  -1 mod 100	// b = 99
+	//     int c =  -1 remainder 100	// c = -1
 	importance:5 inline js 
 	int mod: ensureSingleExecution int divisor // Returns the remainder of a floored division by this value
 		(((this % divisor) + divisor) % divisor)
@@ -94,8 +95,9 @@ immutable struct int
 	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
 	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
 	// Example:
-	//     int a = 107 remainder 100 // a =  7
-	//     int b =  -1 remainder 100 // b = -1
+	//     int a = 107 remainder 100	// a =  7
+	//     int b =  -1 remainder 100	// b = -1
+	//     int c =  -1 mod 100	// c = 99
 	importance:5 inline js 
 	int remainder: int divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
@@ -366,26 +368,24 @@ immutable struct float
 	inline js float ** (float a, float b) 
 		Math.pow(a,b)
 		
-	// The true modulo operator, like it's used in mathematics, useful for wrapping around values. 
-	// It returns the remainder after a floored division, always producing a result with the same sign as the divisor. 
-	// In other words: A number modulo a positive value will always be positive. 
-	// This is different from the % operator in C, C++, C#, Java or JavaScript, which returns the remainder after a truncated division.
+	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
+	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
+	// In other words: A negative value mod a positive value will always be positive. 
+	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
 	// Example:
-	//     float bufferSize = 100.0
-	//     float a = 107.5 mod bufferSize // a =  7.5
-	//     float b =  -0.5 mod bufferSize // b = 99.5
+	//     float a = 107 mod 100	// a = 7
+	//     float b =  -1 mod 100	// b = 99
+	//     float c =  -1 remainder 100	// c = -1
 	importance:5 inline js 
 	float mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
 		(((this % divisor) + divisor) % divisor)
 		
 	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
 	// Example:
-	//     float bufferSize = 100.0
-	//     float a = 107.5 mod bufferSize // a =  7.5
-	//     float b =  -0.5 mod bufferSize // b = -0.5
-	// Output:
-	//     7
-	//     -1	
+	//     float a = 107 remainder 100	// a =  7
+	//     float b =  -1 remainder 100	// b = -1
+	//     float c =  -1 mod 100	// c = 99
 	importance:5 inline js 
 	float remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)

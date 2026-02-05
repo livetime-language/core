@@ -233,12 +233,15 @@ static class app
 		dynamic config = json.parse(jsonString)
 		int value = (int)config.value
 
-		// In LiveTime, the % symbol is used for percentages, like in css, e.g. width:100%
+		// In LiveTime, the % symbol is used for percentages, like in css.
+		div width:100%
+
 		// To calucate the remainder of a division, use mod or remainder. 
-		// mod returns the remainder after a floored division, always producing a result with the same sign as the divisor, like in Python.
-		float bufferSize = 100
-		let a = 107 mod bufferSize // a = 7
-		let b = -1 mod bufferSize  // b = 99
+		// mod returns the remainder after a floored division, like in Python.
+		// A negative value mod a positive value will always be positive.
+		let a = 107 mod 100	// a = 7
+		let b =  -1 mod 100	// b = 99
+		let c =  -1 remainder 100	// c = -1
 		
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
