@@ -31,9 +31,7 @@ tests
 
 5. Run the unit test, carefully analyze the output and check if everything is working.
 
-6. Use the runTests tool to run the unit test. Carefully analyze the output and check if everything is working.
-
-7. Fix all problems and repeat until you verified everything works as specified.
+6. Fix all problems and repeat until you verified everything works as specified.
 
 # Screen dimensions and color
 In LiveTime, the total screen size is always {1920, 1080}.
