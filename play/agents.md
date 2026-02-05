@@ -64,7 +64,7 @@ app
 		Document[] documents = [
 			{created:DateTime.now, state:InProgress}
 		]
-		Document doc = {id:"002e", created:DateTime.now, state:Done}
+		Document doc = {id:"2f", created:DateTime.now, state:Done}
 		documents.add doc
 		documents.remove doc
 		documents.orderBy.created
@@ -74,31 +74,40 @@ app
 
 		// Dictionary (hashtable that maps keys to values)
 		Document[string] documentsById
-		documentsById["002f"] = {id:"002f"}
-		documentsById.remove "002f"
+		documentsById["2f"] = {id:"2f"}
+		documentsById.remove "2f"
 		documentsById.clear
 		for documents as doc
 			documentsById[doc.id] = doc
 		for documentsById as doc, id
 			print "id:{id} created:{doc.created.toDayMonthYearString}"
 
-		// Conditions
+		// Find
+		let doc = documents.find.id == "2f"
+
+		// Conditions with if
 		if documents.length > 0
 			print "There are {documents.length} documents."
 		else
 			print "There are no documents."
+
+		// Conditions with let
+		let mike = players.find.name == "Mike"
+			print "Found player with name Mike, his score is {mike.score}"
+		else
+			print "Did not find player with name Mike"
 
 		// Iterate over a List
 		for documents as doc
 			print doc.id
 
 		// Iterate over an integer range
-		// Prints 01234
+		// Prints "01234", the upper bound is exclusive 
 		for 0 to 5 as i
 			print i
 
 		// If you leave out the lower bound, it defaults to 0
-		// If you leave out the index variable, it defaults to i
+		// If you leave out the declaration of the index variable, it defaults to i
 		for 5
 			print i
 
@@ -106,12 +115,12 @@ app
 		for documents
 			print .
 
-		// Prints 01234
+		// Prints "01234"
 		for 5
 			print .
 			
 		// Use the "backwards" keyword to iterate backwards
-		// Prints 43210
+		// Prints "43210"
 		for 5 backwards as i
 			print i
 
@@ -124,21 +133,21 @@ app
 			print "{key}: {value}"
 
 		// If you divide an integer by an integer in LiveTime, you always get a float
-		float fraction = 1 / 2
+		float fraction = 1 / 2	// fraction = 0.5
 
 		// Use math.floor after a division if you need an integer
 		int flooredInteger = math.floor(1 / 2)
 
 		// Query
-		Player[] healthyPlayers = players.where.health > 0
-		Player[] top10Players = (players.orderByDescending.score).take 10
-		Player[] seniors = (users.where.age > 65).orderBy.age
-		Player[] highscoreList = (player.where.isAlive).orderByDescending.score
+		Player[] healthyPlayers	= players.where.health > 0
+		Player[] top10Players	= (players.orderByDescending.score).take 10
+		Player[] seniors	= (users.where.age > 65).orderBy.age
+		Player[] highscoreList	= (player.where.isAlive).orderByDescending.score
 
 		// Cast
-		string jsonString = "\{value:7\}"
-		dynamic config = json.parse(jsonString)
-		int value = (int)config.value
+		string jsonString	= "\{value:7\}"
+		dynamic config	= json.parse(jsonString)
+		int value	= (int)config.value
 
 		// In LiveTime, the % symbol is used for percentages, like in css.
 		div width:100%
