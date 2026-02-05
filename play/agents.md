@@ -159,29 +159,57 @@ app
 		let b =  -1 mod 100	// b = 99
 		let c =  -1 remainder 100	// c = -1
 	
+// Handle input
+Player
+	string inputText
+
+	onKeyDown: Key key, string character
+		if character:	inputText += character
+		if key == Backspace:	inputText = inputText[..-1]
+		print "{this} presses {key} ({character})"
+
+	onKeyUp: Key key
+		print "{this} releases {key}"
+
+	onTouchHover: Touch touch
+		app.items.each.hoverTouch = touch.position insideRectangle .position, .size ? touch : null
+	
+	onTouchDown: Touch touch
+		let item = app.items.find.hoverTouch == touch
+			item.dragTouch = touch
+			item.dragOffset = item.position - touch.position
+			print "{this} clicks {item.name}"
+	
+	onTouchDrag: Touch touch
+		let item = app.items.find.dragTouch == touch
+			item.position = touch.position + item.dragOffset
+			print "{this} drags {item.name}"
+	
+	onTouchUp: Touch touch
+		let item = app.items.find.dragTouch == touch
+			item.dragTouch = null
+			print "{this} drops {item.name}"
+
+	tick
+		if gameController.leftStick.magnitude > .1
+			print "{this} holds their left stick in this direction: {gameController.leftStick}"
+
+		if gameController.a.wasJustPressed
+			print "{this} just pressed the A button on their game controller"
+
+		// Draw input text
+		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
+
 class Item
+	string name = "Item"
 	Vector2 size = {240,60}
 	Vector2 position
-	Touch moveTouch
-	Vector2 touchOffset
+	Touch hoverTouch, dragTouch
+	Vector2 dragOffset
 	
 	tick
-		// The player app.currentPlayer can drag this item around
-		onTouchDown position, size, by:app.currentPlayer
-			print "Player {touch.by} started dragging {this}"
-			moveTouch = touch
-			touchOffset = position - touch.position
-				
-		onTouchMove moveTouch
-			print "Player {touch.by} is dragging {this}"
-			position = touch.position + touchOffset
-			
-		onTouchUp moveTouch
-			print "Player {touch.by} dropped {this}"
-			moveTouch = null
-									
-		// Draw the item
-		drawRectangle position, size, Color("#404040"), outlineColor:Color("#ffffff"), outlineWidth:5
+		// Draw item					
+		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
 // Write units tests in the static class "tests" in a file in the "tests/" folder
 tests

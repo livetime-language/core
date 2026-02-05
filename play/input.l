@@ -632,7 +632,7 @@ skipInit global unit input
 	internal handleKeyEvent: InputType inputType, Key keyCode, string key
 		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
 		let inputs = localUser.inputs
-		int composite = cast inputType                                  // inputType:   0 - 31 (5 bit)
+		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 		
 		let controllerButton = controllerButtonMap[keyCode]
 			composite += controllerButton.buttonIndex shiftLeft 5 // buttonIndex: 0 - 15 (4 bit)
@@ -856,21 +856,12 @@ skipInit global unit input
 					internalUser.textInputs.add textInput
 				else
 				if inputType == KeyDown
-					Key key = cast inputs.readInt32
-					let keyPressed = inputs.readString
-					internalUser.downKeys.add key
-					player.keysCurrentlyDown.ensure key
-					if keyPressed: internalUser.pressedKeys.add keyPressed
-
+					keyDown internalUser, player, key:cast inputs.readInt32, character: inputs.readString
 					int controllerButtonIndex = cast((value shiftRight 5) mod 16)
-						player.controllerKeyDownFrame[controllerButtonIndex] = frame
-					
+					player.controllerKeyDownFrame[controllerButtonIndex] = frame
 				else
 				if inputType == KeyUp
-					Key key = cast inputs.readInt32
-					internalUser.upKeys.add key
-					player.keysCurrentlyDown.remove key
-					
+					keyUp internalUser, player, key:cast inputs.readInt32
 					int controllerButtonIndex = cast((value shiftRight 5) mod 16)
 						player.controllerKeyDownFrame[controllerButtonIndex] = 0
 				else
@@ -1015,7 +1006,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		appOnTouchDownIfFunctionExists(touch);
+		appOnTouchDownIfFunctionExists player, touch
 
 	internal touchMove: InternalUser internalUser
 	                    Player player
@@ -1037,7 +1028,7 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.movingTouches.add touch
 		cursor = Auto
-		appOnTouchMoveIfFunctionExists(touch);
+		appOnTouchMoveIfFunctionExists player, touch
 
 	internal touchUp: InternalUser internalUser
 	                  Player player
@@ -1058,7 +1049,23 @@ skipInit global unit input
 		
 		player.pointerPosition = referencePos
 		internalUser.upTouches.add touch
-		appOnTouchUpIfFunctionExists(touch);
+		appOnTouchUpIfFunctionExists player, touch
+
+	internal keyDown: InternalUser internalUser
+	                  Player player
+					  Key key
+					  string character
+		internalUser.downKeys.add key
+		player.keysCurrentlyDown.ensure key
+		if character: internalUser.pressedKeys.add character
+		appOnKeyDownIfFunctionExists player, key, character
+
+	internal keyUp: InternalUser internalUser
+	                Player player
+					Key key
+		internalUser.upKeys.add key
+		player.keysCurrentlyDown.remove key
+		appOnKeyUpIfFunctionExists player, key
 						
 	internal updatePlayers
 		players.orderBy.id
@@ -1147,14 +1154,32 @@ skipInit global unit input
 				PeerNetwork.disconnect user
 		playersToRemove.clear
 
-	inline js void appOnTouchDownIfFunctionExists: Touch touch
+	inline js void appOnTouchDownIfFunctionExists: Player player, Touch touch
 		if(app.onTouchDown) app.onTouchDown(touch);
+		if(player?.onTouchDown) player.onTouchDown(touch);
 
-	inline js void appOnTouchMoveIfFunctionExists: Touch touch
+	inline js void appOnTouchMoveIfFunctionExists: Player player, Touch touch
 		if(app.onTouchMove) app.onTouchMove(touch);
-
-	inline js void appOnTouchUpIfFunctionExists: Touch touch
+		if(player) {
+			if(player.onTouchMove) player.onTouchMove(touch);
+			if(!touch.isDown) {
+				if(player.onTouchHover) player.onTouchHover(touch);
+			} else {
+				if(player.onTouchDrag) player.onTouchDrag(touch);
+			}
+		}
+			
+	inline js void appOnTouchUpIfFunctionExists: Player player, Touch touch
 		if(app.onTouchUp) app.onTouchUp(touch);
+		if(player?.onTouchUp) player.onTouchUp(touch);
+
+	inline js void appOnKeyDownIfFunctionExists: Player player, Key key, string character
+		if(app.onKeyDown) app.onKeyDown(key, character);
+		if(player?.onKeyDown) player.onKeyDown(key, character);
+
+	inline js void appOnKeyUpIfFunctionExists: Player player, Key key
+		if(app.onKeyUp) app.onKeyUp(key);
+		if(player?.onKeyUp) player.onKeyUp(key);
 		
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
