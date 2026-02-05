@@ -244,8 +244,8 @@ tests
 		// Use printWhatIsOnScreen in your test and check if the what is shown on screen is correct
 		printWhatIsOnScreen
 
-# Images, Sounds, Fonts
-Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media" folder. If you place "Example.png" in this folder, you can use "Example" in drawImage, like this:
+# Images, Sounds and Fonts
+Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
 
 app
 	tick
