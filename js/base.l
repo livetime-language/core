@@ -75,10 +75,10 @@ immutable struct int
 		Math.pow(this, value)
 		
 	// The largest possible integer value
-	const importance:5 maxValue = 2147483647
+	const importance:5 maxValue = 9007199254740991
 	
 	// The smallest possible integer value
-	const importance:5 minValue = -2147483648
+	const importance:5 minValue = -9007199254740991
 	
 	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
 	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
