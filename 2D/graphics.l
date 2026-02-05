@@ -2052,7 +2052,7 @@ internal skipInit transient unit gizmo
 				// Collect all items and locations the mouse pointer is over
 				GizmoOverItem[] overItems
 				for graphics.items -> item
-					if pixelPos.isInsidePolygon item.poly
+					if pixelPos.insidePolygon item.poly
 						if item.positionLocation: flattenLocations overItems, item, item.positionLocation; else
 						if item.location:         overItems.add {item, item.location}
 									
