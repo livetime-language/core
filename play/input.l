@@ -1194,7 +1194,7 @@ skipInit global unit input
 	//             onTouchDown position:{0,0}, size:{300,100}
 	//                 print "Clicked OK"
 	// Image: onTouchDown1.png
-	global importance:4 onTouchDown: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchDown: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1241,7 +1241,7 @@ skipInit global unit input
 	//             onTouchDown pos, size, angle
 	//                 print "Clicked character"
 	// Image: onTouchDown2.png
-	global onTouchDown: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchDown: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                float angle                          // Rotate the touch area by this angle
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
@@ -1287,7 +1287,7 @@ skipInit global unit input
 	//             onTouchDown pos, radius:50
 	//                 print "Clicked ball"
 	// Image: onTouchDown3.png
-	global importance:4 onTouchDown: Vector2 position                    // The center of the circle
+	global importance:0 onTouchDown: Vector2 position                    // The center of the circle
 		                float radius                        // The radius of the circle
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this circle
@@ -1324,7 +1324,7 @@ skipInit global unit input
 	//             onTouchDown polygon
 	//                 print "Clicked OK"
 	// Image: onTouchDown4.png
-	global onTouchDown: Vector2[] points                    // The points that define the clickable polygon
+	global importance:0 onTouchDown: Vector2[] points                    // The points that define the clickable polygon
 		                Vector2 position = {0,0}            // The position all polygon points are relative to
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this polygon
@@ -1357,7 +1357,7 @@ skipInit global unit input
 	//             onTouchDown by me
 	//                 print "Click at {touch.position}"
 	// Image: onTouchDown0.png
-	global onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global importance:0 onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
 		for getTargetedPlayers(by) -> player
@@ -1369,7 +1369,7 @@ skipInit global unit input
 	// Do something when the player touches or clicks, even if the event is already handled.
 	//
 	// Image: onTouchDown0.png
-	global onTouchDownAny: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global importance:0 onTouchDownAny: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                   void(Touch touch) do                // Do this for each touch or click, even those that are already marked as handled
 		if not active: return
 		for getTargetedPlayers(by) -> player
@@ -1391,7 +1391,7 @@ skipInit global unit input
 	//             onTouchOver pos, size, by:me
 	//                 drawRectangle pos, size+{32,32}, outlineColor:Black, outlineWidth:8
 	// Image: onTouchOver.png
-	global importance:4 onTouchOver: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchOver: Vector2 position                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                implicit nocolon Player[] by = null // Only consider the mouse from this player  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1449,7 +1449,7 @@ skipInit global unit input
 	//             onTouchUp moveTouch
 	//                 moveTouch = null
 	// Image: onTouchDown0.png
-	global importance:4 onTouchMove: Touch touch                 // Only consider this particular touch or click
+	global importance:0 onTouchMove: Touch touch                 // Only consider this particular touch or click
 		                triggeredOnTouchDown = true // Ensure we also get a touchMove before the touchDown event on touch screens
 		                void(Touch touch) do        // Do this for each touch or click
 		if not touch or not active: return
@@ -1471,7 +1471,7 @@ skipInit global unit input
 	//             onTouchMove by me
 	//                 print "Touch moved to {touch.position}"
 	// Image: onTouchDown0.png
-	global onTouchMove: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global importance:0 onTouchMove: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                triggeredOnTouchDown = true         // Ensure we also get a touchMove before the touchDown event on touch screens
 		                void(Touch touch) do                // Do this for each touch or click
 		if not active: return
@@ -1504,7 +1504,7 @@ skipInit global unit input
 	//             onTouchUp moveTouch
 	//                 moveTouch = null
 	// Image: onTouchDown0.png
-	global importance:4 onTouchUp: Touch touch          // Only consider this particular touch or click
+	global importance:0 onTouchUp: Touch touch          // Only consider this particular touch or click
 		              markAsHandled = true // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do // Do this for each touch or click
 		if not touch or not active: return
@@ -1524,7 +1524,7 @@ skipInit global unit input
 	//             onTouchUp by me
 	//                 print "Touch ended at {touch.position}"
 	// Image: onTouchDown0.png
-	global onTouchUp: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
+	global importance:0 onTouchUp: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
 		if not active: return
@@ -1545,7 +1545,7 @@ skipInit global unit input
 	//             onTouchUp position:{0,0}, size:{300,100}
 	//                 print "Clicked OK"
 	// Image: onTouchDown1.png
-	global onTouchUp: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchUp: Vector2 position                    // The center of the touch area
 		              Vector2 size                        // The size of the rectangular touch area
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool showClickableArea = false      // Highlight the clickable area for debugging
@@ -1577,7 +1577,7 @@ skipInit global unit input
 	//             onTouchUp pos, radius:50
 	//                 print "Clicked ball"
 	// Image: onTouchDown3.png
-	global onTouchUp: Vector2 position                    // The center of the circle
+	global importance:0 onTouchUp: Vector2 position                    // The center of the circle
 		              float radius                        // The radius of the circle
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		              Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1693,7 +1693,7 @@ skipInit global unit input
 	// ---------------------------------------------- Keys ----------------------------------------------
 	
 	// Do something when a player presses a key
-	global onKeyDown: Key modifier 
+	global importance:0 onKeyDown: Key modifier 
 		              Key key                             // The key that will trigger the event
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(Key key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
@@ -1715,7 +1715,7 @@ skipInit global unit input
 						do key, player, actualCmdOrCtrl, actualAlt, actualShift
 				
 	// Do something when a player presses a key
-	global onKeyDown: Key key                             // The key that will trigger the event
+	global importance:0 onKeyDown: Key key                             // The key that will trigger the event
 		              bool cmdOrCtrl = false
 		              bool alt = false
 		              bool shift = false
@@ -1737,7 +1737,7 @@ skipInit global unit input
 						do key, player, actualCmdOrCtrl, actualAlt, actualShift
 				
 	// Do something when a player presses a key
-	global onKeyDown: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
+	global importance:0 onKeyDown: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(Key key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys as key
@@ -1752,14 +1752,14 @@ skipInit global unit input
 				do key, player, actualCmdOrCtrl, actualAlt, actualShift
 				
 	// Do something when a player releases a key
-	global onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
+	global importance:0 onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
 		            void(Key key, Player pressedBy) do  // Do this for each key that is released
 		for getTargetedPlayers(by) -> player
 			for internalUsers[.id].upKeys -> key
 				do key, player
 					
 	// Do something when a player types a character
-	global onType: implicit nocolon Player[] by = null         // Only consider characters typed by this player or list of players
+	global importance:0 onType: implicit nocolon Player[] by = null         // Only consider characters typed by this player or list of players
 		           void(string character, Player pressedBy) do // Do this for each character that is typed
 		for getTargetedPlayers(by) -> player
 			for internalUsers[.id].pressedKeys -> character
