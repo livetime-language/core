@@ -1022,7 +1022,7 @@ class List<T>
 
 	// Returns whether the list contains the given item
 	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
-		(typeof(item) == "object" && item.equal ? this.some(a => item.equal(a)) : this.includes(item))
+		(typeof(item) == "object" && item._equal ? this.some(a => item._equal(a)) : this.includes(item))
 		
 	importance:3 bool containsAny: T[] list
 		for list
@@ -1341,7 +1341,7 @@ class List<T>
 	// The index of an item in the list
 	importance:5 inline js
 	int indexOf: ensureSingleExecution T item // Get the index of this item
-		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
+		(typeof(item) == "object" && item?._equal ? this.findIndex(a => item._equal(a)) : this.indexOf(item))
 		
 	// Find the index of the item the meets the given condition
 	importance:3 int indexWhere: bool(T it) condition	// The condition to check
