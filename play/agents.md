@@ -28,9 +28,8 @@ tests
 		setGameController playerIndex:0 leftStick:{1,0}
 		wait 500 milliseconds
 		expect players[0].gridPos toBe {1,0}
-		printWhatIsOnScreen
 
-5. Use printWhatIsOnScreen in your tests to check if the screen content is correct and nothing overlaps that shouldn't overlap. 
+5. Run the unit test, carefully analyze the output and check if everything is working.
 
 6. Use the runTests tool to run the unit test. Carefully analyze the output and check if everything is working.
 
@@ -241,7 +240,7 @@ tests
 		// Assert
 		expect players[0].gridPos toBe {1,0}
 
-		// Use printWhatIsOnScreen in your test and check if the what is shown on screen is correct
+		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
 
 # Images, Sounds and Fonts
