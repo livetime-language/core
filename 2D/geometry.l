@@ -93,11 +93,14 @@ struct Vector2
 	// The length of the vector
 	importance:4 length := math.sqrt(x * x + y * y)
 		
-	// The sign of each coordinate
-	importance:4 sign := Vector2(math.sign(x), math.sign(y))
-		
+	// The length of the vector
+	importance:4 magnitude := math.sqrt(x * x + y * y)
+
 	// The square of the length of the vector
 	importance:4 lengthSquared := x * x + y * y
+		
+	// The sign of each coordinate
+	importance:4 sign := Vector2(math.sign(x), math.sign(y))
 		
 	// Make the vector orthogonal to the existing vector
 	importance:4 orthogonal := {-y, x}
@@ -457,6 +460,9 @@ struct IntVector2
 	// The length of the vector
 	importance:4 length := math.sqrt(x * x + y * y)
 		
+	// The length of the vector
+	importance:4 magnitude := math.sqrt(x * x + y * y)
+	
 	// A vector that is orthogonal to the existing vector
 	importance:4 orthogonal := IntVector2(x:-y, y:x)
 		
