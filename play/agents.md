@@ -36,6 +36,14 @@ tests
 
 7. Fix all problems and repeat until you verified everything works as specified.
 
+# Screen dimensions and color
+In LiveTime, the total screen size is always {1920, 1080}.
+The center of the screen is at {0,0}.
+The x-coordinate ranges from -960 to 960.
+The y-coordinate ranges from -540 to 540.
+So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}.
+The background is black by default. 
+
 # Basics of the LiveTime programming language
 enum State
 	InProgress
