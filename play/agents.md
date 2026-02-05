@@ -25,6 +25,8 @@ Player
 tests
 	playerShouldMoveRight
 		app.createTestLevel
+		click playerIndex:0 {350,400}
+		drag playerIndex:0 {0,0} to {300,0}
 		setGameController playerIndex:0 leftStick:{1,0}
 		wait 500 milliseconds
 		expect players[0].gridPos toBe {1,0}
@@ -229,8 +231,14 @@ class Item
 // Write units tests in the static class "tests" in a file in the "tests/" folder
 tests
 	playerShouldMoveRight
-		// Simulate player 0 moving the left stick to {1,0} (right)
+		// Make player 0 move the left stick to {1,0} (right)
 		setGameController playerIndex:0 leftStick:{1,0}
+
+		// Make player 0 click at {250,350}
+		click playerIndex:0 {250,350}
+
+		// Make player 0 drag from {0,0} to {300,0}
+		drag playerIndex:0 {0,0} to {300,0}
 
 		// Wait for 300 milliseonds. At 30 ticks per second, this will execute app.tick 10 times
 		wait 300 milliseconds
