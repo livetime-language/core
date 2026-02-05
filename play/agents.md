@@ -255,21 +255,24 @@ app
 enum Phase: PlacePiece, GameOver
 
 app
-	// In LiveTime, the total screen size is always {1920, 1080}
-	// The background is black by default
-	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen
-	// We display the videos at the left and right side of the screen, leaving a usable area of {700,700} in the middle of the screen
+	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen.
+	// The screen size is always {1920, 1080}.
+	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen
 	const Vector2 totalBoardSize = {700,700}
-	const int cellCount = 9
 	
 	// We use a two dimensional grid of Cell for the cells of the game board
-	// We can later access the individual cells with cell[x,y]
-	Grid<Cell> cells = {size:{cellCount, cellCount}}
+	// We can later access the individual cells with cell[x,y] or cell[gridPos]
+	Grid<Cell> cells = {size:{9, 9}}
 	
+	// To correctly center the board, we need to offset it by cellSize * (cells.size - {1,1}) / -2
+	// Don't make the mistake of multiplying by cellCount / -2 instead of (cells.size - {1,1}) / -2
+	const Vector2 cellSize = totalBoardSize / cells.size
+	const Vector2 cellOffset = cellSize * (cells.size - {1,1}) / -2
+
 	Player currentPlayer
 	Phase phase = PlacePiece
 	
-	// The "start" function is called when the game starts
+	// Called when the app starts
 	start
 		print "Starting go example"
 		graphics.drawingOrder = LastDrawnWillBeInFront
@@ -278,52 +281,41 @@ app
 		Menu()
 		
 		// Create empty grid cells
-		for cellCount as x
-			for cellCount as y
-				cells[x,y] = Cell(pos:{x,y}, player:null)
+		for cells.size as gridPos
+			cells[gridPos] = Cell(gridPos)
 		
 		// In LiveTime, the global variable "players" always contains a list of players
 		// We pick a random player as the start player
 		currentPlayer = players.random
-				
-	// The "tick" function is called on every frame (30 times per second)
-	tick
-		// The center of the screen has the coordinates {0,0}
-		// The x-coordinate ranges from -960 to 960
-		// The y-coordinate ranges from -540 to 540
-		// So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}
-		// To correctly center the board, we need to offset it by cellSize * (cellCount - 1) / -2
-		// Don't make the mistake of multiplying by cellCount / -2 instead of (cellCount - 1) / -2
-		Vector2 cellSize = totalBoardSize / cellCount
-		Vector2 cellOffset = cellSize * (cellCount - 1) / -2
-		for cellCount as x
-			for cellCount as y
-				IntVector2 gridPos = {x,y}
-				Vector2 pixelPos = cellOffset + gridPos * cellSize
-				Cell cell = cells[gridPos]
-				
-				if cell.player
-					// Draw a circle with its center at pixelPos
-					// The background is black in LiveTime, so we need to make sure we use colors that are different from black.
-					drawCircle pixelPos, size:60, color:cell.player.color
 
-					// Draw text with its center at pixelPos
-					drawText "{cell.liberties}", pixelPos, size:30					
-				else
-					drawCircle pixelPos, size:8
-					
-					// When the current player clicks on an empty cell, place a piece
-					// We use "by:currentPlayer" to only consider touches by the current player
-					onTouchDown position:pixelPos by:currentPlayer size:cellSize
-						placePiece gridPos, cell, player:currentPlayer
+	// Called when a player touches the screen
+	onTouchDown: Touch touch
+		let cell = cells[touch.position.toGridPos]
+			placePiece cell, player:currentPlayer
+				
+	// Called on every frame (30 times per second)
+	tick
+		for cells as cell
+			Vector2 screenPos = cell.gridPos.toScreenPos
+			
+			if cell.player
+				// Draw a circle with its center at screenPos
+				// The background is black in LiveTime, so we need to make sure we use colors that are different from black.
+				drawCircle screenPos, size:60, color:cell.player.color
+
+				// Draw text with its center at screenPos
+				drawText "{cell.liberties}", screenPos, size:30					
+			else
+				drawCircle screenPos, size:8
 		
 		// Call the tick function for each player
 		players.each.tick
 		
-	placePiece: IntVector2 gridPos, Cell cell, Player player
-		print "Player {player} places a piece at {gridPos}"
+	placePiece: Cell cell, Player player
+		if cell.player: return
 		cell.player = player
-		captureSurroundedPieces gridPos, player
+		captureSurroundedPieces cell.gridPos, player
+		print "Player {player} placed a piece at {cell.gridPos}"
 		
 		// Set current player to the next player
 		currentPlayer = players next currentPlayer
@@ -336,7 +328,7 @@ app
 			if neighborCell and neighborCell.player and neighborCell.player != attacker
 				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
 				if surroundesCells
-					print "Player {attacker} surrounded {surroundesCells.length} cells: {surroundesCells.joinToString.pos.toString}"
+					print "Player {attacker} surrounded {surroundesCells.length} cells: {surroundesCells.joinToString.gridPos.toString}"
 					surroundesCells.each.player = null
 		
 	// We write the return type in front of the function.
@@ -367,25 +359,30 @@ app
 		
 	finishGame
 		Player winner = players.withMax.score
-		print "Player {winner} wins with {winner.score} points."
 		ParticleSystem(position:winner.pos)
+		print "{winner} wins with {winner.score} points."
+
+// Add the toScreenPos function to the IntVector2 struct
+struct IntVector2
+	toScreenPos := app.cellOffset + this * app.cellSize
+
+// Add the toGridPos function to the Vector2 struct
+struct Vector2
+	toGridPos := ((this - app.cellOffset) / app.cellSize).round
 		
 class Cell
-	IntVector2 pos
+	IntVector2 gridPos
 	Player player
 	int liberties
 	bool visited
 		
+// Each player has the following member variables already declared: index, color and score. Do not declare them again.
 class Player
-	// In LiveTime, each player always has an "index", a "color" and a "score" by default. We don't need to declare them.
-
 	IntVector2 dir = IntVector2.horizontalDirections[index]
 	Vector2 pos = dir * {690,265}
 		
 	tick
-		IntVector2 a = {0,0}
-
-		// In LiveTime, we always show a video feed for each player.
+		// In LiveTime, we always show a video feed for each player
 		float radius = 255
 		drawCircle pos, size:radius*2, outlineColor:color, outlineWidth:12
 		drawVideo this, pos, size:radius*2-75, shape:Circle
