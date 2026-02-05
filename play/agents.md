@@ -44,6 +44,16 @@ The y-coordinate ranges from -540 to 540.
 So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}.
 The background is black by default. 
 
+# Library Source Code
+When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"
+
+lib/core/js/base.l	Standard Libaray (int, float, string, List, Dictionary, etc).
+lib/core/js/time.l	Time Library (Time, Date, etc).
+lib/core/2D/graphics.l	Graphics Library (drawImage, drawRectangle, drawCircle, etc).
+lib/core/2D/geometry.l	Geometry Library (Vector2, IntVector2, Matrix, etc)
+lib/core/play/sound.l	Sound Library (playSound, setVolume, etc)
+lib/core/play/tests.l	Unit Test Framework (click, drag, setGameController, wait, expect, etc)
+
 # Basics of the LiveTime programming language
 enum State
 	InProgress
@@ -240,15 +250,6 @@ Read "src/media.l" for all images, sounds and fonts available in the project. Pl
 app
 	tick
 		drawImage Example, position:{0,0} // draws the image "media/Example.png"
-
-# More information
-When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/" and "lib/core/play/".
-
-"lib/core/js/" contains the LiveTime standard libaray (int, float, string, List, Dictionary, etc).
-
-"lib/core/play/" contains the LiveTime graphics and input library (drawImage, drawRectangle, onTouchDown, onTouchUp, player.gameController, etc).
-
-"lib/core/play/tests.l" contains the LiveTime unit test framework (setGameController, wait, expect, etcs)
 
 # Example: The board game "Go"
 enum Phase: PlacePiece, GameOver
