@@ -884,7 +884,7 @@ class List<T>
 	//      app
     //          gameOver
     //              players.removeWhere.hasDied
-	importance:5 removeWhere: bool(T a) condition // The condition to check
+	importance:5 removeWhere: bool(T it) condition // The condition to check
 		for this <-
 			if condition(.)
 				removeAt i
@@ -896,7 +896,7 @@ class List<T>
 	//     app
     //         gameOver
     //             players.removeFirstWhere.health < 10
-	importance:5 T removeFirstWhere: bool(T a) condition // The condition to check
+	importance:5 T removeFirstWhere: bool(T it) condition // The condition to check
 		for this
 			if condition(.)
 				removeAt i
@@ -942,7 +942,7 @@ class List<T>
 	// Remove the first item that meet a given condition and return it
 	// Exmaple: Remove the first player with a health below 10
 	//     let firstActivePlayer = players.popWhere.health < 10
-	importance:2 T popWhere: bool(T a) condition // The condition for the item to meet
+	importance:2 T popWhere: bool(T it) condition // The condition for the item to meet
 		for length()
 			let item = get(i)
 			if condition(item)
@@ -1042,12 +1042,12 @@ class List<T>
 		this.splice(0, this.length, ...list)
 		
 	void setFilteredList: T[] list
-		                  bool(T a) condition
+		                  bool(T it) condition
 		clear
 		for list: if condition(.): add .
 		
 	void setFilteredList: T[] list
-		                  bool(T a) condition
+		                  bool(T it) condition
 		                  int maxCount
 		clear
 		int count = 0
@@ -1080,7 +1080,7 @@ class List<T>
 		let randomInteger = math.randomInteger(length)
 		return get(randomInteger)
 		
-	importance:3 T randomWhere: bool(T a) condition
+	importance:3 T randomWhere: bool(T it) condition
 		let filteredList = this.where(condition)
 		int index = math.randomInteger(filteredList.length)
 		T item = filteredList[index]
@@ -1094,7 +1094,7 @@ class List<T>
 		this.removeAt(index)
 		return item
 		
-	importance:3 T popRandomWhere: bool(T a) condition
+	importance:3 T popRandomWhere: bool(T it) condition
 		let filteredList = this.where(condition)
 		int index = math.randomInteger(filteredList.length)
 		T item = filteredList[index]
@@ -1171,30 +1171,30 @@ class List<T>
 	// Example:
 	//    let healthyPlayers = (players.where.health > 0).orderBy.health
 	importance:5
-	T[] orderBy: float(T a) expression // First order by this expression
+	T[] orderBy: float(T it) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
 
 	// Sort the list by a given expression in descending order
 	// Example:
 	//    let bestPlayers = (players.where.isAlive).orderByDescending.score
 	importance:5
-	T[] orderByDescending: float(T a) expression // First order by this expression
+	T[] orderByDescending: float(T it) expression // First order by this expression
 		return this.sort(expression(b) - expression(a))
 
 	// Sort by string
-	T[] orderBy: string(T a) expression // First order by this expression
+	T[] orderBy: string(T it) expression // First order by this expression
 		return this.sort(expression(a) compareTo expression(b))
 		
 	// Sort by string in descending order
-	T[] orderByDescending: string(T a) expression // First order by this expression
+	T[] orderByDescending: string(T it) expression // First order by this expression
 		return this.sort(expression(b) compareTo expression(a))
 		
 	// Order by TimeString
-	T[] orderBy: TimeString(T a) expression // First order by this expression
+	T[] orderBy: TimeString(T it) expression // First order by this expression
 		return this.sort(string(expression(a)) compareTo string(expression(b)))
 		
 	// Order by TimeString in descending order
-	T[] orderByDescending: TimeString(T a) expression // First order by this expression
+	T[] orderByDescending: TimeString(T it) expression // First order by this expression
 		return this.sort(string(expression(b)) compareTo string(expression(a)))
 		
 	// Sort by float then by float
@@ -1218,21 +1218,21 @@ class List<T>
 	// Example: Check if there are any active enemies
 	//     if enemies.any.isActive
 	importance:4 inline js 
-	bool any: bool(T a) predicate // The condition to check
+	bool any: bool(T it) predicate // The condition to check
 		this.some(predicate)
 		
 	// Returns true if the given condition is true for all items in the list
 	// Example: Check if all players are ready
 	//     if players.all.isReady
 	importance:4 inline js 
-	bool all: bool(T a) predicate // The condition to check
+	bool all: bool(T it) predicate // The condition to check
 		this.every(predicate)
 		
 	// Returns true if the given condition is false for all items in the list
 	// Example: Check if no player has a health of 0
 	//     if players.none.health == 0
 	importance:3 inline js 
-	bool none: bool(T a) predicate // The condition to check
+	bool none: bool(T it) predicate // The condition to check
 		!this.some(predicate)
 		
 	// Return a list that contains the selected field or expression for each item
@@ -1251,7 +1251,7 @@ class List<T>
 	// Example: Get all active enemies in a random order
 	//    let activeEnemies = (enemies.where.isActive).shuffle
 	importance:4 inline js 
-	T[] where: bool(T a) condition // The condition to check
+	T[] where: bool(T it) condition // The condition to check
 		this.filter(condition)
 
 	// Return a list containing the first N items from the list
@@ -1267,29 +1267,29 @@ class List<T>
 	//     app
 	//         string getName: int id
 	//             return (players.find.id == id)?.name
-	importance:5 inline js T find: bool(T a) condition // The condition to check
+	importance:5 inline js T find: bool(T it) condition // The condition to check
 		this.find(condition)
 		
-	inline js T find: backwards bool(T a) condition // The condition to check
+	inline js T find: backwards bool(T it) condition // The condition to check
 		this.findLast(condition)
 		
-	inline js T findLast: bool(T a) condition // The condition to check
+	inline js T findLast: bool(T it) condition // The condition to check
 		this.findLast(condition)
 		
-	inline js T find: bool(T a) condition // The condition to check
+	inline js T find: bool(T it) condition // The condition to check
 		              int startIndex      // Start searching at this index
 		Array.findStartingAtIndex(this, condition, startIndex)
 		
-	inline js T find: backwards bool(T a) condition // The condition to check
+	inline js T find: backwards bool(T it) condition // The condition to check
 		              int startIndex                // Start searching at this index
 		Array.findLastStartingAtIndex(this, condition, startIndex)
 		
-	inline js T findLast: bool(T a) condition // The condition to check
+	inline js T findLast: bool(T it) condition // The condition to check
 		                  int startIndex                // Start searching at this index
 		Array.findLastStartingAtIndex(this, condition, startIndex)
 		
 	private static T findStartingAtIndex: T[] list            // The list to search
-		                                  bool(T a) condition // The condition to check
+		                                  bool(T it) condition // The condition to check
 		                                  int startIndex = 0  // Start searching at this index
 		for startIndex to list.length
 			let it = list[.]
@@ -1298,7 +1298,7 @@ class List<T>
 		return null
 	
 	private static T findLastStartingAtIndex: T[] list            // The list to search
-		                                      bool(T a) condition // The condition to check
+		                                      bool(T it) condition // The condition to check
 		                                      int startIndex = 0  // Start searching at this index
 		for startIndex+1 backwards
 			let it = list[.]
@@ -1315,7 +1315,7 @@ class List<T>
 			if value != null: return value
 		return null
 
-	T findWithinRangeOrClosest: float(T a) selector
+	T findWithinRangeOrClosest: float(T it) selector
 		                        float min = -float.infinity
 		                        float max = float.infinity
 		float closestDistance = float.infinity
@@ -1344,7 +1344,7 @@ class List<T>
 		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
 		
 	// Find the index of the item the meets the given condition
-	importance:3 int indexWhere: bool(T a) condition	// The condition to check
+	importance:3 int indexWhere: bool(T it) condition	// The condition to check
 		                         int startIndex = 0 	// Start searching at this index
 								 int ifNotFound = -1	// The value to return if no item is found
 		for startIndex to length
@@ -1353,7 +1353,7 @@ class List<T>
 		return ifNotFound
 		
 	// Find the index of the item the meets the given condition
-	int indexWhere: <- bool(T a) condition // The condition to check
+	int indexWhere: <- bool(T it) condition // The condition to check
 		            int startIndex = 0     // Start searching at this index
 		for length - startIndex <-
 			if condition(this[.])
@@ -1361,7 +1361,7 @@ class List<T>
 		return -1
 		
 	// Seaching backwards, find the last index of the item the meets the given condition
-	int lastIndexWhere: bool(T a) condition // The condition to check
+	int lastIndexWhere: bool(T it) condition // The condition to check
 		                int startIndex = 0  // Start searching at this index
 		for length - startIndex <-
 			if condition(this[.])
@@ -1381,7 +1381,7 @@ class List<T>
 		return sum
 		
 	int total: int(T it) selector
-		       label bool(T a) where
+		       label bool(T it) where
 		let sum = 0
 		for this: if where(.): sum += selector(.)
 		return sum
@@ -1400,7 +1400,7 @@ class List<T>
 	js float average
 		return this.length > 0 ? this.sum() / this.length : 0
 		
-	string joinToString: string(T a) selector
+	string joinToString: string(T it) selector
 		                 string separator = ", "
 		let result = ""
 		for this
@@ -1429,7 +1429,7 @@ class List<T>
 		Array.temporaryCopy.sort((a,b) => a - b)
 		return Array.temporaryCopy[Math.round((Array.temporaryCopy.length-1) * value / 100)]
 		
-	min: int(T a) selector 
+	min: int(T it) selector 
 		 int threshold = int.maxValue
 		 int default = 0
 		int resultValue = threshold
@@ -1438,7 +1438,7 @@ class List<T>
 			if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	min: float(T a) selector 
+	min: float(T it) selector 
 		 float threshold = float.maxValue
 		 float default = 0
 		float resultValue = threshold
@@ -1447,10 +1447,10 @@ class List<T>
 			if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	min: int(T a) selector 
+	min: int(T it) selector 
 		 int threshold = int.maxValue
 		 int default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		int resultValue = threshold
 		for this
 			if where(.)
@@ -1458,10 +1458,10 @@ class List<T>
 				if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	min: float(T a) selector 
+	min: float(T it) selector 
 		 float threshold = float.maxValue
 		 float default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		float resultValue = threshold
 		for this
 			if where(.)
@@ -1469,7 +1469,7 @@ class List<T>
 				if value < resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: int(T a) selector
+	max: int(T it) selector
 		 int threshold = int.minValue
 		 int default = 0
 		int resultValue = threshold
@@ -1478,7 +1478,7 @@ class List<T>
 			if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: float(T a) selector
+	max: float(T it) selector
 		 float threshold = float.minValue
 		 float default = 0
 		float resultValue = threshold
@@ -1487,10 +1487,10 @@ class List<T>
 			if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: int(T a) selector
+	max: int(T it) selector
 		 int threshold = int.minValue
 		 int default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		int resultValue = threshold
 		for this 
 			if where(.)
@@ -1498,10 +1498,10 @@ class List<T>
 				if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: float(T a) selector
+	max: float(T it) selector
 		 float threshold = float.minValue
 		 float default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		float resultValue = threshold
 		for this
 			if where(.)
@@ -1509,7 +1509,7 @@ class List<T>
 				if value > resultValue: resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	maxUnique: int(T a) selector
+	maxUnique: int(T it) selector
 		       int threshold = int.minValue
 		       int default = 0
 		int resultValue = threshold
@@ -1519,7 +1519,7 @@ class List<T>
 			if value == resultValue: resultValue = threshold
 		return resultValue != threshold ? resultValue : default
 		
-	minIndex: float(T a) selector
+	minIndex: float(T it) selector
 		      int startIndex = 0
 		      float threshold = float.maxValue
 		float resultValue = threshold
@@ -1531,7 +1531,7 @@ class List<T>
 				index = i
 		return index
 		
-	maxIndex: float(T a) selector
+	maxIndex: float(T it) selector
 		      int startIndex = 0
 		      float threshold = float.minValue
 		float resultValue = threshold
@@ -1543,7 +1543,7 @@ class List<T>
 				index = i
 		return index
 		
-	withMin: int(T a) selector
+	withMin: int(T it) selector
 		     int threshold = int.maxValue
 		int resultValue = threshold
 		T resultItem
@@ -1554,7 +1554,7 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMin: float(T a) selector
+	withMin: float(T it) selector
 		     float threshold = float.maxValue
 		float resultValue = threshold
 		T resultItem
@@ -1565,9 +1565,9 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMin: int(T a) selector
+	withMin: int(T it) selector
 		     int threshold = int.maxValue
-		     label bool(T a) where
+		     label bool(T it) where
 		int resultValue = threshold
 		T resultItem
 		for this
@@ -1578,9 +1578,9 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMin: float(T a) selector
+	withMin: float(T it) selector
 		     float threshold = float.maxValue
-		     label bool(T a) where
+		     label bool(T it) where
 		float resultValue = threshold
 		T resultItem
 		for this
@@ -1591,7 +1591,7 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 				
-	withMax: int(T a) selector
+	withMax: int(T it) selector
 		     int threshold = int.minValue
 		int resultValue = threshold
 		T resultItem
@@ -1602,7 +1602,7 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMax: float(T a) selector
+	withMax: float(T it) selector
 		     float threshold = float.minValue
 		float resultValue = threshold
 		T resultItem
@@ -1613,7 +1613,7 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	popMax: int(T a) selector
+	popMax: int(T it) selector
 		    int threshold = int.minValue
 		int resultValue = threshold
 		T resultItem = null
@@ -1628,7 +1628,7 @@ class List<T>
 		if resultIndex != -1: removeAt resultIndex
 		return resultItem
 		
-	popMax: int(T a) selector
+	popMax: int(T it) selector
 		    float threshold = float.minValue
 		float resultValue = threshold
 		T resultItem = null
@@ -1643,9 +1643,9 @@ class List<T>
 		if resultIndex != -1: removeAt resultIndex
 		return resultItem
 		
-	withMax: int(T a) selector
+	withMax: int(T it) selector
 		     int threshold = int.minValue
-		     label bool(T a) where
+		     label bool(T it) where
 		int resultValue = threshold
 		T resultItem
 		for this
@@ -1656,9 +1656,9 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMax: float(T a) selector
+	withMax: float(T it) selector
 		     float threshold = float.minValue
-		     label bool(T a) where
+		     label bool(T it) where
 		float resultValue = threshold
 		T resultItem
 		for this
@@ -1669,14 +1669,14 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	count: bool(T a) predicate
+	count: bool(T it) predicate
 		int count = 0
 		for this
 			if predicate(.)
 				count++
 		return count
 		
-	countNot: bool(T a) predicate
+	countNot: bool(T it) predicate
 		int count = 0
 		for this
 			if !predicate(.)
@@ -2028,7 +2028,7 @@ global transient priority unit System
 		@do do() 
 		@while(while)
 		
-	global inline js Promise<T> promise: void(void(T a) resolve) resolve
+	global inline js Promise<T> promise: void(void(T it) resolve) resolve
 		new Promise(resolve)
 		
 	inline js void doNotSerialize: dynamic object
