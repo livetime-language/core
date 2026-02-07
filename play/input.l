@@ -1006,6 +1006,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
+		appOnTouchMoveIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
 	internal touchMove: InternalUser internalUser
