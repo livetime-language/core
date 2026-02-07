@@ -737,65 +737,65 @@ class List<T>
 	// Example:
 	//     players.add {name: "Player1", score: 0}
 	importance:5 inline js 
-	void add: T item // The item to add
+	void add: stored T item // The item to add
 		this.push(item)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
 		this.push(item, item2)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
-		                T item3 // The third item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
 		this.push(item, item2, item3)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
-		                T item3 // The third item to add
-		                T item4 // The fourth item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		                stored T item4 // The fourth item to add
 		this.push(item, item2, item3, item4)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
-		                T item3 // The third item to add
-		                T item4 // The fourth item to add
-		                T item5 // The fifth item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		                stored T item4 // The fourth item to add
+		                stored T item5 // The fifth item to add
 		this.push(item, item2, item3, item4, item5)
 		
 	// Add an item and remove a item from the beginning if the length exceeds a maximum value
-	inline js void add: T item        // The item to add
+	inline js void add: stored T item        // The item to add
 		                int maxLength // If the list gets longer than this maximum length, remove an item from the beginning
 		this.push(item)
 		if(this.length > maxLength) this.splice(0, 1)
 			
 	// Add an list of item to the end of the list
-	inline js void add: T[] items // The list of items to add
+	inline js void add: stored T[] items // The list of items to add
 		this.push(...items)
 			
 	// Add an list of items to the end of the list
 	importance:5 inline js
-	void addRange: T[] items // The list of items to add
+	void addRange: stored T[] items // The list of items to add
 		this.push(...items)
 			
 	// Insert an item at a given index
 	importance:5 inline js
-	void insert: T item    // The item to insert
+	void insert: stored T item    // The item to insert
 		         index = 0 // Insert the item at this index
 		this.splice(index, 0, item)
 		
 	// Insert an item at a given index
 	importance:5 inline js 
-	void insert: T item    // The item to insert
+	void insert: stored T item    // The item to insert
 		         T after
 		this.splice(this.indexOf(after)+1, 0, item)
 
 	// Add an item to the list if it isn't already in there
-	importance:5 js void ensure: T item // The item to add
+	importance:5 js void ensure: stored T item // The item to add
 		if(!this.includes(item))
 			this.push(item)
 		
 	// Add each item from a list if it isn't already in there
-	importance:5 js void ensure: T[] items // The list of items to add
+	importance:5 js void ensure: stored T[] items // The list of items to add
 		for(let it of items)
 			if(!this.includes(it))
 				this.push(it)
