@@ -1,17 +1,17 @@
 tests
-	BluePlayer	:= players[0]
-	RedPlayer	:= players[1]
-	GreenPlayer	:= players[2]
-	YellowPlayer	:= players[3]
+	bluePlayer	:= players[0]
+	redPlayer	:= players[1]
+	greenPlayer	:= players[2]
+	yellowPlayer	:= players[3]
 
 	setGameController: Vector2 leftStick
-	                   Player by = players[0]
+	                   nocolon Player by = players[0]
 		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		by.gameController.leftStick.assign(leftStick)
 
 	click: Vector2 position
 		   TouchType type = Left
-	       Player by = players[0]
+	       nocolon Player by = players[0]
 		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		let internalUser = input.internalUsers[by.id]
 		input.touchDown internalUser, player:by, id:0, referencePos:position, type, isSmoothPosition:true
@@ -21,7 +21,7 @@ tests
 	      Vector2 to
 		  float duration = 100
 		  TouchType type = Left
-		  Player by = players[0]
+		  nocolon Player by = players[0]
 		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		let internalUser = input.internalUsers[by.id]
 
@@ -39,7 +39,7 @@ tests
 		input.touchUp internalUser, player:by, id:0, referencePos:to, type, isSmoothPosition:true
 
 	wait: float time
-		let targetFrame = core.frame + time * core.ticksPerSecond / 1000
+		let targetFrame = core.frame + math.round time * core.ticksPerSecond / 1000
 		if targetFrame > core.replayUntilFrame
 			targetFrame = core.replayUntilFrame
 		while core.frame < targetFrame

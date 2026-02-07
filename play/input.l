@@ -102,7 +102,7 @@ priority class Player
 	
 	internal Player cloneBaseData := {_id, language, email, name, colorPreferences, id, index}
 	// toString := name or (color ? color.name : "Player {index+1}")
-	toString := "Player {index}{name ? " ({name})" : color ? " ({color.name})" : ""}"
+	toString := color ? "{color.name} Player ({index})" : "Player {index}"
 	highlightPerspectiveColor := input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input

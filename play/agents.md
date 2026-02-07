@@ -25,11 +25,9 @@ Player
 tests
 	playerShouldMoveRight
 		app.createTestLevel
-		click playerIndex:0 {350,400}
-		drag playerIndex:0 {0,0} to {300,0}
-		setGameController playerIndex:0 leftStick:{1,0}
-		wait 500 milliseconds
-		expect players[0].gridPos toBe {1,0}
+		setGameController leftStick:{1,0} by bluePlayer
+		wait 10 frames
+		expect bluePlayer.gridPos toBe {1,0}
 
 5. Run the unit test, carefully analyze the output and check if everything is working.
 
@@ -229,25 +227,36 @@ class Item
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
 // Write units tests in the static class "tests" in a file in the "tests/" folder
+// bluePlayer	== players[0]
+// redPlayer	== players[1]
+// greenPlayer	== players[2]
+// yellowPlayer	== players[3]
 tests
 	playerShouldMoveRight
-		// Make player 0 move the left stick to {1,0} (right)
-		setGameController playerIndex:0 leftStick:{1,0}
+		setupTestLevel
 
-		// Make player 0 click at {250,350}
-		click playerIndex:0 {250,350}
+		// Simulate a click at screen position {250,350} by bluePlayer (players[0])
+		click {250,350} by bluePlayer
 
-		// Make player 0 drag from {0,0} to {300,0}
-		drag playerIndex:0 {0,0} to {300,0}
+		// Simulate a drag from {0,0} to {300,0} by redPlayer (players[1])
+		drag {0,0} to {300,0} by redPlayer
 
-		// Wait for 300 milliseonds. At 30 ticks per second, this will execute app.tick 10 times
-		wait 300 milliseconds
+		// Simulate moving the left stick to {1,0} (right) by greenPlayer (players[2])
+		setGameController leftStick:{1,0} by greenPlayer
+
+		// Wait for 3 frames. At 30 ticks per second, this corresponds to 100 milliseconds.
+		wait 3 frames
 
 		// Assert
-		expect players[0].gridPos toBe {1,0}
+		expect bluePlayer.gridPos toBe {1,0}
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
+
+	// Make helper functions that are not tests private
+	private setupTestLevel
+		app.cells.clear
+		app.cells[1,2].isBlocking = true
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
