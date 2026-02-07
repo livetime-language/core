@@ -237,12 +237,12 @@ internal transient skipInit unit core
 	bool runningTest
 	string[] output
 	int outputId = -1
-	int replayUntilOutputId = -1
-	int replayUntilFrame = -1
+	int replayUntilOutputId = int.maxValue
+	int replayUntilFrame = int.maxValue
 
 	debugLog: string value
 		System.log "replayUntilOutputId:{replayUntilOutputId} outputId:{outputId} value:{value}"
-		if replayUntilOutputId == -1
+		if replayUntilOutputId == int.maxValue
 			value += "|{outputId}|{frame}"
 			if runningTest:	output.add value
 			else	Platform.sendStringToEditor value

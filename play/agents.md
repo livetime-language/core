@@ -11,30 +11,29 @@ Avoid code duplication. Do not overengineer. Keep it simple.
 # When you are done writing code, test if it is working
 1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-2. Your code should contain print statements that output all relevant information to verify that everything works as specified. For example:
+2. Your code should contain extensive print statements that output all relevant information to verify that everything works as specified. For example:
 
 Player
 	tick
 		positon += direction
 		print "Player {index} moves in {direction} to {position}"
 
-3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem and fix it.
+3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
 
 4. Write unit tests in the static class "tests" in a new file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
 
 tests
 	playerShouldMoveRight
 		app.createTestLevel
+		click playerIndex:0 {350,400}
+		drag playerIndex:0 {0,0} to {300,0}
 		setGameController playerIndex:0 leftStick:{1,0}
 		wait 500 milliseconds
 		expect players[0].gridPos toBe {1,0}
-		printWhatIsOnScreen
 
-5. Use printWhatIsOnScreen in your tests to check if the screen content is correct and nothing overlaps that shouldn't overlap. 
+5. Run the unit test, carefully analyze the output and check if everything is working.
 
-6. Use the runTests tool to run the unit test. Carefully analyze the output and check if everything is working.
-
-7. Fix all problems and repeat until you verified everything works as specified.
+6. Fix all problems and repeat until you verified everything works as specified.
 
 # Screen dimensions and color
 In LiveTime, the total screen size is always {1920, 1080}.
@@ -232,8 +231,14 @@ class Item
 // Write units tests in the static class "tests" in a file in the "tests/" folder
 tests
 	playerShouldMoveRight
-		// Simulate player 0 moving the left stick to {1,0} (right)
+		// Make player 0 move the left stick to {1,0} (right)
 		setGameController playerIndex:0 leftStick:{1,0}
+
+		// Make player 0 click at {250,350}
+		click playerIndex:0 {250,350}
+
+		// Make player 0 drag from {0,0} to {300,0}
+		drag playerIndex:0 {0,0} to {300,0}
 
 		// Wait for 300 milliseonds. At 30 ticks per second, this will execute app.tick 10 times
 		wait 300 milliseconds
@@ -241,11 +246,11 @@ tests
 		// Assert
 		expect players[0].gridPos toBe {1,0}
 
-		// Use printWhatIsOnScreen in your test and check if the what is shown on screen is correct
+		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
 
-# Images, Sounds, Fonts
-Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media" folder. If you place "Example.png" in this folder, you can use "Example" in drawImage, like this:
+# Images, Sounds and Fonts
+Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
 
 app
 	tick

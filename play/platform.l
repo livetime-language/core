@@ -86,8 +86,8 @@ transient skipInit unit Platform
 			this.engineStarted = false
 			this.isDebug = isDebug
 			this.userCount = userCount
-			core.replayUntilOutputId = -1
-			core.replayUntilFrame = -1
+			core.replayUntilOutputId = int.maxValue
+			core.replayUntilFrame = int.maxValue
 			initBackend
 			statistics.startTime = now
 			core.simulateConnection = simulateConnection
@@ -143,8 +143,8 @@ transient skipInit unit Platform
 		
 	string runningTestFunction = null
 	private runTest: string testFunction, int id
-		core.replayUntilOutputId = -1
-		core.replayUntilFrame = -1
+		core.replayUntilOutputId = int.maxValue
+		core.replayUntilFrame = int.maxValue
 		runningTestFunction = testFunction
 		core.runTest testFunction, id
 			
@@ -158,7 +158,7 @@ transient skipInit unit Platform
 			core.runTest runningTestFunction
 		else
 			try
-				core.goToFrame replayUntilFrame != -1 ? replayUntilFrame : core.frames-1, replayFromStart:true
+				core.goToFrame replayUntilFrame != int.maxValue ? replayUntilFrame : core.frames-1, replayFromStart:true
 			catch
 				core.onError .
 			finally 

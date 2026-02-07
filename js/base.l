@@ -75,10 +75,10 @@ immutable struct int
 		Math.pow(this, value)
 		
 	// The largest possible integer value
-	const importance:5 maxValue = 2147483647
+	const importance:5 maxValue = 9007199254740991
 	
 	// The smallest possible integer value
-	const importance:5 minValue = -2147483648
+	const importance:5 minValue = -9007199254740991
 	
 	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
 	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
@@ -1022,7 +1022,7 @@ class List<T>
 
 	// Returns whether the list contains the given item
 	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
-		(typeof(item) == "object" && item.equal ? this.some(a => item.equal(a)) : this.includes(item))
+		(typeof(item) == "object" && item._equal ? this.some(a => item._equal(a)) : this.includes(item))
 		
 	importance:3 bool containsAny: T[] list
 		for list
@@ -1343,7 +1343,7 @@ class List<T>
 	// The index of an item in the list
 	importance:5 inline js
 	int indexOf: ensureSingleExecution T item // Get the index of this item
-		(typeof(item) == "object" && item?.equal ? this.findIndex(a => item.equal(a)) : this.indexOf(item))
+		(typeof(item) == "object" && item?._equal ? this.findIndex(a => item._equal(a)) : this.indexOf(item))
 		
 	// Find the index of the item the meets the given condition
 	importance:3 int indexWhere: bool(T it) condition	// The condition to check
