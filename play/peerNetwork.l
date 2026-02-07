@@ -33,13 +33,13 @@ internal transient immutable IceMessage
 enum VideoShape: Rectangle, Square, Circle
 enum RelayMode: Never, Auto, Always
 		
-internal immutable MediaDeviceInfo
+internal transient immutable MediaDeviceInfo
 	string deviceId
 	string groupId
 	string kind
 	string label
 
-internal immutable MediaDevices
+internal transient MediaDevices
 	MediaDeviceInfo[] audioInput
 	MediaDeviceInfo[] audioOutput
 	MediaDeviceInfo[] videoInput

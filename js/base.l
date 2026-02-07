@@ -1073,6 +1073,8 @@ class List<T>
 		}
 		return "["+result+"]"
 
+	inline js implicit ImmutableList<T> toImmutableList() this
+
 	// ------------------------------------------- Random -------------------------------------------
 		
 	// Gets a random item from the list
@@ -1769,11 +1771,16 @@ class List<T>
 		if(index != -1) this.splice(index, 1)
 		else            this.push(item)
 		
+js Array
 immutable ImmutableList<T>
-	T[] list
+	inline js T get: implicit int index // The index of the item to get
+		this[index]
+
+	// Gets the number of items in the list
+	importance:5 inline js int length() this.length
+
+	inline js List<T> toList() [...this]
 	
-	inline T get: implicit int index // The index of the item to get
-		list[index]
 		
 // A hashtable that maps keys to values
 js Map

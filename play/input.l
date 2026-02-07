@@ -374,24 +374,24 @@ internal GameController
 	const deadZone = .1
 	
 	// Sticks
-	visible Vector2 leftStick
-	visible Vector2 rightStick
+	Vector2 leftStick
+	Vector2 rightStick
 	
 	// DPad
-	visible DigitalButton up = {}
-	visible DigitalButton right = {}
-	visible DigitalButton down = {}
-	visible DigitalButton left = {}
+	DigitalButton up = {}
+	DigitalButton right = {}
+	DigitalButton down = {}
+	DigitalButton left = {}
 	
 	// Buttons
-	visible DigitalButton a = {}
-	visible DigitalButton b = {}
-	visible DigitalButton x = {}
-	visible DigitalButton y = {}
+	DigitalButton a = {}
+	DigitalButton b = {}
+	DigitalButton x = {}
+	DigitalButton y = {}
 	
-	visible DigitalButton menu = {}
+	DigitalButton menu = {}
 	
-	visible DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, a, b, x, y, menu]
+	DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, a, b, x, y, menu]
 	
 	bool inMotion
 	GameControllerType type
@@ -413,9 +413,9 @@ internal immutable InternetGamePadButton
 	bool pressed, touched
 	float value
 	
-internal immutable InternetGamePad
-	float[] axes
-	InternetGamePadButton[] buttons
+internal transient immutable InternetGamePad
+	ImmutableList<float> axes
+	ImmutableList<InternetGamePadButton> buttons
 	string id
 	
 enum GenerateIntegrationTestMode: None, Clicks, Drags

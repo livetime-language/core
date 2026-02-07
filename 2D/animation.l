@@ -162,7 +162,7 @@ transient global skipInit unit audio
 		if Time.now >= at and Time.now < math.floor at + core.frameTime
 			sound.play
 				
-internal immutable Animation
+internal Animation
 	float startTime // The time at which the animation starts in milliseconds
 	float duration  // The duration of the animation in milliseconds
 	Object object

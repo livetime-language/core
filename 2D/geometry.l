@@ -222,7 +222,7 @@ struct Vector2
 		    && y >= center.y - halfSizeY && y < center.y + halfSizeY
 		
 	// Returns whether the vector is within a given polygon
-	importance:4 insidePolygon: Vector2[] poly // A list of points that make up the polygon
+	importance:4 insidePolygon: ImmutableList<Vector2> poly // A list of points that make up the polygon
 		let c = false, i = -1, l = poly.length, j = l - 1
 		while ++i < l
 			((poly[i].y <= this.y && this.y < poly[j].y) || (poly[j].y <= this.y && this.y < poly[i].y))
@@ -648,11 +648,11 @@ struct Matrix2D
 		return result
 		
 struct float
-	inline Vector2 * Vector2 other: Vector2(this * other.x, this * other.y, other.location)
+	inline js Vector2 * Vector2 other: new Vector2(this * other.x, this * other.y, other.location)
 
 struct int
-	inline Vector2 * Vector2 other: Vector2(this * other.x, this * other.y, other.location)
-	inline IntVector2 * IntVector2 other: IntVector2(this * other.x, this * other.y, other.location)
+	inline js Vector2 * Vector2 other: new Vector2(this * other.x, this * other.y, other.location)
+	inline js IntVector2 * IntVector2 other: new IntVector2(this * other.x, this * other.y, other.location)
 		
 class List<T>
 	Vector2 total: Vector2(T it) selector

@@ -214,7 +214,7 @@ skipInit immutable Image
 	string file
 	Texture texture
 	Vector2 size
-	ImageFrame[] frames
+	ImmutableList<ImageFrame> frames
 	
 enum DrawingOrder
 	FirstDrawnWillBeInFront	// Items drawn first will be in front of items drawn later
@@ -225,7 +225,7 @@ enum AnchorMode: TopLeft, TopCenter, Center
 enum HorizontalAlignment: Left, Center, Right
 enum VerticalAlignment: Top, Middle, Bottom
 enum FontStyle: Normal, Bold
-internal immutable ClippingPath: Vector2[] points; bool show
+internal immutable ClippingPath: ImmutableList<Vector2> points; bool show
 	
 internal TextHighlight
 	string from
@@ -1691,8 +1691,8 @@ transient skipInit global unit graphics
 		  bool show = false     // Show the clipping area for debugging
 		  void() code           // All drawing operations within this block of code will be clipped
 		let prev = currentClippingPath
-		currentClippingPath = ClippingPath(show)
-		for points: currentClippingPath.points.add position + .
+		Vector2[] absolutePoints = points.select . + position
+		currentClippingPath = ClippingPath(show, absolutePoints)
 		code()
 		currentClippingPath = prev
 		
@@ -1937,15 +1937,15 @@ transient skipInit global unit graphics
 
 // --------------------------------------------- Gizmo ---------------------------------------------
 	
-internal immutable struct GizomInfluence
+internal transient immutable struct GizomInfluence
 	string file
 	int start
 	int end
-	float[] deltas
-	float[] initialValues
+	ImmutableList<float> deltas
+	ImmutableList<float> initialValues
 	string label
 
-internal immutable struct GizmoOverItem
+internal transient immutable struct GizmoOverItem
 	DisplayItem item
 	SourceCodeLocation location
 	
@@ -2161,7 +2161,7 @@ internal transient immutable DisplayItem
 	SourceCodeLocation sizeLocation
 	
 	visible float m0, m1, m2, m3, m4, m5
-	visible Vector2[] poly
+	visible ImmutableList<Vector2> poly
 
 	DisplayItem: Matrix2D m
 		m0 = m.m0; m1 = m.m1; m2 = m.m2; m3 = m.m3; m4 = m.m4; m5 = m.m5
@@ -2238,8 +2238,8 @@ internal transient immutable DisplayItem DisplayText
 	float outlineWidth
 	float offsetY
 	string font
-	string[] lines = null
-	float[] lineOffsets = null
+	ImmutableList<string> lines = null
+	ImmutableList<float> lineOffsets = null
 	float lineHeight
 	
 	js void draw
@@ -2287,7 +2287,7 @@ internal transient immutable DisplayItem DisplayTextWithHighlights
 	float outlineWidth
 	float offsetY
 	string font
-	TextSegment[] segments = null
+	ImmutableList<TextSegment> segments = null
 	
 	js void draw
 		if(this.alpha == 0) return
@@ -2418,7 +2418,7 @@ internal transient immutable DisplayItem DisplayRoundedRectangle
 		if(this.clippingPath) this.endClipping()
 		
 internal transient immutable DisplayItem DisplayPolygon
-	Vector2[] points
+	ImmutableList<Vector2> points
 	string color, outlineColor
 	float outlineWidth
 	bool smooth, close
