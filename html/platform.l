@@ -54,9 +54,13 @@ skipInit global unit Platform
 			await backend.connect2()
 			backend.onDataChange = () => html.refresh()
 		}
+
+	inline js float startTime := _startTime
 			
 	async start: bool isDebug
 		try
+			print Time.preciseTime - startTime
+			Time.startTimer
 			this.nextHeartbeatTime = 0
 			heartbeat "start"
 			
@@ -70,12 +74,16 @@ skipInit global unit Platform
 			this.resetWhenCodeChanged = true
 			
 			initMedia
+			Time.printTimer "initMedia"
 			initBackend
+			Time.printTimer "initBackend"
 			openMedia
+				Time.printTimer "openMedia"
 				try
 					stop
 					// We need to call resize again after the first refresh to prevent unwanted scrolling
 					html.resize
+					Time.printTimer "resize"
 					startTickInterval
 				catch 
 					sendErrorToEditor .
