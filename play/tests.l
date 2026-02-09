@@ -62,3 +62,8 @@ tests
 		let a = value?.toString()
 		let b = toBe?.toString()
 		if(a != b) core.debugLog(`assert|${a}|${b}|${location.file}|${location.start}`)
+
+	expectToPrint: string value
+		           SourceCodeLocation location
+		if not core.output.any.contains value
+			core.debugLog "assert||{value}|${location.file}|${location.start}"
