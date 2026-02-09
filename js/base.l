@@ -68,6 +68,10 @@ immutable struct int
 	inline int -= int value
 	inline int *= int value
 
+	inline bool !
+	inline int -
+	inline int +
+
 	inline int ++
 	inline int --
 	
@@ -345,6 +349,8 @@ immutable struct float
 	inline bool >= float value
 
 	inline bool !
+	inline float -
+	inline float +
 	
 	inline js float ** float value
 		Math.pow(this, value)
