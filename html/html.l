@@ -188,7 +188,7 @@ importance:5 dynamic Attributes
 
 enum lowercase string PointerType: Mouse, Pen, Touch
 	
-immutable HtmlEvent PointerEvent
+HtmlEvent PointerEvent
 	HTMLElement target        // The element that triggered the event
 	HTMLElement currentTarget // The element to the event handler is attached to
 	int pointerId             // A unique identifier for the pointer causing the event (for example, a finger)
@@ -206,7 +206,7 @@ immutable HtmlEvent PointerEvent
 	// The position of the pointer relative to the whole document
 	inline js Vector2 position() new Vector2(this.pageX/Platform.scale, this.pageY/Platform.scale)
 
-immutable HtmlEvent
+HtmlEvent
 	HTMLElement target        // The element that triggered the event
 	HTMLElement currentTarget // The element to the event handler is attached to
 	int button                // The mouse button that was pressed to trigger the event
@@ -216,7 +216,7 @@ immutable HtmlEvent
 	inline Vector2 relativeTouchPosition() html.getRelativeMousePosition(this, this.currentTarget)
 	inline js Vector2 touchPosition() new Vector2(this.clientX/Platform.scale, this.clientY/Platform.scale)
 
-immutable HtmlKeyboardEvent
+HtmlKeyboardEvent
 	Key keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
 	HTMLElement target        // The element that triggered the event
 	HTMLElement currentTarget // The element to the event handler is attached to
@@ -423,7 +423,7 @@ global priority low skipInit static class html
 	
 	internal js void resize
 		let body = document.body
-		body.style = "background-color: white; color: black; font:16px/1.7 OpenSans; touch-action: none; overflow: "+html.overflow
+		body.style = "background-color: white; color: black; font:16px/1.7 OpenSans; overflow: "+html.overflow
 		if(Platform.referenceSizes && Platform.referenceSizes.length > 0) {
 			let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : screen.width
 			Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
