@@ -43,10 +43,8 @@ skipInit global unit Platform
 
 	private inline js void initMedia
 		this.electron = window?.process?.versions?.electron
-		$Image.init?.();
-		Font.init?.();
-		Sound.init?.();
 		audio.init();
+		media.init();
 		PlainDate.init();
 		html.init();
 		app.init?.()
@@ -56,9 +54,13 @@ skipInit global unit Platform
 			await backend.connect2()
 			backend.onDataChange = () => html.refresh()
 		}
+
+	inline js float startTime := _startTime
 			
 	async start: bool isDebug
 		try
+			print Time.preciseTime - startTime
+			Time.startTimer
 			this.nextHeartbeatTime = 0
 			heartbeat "start"
 			
@@ -72,12 +74,16 @@ skipInit global unit Platform
 			this.resetWhenCodeChanged = true
 			
 			initMedia
+			Time.printTimer "initMedia"
 			initBackend
+			Time.printTimer "initBackend"
 			openMedia
+				Time.printTimer "openMedia"
 				try
 					stop
 					// We need to call resize again after the first refresh to prevent unwanted scrolling
 					html.resize
+					Time.printTimer "resize"
 					startTickInterval
 				catch 
 					sendErrorToEditor .
@@ -400,7 +406,7 @@ class Color
 	static Color hsl: float hue            // A value between 0 and 360, e.g. 34
 		              Dimension saturation // A value between 0 and 100 followed by a "%" sign, e.g. 50%
 		              Dimension lightness  // A value between 0 and 100 followed by a "%" sign, e.g. 50%
-		return new Color(colorString:"hsl(" + hue + ", " + saturation + ", " + lightness + ")")
+		return new Color(colorString:"hsl(" + hue.toString + ", " + saturation.toString + ", " + lightness.toString + ")")
 
 	// Creates a color from an hue and a saturation and lightness percentage and an alpha value
 	// Example:
@@ -409,7 +415,7 @@ class Color
 		               Dimension saturation // A value between 0 and 100 followed by a "%" sign, e.g. 50%
 		               Dimension lightness  // A value between 0 and 100 followed by a "%" sign, e.g. 50%
 		               float alpha          // A value between 0 and 1, e.g. 0.5 (0: fully transparent, 1: fully opaque)
-		return new Color(colorString:"hsla(" + hue + ", " + saturation + ", " + lightness + ", " + alpha + ")")
+		return new Color(colorString:"hsla(" + hue.toString + ", " + saturation.toString + ", " + lightness.toString + ", " + alpha.toString + ")")
 
 	static js string componentToHex: int c
 		var hex = c.toString(16);

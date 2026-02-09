@@ -11,12 +11,12 @@ Avoid code duplication. Do not overengineer. Keep it simple.
 # When you are done writing code, test if it is working
 1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-2. Your code should contain extensive print statements that output all relevant information to verify that everything works as specified. For example:
+2. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
 
 Player
 	tick
 		positon += direction
-		print "Player {index} moves in {direction} to {position}"
+		print "{this} moved in {direction} to {position}"
 
 3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
 
@@ -25,7 +25,7 @@ Player
 tests
 	playerShouldMoveRight
 		app.createTestLevel
-		setGameController leftStick:{1,0} by bluePlayer
+		moveLeftStickTo {1,0} by bluePlayer
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
@@ -49,7 +49,7 @@ lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/2D/graphics.l	Graphics Library (drawImage, drawRectangle, drawCircle, etc).
 lib/core/2D/geometry.l	Geometry Library (Vector2, IntVector2, Matrix, etc)
 lib/core/play/sound.l	Sound Library (playSound, setVolume, etc)
-lib/core/play/tests.l	Unit Test Framework (click, drag, setGameController, wait, expect, etc)
+lib/core/play/tests.l	Unit Test Framework (click, drag, moveLeftStickTo, wait, expect, etc)
 
 # Basics of the LiveTime programming language
 enum State
@@ -252,7 +252,7 @@ tests
 		drag {0,0} to {300,0} by redPlayer
 
 		// Simulate moving the left stick to {1,0} (right) by greenPlayer (players[2])
-		setGameController leftStick:{1,0} by greenPlayer
+		moveLeftStickTo {1,0} by greenPlayer
 
 		// Wait for 3 frames. At 30 ticks per second, this corresponds to 100 milliseconds.
 		wait 3 frames
@@ -298,7 +298,6 @@ app
 	
 	// Called when the app starts
 	start
-		print "Starting go example"
 		graphics.drawingOrder = LastDrawnWillBeInFront
 
 		// We always need to display the standard menu
@@ -311,6 +310,7 @@ app
 		// In LiveTime, the global variable "players" always contains a list of players
 		// We pick a random player as the start player
 		currentPlayer = players.random
+		print "Started go example"
 
 	// Called when a player touches the screen
 	onTouchDown: Touch touch
@@ -339,7 +339,7 @@ app
 		if cell.player: return
 		cell.player = player
 		captureSurroundedPieces cell.gridPos, player
-		print "Player {player} placed a piece at {cell.gridPos}"
+		print "{player} placed a piece at {cell.gridPos}"
 		
 		// Set current player to the next player
 		currentPlayer = players next currentPlayer
@@ -351,9 +351,8 @@ app
 			
 			if neighborCell and neighborCell.player and neighborCell.player != attacker
 				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
-				if surroundesCells
-					print "Player {attacker} surrounded {surroundesCells.length} cells: {surroundesCells.joinToString.gridPos.toString}"
 					surroundesCells.each.player = null
+					print "{attacker} captured {surroundesCells.length} cells: {surroundesCells.joinToString.gridPos.toString}"
 		
 	// We write the return type in front of the function.
 	// The function collectSurroundesCells takes an integer vector and a player and returns a list of cells
@@ -384,13 +383,11 @@ app
 	finishGame
 		Player winner = players.withMax.score
 		ParticleSystem(position:winner.pos)
-		print "{winner} wins with {winner.score} points."
+		print "{winner} won with {winner.score} points"
 
-// Add the toScreenPos function to the IntVector2 struct
 struct IntVector2
 	toScreenPos := app.cellOffset + this * app.cellSize
 
-// Add the toGridPos function to the Vector2 struct
 struct Vector2
 	toGridPos := ((this - app.cellOffset) / app.cellSize).round
 		

@@ -734,7 +734,7 @@ skipInit global unit input
 	// internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 	// 	let inputs = localUser.inputs
 	// 	int composite = cast(InputType.TouchMove)                       // inputType: 0 -  31 (5 bit)
-	// 	              + math.shiftLeft(cast TouchType.Left, 5)          // touchType: 0 -   7 (3 bit)
+	// 	              + math.shiftLeft(cast TouchType.LeftMouseButton, 5)          // touchType: 0 -   7 (3 bit)
 	// 	              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
 	// 	inputs.writeInt32 localUser.inputFrame
 	// 	inputs.writeUnsignedInt16 composite

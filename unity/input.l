@@ -260,16 +260,16 @@ skipInit unit Input
 		
 	cs void collectMouseEvents
 		var mousePosition = UnityEngine.Input.mousePosition;
-		if(UnityEngine.Input.GetMouseButtonDown(0)) handleTouchEvent(InputType.TouchDown, TouchType.Left, 0, mousePosition);
-		if(mousePosition != prevMousePosition)      handleTouchEvent(InputType.TouchMove, TouchType.Left, 0, mousePosition);
-		if(UnityEngine.Input.GetMouseButtonUp(0))   handleTouchEvent(InputType.TouchUp,   TouchType.Left, 0, mousePosition);
+		if(UnityEngine.Input.GetMouseButtonDown(0)) handleTouchEvent(InputType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
+		if(mousePosition != prevMousePosition)      handleTouchEvent(InputType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
+		if(UnityEngine.Input.GetMouseButtonUp(0))   handleTouchEvent(InputType.TouchUp,   TouchType.LeftMouseButton, 0, mousePosition);
 		prevMousePosition = mousePosition;
 		
 	cs void collectTiltFiveEvents
 		var mousePosition = TiltFive.Wand.GetPosition(controllerPosition: TiltFive.ControllerPosition.Aim, playerIndex: 0);
-		if(TiltFive.Input.GetButtonDown(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchDown, TouchType.Left, 0, mousePosition);
-		handleTouchEvent(InputType.TouchMove, TouchType.Left, 0, mousePosition);
-		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.Left, 0, mousePosition);
+		if(TiltFive.Input.GetButtonDown(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
+		handleTouchEvent(InputType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
+		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.LeftMouseButton, 0, mousePosition);
 			
 	private handleKeyEvent: InputType type, int keyCode, string key
 		// if Core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return

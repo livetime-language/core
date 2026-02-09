@@ -104,6 +104,21 @@ js(Intl.DateTimeFormat) class DateTimeFormat
 		this.format(date)
 
 	inline js string locale() this?.resolvedOptions().locale
+
+static skipInit class Time
+	string timerLogs
+	js static void startTimer()
+		Time.timerLogs = ""
+		window._timerStart = performance.now()
+
+	js static void printTimer(string text) 
+		let now = performance.now()
+		let message = text+": "+(now-window._timerStart)
+		console.log(message)
+		Time.timerLogs += message + "\n"
+		window._timerStart = now
+
+	static inline js float preciseTime := performance.now()
 	
 struct float	
 	inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
@@ -117,10 +132,6 @@ struct float
 	inline js int totalDays         := Math.floor(this /  86400000)
 	inline js int totalWeeks        := Math.floor(this / 604800000)
 		
-	js static void startTimer() window._timerStart = performance.now()
-	js static void printTimer(string text) log(text+": "+(performance.now()-window._timerStart))
-	static inline js float preciseTime := performance.now()
-
 	private static string toMinutesHoursDaysOrWeeksString: float time, showWeeksAfterDays = 31
 		if time < 2 minutes: return "1 minute"
 		if time < 1 hours:   return "{time.totalMinutes} minutes"

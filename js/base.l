@@ -325,7 +325,7 @@ immutable struct float
 	// Example:
 	//     float time = 10 frames
 	importance:3 inline js 
-	float frames := this * 1000 / ticksPerSecond
+	float frames := this * 1000 / core.ticksPerSecond
 	
 	// ------------------------------------------- Operators -------------------------------------------
 
@@ -2286,6 +2286,7 @@ global transient priority unit System
 	global inline js dynamic globals() window
 
 	global inline js void debugger() debugger
+	global inline js void throw(Error error) throw error
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string
