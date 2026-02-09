@@ -101,7 +101,8 @@ app
 		for documentsById as doc, id
 			print "id:{id} created:{doc.created.toDayMonthYearString}"
 
-		// Print types: Info, Error, Warning, Event, Action
+		// Print types: Info (default), Error, Warning, Event, Action
+		print "Round {round} started"
 		print "{touch.by} clicked {touch.position}" type:Event
 		print "{player} moved to {position}" type:Action
 
