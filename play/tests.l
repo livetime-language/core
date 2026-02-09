@@ -4,11 +4,6 @@ tests
 	greenPlayer	:= players[2]
 	yellowPlayer	:= players[3]
 
-	setGameController: Vector2 leftStick
-	                   nocolon Player by = players[0]
-		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
-		by.gameController.leftStick.assign(leftStick)
-
 	click: Vector2 position
 		   TouchType with = LeftMouseButton
 	       nocolon Player by = players[0]
@@ -26,7 +21,8 @@ tests
 		let internalUser = input.internalUsers[by.id]
 
 		// Down
-		input.touchDown internalUser, player:by, id:0, referencePos:from, type:with, isSmoothPosition:true
+		let message = "Drag {from} to {to} by {by}"
+		input.touchDown internalUser, player:by, id:0, referencePos:from, type:with, isSmoothPosition:true, message
 		
 		// Move
 		int frames = math.round(duration * core.ticksPerSecond / 1000)
@@ -37,6 +33,20 @@ tests
 
 		// Up
 		input.touchUp internalUser, player:by, id:0, referencePos:to, type:with, isSmoothPosition:true
+
+	pressKey: Key key
+	          string character = ""
+		      nocolon Player by = players[0]
+		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
+		let internalUser = input.internalUsers[by.id]
+		input.keyDown internalUser, player:by, key, character
+		input.keyUp internalUser, player:by, key
+
+	moveLeftStickTo: Vector2 direction
+	                 nocolon Player by = players[0]
+		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
+		by.gameController.leftStick.assign(direction)
+		print type:GameController "Move left stick to {direction} by {by}"
 
 	wait: float time
 		let targetFrame = (core.frame + math.round time * core.ticksPerSecond / 1000) atMost core.replayUntilFrame

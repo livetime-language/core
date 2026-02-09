@@ -102,7 +102,7 @@ priority class Player
 	
 	internal Player cloneBaseData := {_id, language, email, name, colorPreferences, id, index}
 	// toString := name or (color ? color.name : "Player {index+1}")
-	toString := color ? "{color.name} Player ({index})" : "Player {index}"
+	toString := color ? "{color.name} player ({index})" : "player {index}"
 	highlightPerspectiveColor := input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input
@@ -987,6 +987,7 @@ skipInit global unit input
 						Vector2 referencePos
 						TouchType type
 						bool isSmoothPosition
+						string message = null
 		let touch = player.touches.find.id == id
 		if touch
 			// Update the touch in player.touches
@@ -1006,7 +1007,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		print type:Touch "Click {referencePos} by {player}"
+		print type:Touch message or "Click {referencePos} by {player}"
 		appOnTouchMoveIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
@@ -1059,7 +1060,11 @@ skipInit global unit input
 					  string character
 		internalUser.downKeys.add key
 		player.keysCurrentlyDown.ensure key
-		if character: internalUser.pressedKeys.add character
+		if character
+			internalUser.pressedKeys.add character
+			print type:Key "Press key {character} by {player}"
+		else
+			print type:Key "Press key {key} by {player}"
 		appOnKeyDownIfFunctionExists player, key, character
 
 	internal keyUp: InternalUser internalUser

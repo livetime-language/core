@@ -11,12 +11,12 @@ Avoid code duplication. Do not overengineer. Keep it simple.
 # When you are done writing code, test if it is working
 1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-2. Your code should contain extensive print statements that output all relevant information to verify that everything works as specified. For example:
+2. Your code should contain extensive print statements that describe each action in the past tense after it happened. Output all relevant information to verify that everything works as specified. For example:
 
 Player
 	tick
 		positon += direction
-		print "Player {index} moves in {direction} to {position}"
+		print "Player {index} moved in {direction} to {position}"
 
 3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
 
@@ -25,7 +25,7 @@ Player
 tests
 	playerShouldMoveRight
 		app.createTestLevel
-		setGameController leftStick:{1,0} by bluePlayer
+		moveLeftStickTo {1,0} by bluePlayer
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
@@ -49,7 +49,7 @@ lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/2D/graphics.l	Graphics Library (drawImage, drawRectangle, drawCircle, etc).
 lib/core/2D/geometry.l	Geometry Library (Vector2, IntVector2, Matrix, etc)
 lib/core/play/sound.l	Sound Library (playSound, setVolume, etc)
-lib/core/play/tests.l	Unit Test Framework (click, drag, setGameController, wait, expect, etc)
+lib/core/play/tests.l	Unit Test Framework (click, drag, moveLeftStickTo, wait, expect, etc)
 
 # Basics of the LiveTime programming language
 enum State
@@ -242,7 +242,7 @@ tests
 		drag {0,0} to {300,0} by redPlayer
 
 		// Simulate moving the left stick to {1,0} (right) by greenPlayer (players[2])
-		setGameController leftStick:{1,0} by greenPlayer
+		moveLeftStickTo {1,0} by greenPlayer
 
 		// Wait for 3 frames. At 30 ticks per second, this corresponds to 100 milliseconds.
 		wait 3 frames
