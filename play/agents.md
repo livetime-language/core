@@ -269,7 +269,7 @@ tests
 
 	// Make helper functions that are not tests private
 	private setupTestLevel
-		app.cells.clear
+		app.cells.each.reset
 		app.cells[1,2].isBlocking = true
 
 # Images, Sounds and Fonts
