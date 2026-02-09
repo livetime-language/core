@@ -247,12 +247,12 @@ internal transient skipInit unit core
 	TestRunMode testRunMode
 
 	debugLog: string value
-		System.log "replayUntilOutputId:{replayUntilOutputId} outputId:{outputId} value:{value}"
 		if replayUntilOutputId == int.maxValue
 			value += "|{outputId}|{frame}"
 			if runningTest:	output.add value
 			else	Platform.sendStringToEditor value
 		else
+			// Throw an exception when we reach replayUntilOutputId #evaluate
 			if outputId >= replayUntilOutputId
 				throw {message: "reached end of replay"}
 		outputId++
@@ -880,6 +880,8 @@ internal transient unit Snapshot
 		deserialize(buffer)
 		
 	autoSave() autoSaveAtEndOfStep = true
+
+enum lowercase string PrintIcon: Info, Error, Event, Action, Touch, Key, GameController
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
@@ -888,14 +890,18 @@ global transient unit System
 	global inline refresh()
 		
 	// Prints a message to the console
-	global js void print: logstring text // The text, variables or expressions to print
-		                  void(bool isSelected) drawDebugInformation = null
+	global js void print: logstring text	// The text, variables or expressions to print
+	                      PrintIcon type = Info	// Info, Error, Warning, Event, Action. This determines the icon to show in the event stream panel.
+						  Color color = null	// The color to use when showing the message in the console or the event stream panel
+		                  void(bool isSelected) drawDebugInformation = null	// A function that will be called to draw debug information. The isSelected parameter indicates whether this message is currently selected in the event stream panel, which can be used to hightlight the information or draw more detailed information.
 		                  SourceCodeLocation location
 		if((core.runningTest || Platform.isDebug) && location) {
+			if(color) console.log(`%c${text}`, `color: ${color.hex}`)
+			else      console.log(text)
 			if(drawDebugInformation != null && (core.replayUntilOutputId == -1 ||core.outputId <= core.replayUntilOutputId)) {
 				drawDebugInformation(core.outputId == core.replayUntilOutputId)
 			}
-			core.debugLog(`print|${text}|${location.file}|${location.start}`)
+			core.debugLog(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
 			core.log(text);
 		}
