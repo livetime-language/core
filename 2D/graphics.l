@@ -1725,8 +1725,8 @@ transient skipInit global unit graphics
 	const Color backgroundColor = Black
 	
 	// Teh default player colors
-	const Color[] defaultColors = [{"#398CA9", "blue"}, {"#C01352", "red"}, {"#16C66E", "green"}, {"#FFD166", "yellow"}]
-	const Color[] darkDefaultColors = [{"#193742", "dark blue"}, {"#470B21", "dark red"}, {"#0A3620", "dark green"}, {"#4B3F21", "dark yellow"}]
+	const Color[] defaultColors = [{"#398CA9", "Blue"}, {"#C01352", "Red"}, {"#16C66E", "Green"}, {"#FFD166", "Yellow"}]
+	const Color[] darkDefaultColors = [{"#193742", "Dark Blue"}, {"#470B21", "Dark Red"}, {"#0A3620", "Dark Green"}, {"#4B3F21", "Dark Yellow"}]
 
 	// The default color for all drawing operations
 	color
