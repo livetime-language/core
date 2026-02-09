@@ -193,7 +193,8 @@ app
 		items.each.tick
 		players.each.tick
 
-// Handle input
+// Use these member functions of the Player class to handle input
+// Because the functions are members of the Player class you know which player triggered an event
 Player
 	string inputText
 
