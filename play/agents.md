@@ -76,7 +76,7 @@ app
 	Player currentPlayer
 
 	// Defines the member function start of the class app. 
-	// All functions need to be part of a class. There are no top-level functions in LiveTime.
+	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
 	// app.start is the entry point of the application.
 	start
 		// List (array that grows in size as needed)
