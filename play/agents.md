@@ -174,6 +174,16 @@ app
 		let b =  -1 mod 100	// b = 99
 		let c =  -1 remainder 100	// c = -1
 	
+app
+	Player currentPlayer
+	Item[] items
+	start
+		items.add {}
+
+	tick
+		items.each.tick
+		players.each.tick
+
 // Handle input
 Player
 	string inputText
@@ -181,10 +191,10 @@ Player
 	onKeyDown: Key key, string character
 		if character:	inputText += character
 		if key == Backspace:	inputText = inputText[..-1]
-		print "{this} presses {key} ({character})"
+		print "{this} pressed {key} ({character})"
 
 	onKeyUp: Key key
-		print "{this} releases {key}"
+		print "{this} released {key}"
 
 	onTouchHover: Touch touch
 		app.items.each.hoverTouch = touch.position insideRectangle .position, .size ? touch : null
@@ -193,21 +203,21 @@ Player
 		let item = app.items.find.hoverTouch == touch
 			item.dragTouch = touch
 			item.dragOffset = item.position - touch.position
-			print "{this} clicks {item.name}"
+			print "{this} clicked {item.name}"
 	
 	onTouchDrag: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.position = touch.position + item.dragOffset
-			print "{this} drags {item.name}"
+			print "{this} dragged {item.name}"
 	
 	onTouchUp: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.dragTouch = null
-			print "{this} drops {item.name}"
+			print "{this} dropped {item.name}"
 
 	tick
 		if gameController.leftStick.magnitude > .1
-			print "{this} holds their left stick in this direction: {gameController.leftStick}"
+			print "{this} moved their left stick to {gameController.leftStick}"
 
 		if gameController.a.wasJustPressed
 			print "{this} just pressed the A button on their game controller"
