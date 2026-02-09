@@ -11,16 +11,18 @@ Avoid code duplication. Do not overengineer. Keep it simple.
 # When you are done writing code, test if it is working
 1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-2. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
+2. Make sure you fixed all linter errors.
+
+3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
 
 Player
 	tick
 		positon += direction
 		print "{this} moved in {direction} to {position}"
 
-3. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
+4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
 
-4. Write unit tests in the static class "tests" in a new file in the "tests/" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
+5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
 
 tests
 	playerShouldMoveRight
