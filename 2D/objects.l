@@ -70,7 +70,7 @@ transient global unit graphics
 					return v
 		return null
 		
-enum Side: Front, Back
+enum PieceSide: Front, Back
 		
 // Bug: Place the cursor in the following lines to get a "can't be a constructor parameter" error
 class Object

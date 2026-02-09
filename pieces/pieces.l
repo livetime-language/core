@@ -32,7 +32,7 @@ Object Piece
 	bool flipable
 	
 	Image backImage
-	Side side
+	PieceSide side
 	int frame
 	
 	// Move
@@ -160,7 +160,7 @@ Object Piece
 					
 Piece Stack
 	private Piece[] objects
-	Side sideWhenRemoving = Front
+	PieceSide sideWhenRemoving = Front
 	
 	private int visibleObjects
 	private Vector2 basePosition
@@ -168,10 +168,10 @@ Piece Stack
 	
 	stackable = true
 	
-	Stack: Vector2 position, Side side = Back
+	Stack: Vector2 position, PieceSide side = Back
 		basePosition = position
 	
-	static create: Piece a, Piece b, Side side = Front
+	static create: Piece a, Piece b, PieceSide side = Front
 		Stack stack = {position:a.position, side:side}
 		stack.add a
 		stack.add b
