@@ -1,6 +1,7 @@
 enum NetworkMode: None, Ping, Local, Connected
 internal transient immutable RoomInfo: int time, userId
 enum SendInputsMode: None, Peer, Server
+enum TestRunMode: FirstRun, FullReplay, PartialReplay
 	
 internal transient skipInit unit core
 	int eventStreamVersion = 2
@@ -157,8 +158,7 @@ internal transient skipInit unit core
 			
 		if !startInLobby and not testLobby
 			graphics.startFrame
-			try	startApp
-			catch	onError error
+			startApp
 		if simulateRollback: checkSaveState
 		
 	// Keep event stream running, recreate players, call init function and start app
@@ -210,35 +210,41 @@ internal transient skipInit unit core
 		animationFrame
 		isPremiere = true
 
-	runTest: string testFunction, int id = -1
+	runTest: string testFunctionName, int id = -1
+		System.log "Running test {testFunctionName}"
+		let parts = testFunctionName.split(".")
+		if parts.length < 2: parts = ["tests", testFunctionName or "main"]
+		dynamic testFunction = globals[parts[0]][parts[1]]
+		if not testFunction: return
 		try
-			System.log "Running test {testFunction}"
 			isPremiere = false
 			runningTest = true
-			reset
-			let parts = testFunction.split(".")
-			if parts.length < 2: parts = ["tests", testFunction or "main"]
-			dynamic test = globals[parts[0]][parts[1]]
-			if test != null: test()
+			try
+				reset
+				testFunction()
+			catch
+				onError .
 			
-			// Execute a full tick after each test to ensure that all events are processed #evaluate
+			// Execute a full tick after each test to: #evaluate
+			// - draw the current state after throwing an exception in the middle of tick (before drawing)
+			// - ensure that all events are processed
 			tick draw:true
 			// if frame == 0: tick draw:true
 			// else           graphics.finishFrame
-			
-			isPremiere = true
-			runningTest = false
 		catch
 			core.onError .
-		finally
-			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, replayUntilOutputId})
-			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, replayUntilOutputId})
+		finally		
+			isPremiere = true
+			runningTest = false
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, testRunMode})
+			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
 
 	bool runningTest
 	string[] output
 	int outputId = -1
 	int replayUntilOutputId = int.maxValue
 	int replayUntilFrame = int.maxValue
+	TestRunMode testRunMode
 
 	debugLog: string value
 		System.log "replayUntilOutputId:{replayUntilOutputId} outputId:{outputId} value:{value}"
@@ -246,6 +252,9 @@ internal transient skipInit unit core
 			value += "|{outputId}|{frame}"
 			if runningTest:	output.add value
 			else	Platform.sendStringToEditor value
+		else
+			if outputId >= replayUntilOutputId
+				throw {message: "reached end of replay"}
 		outputId++
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
@@ -467,6 +476,8 @@ internal transient skipInit unit core
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
 	internal tick: bool draw
+		if frame > core.replayUntilFrame: return
+
 		// Set time
 		Time.now = serverStartTime + math.round(frame * frameTime)
 			
@@ -819,6 +830,7 @@ internal transient skipInit unit core
 		onError {message}
 		
 	onError: Error error
+		if error.message == "reached end of replay": return
 		errorMessage = error.stack
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {

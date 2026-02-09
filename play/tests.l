@@ -39,9 +39,7 @@ tests
 		input.touchUp internalUser, player:by, id:0, referencePos:to, type:with, isSmoothPosition:true
 
 	wait: float time
-		let targetFrame = core.frame + math.round time * core.ticksPerSecond / 1000
-		if targetFrame > core.replayUntilFrame
-			targetFrame = core.replayUntilFrame
+		let targetFrame = (core.frame + math.round time * core.ticksPerSecond / 1000) atMost core.replayUntilFrame
 		while core.frame < targetFrame
 			core.tick draw:false
 

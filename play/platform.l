@@ -145,6 +145,7 @@ transient skipInit unit Platform
 	private runTest: string testFunction, int id
 		core.replayUntilOutputId = int.maxValue
 		core.replayUntilFrame = int.maxValue
+		core.testRunMode = FirstRun
 		runningTestFunction = testFunction
 		core.runTest testFunction, id
 			
@@ -153,6 +154,7 @@ transient skipInit unit Platform
 	private async replay: bool updateMedia, int replayUntilOutputId, int replayUntilFrame
 		core.replayUntilOutputId = replayUntilOutputId
 		core.replayUntilFrame = replayUntilFrame
+		core.testRunMode = replayUntilFrame != int.maxValue ? PartialReplay : FullReplay
 		System.log "Replay until output id:{replayUntilOutputId} frame:{replayUntilFrame}"
 		if runningTestFunction
 			core.runTest runningTestFunction
