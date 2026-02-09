@@ -191,10 +191,10 @@ Player
 	onKeyDown: Key key, string character
 		if character:	inputText += character
 		if key == Backspace:	inputText = inputText[..-1]
-		print "{this} pressed {key} ({character})"
+		print "{this} pressed {key} ({character})" type:Event
 
 	onKeyUp: Key key
-		print "{this} released {key}"
+		print "{this} released {key}" type:Event
 
 	onTouchHover: Touch touch
 		app.items.each.hoverTouch = touch.position insideRectangle .position, .size ? touch : null
@@ -203,24 +203,24 @@ Player
 		let item = app.items.find.hoverTouch == touch
 			item.dragTouch = touch
 			item.dragOffset = item.position - touch.position
-			print "{this} clicked {item.name}"
+			print "{this} clicked {item.name}" type:Event
 	
 	onTouchDrag: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.position = touch.position + item.dragOffset
-			print "{this} dragged {item.name}"
+			print "{this} dragged {item.name}" type:Event
 	
 	onTouchUp: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.dragTouch = null
-			print "{this} dropped {item.name}"
+			print "{this} dropped {item.name}" type:Event
 
 	tick
 		if gameController.leftStick.magnitude > .1
-			print "{this} moved their left stick to {gameController.leftStick}"
+			print "{this} moved their left stick to {gameController.leftStick}" type:Event
 
 		if gameController.a.wasJustPressed
-			print "{this} just pressed the A button on their game controller"
+			print "{this} just pressed the A button on their game controller" type:Event
 
 		// Draw input text
 		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
