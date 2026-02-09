@@ -31,9 +31,11 @@ tests
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
-5. Run the unit test, carefully analyze the output and check if everything is working.
+6. Use the vscode's build-in tool execute/runTests to run the unit tests. 
 
-6. Fix all problems and repeat until you verified everything works as specified.
+7. Carefully analyze the output and check if everything is working.
+
+8. Fix all problems and repeat until you verified everything works as specified.
 
 # Screen dimensions and color
 In LiveTime, the total screen size is always {1920, 1080}.
