@@ -315,6 +315,8 @@ app
 	// Called when a player touches the screen
 	onTouchDown: Touch touch
 		let cell = cells[touch.position.toGridPos]
+			if cell.player:	print "{touch.by} clicked cell {cell.gridPos} (occupied by {cell.player})" type:Event
+			else	print "{touch.by} clicked cell {cell.gridPos} (empty)" type:Event
 			placePiece cell, player:currentPlayer
 				
 	// Called on every frame (30 times per second)
