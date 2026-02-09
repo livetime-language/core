@@ -16,8 +16,8 @@ skipInit debug
 		if playerIndex < 0 or playerIndex >= input.internalUsers.length
 			print "click: playerIndex out of range"
 		else
-			input.handleSynteticTouchEvent playerIndex, TouchDown, x, y, TouchType.Left, id:0
-			input.handleSynteticTouchEvent playerIndex, TouchUp, x, y, TouchType.Left, id:0
+			input.handleSynteticTouchEvent playerIndex, TouchDown, x, y, TouchType.LeftMouseButton, id:0
+			input.handleSynteticTouchEvent playerIndex, TouchUp, x, y, TouchType.LeftMouseButton, id:0
 			if framesToWaitAfterwards <= 1
 				core.step fastForward:false, draw:true
 				sendApplicationState
@@ -29,12 +29,12 @@ skipInit debug
 		if playerIndex < 0 or playerIndex >= input.internalUsers.length
 			print "click: playerIndex out of range"
 		else
-			input.handleSynteticTouchEvent playerIndex, TouchDown, x, y, TouchType.Left, id:0
+			input.handleSynteticTouchEvent playerIndex, TouchDown, x, y, TouchType.LeftMouseButton, id:0
 			if dragToX != int.undefined and dragToY != int.undefined
-				input.handleSynteticTouchEvent playerIndex, TouchMove, dragToX, dragToY, TouchType.Left, id:0
-				input.handleSynteticTouchEvent playerIndex, TouchUp, dragToX, dragToY, TouchType.Left, id:0
+				input.handleSynteticTouchEvent playerIndex, TouchMove, dragToX, dragToY, TouchType.LeftMouseButton, id:0
+				input.handleSynteticTouchEvent playerIndex, TouchUp, dragToX, dragToY, TouchType.LeftMouseButton, id:0
 			else
-				input.handleSynteticTouchEvent playerIndex, TouchUp, x, y, TouchType.Left, id:0
+				input.handleSynteticTouchEvent playerIndex, TouchUp, x, y, TouchType.LeftMouseButton, id:0
 
 			core.step fastForward:false, draw:true
 			sendApplicationState

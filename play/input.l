@@ -130,14 +130,14 @@ priority class Player
 	// This is why isDown is only set to true *after* the events are handled in tick.
 	// This way, onTouchMove can check isDown, determine what we are hovering over and onTouchDown can then act on it.
 	internal postprocessEvents
-		bool hasTouch = touches.any.type == Touch
+		bool hasTouch = touches.any.type == Finger
 		for touches backwards
 			switch .phase
 				Down
 					.phase = Still
 					.isDown = true
 				Up
-					if .type >= Touch or (hasTouch and .type != Touch): touches.removeAt i
+					if .type >= Finger or (hasTouch and .type != Finger): touches.removeAt i
 					else                                                .phase = Still
 					downTouches.remove .
 					.isDown = false
@@ -154,7 +154,7 @@ enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, Tex
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
 		
-enum TouchType: Left, Middle, Right, Touch, Pen
+enum TouchType: LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
 
 // A touch or a click
 Touch
@@ -667,9 +667,9 @@ skipInit global unit input
 			else
 				setLastTouchMoveIndex id, inputs.writePos+6
 			
-		int composite = cast(inputType)                                 // inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(touchType, 5)                    // touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8) // id:        0 - 127 (7 bit)
+		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
+		              + math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
+		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -678,9 +678,9 @@ skipInit global unit input
 	internal handleSynteticTouchEvent: int playerIndex, InputType inputType, float x, float y, TouchType touchType, int id
 		let inputs = internalUsers[playerIndex]?.inputs
 		if !inputs: return
-		int composite = cast(inputType)                                 // inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(touchType, 5)                    // touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8) // id:        0 - 127 (7 bit)
+		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
+		              + math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
+		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(x)
@@ -688,9 +688,9 @@ skipInit global unit input
 	
 	internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 		let inputs = localUser.inputs
-		int composite = cast(InputType.TouchMove)                       // inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(cast TouchType.Left, 5)          // touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8) // id:        0 - 127 (7 bit)
+		int composite = cast(InputType.TouchMove)	// inputType: 0 -  31 (5 bit)
+		              + math.shiftLeft(cast TouchType.LeftMouseButton, 5)	// touchType: 0 -   7 (3 bit)
+		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -700,8 +700,8 @@ skipInit global unit input
 		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
 		let inputs = localUser.inputs
 		
-		int composite = cast(InputType.Scroll)                       // inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(isPinch ? 1:0, 5)             // isPinch:   0 -   1 (1 bit)
+		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
+		              + math.shiftLeft(isPinch ? 1:0, 5)	// isPinch:   0 -   1 (1 bit)
 		
 		Vector2 referencePos = {x*graphics.pixelRatio, y*graphics.pixelRatio}.getRelativeTo(graphics.baseMatrix)
 		inputs.writeInt32 localUser.inputFrame
@@ -1006,6 +1006,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
+		print type:Touch "Click {referencePos} by {player}"
 		appOnTouchMoveIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
@@ -1218,7 +1219,7 @@ skipInit global unit input
 		
 		for getTargetedPlayers(by) -> player
 			for internalUsers[player.id].downTouches -> touch
-				if !touch.handled and (player.enableTouch or touch.type != Touch)
+				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and touch.referencePosition.insidePolygon(poly)
 					do touch
 					if markAsHandled: touch.handled = true
@@ -1266,7 +1267,7 @@ skipInit global unit input
 		
 		for getTargetedPlayers(by) -> player
 			for internalUsers[player.id].downTouches -> touch
-				if !touch.handled and (player.enableTouch or touch.type != Touch)
+				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and touch.referencePosition.insidePolygon(poly)
 					do touch
 					if markAsHandled: touch.handled = true
@@ -1300,7 +1301,7 @@ skipInit global unit input
 		let referenceRadius = radius * graphics.localMatrix.scaleVector.x
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
-				if !touch.handled and (player.enableTouch or touch.type != Touch)
+				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and (touch.referencePosition distanceTo referencePosition) <= referenceRadius
 					do touch
 					if markAsHandled: touch.handled = true
@@ -1338,7 +1339,7 @@ skipInit global unit input
 			
 		for getTargetedPlayers(by) -> player
 			for internalUsers[player.id].downTouches -> touch
-				if !touch.handled and (player.enableTouch or touch.type != Touch)
+				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and touch.referencePosition.insidePolygon(poly)
 					do touch
 					if markAsHandled: touch.handled = true
@@ -1363,7 +1364,7 @@ skipInit global unit input
 		                void(Touch touch) do                // Do this for each touch or click
 		for getTargetedPlayers(by) -> player
 			for internalUsers[player.id].downTouches -> touch
-				if !touch.handled and (player.enableTouch or touch.type != Touch)
+				if !touch.handled and (player.enableTouch or touch.type != Finger)
 					do touch
 					if markAsHandled: touch.handled = true
 
@@ -1375,7 +1376,7 @@ skipInit global unit input
 		if not active: return
 		for getTargetedPlayers(by) -> player
 			for internalUsers[player.id].downTouches -> touch
-				if player.enableTouch or touch.type != Touch
+				if player.enableTouch or touch.type != Finger
 					do touch
 
 	// ---------------------------------------------- Touch Over ----------------------------------------------
