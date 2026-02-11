@@ -31,7 +31,7 @@ tests
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
-6. Use the vscode's build-in tool execute/runTests to run the unit tests. 
+6. Use the vscode's build-in tool (execute/runTests) to run the unit tests. 
 
 7. Carefully analyze the output and check if everything is working.
 
