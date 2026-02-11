@@ -31,7 +31,7 @@ tests
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
-6. Use the vscode's build-in tool (execute/runTests) or the runTests mcp server to run the unit tests. 
+6. Use the vscode's build-in tool (execute/runTests) to run the unit tests. 
 
 7. Carefully analyze the output and check if everything is working.
 
@@ -193,8 +193,8 @@ app
 		items.each.tick
 		players.each.tick
 
-// Use these member functions of the Player class to handle input
-// Because the functions are members of the Player class you know which player triggered an event
+// Use these member functions of the Player class to handle input. 
+// These functions need to be members of the Player class. That way, you know which player triggered an event. 
 Player
 	string inputText
 
