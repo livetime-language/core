@@ -193,8 +193,8 @@ app
 		items.each.tick
 		players.each.tick
 
-// Use these member functions of the Player class to handle input
-// Because the functions are members of the Player class you know which player triggered an event
+// Use these member functions of the Player class to handle input. 
+// These functions need to be members of the Player class. That way, you know which player triggered an event. 
 Player
 	string inputText
 
