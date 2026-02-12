@@ -34,6 +34,13 @@ tests
 		input.touchUp internalUser, player:by, id:0, referencePos:to, type:with, isSmoothPosition:true
 		core.tick draw:false
 
+	private hover: Vector2 position
+	               TouchType with = LeftMouseButton
+	               nocolon Player by = players[0]
+		let internalUser = input.internalUsers[by.id]
+		input.touchMove internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
+		core.tick draw:false
+
 	pressKey: Key key
 	          string character = ""
 		      nocolon Player by = players[0]
