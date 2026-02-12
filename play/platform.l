@@ -134,9 +134,11 @@ transient skipInit unit Platform
 					core.onError .
 				finally 
 					sendFinished
+					updateIcon
 		catch
 			core.onError .
 			sendFinished
+			updateIcon
 	
 	private async js void preload
 		if(app.preload) await app.preload();
@@ -212,12 +214,12 @@ transient skipInit unit Platform
 		if mode == Play or mode == Record or waitingForInitialData
 			core.animationFrame
 				
-	private enterSlideMode(PlatformMode mode) this.mode = mode; sendMode
+	private enterSlideMode(PlatformMode mode) this.mode = mode; updateIcon; sendMode
 	
-	internal stop()    mode = Pause; gizmo.clear; runningTestFunction = null; core.stop; sendMode
-	internal pause()   mode = Pause; gizmo.clear; audio.stop; sendMode
-	internal record()  core.adjustStartTimeIfNeeded; mode = Record; core.record;  gizmo.clear;  sendMode
-	internal play()    core.adjustStartTimeIfNeeded; mode = Play;   gizmo.clear;  sendMode
+	internal stop()    mode = Pause; gizmo.clear; runningTestFunction = null; core.stop; updateIcon; sendMode
+	internal pause()   mode = Pause; gizmo.clear; audio.stop; updateIcon; sendMode
+	internal record()  core.adjustStartTimeIfNeeded; mode = Record; core.record;  gizmo.clear;  updateIcon; sendMode
+	internal play()    core.adjustStartTimeIfNeeded; mode = Play;   gizmo.clear;  updateIcon; sendMode
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
@@ -294,6 +296,31 @@ transient skipInit unit Platform
 
 	js void navigate: string url
 		window.location.href = url
+
+	inline js bool isConnectedToEditor := _isConnectedToEditor
+
+	private updateIcon
+		if not isConnectedToEditor:	setPageTitleAndIcon title:"Not connected to editor" iconUrl:"NotConnected.png"; else
+		if mode == Pause and core.frame <= 1:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Stop.png"; else
+		if mode == Pause:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Pause.png"; else
+		if mode == Play:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Play.png"; else
+		if mode == Record:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Record.png"; else
+		if mode == Manipulator:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Manipulator.png"; else
+		if mode == Slide:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Slide.png";
+
+	js void setPageTitleAndIcon: string title = null, string iconUrl = null
+		if(title) {
+			document.title = title;
+		}
+		if(iconUrl) {
+			var link = document.querySelector("link[rel~='icon']");
+			if (!link) {
+				link = document.createElement('link');
+				link.rel = 'icon';
+				document.head.appendChild(link);
+			}
+			link.href = iconUrl;
+		}
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
