@@ -300,13 +300,13 @@ transient skipInit unit Platform
 	inline js bool isConnectedToEditor := _isConnectedToEditor
 
 	private updateIcon
-		if not isConnectedToEditor:	setPageTitleAndIcon title:"Not connected to editor" iconUrl:"NotConnected.png"; else
-		if mode == Pause and core.frame <= 1:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Stop.png"; else
-		if mode == Pause:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Pause.png"; else
-		if mode == Play:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Play.png"; else
-		if mode == Record:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Record.png"; else
-		if mode == Manipulator:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Manipulator.png"; else
-		if mode == Slide:	setPageTitleAndIcon title:"LiveTime" iconUrl:"Slide.png";
+		if not isConnectedToEditor:	setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
+		if mode == Pause and core.frame <= 1:	setPageTitleAndIcon title:"Stop" iconUrl:"/_dev/Stop.png"; else
+		if mode == Pause:	setPageTitleAndIcon title:"Pause" iconUrl:"/_dev/Pause.png"; else
+		if mode == Play:	setPageTitleAndIcon title:"Play" iconUrl:"/_dev/Play.png"; else
+		if mode == Record:	setPageTitleAndIcon title:"Record" iconUrl:"/_dev/Record.png"; else
+		if mode == Manipulator:	setPageTitleAndIcon title:"Manipulator" iconUrl:"/_dev/Manipulator.png"; else
+		if mode == Slide:	setPageTitleAndIcon title:"Slide" iconUrl:"/_dev/Slide.png";
 
 	js void setPageTitleAndIcon: string title = null, string iconUrl = null
 		if(title) {
