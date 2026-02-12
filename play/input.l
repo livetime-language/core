@@ -472,6 +472,7 @@ skipInit global unit input
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
+	bool eachTouchTriggersTouchesForAllPlayers = true
 	
 	GenerateIntegrationTestMode generateIntegrationTest
 	string integrationTest
@@ -655,7 +656,15 @@ skipInit global unit input
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
 		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
-		let inputs = localUser.inputs
+		
+		if eachTouchTriggersTouchesForAllPlayers and Platform.isDebug
+			for input.internalUsers as user
+				if user: addTouchEvent user, inputType, id, referencePos, touchType
+		else
+			 addTouchEvent localUser, inputType, id, referencePos, touchType
+
+	internal addTouchEvent: InternalUser user, InputType inputType, int id, Vector2 referencePos, int touchType
+		let inputs = user.inputs
 
 		if inputType == TouchMove
 			int index = getLastTouchMoveIndex id
