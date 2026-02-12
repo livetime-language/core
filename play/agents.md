@@ -195,7 +195,7 @@ app
 
 // Use these member functions of the Player class to handle input. 
 // These functions must be members of the Player class. That way, you know which player triggered an event. 
-Player
+class Player
 	string inputText
 
 	onKeyDown: Key key, string character
@@ -321,13 +321,6 @@ app
 		// We pick a random player as the start player
 		currentPlayer = players.random
 		print "Started go example"
-
-	// Called when a player touches the screen
-	onTouchDown: Touch touch
-		let cell = cells[touch.position.toGridPos]
-			if cell.player:	print "{touch.by} clicked cell {cell.gridPos} (occupied by {cell.player})" type:Event
-			else	print "{touch.by} clicked cell {cell.gridPos} (empty)" type:Event
-			placePiece cell, player:currentPlayer
 				
 	// Called on every frame (30 times per second)
 	tick
@@ -425,3 +418,11 @@ class Player
 		Vector2 scorePos = pos + math.getVectorForAngle(-45°)*radius
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
+
+	// Called when a player touches the screen
+	onTouchDown: Touch touch
+		if app.currentPlayer != this: return
+		let cell = app.cells[touch.position.toGridPos]
+			if cell.player:	print "{this} clicked cell {cell.gridPos} (occupied by {cell.player})" type:Event
+			else	print "{this} clicked cell {cell.gridPos} (empty)" type:Event
+			app.placePiece cell, player:this
