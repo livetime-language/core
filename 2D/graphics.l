@@ -336,8 +336,12 @@ transient skipInit global unit graphics
 		if(Platform.fastForward) return
 
 		// Draw pointers
-		if input.showPointers or Platform.mode == Play or Platform.mode == Pause or core.runningTest
-			players.each drawPointer ., Platform.mode == Play or Platform.mode == Pause or core.runningTest ? input.showPointersDuringPlaybackMode : input.showPointersMode
+		// if input.showPointers or Platform.mode == Play or Platform.mode == Pause or core.runningTest
+		ShowPointersMode showPointersMode
+		if core.frame < core.frames:	showPointersMode = input.showPointersDuringPlayback; else
+		if Platform.isDebug:	showPointersMode = input.showPointersModeInEditor; else
+										showPointersMode = input.showPointersMode
+		if showPointersMode != None: players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
 			.videoElementIndex = 0

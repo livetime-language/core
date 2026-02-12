@@ -468,7 +468,8 @@ skipInit global unit input
 	
 	bool showPointers = true
 	ShowPointersMode showPointersMode = Remote
-	ShowPointersMode showPointersDuringPlaybackMode = LocalAndRemote
+	ShowPointersMode showPointersModeInEditor = None
+	ShowPointersMode showPointersDuringPlayback = LocalAndRemote
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
