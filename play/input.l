@@ -472,7 +472,7 @@ skipInit global unit input
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
-	bool eachTouchTriggersTouchesForAllPlayers = true
+	bool eachTouchTriggersTouchesForAllPlayers = false
 	
 	GenerateIntegrationTestMode generateIntegrationTest
 	string integrationTest
