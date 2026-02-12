@@ -249,13 +249,16 @@ internal transient skipInit unit core
 	debugLog: string value
 		if replayUntilOutputId == int.maxValue
 			value += "|{outputId}|{frame}"
-			if runningTest:	output.add value
-			else	Platform.sendStringToEditor value
+			addOutput value
 		else
 			// Throw an exception when we reach replayUntilOutputId #evaluate
 			if outputId >= replayUntilOutputId
 				throw {message: "reached end of replay"}
 		outputId++
+
+	addOutput: string value
+		if runningTest:	output.add value
+		else	Platform.sendStringToEditor value
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player

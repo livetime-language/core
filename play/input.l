@@ -166,6 +166,7 @@ Touch
 	Vector2 smoothPosition
 	importance:4 bool isDown
 	bool handled
+	int startFrame
 	
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a input.onTouch method
@@ -667,9 +668,9 @@ skipInit global unit input
 				setLastTouchMoveIndex id, inputs.writePos+6
 			
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
-		inputs.writeInt32 localUser.inputFrame
+					+ math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
+					+ math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
+		inputs.writeInt32 user.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
 		inputs.writeInt16 math.round(referencePos.y)
@@ -993,6 +994,7 @@ skipInit global unit input
 			touch.phase = Down
 			touch.referencePosition = referencePos
 			touch.referenceStartPosition = referencePos
+			touch.startFrame = core.frame
 			touch.type = type
 			// When we touch down, we start a new touch and reset the "handled" flag
 			// This flag is preserved throughout "TouchMove" and "TouchUp", so if we mark the touch
@@ -1006,7 +1008,8 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		print type:Touch message or "Click {referencePos} by {player}"
+		if player == input.localPlayer
+			print type:Touch message or "Click {referencePos} by {player}"
 		appOnTouchMoveIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
@@ -1052,6 +1055,13 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.upTouches.add touch
 		appOnTouchUpIfFunctionExists player, touch
+
+		if player == input.localPlayer
+			let length = referencePos distanceTo touch.referenceStartPosition
+			if length < 8
+				core.addOutput "code|click {touch.referenceStartPosition} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+			else
+				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
