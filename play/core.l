@@ -87,6 +87,8 @@ internal transient skipInit unit core
 			.startInputFrame 0
 		startTime = serverStartTime = currentTime
 		frames = 0
+		targetFrame = -1
+		targetOutputId = -1
 		frameWithNewWatches = 0
 		watchIndex = 0
 		startInLobby = false
@@ -190,25 +192,38 @@ internal transient skipInit unit core
 	// to replay all inputs with the new code from the beginning,
 	// and when stepping through the timeline with replayFromStart = false
 	// to only replay from the beginning when going to a frame in the past
-	goToFrame: int targetFrame, replayFromStart = false
+	goToFrame: int targetFrame, int targetOutputId = -1, replayFromStart = false
+		System.log "------------------------- goToFrame targetFrame:{targetFrame} targetOutputId:{targetOutputId}"
+		replayFromStart = true
+		this.targetFrame = targetFrame
+		this.targetOutputId = targetOutputId
+		this.reachedOutputId = false
 		isPremiere = false
-		if replayFromStart
-			frameWithNewWatches = 0
-			reset
-		else
-		if targetFrame < frame
-			let milestoneIndex = enabledMilestones ? math.floor(targetFrame/milestoneInterval) - 1 : -1
-			if 0 <= milestoneIndex < milestones.length
-				let milestone = milestones[milestoneIndex]
-				frame = (milestoneIndex+1) * milestoneInterval
-				rewind milestone
-			else
+		try
+			if replayFromStart
+				frameWithNewWatches = 0
 				reset
-			
-		replay frame to targetFrame
-		adjustStartTime
-		animationFrame
-		isPremiere = true
+			else
+			if targetFrame < frame
+				let milestoneIndex = enabledMilestones ? math.floor(targetFrame/milestoneInterval) - 1 : -1
+				if 0 <= milestoneIndex < milestones.length
+					let milestone = milestones[milestoneIndex]
+					frame = (milestoneIndex+1) * milestoneInterval
+					rewind milestone
+				else
+					reset
+				
+			while frame < targetFrame
+				step fastForward:true, draw:false
+			step fastForward:false, draw:true
+		catch
+			onError .
+		finally
+			adjustStartTime
+			Platform.fastForward = false
+			if frame < targetFrame+1
+				tick draw:true
+			isPremiere = true
 
 	runTest: string testFunctionName, int id = -1
 		System.log "Running test {testFunctionName}"
@@ -219,6 +234,8 @@ internal transient skipInit unit core
 		try
 			isPremiere = false
 			runningTest = true
+			targetOutputId = -1
+			targetFrame = -1
 			try
 				reset
 				testFunction()
@@ -242,23 +259,29 @@ internal transient skipInit unit core
 	bool runningTest
 	string[] output
 	int outputId = -1
-	int replayUntilOutputId = int.maxValue
-	int replayUntilFrame = int.maxValue
+	int targetOutputId = -1
+	int targetFrame = -1
+	bool reachedOutputId = false
 	TestRunMode testRunMode
 
 	debugLog: string value
-		if replayUntilOutputId == int.maxValue
+		System.log "{value} outputId:{outputId} targetOutputId:{targetOutputId} frame:{frame} targetFrame:{targetFrame}"
+		if targetOutputId == -1
 			value += "|{outputId}|{frame}"
-			addOutput value
+			if runningTest:	output.add value
+			else	Platform.sendStringToEditor value
 		else
-			// Throw an exception when we reach replayUntilOutputId #evaluate
-			if outputId >= replayUntilOutputId
+			// Throw an exception when we reach targetOutputId #evaluate
+			if outputId == targetOutputId and not reachedOutputId
+				System.log "Throwing exception"
+				reachedOutputId = true
 				throw {message: "reached end of replay"}
 		outputId++
 
 	addOutput: string value
-		if runningTest:	output.add value
-		else	Platform.sendStringToEditor value
+		if targetOutputId == -1
+			if runningTest:	output.add value
+			else	Platform.sendStringToEditor value
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -315,12 +338,15 @@ internal transient skipInit unit core
 				onError error
 					
 			// Ensure that step is called every frameTime milliseconds
-			while frame < targetFrame
-				if Platform.mode == Record
-					for input.internalUsers -> user
-						if user?.local: user.startInputFrame frame+1
-				step fastForward:false, draw:frame == targetFrame-1
-				collectStatistics
+			try
+				while frame < targetFrame
+					if Platform.mode == Record
+						for input.internalUsers -> user
+							if user?.local: user.startInputFrame frame+1
+					step fastForward:false, draw:frame == targetFrame-1
+					if not Platform.isDebug: collectStatistics
+			catch
+				onError .
 				
 				lastNetworkFrame = now
 				
@@ -441,45 +467,43 @@ internal transient skipInit unit core
 	// frame will point to the current frame. After processing, frame will point to the next frame.
 	internal step: bool fastForward // If we are replaying after a rollback or a code change
 		           bool draw        // We don't draw if we are stepping multiple frames in one animation frame
-		try
-			if verbose: core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
-			if debug.waitUntilFrame: print "# Frame {frame}"
+		if verbose: core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
+		if debug.waitUntilFrame: print "# Frame {frame}"
 
-			// Flags
-			Platform.fastForward = fastForward
-			int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) where . != null
-			input.isCertain = frame <= certainFrame
+		// Flags
+		Platform.fastForward = fastForward
+		int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) where . != null
+		input.isCertain = frame <= certainFrame
+		
+		// Send current frame to editor	
+		// if Platform.isDebug and !fastForward and (Platform.mode == Record or Platform.mode == Play or Platform.waitingForInitialData): Platform.sendFrame(frame, math.max(frame+1, frames))
+		// if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
+		
+		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
+		checkSaveState
+		
+		// Update game controllers
+		input.updateGameControllers
+		
+		// Parse inputs
+		input.parseInputs(frame)
+		
+		// Physics
+		Physics.step
+		
+		// Tick
+		tick draw
+		
+		if HTMLElement.elements: HTMLElement.elements.each.tick
+		input.removePlayersIfNecessary
 			
-			// Send current frame to editor	
-			// if Platform.isDebug and !fastForward and (Platform.mode == Record or Platform.mode == Play or Platform.waitingForInitialData): Platform.sendFrame(frame, math.max(frame+1, frames))
-			// if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
-			
-			// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
-			checkSaveState
-			
-			// Update game controllers
-			input.updateGameControllers
-			
-			// Parse inputs
-			input.parseInputs(frame)
-			
-			// Physics
-			Physics.step
-			
-			// Tick
-			tick draw
-			
-			if HTMLElement.elements: HTMLElement.elements.each.tick
-			input.removePlayersIfNecessary
-			
-		catch
-			onError error
 						
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
 	internal tick: bool draw
-		if frame > core.replayUntilFrame: return
+		System.log "core.tick {frame} {draw}"
+		// if targetFrame != -1 and frame > targetFrame	return
 
 		// Set time
 		Time.now = serverStartTime + math.round(frame * frameTime)
@@ -500,29 +524,27 @@ internal transient skipInit unit core
 				if lobby.inLobby:      lobby.tick; else
 				if awardScreen.active: awardScreen.tick; else
 				                       appTick
-		catch
-			onError error
-			
-		// Finish frame
-		if draw and not Platform.waitingForInitialData
-			drawTimes.add drawTime = PlainDate.measure
-				graphics.finishFrame
-			if Platform.mode != Manipulator: input.updateCursor
-		audio.finishFrame
 
-		// Cleanup
-		for input.internalUsers as user: user?.clearEvent
-		players.each.postprocessEvents
+			// Advance frame
+			frame++
+			if frames < frame: frames = frame
+			if frame > frameWithNewWatches: frameWithNewWatches = frame
+		finally			
+			// Finish frame
+			if draw and not Platform.waitingForInitialData
+				drawTimes.add drawTime = PlainDate.measure
+					graphics.finishFrame
+				if Platform.mode != Manipulator: input.updateCursor
+			audio.finishFrame
 
-		// Currently, we use tests.printWhatIsOnScreen to print the screen contents
-		// instead of automatically sending it every time
-		// if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
-		
-		// Advance frame
-		frame++
-		if frames < frame: frames = frame
-		if frame > frameWithNewWatches: frameWithNewWatches = frame
-				
+			// Cleanup
+			for input.internalUsers as user: user?.clearEvent
+			players.each.postprocessEvents
+
+			// Currently, we use tests.printWhatIsOnScreen to print the screen contents
+			// instead of automatically sending it every time
+			// if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
+							
 	js void appTick() if(app.tick) app.tick();
 	js string appDebugString() (app.debugString || "")
 		
@@ -901,8 +923,8 @@ global transient unit System
 		if((core.runningTest || Platform.isDebug) && location) {
 			if(color) console.log(`%c${text}`, `color: ${color.hex}`)
 			else      console.log(text)
-			if(drawDebugInformation != null && (core.replayUntilOutputId == -1 ||core.outputId <= core.replayUntilOutputId)) {
-				drawDebugInformation(core.outputId == core.replayUntilOutputId)
+			if(drawDebugInformation != null && (core.targetOutputId == -1 ||core.outputId <= core.targetOutputId)) {
+				drawDebugInformation(core.outputId == core.targetOutputId)
 			}
 			core.debugLog(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {

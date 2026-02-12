@@ -86,8 +86,6 @@ transient skipInit unit Platform
 			this.engineStarted = false
 			this.isDebug = isDebug
 			this.userCount = userCount
-			core.replayUntilOutputId = int.maxValue
-			core.replayUntilFrame = int.maxValue
 			initBackend
 			statistics.startTime = now
 			core.simulateConnection = simulateConnection
@@ -145,24 +143,18 @@ transient skipInit unit Platform
 		
 	string runningTestFunction = null
 	private runTest: string testFunction, int id
-		core.replayUntilOutputId = int.maxValue
-		core.replayUntilFrame = int.maxValue
 		core.testRunMode = FirstRun
 		runningTestFunction = testFunction
 		core.runTest testFunction, id
 			
 	// This is called after every code change to replay all inputs with the new code
 	// Since the const cache is cleared when the code changes, we reinitialize the media
-	private async replay: bool updateMedia, int replayUntilOutputId, int replayUntilFrame
-		core.replayUntilOutputId = replayUntilOutputId
-		core.replayUntilFrame = replayUntilFrame
-		core.testRunMode = replayUntilFrame != int.maxValue ? PartialReplay : FullReplay
-		System.log "Replay until output id:{replayUntilOutputId} frame:{replayUntilFrame}"
+	private async replay: bool updateMedia
 		if runningTestFunction
 			core.runTest runningTestFunction
 		else
 			try
-				core.goToFrame replayUntilFrame != int.maxValue ? replayUntilFrame : core.frames-1, replayFromStart:true
+				core.goToFrame core.frames-1, replayFromStart:true
 			catch
 				core.onError .
 			finally 
@@ -177,6 +169,10 @@ transient skipInit unit Platform
 		// catch
 		// 	core.onError .
 		// 	sendFinished
+
+	private goToFrame: int targetFrame, int targetOutputId
+		mode = Pause
+		core.goToFrame targetFrame, targetOutputId
 
 	generateIntegrationTest: GenerateIntegrationTestMode mode
 		input.generateIntegrationTest = mode
@@ -225,8 +221,6 @@ transient skipInit unit Platform
 		core.switchToPlayer(input.players[index]);
 		if mode == Pause: core.step fastForward:false draw:true
 	
-	private goToFrame(int targetFrame) pause(); core.goToFrame(targetFrame)
-		
 	internal js void sendSelectToEditor: string cursorFile, int cursorPos
 		_sendToEditor({type:"select", cursorFile, cursorPos})
 	

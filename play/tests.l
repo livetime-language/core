@@ -7,7 +7,6 @@ tests
 	click: Vector2 position
 		   TouchType with = LeftMouseButton
 	       nocolon Player by = players[0]
-		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		let internalUser = input.internalUsers[by.id]
 		input.touchDown internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
 		input.touchUp internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
@@ -18,7 +17,6 @@ tests
 		  float duration = 100
 		  TouchType with = LeftMouseButton
 		  nocolon Player by = players[0]
-		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		let internalUser = input.internalUsers[by.id]
 
 		// Down
@@ -39,7 +37,6 @@ tests
 	pressKey: Key key
 	          string character = ""
 		      nocolon Player by = players[0]
-		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		let internalUser = input.internalUsers[by.id]
 		input.keyDown internalUser, player:by, key, character
 		input.keyUp internalUser, player:by, key
@@ -47,13 +44,12 @@ tests
 
 	moveLeftStickTo: Vector2 direction
 	                 nocolon Player by = players[0]
-		if  core.frame > core.replayUntilFrame or core.outputId > core.replayUntilOutputId: return
 		by.gameController.leftStick.assign(direction)
 		print type:GameController "Move left stick to {direction} by {by}"
 		core.tick draw:false
 
 	wait: float time
-		let targetFrame = (core.frame + math.round time * core.ticksPerSecond / 1000) atMost core.replayUntilFrame
+		let targetFrame = (core.frame + math.round time * core.ticksPerSecond / 1000) atMost core.targetFrame
 		while core.frame < targetFrame
 			core.tick draw:false
 
