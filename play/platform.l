@@ -143,51 +143,35 @@ transient skipInit unit Platform
 		
 	string runningTestFunction = null
 	private runTest: string testFunction, int id
-		core.testRunMode = FirstRun
 		runningTestFunction = testFunction
-		core.runTest testFunction, id
+		core.runTest FirstRun, testFunction, id
 			
 	// This is called after every code change to replay all inputs with the new code
-	// Since the const cache is cleared when the code changes, we reinitialize the media
 	private async replay: bool updateMedia
 		if runningTestFunction
-			core.runTest runningTestFunction
+			core.runTest FullReplay, runningTestFunction
 		else
-			try
-				core.goToFrame core.frames-1, replayFromStart:true
-			catch
-				core.onError .
-			finally 
-				sendFinished
-		// try
-		// 	heartbeat "replay"
-		// 	initMedia
-		// 	initBackend
-		// 	media.openMedia
-		// 		core.runTest
-		// 		goToCurrentFrame
-		// catch
-		// 	core.onError .
-		// 	sendFinished
+			core.goToFrame core.frames-1, replayFromStart:true
 
-	private goToFrame: int targetFrame, int targetOutputId
+	// This is called when clicking on an event stream item
+	goToFrame: int targetFrame, int targetOutputId
 		mode = Pause
-		core.goToFrame targetFrame, targetOutputId
+		if runningTestFunction
+			core.runTest PartialReplay, runningTestFunction, targetFrame, targetOutputId
+		else
+			core.goToFrame targetFrame, targetOutputId
 
 	generateIntegrationTest: GenerateIntegrationTestMode mode
 		input.generateIntegrationTest = mode
 		input.integrationTest = ""
-		goToCurrentFrame
-		input.generateIntegrationTest = None
-		sendToEditor {type:"integrationTest", text:input.integrationTest}
-			
-	private goToCurrentFrame
 		try
 			core.goToFrame core.frames-1, replayFromStart:true
 		catch
 			core.onError .
 		finally 
 			sendFinished
+		input.generateIntegrationTest = None
+		sendToEditor {type:"integrationTest", text:input.integrationTest}
 			
 	object interval
 	private js void startInterval
@@ -251,7 +235,7 @@ transient skipInit unit Platform
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
 		
-	private inline js void sendFinished
+	inline js void sendFinished
 		console.log("[app] Finished initializing")
 		if(Platform.isDebug) _sendToEditor({type:"finished"})
 	
