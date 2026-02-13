@@ -8,6 +8,12 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 Always write the shortest, simplest possible and most efficient code.
 Avoid code duplication. Do not overengineer. Keep it simple.
 
+# Show the player's video
+LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
+class Player
+	tick
+		drawVideo this, pos, size:435, shape:Circle
+
 # When you are done writing code, test if it is working
 1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
@@ -22,7 +28,7 @@ Player
 
 4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
 
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
+5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
 
 tests
 	playerShouldMoveRight
