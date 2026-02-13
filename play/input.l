@@ -473,7 +473,6 @@ skipInit global unit input
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
-	bool eachTouchTriggersTouchesForAllPlayers = false
 	
 	GenerateIntegrationTestMode generateIntegrationTest
 	string integrationTest
@@ -656,16 +655,8 @@ skipInit global unit input
 		Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
-		
-		if eachTouchTriggersTouchesForAllPlayers and Platform.isDebug
-			for input.internalUsers as user
-				if user: addTouchEvent user, inputType, id, referencePos, touchType
-		else
-			 addTouchEvent localUser, inputType, id, referencePos, touchType
-
-	internal addTouchEvent: InternalUser user, InputType inputType, int id, Vector2 referencePos, int touchType
-		let inputs = user.inputs
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return		
+		let inputs = localUser.inputs
 
 		if inputType == TouchMove
 			int index = getLastTouchMoveIndex id
@@ -680,7 +671,8 @@ skipInit global unit input
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
 					+ math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
 					+ math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
-		inputs.writeInt32 user.inputFrame
+		
+		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
 		inputs.writeInt16 math.round(referencePos.y)
@@ -1018,8 +1010,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		if player == input.localPlayer
-			print type:Touch message or "Click {referencePos} by {player}"
+		print type:Touch message or "Click {referencePos} by {player}"
 		appOnTouchMoveIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
