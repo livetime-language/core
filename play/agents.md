@@ -31,7 +31,7 @@ tests
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
-6. Use the vscode's build-in tool to run the unit tests (execute/runTests). 
+6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
 
 7. Carefully analyze the output and check if everything is working.
 
@@ -100,11 +100,6 @@ app
 			documentsById[doc.id] = doc
 		for documentsById as doc, id
 			print "id:{id} created:{doc.created.toDayMonthYearString}"
-
-		// Print types: Info (default), Error, Warning, Event, Action
-		print "Round {round} started"
-		print "{touch.by} clicked {touch.position}" type:Event
-		print "{player} moved to {position}" type:Action
 
 		// Find
 		let doc = documents.find.id == "2f"
@@ -195,7 +190,7 @@ app
 
 // Use these member functions of the Player class to handle input. 
 // These functions must be members of the Player class. That way, you know which player triggered an event. 
-Player
+class Player
 	string inputText
 
 	onKeyDown: Key key, string character
@@ -321,13 +316,6 @@ app
 		// We pick a random player as the start player
 		currentPlayer = players.random
 		print "Started go example"
-
-	// Called when a player touches the screen
-	onTouchDown: Touch touch
-		let cell = cells[touch.position.toGridPos]
-			if cell.player:	print "{touch.by} clicked cell {cell.gridPos} (occupied by {cell.player})" type:Event
-			else	print "{touch.by} clicked cell {cell.gridPos} (empty)" type:Event
-			placePiece cell, player:currentPlayer
 				
 	// Called on every frame (30 times per second)
 	tick
@@ -425,3 +413,11 @@ class Player
 		Vector2 scorePos = pos + math.getVectorForAngle(-45°)*radius
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
+
+	// Called when a player touches the screen
+	onTouchDown: Touch touch
+		if app.currentPlayer != this: return
+		let cell = app.cells[touch.position.toGridPos]
+			if cell.player:	print "{this} clicked cell {cell.gridPos} (occupied by {cell.player})" type:Event
+			else	print "{this} clicked cell {cell.gridPos} (empty)" type:Event
+			app.placePiece cell, player:this
