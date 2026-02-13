@@ -1019,7 +1019,7 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}"
-		appOnTouchMoveIfFunctionExists player, touch
+		appOnTouchHoverIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
 	internal touchMove: InternalUser internalUser
@@ -1184,10 +1184,12 @@ skipInit global unit input
 		if(app.onTouchDown) app.onTouchDown(touch);
 		if(player?.onTouchDown) player.onTouchDown(touch);
 
+	inline js void appOnTouchHoverIfFunctionExists: Player player, Touch touch
+		if(app.onTouchHover) app.onTouchHover(touch);
+		if(player?.onTouchHover) player.onTouchHover(touch);
+			
 	inline js void appOnTouchMoveIfFunctionExists: Player player, Touch touch
-		if(app.onTouchMove) app.onTouchMove(touch);
 		if(player) {
-			if(player.onTouchMove) player.onTouchMove(touch);
 			if(!touch.isDown) {
 				if(player.onTouchHover) player.onTouchHover(touch);
 			} else {
