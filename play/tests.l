@@ -10,7 +10,7 @@ tests
 		let internalUser = input.internalUsers[by.id]
 		input.touchDown internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
 		input.touchUp internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
-		core.tick draw:false
+		tick
 
 	drag: Vector2 from
 	      Vector2 to
@@ -22,24 +22,25 @@ tests
 		// Down
 		let message = "Drag {from} to {to} by {by}"
 		input.touchDown internalUser, player:by, id:0, referencePos:from, type:with, isSmoothPosition:true, message
+		tick
 
 		// Move
 		int frames = math.round(duration * core.ticksPerSecond / 1000)
 		for frames
 			Vector2 pos = from interpolateTo target:to, progress: (i+1) / frames
 			input.touchMove internalUser, player:by, id:0, referencePos:pos, type:with, isSmoothPosition:true
-			core.tick draw:false
+			tick
 
 		// Up
 		input.touchUp internalUser, player:by, id:0, referencePos:to, type:with, isSmoothPosition:true
-		core.tick draw:false
+		tick
 
 	private hover: Vector2 position
 	               TouchType with = LeftMouseButton
 	               nocolon Player by = players[0]
 		let internalUser = input.internalUsers[by.id]
 		input.touchMove internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
-		core.tick draw:false
+		tick
 
 	pressKey: Key key
 	          string character = ""
@@ -47,18 +48,27 @@ tests
 		let internalUser = input.internalUsers[by.id]
 		input.keyDown internalUser, player:by, key, character
 		input.keyUp internalUser, player:by, key
-		core.tick draw:false
+		tick
 
 	moveLeftStickTo: Vector2 direction
 	                 nocolon Player by = players[0]
 		by.gameController.leftStick.assign(direction)
 		print type:GameController "Move left stick to {direction} by {by}"
-		core.tick draw:false
+		tick
 
 	wait: float time
-		let targetFrame = (core.frame + math.round time * core.ticksPerSecond / 1000) atMost core.targetFrame
-		while core.frame < targetFrame
-			core.tick draw:false
+		let targetFrame = core.frame + math.round time * core.ticksPerSecond / 1000
+		if core.targetFrame != -1 and targetFrame > core.targetFrame
+			targetFrame = core.targetFrame
+		System.log "wait until {targetFrame} (frame: {core.frame}, core.targetFrame: {core.targetFrame})"
+		while core.frame <= targetFrame
+			tick
+
+	private tick
+		System.log "### tick core.frame:{core.frame} core.targetFrame:{core.targetFrame} "
+		// if core.frame <= core.targetFrame
+		Platform.fastForward = core.frame != core.targetFrame
+		core.tick draw:core.frame == core.targetFrame
 
 	printWhatIsOnScreen
 		print "\n{graphics.getWhatIsOnScreen}"
