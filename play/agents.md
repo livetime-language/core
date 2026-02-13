@@ -199,8 +199,9 @@ app
 class Player
 	string inputText
 
+	// Important: Always make sure each player can only interact with their own items (or items they are allowed to interact with)
 	onTouchHover: Touch touch
-		app.items.each.hoverTouch = touch.position insideRectangle .position, .size ? touch : null
+		app.items.each.hoverTouch = .owner == this and touch.position insideRectangle .position, .size ? touch : null
 	
 	onTouchDown: Touch touch
 		let item = app.items.find.hoverTouch == touch
@@ -242,6 +243,7 @@ class Item
 	Vector2 position
 	Touch hoverTouch, dragTouch
 	Vector2 dragOffset
+	Player owner
 	
 	tick
 		// Draw item					
