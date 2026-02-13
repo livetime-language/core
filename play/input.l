@@ -404,10 +404,11 @@ internal GameController
 		buttons.each.startFrame
 	
 enum ShowPointersMode
-	None           // Don't show the mouse pointers or draw them manually
-	Local          // Show the mouse pointer only for the local player
-	Remote         // Show the mouse pointer only for remote players
-	LocalAndRemote // Show the mouse pointers of all players
+	None	// Don't show the mouse pointers or draw them manually
+	Local	// Show the mouse pointer only for the local player
+	Remote	// Show the mouse pointer only for remote players
+	LocalAndRemote	// Show the mouse pointers of all players
+	WhenDown	// Show the mouse pointers of all players, but only when they are down (clicking or touching)
 	
 internal immutable InternetGamePadButton
 	bool pressed, touched
@@ -469,7 +470,7 @@ skipInit global unit input
 	bool showPointers = true
 	ShowPointersMode showPointersMode = Remote
 	ShowPointersMode showPointersModeInEditor = None
-	ShowPointersMode showPointersDuringPlayback = LocalAndRemote
+	ShowPointersMode showPointersDuringPlayback = WhenDown
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick

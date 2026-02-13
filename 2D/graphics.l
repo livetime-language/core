@@ -336,11 +336,10 @@ transient skipInit global unit graphics
 		if(Platform.fastForward) return
 
 		// Draw pointers
-		// if input.showPointers or Platform.mode == Play or Platform.mode == Pause or core.runningTest
 		ShowPointersMode showPointersMode
-		if core.frame < core.frames:	showPointersMode = input.showPointersDuringPlayback; else
+		if core.frame < core.frames or core.runningTest:	showPointersMode = input.showPointersDuringPlayback; else
 		if Platform.isDebug:	showPointersMode = input.showPointersModeInEditor; else
-										showPointersMode = input.showPointersMode
+															showPointersMode = input.showPointersMode
 		if showPointersMode != None: players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
@@ -1412,17 +1411,19 @@ transient skipInit global unit graphics
 	global drawPointer: Player player                  // Show the mouse position of this player
 		                ShowPointersMode mode = Remote // Choose whether you want to draw the pointers for local players, remote players or both
 		                Color color = null             // The color of the pointer. If this is left out, the player color is used
-		if mode == LocalAndRemote
+		if mode == LocalAndRemote or mode == WhenDown
 		or (player.id == input.localUser.id and mode == Local)
 		or (player.id != input.localUser.id and mode == Remote)
 			if !color: color = player.color
 			for player.touches
-				drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0, layer:int.maxValue
-				if color
-					if color == Black
-						drawRectangle .smoothPosition+{16,80}, size:{26,10}, color, layer:int.maxValue, outlineColor:{"#a0a0a0"}, outlineWidth:2
-					else
-						drawRectangle .smoothPosition+{16,78}, size:{26,10}, color, layer:int.maxValue
+				System.log "% drawPointer isDown:{.isDown} position:{.position}"
+				if mode != WhenDown or .isDown
+					drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0, layer:int.maxValue
+					if color
+						if color == Black
+							drawRectangle .smoothPosition+{16,80}, size:{26,10}, color, layer:int.maxValue, outlineColor:{"#a0a0a0"}, outlineWidth:2
+						else
+							drawRectangle .smoothPosition+{16,78}, size:{26,10}, color, layer:int.maxValue
 
 	// ------------------------------------------------------- Texture -------------------------------------------------------
 	
