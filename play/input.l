@@ -386,14 +386,14 @@ internal GameController
 	DigitalButton left = {}
 	
 	// Buttons
-	DigitalButton a = {}
-	DigitalButton b = {}
-	DigitalButton x = {}
-	DigitalButton y = {}
+	DigitalButton A = {}
+	DigitalButton B = {}
+	DigitalButton X = {}
+	DigitalButton Y = {}
 	
 	DigitalButton menu = {}
 	
-	DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, a, b, x, y, menu]
+	DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, A, B, X, Y, menu]
 	
 	bool inMotion
 	GameControllerType type
@@ -882,23 +882,23 @@ skipInit global unit input
 					
 					// Controller buttons
 					let buttons = inputs.readUnsignedInt16
-					c.a.state = (buttons bitwiseAnd 1) != 0
-					c.b.state = (buttons bitwiseAnd 2) != 0
-					c.x.state = (buttons bitwiseAnd 4) != 0
-					c.y.state = (buttons bitwiseAnd 8) != 0
+					c.A.state = (buttons bitwiseAnd 1) != 0
+					c.B.state = (buttons bitwiseAnd 2) != 0
+					c.X.state = (buttons bitwiseAnd 4) != 0
+					c.Y.state = (buttons bitwiseAnd 8) != 0
 					c.type = (buttons bitwiseAnd 16384) != 0 ? PlayStation : Xbox
 					
 					// Controller button names
 					if c.type == Xbox
-						c.a.name = "A"
-						c.b.name = "B"
-						c.x.name = "X"
-						c.y.name = "Y"
+						c.A.name = "A"
+						c.B.name = "B"
+						c.X.name = "X"
+						c.Y.name = "Y"
 					else
-						c.a.name = "X"
-						c.b.name = "O"
-						c.x.name = "SQUARE"
-						c.y.name = "TRIANGLE"
+						c.A.name = "X"
+						c.B.name = "O"
+						c.X.name = "SQUARE"
+						c.Y.name = "TRIANGLE"
 				else
 				if inputType == String
 					int id = inputs.readInt
@@ -1109,8 +1109,8 @@ skipInit global unit input
 					c.right.assign "→"     Right
 					c.down.assign  "↓"     Down
 					c.left.assign  "←"     Left
-					c.a.assign     "SPACE" Space
-					c.b.assign     "X"     X
+					c.A.assign     "SPACE" Space
+					c.B.assign     "X"     X
 			
 			if players.length >= 2
 				GameController c = players[1].gameController
@@ -1119,8 +1119,8 @@ skipInit global unit input
 					c.right.assign "D"     D
 					c.down.assign  "S"     S
 					c.left.assign  "A"     A
-					c.a.assign     "F"     F
-					c.b.assign     "G"     G
+					c.A.assign     "F"     F
+					c.B.assign     "G"     G
 			
 			if players.length >= 3
 				GameController c = players[2].gameController
@@ -1129,8 +1129,8 @@ skipInit global unit input
 					c.right.assign "L"     L
 					c.down.assign  "K"     K
 					c.left.assign  "J"     J
-					c.a.assign     "O"     O
-					c.b.assign     "P"     P
+					c.A.assign     "O"     O
+					c.B.assign     "P"     P
 			
 			controllerButtonMap.clear
 			for players -> player
@@ -1147,8 +1147,8 @@ skipInit global unit input
 					c.right.assign "→"     Right
 					c.down.assign  "↓"     Down
 					c.left.assign  "←"     Left
-					c.a.assign     "SPACE" Space
-					c.b.assign     "X"     X
+					c.A.assign     "SPACE" Space
+					c.B.assign     "X"     X
 			
 			controllerButtonMap.clear
 			// TODO: Research why this is sometimes called before we have a local player
