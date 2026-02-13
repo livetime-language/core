@@ -73,4 +73,4 @@ tests
 	expectToPrint: string value
 		           SourceCodeLocation location
 		if not core.output.any.contains value
-			core.debugLog "assert||{value}|${location.file}|${location.start}"
+			core.debugLog "assert||{value}|{location.file}|{location.start}"
