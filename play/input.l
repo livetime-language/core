@@ -122,24 +122,26 @@ priority class Player
 	// The current player instance, equivalent to "this"
 	inline js Player me() this
 	
+	
+	// Evaluate: Set isDown directly in input.touchDown instead of in player.postprocessEvents #easier-to-reason-about #evaluate
 	// Called in core.step at the end of each step
 	// onTouchMove is commonly used to check what the pointer is hovering over and highlight it.
 	// Since on touch screens we often don't get a touchMove event when the user touches something, we can set 
 	// triggeredOnTouchDown to "true" to ensure we always get a touchMove event right before the touchDown.
 	// This is why isDown is only set to true *after* the events are handled in tick.
 	// This way, onTouchMove can check isDown, determine what we are hovering over and onTouchDown can then act on it.
-	internal postprocessEvents
-		bool hasTouch = touches.any.type == Finger
-		for touches backwards
-			switch .phase
-				Down
-					.phase = Still
-					.isDown = true
-				Up
-					if .type >= Finger or (hasTouch and .type != Finger): touches.removeAt i
-					else                                                .phase = Still
-					downTouches.remove .
-					.isDown = false
+	// internal postprocessEvents
+	// 	bool hasTouch = touches.any.type == Finger
+	// 	for touches backwards
+	// 		switch .phase
+	// 			Down
+	// 				.phase = Still
+	// 				.isDown = true
+	// 			Up
+	// 				if .type >= Finger or (hasTouch and .type != Finger): touches.removeAt i
+	// 				else                                                .phase = Still
+	// 				downTouches.remove .
+	// 				.isDown = false
 				
 internal UserAccount
 	string _id
@@ -404,10 +406,11 @@ internal GameController
 		buttons.each.startFrame
 	
 enum ShowPointersMode
-	None           // Don't show the mouse pointers or draw them manually
-	Local          // Show the mouse pointer only for the local player
-	Remote         // Show the mouse pointer only for remote players
-	LocalAndRemote // Show the mouse pointers of all players
+	None	// Don't show the mouse pointers or draw them manually
+	Local	// Show the mouse pointer only for the local player
+	Remote	// Show the mouse pointer only for remote players
+	LocalAndRemote	// Show the mouse pointers of all players
+	WhenDown	// Show the mouse pointers of all players, but only when they are down (clicking or touching)
 	
 internal immutable InternetGamePadButton
 	bool pressed, touched
@@ -469,7 +472,7 @@ skipInit global unit input
 	bool showPointers = true
 	ShowPointersMode showPointersMode = Remote
 	ShowPointersMode showPointersModeInEditor = None
-	ShowPointersMode showPointersDuringPlayback = LocalAndRemote
+	ShowPointersMode showPointersDuringPlayback = WhenDown
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
@@ -998,13 +1001,18 @@ skipInit global unit input
 			touch.referenceStartPosition = referencePos
 			touch.startFrame = core.frame
 			touch.type = type
+
+			// Evaluate: Set isDown directly instead of in player.postprocessEvents #easier-to-reason-about #evaluate
+			touch.isDown = true
+
 			// When we touch down, we start a new touch and reset the "handled" flag
 			// This flag is preserved throughout "TouchMove" and "TouchUp", so if we mark the touch
 			// as handled at any point, the flags stays set to "true" until we touch down again
 			touch.handled = false
 			if isSmoothPosition: touch.smoothPosition = referencePos
 		else
-			touch = {id, player, Down, type, referencePos, referencePos, referencePos}
+			// Evaluate: Set isDown directly instead of in player.postprocessEvents #easier-to-reason-about #evaluate
+			touch = {id, player, Down, type, referencePos, referencePos, referencePos, isDown:true}
 			player.touches.add touch
 				
 		player.downTouches.ensure touch
@@ -1048,6 +1056,7 @@ skipInit global unit input
 			touch.phase = Up
 			touch.referencePosition = referencePos
 			touch.type = type
+			touch.isDown = false
 			if isSmoothPosition: touch.smoothPosition = referencePos
 		else
 			touch = {id, player, Up, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}

@@ -200,52 +200,64 @@ internal transient skipInit unit core
 		this.reachedOutputId = false
 		isPremiere = false
 		try
-			if replayFromStart
-				frameWithNewWatches = 0
-				reset
-			else
-			if targetFrame < frame
-				let milestoneIndex = enabledMilestones ? math.floor(targetFrame/milestoneInterval) - 1 : -1
-				if 0 <= milestoneIndex < milestones.length
-					let milestone = milestones[milestoneIndex]
-					frame = (milestoneIndex+1) * milestoneInterval
-					rewind milestone
-				else
+			try
+				if replayFromStart
+					frameWithNewWatches = 0
 					reset
-				
-			while frame < targetFrame
-				step fastForward:true, draw:false
-			step fastForward:false, draw:true
+				else
+				if targetFrame < frame
+					let milestoneIndex = enabledMilestones ? math.floor(targetFrame/milestoneInterval) - 1 : -1
+					if 0 <= milestoneIndex < milestones.length
+						let milestone = milestones[milestoneIndex]
+						frame = (milestoneIndex+1) * milestoneInterval
+						rewind milestone
+					else
+						reset
+					
+				while frame < targetFrame
+					step fastForward:true, draw:false
+				step fastForward:false, draw:true
+			catch
+				onError .
+
+			Platform.fastForward = false
+			if frame < targetFrame+1
+				tick draw:true
 		catch
 			onError .
 		finally
 			adjustStartTime
-			Platform.fastForward = false
-			if frame < targetFrame+1
-				tick draw:true
 			isPremiere = true
+			Platform.sendFinished
 
-	runTest: string testFunctionName, int id = -1
+	runTest: TestRunMode testRunMode, string testFunctionName, int id = -1, int targetFrame = -1, int targetOutputId = -1
 		System.log "Running test {testFunctionName}"
 		let parts = testFunctionName.split(".")
 		if parts.length < 2: parts = ["tests", testFunctionName or "main"]
 		dynamic testFunction = globals[parts[0]][parts[1]]
 		if not testFunction: return
+		isPremiere = false
+		runningTest = true
+		this.testRunMode = testRunMode
+		this.targetFrame = targetFrame
+		this.targetOutputId = targetOutputId
+		this.reachedOutputId = false
+		Platform.fastForward = false
 		try
-			isPremiere = false
-			runningTest = true
-			targetOutputId = -1
-			targetFrame = -1
 			try
 				reset
 				testFunction()
 			catch
 				onError .
-			
+
+			for input.internalUsers as user: user?.clearEvent
+			Platform.fastForward = false
+			tick draw:true
+
 			// Execute a full tick after each test to: #evaluate
 			// - draw the current state after throwing an exception in the middle of tick (before drawing)
 			// - ensure that all events are processed
-			tick draw:true
+			// tick draw:true
 			// if frame == 0: tick draw:true
 			// else           graphics.finishFrame
 		catch
@@ -266,11 +278,10 @@ internal transient skipInit unit core
 
 	debugLog: string value
 		System.log "{value} outputId:{outputId} targetOutputId:{targetOutputId} frame:{frame} targetFrame:{targetFrame}"
-		if targetOutputId == -1
-			value += "|{outputId}|{frame}"
-			if runningTest:	output.add value
-			else	Platform.sendStringToEditor value
-		else
+		value += "|{outputId}|{frame}"
+		if runningTest:	output.add value; else 
+		if targetOutputId == -1:	Platform.sendStringToEditor value
+		if targetOutputId != -1
 			// Throw an exception when we reach targetOutputId #evaluate
 			if outputId == targetOutputId and not reachedOutputId
 				System.log "Throwing exception"
@@ -279,9 +290,8 @@ internal transient skipInit unit core
 		outputId++
 
 	addOutput: string value
-		if targetOutputId == -1
-			if runningTest:	output.add value
-			else	Platform.sendStringToEditor value
+		if runningTest:	output.add value; else 
+		if targetOutputId == -1:	Platform.sendStringToEditor value
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -539,7 +549,9 @@ internal transient skipInit unit core
 
 			// Cleanup
 			for input.internalUsers as user: user?.clearEvent
-			players.each.postprocessEvents
+
+			// Evaluate: Set isDown directly in input.touchDown instead of in player.postprocessEvents #easier-to-reason-about #evaluate
+			// players.each.postprocessEvents
 
 			// Currently, we use tests.printWhatIsOnScreen to print the screen contents
 			// instead of automatically sending it every time

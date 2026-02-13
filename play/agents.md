@@ -31,7 +31,7 @@ tests
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
-6. Use the vscode's build-in tool to run the unit tests (execute/runTests). 
+6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
 
 7. Carefully analyze the output and check if everything is working.
 
@@ -193,14 +193,6 @@ app
 class Player
 	string inputText
 
-	onKeyDown: Key key, string character
-		if character:	inputText += character
-		if key == Backspace:	inputText = inputText[..-1]
-		print "{this} pressed {key} ({character})" type:Event
-
-	onKeyUp: Key key
-		print "{this} released {key}" type:Event
-
 	onTouchHover: Touch touch
 		app.items.each.hoverTouch = touch.position insideRectangle .position, .size ? touch : null
 	
@@ -208,24 +200,32 @@ class Player
 		let item = app.items.find.hoverTouch == touch
 			item.dragTouch = touch
 			item.dragOffset = item.position - touch.position
-			print "{this} clicked {item.name}" type:Event
+			print "{item.name} clicked by {this}"
 	
 	onTouchDrag: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.position = touch.position + item.dragOffset
-			print "{this} dragged {item.name}" type:Event
+			print "{item.name} dragged by {this}"
 	
 	onTouchUp: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.dragTouch = null
-			print "{this} dropped {item.name}" type:Event
+			print "{item.name} dropped by {this}"
+
+	onKeyDown: Key key, string character
+		if character:	inputText += character
+		if key == Backspace:	inputText = inputText[..-1]
+		print "{key} ({character}) pressed by {this}"
+
+	onKeyUp: Key key
+		print "{key} released by {this}"
 
 	tick
 		if gameController.leftStick.magnitude > .1
-			print "{this} moved their left stick to {gameController.leftStick}" type:Event
+			print "Left stick moved to {gameController.leftStick} by {this}"
 
 		if gameController.a.wasJustPressed
-			print "{this} just pressed the A button on their game controller" type:Event
+			print "A button was just pressed by {this}"
 
 		// Draw input text
 		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
