@@ -250,6 +250,7 @@ internal transient skipInit unit core
 			catch
 				onError .
 
+			for input.internalUsers as user: user?.clearEvent
 			Platform.fastForward = false
 			tick draw:true
 
@@ -278,8 +279,8 @@ internal transient skipInit unit core
 	debugLog: string value
 		System.log "{value} outputId:{outputId} targetOutputId:{targetOutputId} frame:{frame} targetFrame:{targetFrame}"
 		value += "|{outputId}|{frame}"
-		if runningTest:	output.add value
-		else	Platform.sendStringToEditor value
+		if runningTest:	output.add value; else 
+		if targetOutputId == -1:	Platform.sendStringToEditor value
 		if targetOutputId != -1
 			// Throw an exception when we reach targetOutputId #evaluate
 			if outputId == targetOutputId and not reachedOutputId
@@ -289,9 +290,8 @@ internal transient skipInit unit core
 		outputId++
 
 	addOutput: string value
-		if targetOutputId == -1
-			if runningTest:	output.add value
-			else	Platform.sendStringToEditor value
+		if runningTest:	output.add value; else 
+		if targetOutputId == -1:	Platform.sendStringToEditor value
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
