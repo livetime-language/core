@@ -277,11 +277,10 @@ internal transient skipInit unit core
 
 	debugLog: string value
 		System.log "{value} outputId:{outputId} targetOutputId:{targetOutputId} frame:{frame} targetFrame:{targetFrame}"
-		if targetOutputId == -1
-			value += "|{outputId}|{frame}"
-			if runningTest:	output.add value
-			else	Platform.sendStringToEditor value
-		else
+		value += "|{outputId}|{frame}"
+		if runningTest:	output.add value
+		else	Platform.sendStringToEditor value
+		if targetOutputId != -1
 			// Throw an exception when we reach targetOutputId #evaluate
 			if outputId == targetOutputId and not reachedOutputId
 				System.log "Throwing exception"
