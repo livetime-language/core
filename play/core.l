@@ -539,7 +539,9 @@ internal transient skipInit unit core
 
 			// Cleanup
 			for input.internalUsers as user: user?.clearEvent
-			players.each.postprocessEvents
+
+			// Evaluate: Set isDown directly in input.touchDown instead of in player.postprocessEvents #easier-to-reason-about #evaluate
+			// players.each.postprocessEvents
 
 			// Currently, we use tests.printWhatIsOnScreen to print the screen contents
 			// instead of automatically sending it every time
