@@ -230,8 +230,8 @@ class Player
 		if gameController.leftStick.magnitude > .1
 			print "Left stick moved to {gameController.leftStick} by {this}"
 
-		if gameController.a.wasJustPressed
-			print "A button was just pressed by {this}"
+		if gameController.A.wasJustPressed
+			print "Button A was just pressed by {this}"
 
 		// Draw input text
 		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
