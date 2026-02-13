@@ -386,6 +386,7 @@ class Player
 		drawText score, scorePos, size:31
 
 	// Called when the player touches the screen
+	// Important: Only the current player is can make a move
 	onTouchDown: Touch touch
 		if app.currentPlayer != this: return
 		let cell = app.cells[touch.position.toGridPos]
