@@ -143,6 +143,7 @@ transient skipInit unit Platform
 		
 	string runningTestFunction = null
 	private runTest: string testFunction, int id
+		mode = Pause
 		runningTestFunction = testFunction
 		core.runTest FirstRun, testFunction, id
 			
