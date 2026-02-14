@@ -10,38 +10,10 @@ Avoid code duplication. Do not overengineer. Keep it simple.
 
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
+
 class Player
 	tick
 		drawVideo this, pos, size:435, shape:Circle
-
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
-
-2. Make sure you fixed all linter errors.
-
-3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
-
-Player
-	tick
-		positon += direction
-		print "{this} moved in {direction} to {position}"
-
-4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
-
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
-
-tests
-	playerShouldMoveRight
-		app.createTestLevel
-		moveLeftStickTo {1,0} by bluePlayer
-		wait 10 frames
-		expect bluePlayer.gridPos toBe {1,0}
-
-6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
-
-7. Carefully analyze the output and check if everything is working.
-
-8. Fix all problems and repeat until you verified everything works as specified.
 
 # Screen dimensions and color
 In LiveTime, the total screen size is always {1920, 1080}.
@@ -435,3 +407,32 @@ class Player
 						queue.add neighborPos
 						
 		return surroundedCells
+
+# When you are done writing code, test if it is working
+1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
+
+2. Make sure you fixed all linter errors.
+
+3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
+
+Player
+	tick
+		positon += direction
+		print "{this} moved in {direction} to {position}"
+
+4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
+
+5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
+
+tests
+	playerShouldMoveRight
+		app.createTestLevel
+		moveLeftStickTo {1,0} by bluePlayer
+		wait 10 frames
+		expect bluePlayer.gridPos toBe {1,0}
+
+6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
+
+7. Carefully analyze the output and check if everything is working.
+
+8. Fix all problems and repeat until you verified everything works as specified.
