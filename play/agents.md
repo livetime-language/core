@@ -66,8 +66,7 @@ app
 		documents.remove doc
 		documents.orderBy.created
 		documents.clear
-		let firstTwoItems = documents[..2]
-		let lastTwoItems = documents[-2..]
+		let itemsFromIndex3To7 = documents[3 to 7]
 
 		// Dictionary (hashtable that maps keys to values)
 		Document[string] documentsById
@@ -193,7 +192,7 @@ class Player
 
 	onKeyDown: Key key, string character
 		if character:	inputText += character
-		if key == Backspace:	inputText = inputText[..-1]
+		if key == Backspace:	inputText = inputText[0 to inputTest.length-1]
 		print "{key} ({character}) pressed by {this}"
 
 	onKeyUp: Key key
@@ -411,7 +410,7 @@ class Player
 # When you are done writing code, test if it is working
 1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-2. Make sure you fixed all linter errors.
+2. Make sure you fixed all diagnostics and linter errors.
 
 3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
 
