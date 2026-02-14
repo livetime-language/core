@@ -8,34 +8,12 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 Always write the shortest, simplest possible and most efficient code.
 Avoid code duplication. Do not overengineer. Keep it simple.
 
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
+# Show the player's video
+LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
 
-2. Make sure you fixed all linter errors.
-
-3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
-
-Player
+class Player
 	tick
-		positon += direction
-		print "{this} moved in {direction} to {position}"
-
-4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
-
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs to test all the functionality you implemented. For example:
-
-tests
-	playerShouldMoveRight
-		app.createTestLevel
-		moveLeftStickTo {1,0} by bluePlayer
-		wait 10 frames
-		expect bluePlayer.gridPos toBe {1,0}
-
-6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
-
-7. Carefully analyze the output and check if everything is working.
-
-8. Fix all problems and repeat until you verified everything works as specified.
+		drawVideo this, pos, size:435, shape:Circle
 
 # Screen dimensions and color
 In LiveTime, the total screen size is always {1920, 1080}.
@@ -88,8 +66,7 @@ app
 		documents.remove doc
 		documents.orderBy.created
 		documents.clear
-		let firstTwoItems = documents[..2]
-		let lastTwoItems = documents[-2..]
+		let itemsFromIndex3To7 = documents[3 to 7]
 
 		// Dictionary (hashtable that maps keys to values)
 		Document[string] documentsById
@@ -193,39 +170,40 @@ app
 class Player
 	string inputText
 
-	onKeyDown: Key key, string character
-		if character:	inputText += character
-		if key == Backspace:	inputText = inputText[..-1]
-		print "{this} pressed {key} ({character})" type:Event
-
-	onKeyUp: Key key
-		print "{this} released {key}" type:Event
-
+	// Important: Always make sure each player can only interact with their own items (or items they are allowed to interact with)
 	onTouchHover: Touch touch
-		app.items.each.hoverTouch = touch.position insideRectangle .position, .size ? touch : null
+		app.items.each.hoverTouch = .owner == this and touch.position insideRectangle .position, .size ? touch : null
 	
 	onTouchDown: Touch touch
 		let item = app.items.find.hoverTouch == touch
 			item.dragTouch = touch
 			item.dragOffset = item.position - touch.position
-			print "{this} clicked {item.name}" type:Event
+			print "{item.name} clicked by {this}"
 	
 	onTouchDrag: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.position = touch.position + item.dragOffset
-			print "{this} dragged {item.name}" type:Event
+			print "{item.name} dragged by {this}"
 	
 	onTouchUp: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.dragTouch = null
-			print "{this} dropped {item.name}" type:Event
+			print "{item.name} dropped by {this}"
+
+	onKeyDown: Key key, string character
+		if character:	inputText += character
+		if key == Backspace:	inputText = inputText[0 to inputTest.length-1]
+		print "{key} ({character}) pressed by {this}"
+
+	onKeyUp: Key key
+		print "{key} released by {this}"
 
 	tick
 		if gameController.leftStick.magnitude > .1
-			print "{this} moved their left stick to {gameController.leftStick}" type:Event
+			print "Left stick moved to {gameController.leftStick} by {this}"
 
-		if gameController.a.wasJustPressed
-			print "{this} just pressed the A button on their game controller" type:Event
+		if gameController.A.wasJustPressed
+			print "Button A was just pressed by {this}"
 
 		// Draw input text
 		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
@@ -236,6 +214,7 @@ class Item
 	Vector2 position
 	Touch hoverTouch, dragTouch
 	Vector2 dragOffset
+	Player owner
 	
 	tick
 		// Draw item					
@@ -284,17 +263,17 @@ app
 enum Phase: PlacePiece, GameOver
 
 app
-	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen.
 	// The screen size is always {1920, 1080}.
-	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen
+	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen.
+	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen.
 	const Vector2 totalBoardSize = {700,700}
 	
 	// We use a two dimensional grid of Cell for the cells of the game board
-	// We can later access the individual cells with cell[x,y] or cell[gridPos]
+	// We can access the individual cells with cell[x,y] or cell[gridPos]
 	Grid<Cell> cells = {size:{9, 9}}
 	
 	// To correctly center the board, we need to offset it by cellSize * (cells.size - {1,1}) / -2
-	// Don't make the mistake of multiplying by cellCount / -2 instead of (cells.size - {1,1}) / -2
+	// Don't make the mistake of multiplying by cellCount / -2
 	const Vector2 cellSize = totalBoardSize / cells.size
 	const Vector2 cellOffset = cellSize * (cells.size - {1,1}) / -2
 
@@ -312,78 +291,28 @@ app
 		for cells.size as gridPos
 			cells[gridPos] = Cell(gridPos)
 		
-		// In LiveTime, the global variable "players" always contains a list of players
+		// In LiveTime, the global variable players always contains a list of players
 		// We pick a random player as the start player
 		currentPlayer = players.random
-		print "Started go example"
+		nextTurn
+
+	nextTurn
+		// Set current player to the next player
+		currentPlayer = players next currentPlayer
+		print color:currentPlayer.color, "# Turn of {currentPlayer} started"
 				
 	// Called on every frame (30 times per second)
 	tick
-		for cells as cell
-			Vector2 screenPos = cell.gridPos.toScreenPos
-			
-			if cell.player
-				// Draw a circle with its center at screenPos
-				// The background is black in LiveTime, so we need to make sure we use colors that are different from black.
-				drawCircle screenPos, size:60, color:cell.player.color
-
-				// Draw text with its center at screenPos
-				drawText "{cell.liberties}", screenPos, size:30					
-			else
-				drawCircle screenPos, size:8
+		// Call tick function for each cell
+		cells.each.tick
 		
-		// Call the tick function for each player
+		// Call tick function for each player
 		players.each.tick
-		
-	placePiece: Cell cell, Player player
-		if cell.player: return
-		cell.player = player
-		captureSurroundedPieces cell.gridPos, player
-		print "{player} placed a piece at {cell.gridPos}"
-		
-		// Set current player to the next player
-		currentPlayer = players next currentPlayer
-		
-	captureSurroundedPieces: IntVector2 originPos, Player attacker
-		for IntVector2.primaryDirections as dir
-			IntVector2 neighborPos = originPos + dir
-			Cell neighborCell = cells[neighborPos]
-			
-			if neighborCell and neighborCell.player and neighborCell.player != attacker
-				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
-					surroundesCells.each.player = null
-					print "{attacker} captured {surroundesCells.length} cells: {surroundesCells.joinToString.gridPos.toString}"
-		
-	// We write the return type in front of the function.
-	// The function collectSurroundesCells takes an integer vector and a player and returns a list of cells
-	Cell[] collectSurroundesCells: IntVector2 originPos, Player attacker
-		IntVector2[] queue = [ originPos ]
-		Cell[] surroundedCells = [ cells[originPos] ]
-		
-		// For each player, set the visited variable to false
-		cells.each.visited = false
-		
-		while queue
-			IntVector2 pos = queue.pop
-			Cell cell = cells[pos]
-			surroundedCells.add cell
-			cell.visited = true
-			
-			for IntVector2.primaryDirections as dir
-				IntVector2 neighborPos = pos + dir
-				Cell neighborCell = cells[neighborPos]
-				if neighborCell and not neighborCell.visited
-					if neighborCell.player == null
-						return []
-					if neighborCell.player != attacker
-						queue.add neighborPos
 						
-		return surroundedCells
-		
 	finishGame
 		Player winner = players.withMax.score
 		ParticleSystem(position:winner.pos)
-		print "{winner} won with {winner.score} points"
+		print "Game won with {winner.score} points by {winner}"
 
 struct IntVector2
 	toScreenPos := app.cellOffset + this * app.cellSize
@@ -396,14 +325,27 @@ class Cell
 	Player player
 	int liberties
 	bool visited
+
+	tick
+		Vector2 screenPos = gridPos.toScreenPos
 		
-// Each player has the following member variables already declared: index, color and score. Do not declare them again.
+		if player
+			// Draw a circle with its center at screenPos
+			// The background is black in LiveTime, so we need to make sure we use colors that are different from black.
+			drawCircle screenPos, size:60, color:player.color
+
+			// Draw text with its center at screenPos
+			drawText "{liberties}", screenPos, size:30					
+		else
+			drawCircle screenPos, size:8
+		
+// The Player class automatically has the following member variables: index, color and score. Do not declare them again.
 class Player
 	IntVector2 dir = IntVector2.horizontalDirections[index]
 	Vector2 pos = dir * {690,265}
 		
 	tick
-		// In LiveTime, we always show a video feed for each player
+		// You must draw the video feed of each player.
 		float radius = 255
 		drawCircle pos, size:radius*2, outlineColor:color, outlineWidth:12
 		drawVideo this, pos, size:radius*2-75, shape:Circle
@@ -414,10 +356,82 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-	// Called when a player touches the screen
+	// Called when the player touches the screen
+	// Important: Only the current player is can make a move
 	onTouchDown: Touch touch
 		if app.currentPlayer != this: return
 		let cell = app.cells[touch.position.toGridPos]
-			if cell.player:	print "{this} clicked cell {cell.gridPos} (occupied by {cell.player})" type:Event
-			else	print "{this} clicked cell {cell.gridPos} (empty)" type:Event
-			app.placePiece cell, player:this
+			if cell.player:	print "Cell {cell.gridPos} occupied by {cell.player} clicked by {this}"
+			else	print "Empty cell {cell.gridPos} clicked by {this}"
+			placePiece cell
+
+	placePiece: Cell cell
+		if cell.player: return
+		cell.player = this
+		captureSurroundedPieces cell.gridPos
+		print "Piece placed at {cell.gridPos} by {this}"
+		app.nextTurn
+				
+	captureSurroundedPieces: IntVector2 originPos
+		for IntVector2.primaryDirections as dir
+			IntVector2 neighborPos = originPos + dir
+			Cell neighborCell = app.cells[neighborPos]
+			
+			if neighborCell and neighborCell.player and neighborCell.player != this
+				Cell[] surroundesCells = collectSurroundesCells neighborPos
+					surroundesCells.each.player = null
+					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}"
+	
+	// We can specify the return type in front of the name of a function
+	Cell[] collectSurroundesCells: IntVector2 originPos
+		IntVector2[] queue = [ originPos ]
+		Cell[] surroundedCells = [ app.cells[originPos] ]
+		
+		// For each player, set the visited variable to false
+		app.cells.each.visited = false
+		
+		while queue
+			IntVector2 pos = queue.pop
+			Cell cell = app.cells[pos]
+			surroundedCells.add cell
+			cell.visited = true
+			
+			for IntVector2.primaryDirections as dir
+				IntVector2 neighborPos = pos + dir
+				Cell neighborCell = app.cells[neighborPos]
+				if neighborCell and not neighborCell.visited
+					if neighborCell.player == null
+						return []
+					if neighborCell.player != this
+						queue.add neighborPos
+						
+		return surroundedCells
+
+# When you are done writing code, test if it is working
+1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
+
+2. Make sure you fixed all diagnostics and linter errors.
+
+3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
+
+Player
+	tick
+		positon += direction
+		print "{this} moved in {direction} to {position}"
+
+4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
+
+5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
+
+tests
+	playerShouldMoveRight
+		app.createTestLevel
+		moveLeftStickTo {1,0} by bluePlayer
+		wait 10 frames
+		expect bluePlayer.gridPos toBe {1,0}
+
+6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
+
+7. Carefully analyze the output and check if everything is working.
+
+8. Fix all problems and repeat until you verified everything works as specified.

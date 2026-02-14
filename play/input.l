@@ -101,7 +101,7 @@ priority class Player
 	Vector2 pointerPosition
 	
 	internal Player cloneBaseData := {_id, language, email, name, colorPreferences, id, index}
-	toString := color ? "{color.name} Player ({index})" : "Player {index}"
+	toString := color ? "{color.name.toLowerCase} player ({index})" : "player {index}"
 	highlightPerspectiveColor := input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input
@@ -386,14 +386,14 @@ internal GameController
 	DigitalButton left = {}
 	
 	// Buttons
-	DigitalButton a = {}
-	DigitalButton b = {}
-	DigitalButton x = {}
-	DigitalButton y = {}
+	DigitalButton A = {}
+	DigitalButton B = {}
+	DigitalButton X = {}
+	DigitalButton Y = {}
 	
 	DigitalButton menu = {}
 	
-	DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, a, b, x, y, menu]
+	DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, A, B, X, Y, menu]
 	
 	bool inMotion
 	GameControllerType type
@@ -476,7 +476,6 @@ skipInit global unit input
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
-	bool eachTouchTriggersTouchesForAllPlayers = false
 	
 	GenerateIntegrationTestMode generateIntegrationTest
 	string integrationTest
@@ -659,16 +658,8 @@ skipInit global unit input
 		Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
-		
-		if eachTouchTriggersTouchesForAllPlayers and Platform.isDebug
-			for input.internalUsers as user
-				if user: addTouchEvent user, inputType, id, referencePos, touchType
-		else
-			 addTouchEvent localUser, inputType, id, referencePos, touchType
-
-	internal addTouchEvent: InternalUser user, InputType inputType, int id, Vector2 referencePos, int touchType
-		let inputs = user.inputs
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return		
+		let inputs = localUser.inputs
 
 		if inputType == TouchMove
 			int index = getLastTouchMoveIndex id
@@ -683,7 +674,8 @@ skipInit global unit input
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
 					+ math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
 					+ math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
-		inputs.writeInt32 user.inputFrame
+		
+		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
 		inputs.writeInt16 math.round(referencePos.y)
@@ -890,23 +882,23 @@ skipInit global unit input
 					
 					// Controller buttons
 					let buttons = inputs.readUnsignedInt16
-					c.a.state = (buttons bitwiseAnd 1) != 0
-					c.b.state = (buttons bitwiseAnd 2) != 0
-					c.x.state = (buttons bitwiseAnd 4) != 0
-					c.y.state = (buttons bitwiseAnd 8) != 0
+					c.A.state = (buttons bitwiseAnd 1) != 0
+					c.B.state = (buttons bitwiseAnd 2) != 0
+					c.X.state = (buttons bitwiseAnd 4) != 0
+					c.Y.state = (buttons bitwiseAnd 8) != 0
 					c.type = (buttons bitwiseAnd 16384) != 0 ? PlayStation : Xbox
 					
 					// Controller button names
 					if c.type == Xbox
-						c.a.name = "A"
-						c.b.name = "B"
-						c.x.name = "X"
-						c.y.name = "Y"
+						c.A.name = "A"
+						c.B.name = "B"
+						c.X.name = "X"
+						c.Y.name = "Y"
 					else
-						c.a.name = "X"
-						c.b.name = "O"
-						c.x.name = "SQUARE"
-						c.y.name = "TRIANGLE"
+						c.A.name = "X"
+						c.B.name = "O"
+						c.X.name = "SQUARE"
+						c.Y.name = "TRIANGLE"
 				else
 				if inputType == String
 					int id = inputs.readInt
@@ -1026,9 +1018,8 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		if player == input.localPlayer
-			print type:Touch message or "Click {referencePos} by {player}"
-		appOnTouchMoveIfFunctionExists player, touch
+		print type:Touch message or "Click {referencePos} by {player}"
+		appOnTouchHoverIfFunctionExists player, touch
 		appOnTouchDownIfFunctionExists player, touch
 
 	internal touchMove: InternalUser internalUser
@@ -1118,8 +1109,8 @@ skipInit global unit input
 					c.right.assign "→"     Right
 					c.down.assign  "↓"     Down
 					c.left.assign  "←"     Left
-					c.a.assign     "SPACE" Space
-					c.b.assign     "X"     X
+					c.A.assign     "SPACE" Space
+					c.B.assign     "X"     X
 			
 			if players.length >= 2
 				GameController c = players[1].gameController
@@ -1128,8 +1119,8 @@ skipInit global unit input
 					c.right.assign "D"     D
 					c.down.assign  "S"     S
 					c.left.assign  "A"     A
-					c.a.assign     "F"     F
-					c.b.assign     "G"     G
+					c.A.assign     "F"     F
+					c.B.assign     "G"     G
 			
 			if players.length >= 3
 				GameController c = players[2].gameController
@@ -1138,8 +1129,8 @@ skipInit global unit input
 					c.right.assign "L"     L
 					c.down.assign  "K"     K
 					c.left.assign  "J"     J
-					c.a.assign     "O"     O
-					c.b.assign     "P"     P
+					c.A.assign     "O"     O
+					c.B.assign     "P"     P
 			
 			controllerButtonMap.clear
 			for players -> player
@@ -1156,8 +1147,8 @@ skipInit global unit input
 					c.right.assign "→"     Right
 					c.down.assign  "↓"     Down
 					c.left.assign  "←"     Left
-					c.a.assign     "SPACE" Space
-					c.b.assign     "X"     X
+					c.A.assign     "SPACE" Space
+					c.B.assign     "X"     X
 			
 			controllerButtonMap.clear
 			// TODO: Research why this is sometimes called before we have a local player
@@ -1193,10 +1184,12 @@ skipInit global unit input
 		if(app.onTouchDown) app.onTouchDown(touch);
 		if(player?.onTouchDown) player.onTouchDown(touch);
 
+	inline js void appOnTouchHoverIfFunctionExists: Player player, Touch touch
+		if(app.onTouchHover) app.onTouchHover(touch);
+		if(player?.onTouchHover) player.onTouchHover(touch);
+			
 	inline js void appOnTouchMoveIfFunctionExists: Player player, Touch touch
-		if(app.onTouchMove) app.onTouchMove(touch);
 		if(player) {
-			if(player.onTouchMove) player.onTouchMove(touch);
 			if(!touch.isDown) {
 				if(player.onTouchHover) player.onTouchHover(touch);
 			} else {

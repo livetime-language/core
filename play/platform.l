@@ -197,10 +197,10 @@ transient skipInit unit Platform
 				
 	private enterSlideMode(PlatformMode mode) this.mode = mode; updateIcon; sendMode
 	
-	internal stop()    mode = Pause; gizmo.clear; runningTestFunction = null; core.stop; updateIcon; sendMode
-	internal pause()   mode = Pause; gizmo.clear; audio.stop; updateIcon; sendMode
-	internal record()  core.adjustStartTimeIfNeeded; mode = Record; core.record;  gizmo.clear;  updateIcon; sendMode
-	internal play()    core.adjustStartTimeIfNeeded; mode = Play;   gizmo.clear;  updateIcon; sendMode
+	internal stop()    mode = Pause; gizmo.clear; runningTestFunction = null; core.frame = 0; updateIcon; sendMode; core.stop
+	internal pause()   mode = Pause; gizmo.clear; updateIcon; sendMode; audio.stop
+	internal record()  core.adjustStartTimeIfNeeded; mode = Record; gizmo.clear; updateIcon; sendMode; core.record
+	internal play()    core.adjustStartTimeIfNeeded; mode = Play; gizmo.clear; updateIcon; sendMode
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
