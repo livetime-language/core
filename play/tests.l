@@ -78,9 +78,24 @@ tests
 			SourceCodeLocation location
 		let a = value?.toString()
 		let b = toBe?.toString()
-		if(a != b) core.debugLog(`assert|${a}|${b}|${location.file}|${location.start}`)
+		if(a != b) core.debugLog(`assert||${a}|${b}|${location.file}|${location.start}`)
 
 	expectToPrint: string value
 		           SourceCodeLocation location
 		if not core.output.any.contains value
-			core.debugLog "assert||{value}|{location.file}|{location.start}"
+			core.debugLog "assert|to print||{value}|{location.file}|{location.start}"
+
+	expectEqualityFailed: string expressionString
+	                      dynamic actual
+		                  dynamic expected
+				          SourceCodeLocation location
+		string actualString, expectedString
+		try	actualString = json.stringify(actual)
+		catch	actualString = actual?.toString()
+		try		expectedString = json.stringify(expected)
+		catch		expectedString = expected?.toString()
+		core.debugLog "assert|{expressionString}|{actualString}|{expectedString}|{location.file}|{location.start}"
+
+	expectBooleanFailed: string expressionString
+				         SourceCodeLocation location
+		core.debugLog "assert|{expressionString}|false|true|{location.file}|{location.start}"
