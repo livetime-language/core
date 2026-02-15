@@ -73,29 +73,17 @@ tests
 	printWhatIsOnScreen
 		print "\n{graphics.getWhatIsOnScreen}"
 
-	js void expect: T value
-		    nocolon T toBe = object.undefined
+	// Asserts that an expression is true
+	expect: dynamic expression // The assert will fail if this expression is false
 			SourceCodeLocation location
-		let a = value?.toString()
-		let b = toBe?.toString()
-		if(a != b) core.debugLog(`assert||${a}|${b}|${location.file}|${location.start}`)
+		string actualString
+		try	actualString = json.stringify(expression)
+		catch	actualString = expression?.toString()
+		string result = expression ? "+" : "-"
+		core.debugLog "expect||{result}|{actualString}|true|{location.file}|{location.start}"
 
-	expectToPrint: string value
+	// Asserts that the application output contains a given string
+	expectToPrint: string value // The assert will fail if the application output does not contain this string
 		           SourceCodeLocation location
-		if not core.output.any.contains value
-			core.debugLog "assert|to print||{value}|{location.file}|{location.start}"
-
-	expectEqualityFailed: string expressionString
-	                      dynamic actual
-		                  dynamic expected
-				          SourceCodeLocation location
-		string actualString, expectedString
-		try	actualString = json.stringify(actual)
-		catch	actualString = actual?.toString()
-		try		expectedString = json.stringify(expected)
-		catch		expectedString = expected?.toString()
-		core.debugLog "assert|{expressionString}|{actualString}|{expectedString}|{location.file}|{location.start}"
-
-	expectBooleanFailed: string expressionString
-				         SourceCodeLocation location
-		core.debugLog "assert|{expressionString}|false|true|{location.file}|{location.start}"
+		let result = (core.output.any.contains value) ? "+" : "-"
+		core.debugLog "expect|to print|{result}|{value}||{location.file}|{location.start}"

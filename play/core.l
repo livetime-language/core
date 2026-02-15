@@ -1226,4 +1226,32 @@ global skipInit unit math
 	
 	global js int randomFloat: float to = 1.0
 		return math.randomGenerator() * to
-	
+
+tests
+	// Used internally in the compiled code. Do not use in your code.
+	importance:-1
+	internal expectToBeEqual: string expressionString
+	                          dynamic actual
+		                      dynamic expected
+				              SourceCodeLocation location
+		string actualString, expectedString, result
+		try	actualString = json.stringify(actual)
+		catch	actualString = actual?.toString()
+		if actual == expected
+			result = "+"
+		else
+			result = "-"
+			try		expectedString = json.stringify(expected)
+			catch		expectedString = expected?.toString()
+		core.debugLog "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
+
+	// Used internally in the compiled code. Do not use in your code.
+	importance:-1
+	internal expectToBeTrue: string expressionString
+	                         dynamic actual
+				             SourceCodeLocation location
+		string actualString
+		try	actualString = json.stringify(actual)
+		catch	actualString = actual?.toString()
+		string result = actual ? "+" : "-"
+		core.debugLog "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
