@@ -1228,7 +1228,8 @@ global skipInit unit math
 		return math.randomGenerator() * to
 
 tests
-	// Used internally in the compiled code. Do not use in your code.
+	// Used internally in the compiled code. Do not call in your code.
+	//     expect players.length == 2    ->    tests.expectToBeEqual(`players.length`, players.length, 2, new SourceCodeLocation("tests/tests.l", 69312, 69317, null, null));
 	importance:-1
 	internal expectToBeEqual: string expressionString
 	                          dynamic actual
@@ -1245,7 +1246,8 @@ tests
 			catch		expectedString = expected?.toString()
 		core.debugLog "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
 
-	// Used internally in the compiled code. Do not use in your code.
+	// Used internally in the compiled code. Do not call in your code.
+	//     expect players.all.ready      ->    tests.expectToBeTrue(`players.all.ready`, players.all.ready, new SourceCodeLocation("tests/tests.l", 69312, 69317, null, null));
 	importance:-1
 	internal expectToBeTrue: string expressionString
 	                         dynamic actual
@@ -1255,3 +1257,11 @@ tests
 		catch	actualString = actual?.toString()
 		string result = actual ? "+" : "-"
 		core.debugLog "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
+	
+	// Used internally. Do not call in your code.
+	internal tick
+		System.log "### tick core.frame:{core.frame} core.targetFrame:{core.targetFrame} "
+		// if core.frame <= core.targetFrame
+		Platform.fastForward = core.frame != core.targetFrame
+		core.tick draw:core.frame == core.targetFrame
+
