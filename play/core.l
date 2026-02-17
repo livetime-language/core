@@ -512,7 +512,6 @@ internal transient skipInit unit core
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
 	internal tick: bool draw
-		System.log "core.tick {frame} {draw}"
 		// if targetFrame != -1 and frame > targetFrame	return
 
 		// Set time
