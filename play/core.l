@@ -265,7 +265,7 @@ internal transient skipInit unit core
 		finally		
 			isPremiere = true
 			runningTest = false
-			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, testRunMode})
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, testRunMode, frame, frames})
 			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
 
 	bool runningTest
@@ -486,8 +486,7 @@ internal transient skipInit unit core
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
-		// if Platform.isDebug and !fastForward and (Platform.mode == Record or Platform.mode == Play or Platform.waitingForInitialData): Platform.sendFrame(frame, math.max(frame+1, frames))
-		// if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
+		if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
 		checkSaveState
