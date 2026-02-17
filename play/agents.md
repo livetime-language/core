@@ -307,11 +307,13 @@ app
 		// In LiveTime, the global variable players always contains a list of players
 		// We pick a random player as the start player
 		currentPlayer = players.random
-		nextTurn
+		startTurn
 
-	nextTurn
+	startTurn
 		// Set current player to the next player
 		currentPlayer = players next currentPlayer
+
+		// Always print the start of the turn in the player's color!
 		print color:currentPlayer.color, "# Turn of {currentPlayer} started"
 				
 	// Called on every frame (30 times per second)
@@ -381,9 +383,9 @@ class Player
 	placePiece: Cell cell
 		if cell.player: return
 		cell.player = this
-		captureSurroundedPieces cell.gridPos
 		print "Piece placed at {cell.gridPos} by {this}"
-		app.nextTurn
+		captureSurroundedPieces cell.gridPos
+		app.startTurn
 				
 	captureSurroundedPieces: IntVector2 originPos
 		for IntVector2.primaryDirections as dir
