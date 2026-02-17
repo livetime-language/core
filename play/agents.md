@@ -1,6 +1,7 @@
 ---
 description: LiveTime Programming Language Examples and Standard Library
-applyTo: "*.l"
+alwaysApply: true
+applyTo: '**'
 ---
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
