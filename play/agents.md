@@ -243,8 +243,6 @@ tests
 	// Before each test, the application is reset and app.start is executed
 	// You can add code to change the state if you need a setup that's different from what app.start sets up
 	playerShouldMoveRight
-		setupTestLevel
-
 		// Simulate a click at screen position {250,350} by bluePlayer (players[0])
 		click {250,350} by bluePlayer
 
@@ -258,7 +256,7 @@ tests
 		wait 3 frames
 
 		// Assert
-		expect bluePlayer.gridPos toBe {1,0}
+		expect bluePlayer.gridPos == {1,0}
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
@@ -443,7 +441,7 @@ tests
 		app.createTestLevel
 		moveLeftStickTo {1,0} by bluePlayer
 		wait 10 frames
-		expect bluePlayer.gridPos toBe {1,0}
+		expect bluePlayer.gridPos == {1,0}
 
 6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
 
