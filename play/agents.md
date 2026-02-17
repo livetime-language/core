@@ -240,6 +240,8 @@ class Item
 // greenPlayer	== players[2]
 // yellowPlayer	== players[3]
 tests
+	// Before each test, the application is reset and app.start is executed
+	// You can add code to change the state if you need a setup that's different from what app.start sets up
 	playerShouldMoveRight
 		setupTestLevel
 
