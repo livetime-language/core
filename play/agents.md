@@ -101,6 +101,9 @@ app
 		else
 			print "There are no documents."
 
+		// Confitions with if in one line
+		if not currentPlayer then return
+
 		// Conditions with let
 		let mike = players.find.name == "Mike"
 			print "Found player with name Mike, his score is {mike.score}"
@@ -374,14 +377,14 @@ class Player
 	// Called when the player touches the screen
 	// Important: Only the current player is can make a move
 	onTouchDown: Touch touch
-		if app.currentPlayer != this: return
+		if app.currentPlayer != this then return
 		let cell = app.grid[touch.position.toGridPos]
-			if cell.player:	print "Cell {cell.gridPos} occupied by {cell.player} clicked by {this}"
+			if cell.player then	print "Cell {cell.gridPos} occupied by {cell.player} clicked by {this}"
 			else	print "Empty cell {cell.gridPos} clicked by {this}"
 			placePiece cell
 
 	placePiece: Cell cell
-		if cell.player: return
+		if cell.player then return
 		cell.player = this
 		print "Piece placed at {cell.gridPos} by {this}"
 		captureSurroundedPieces cell.gridPos
@@ -436,7 +439,7 @@ Player
 
 4. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
 
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
+5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). Make sure you test every single rule in the specifications and every edge case. The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
 
 tests
 	playerShouldMoveRight
