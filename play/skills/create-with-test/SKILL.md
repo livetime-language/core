@@ -1,8 +1,9 @@
 ---
 name: create-with-test
 description:  Create new feature that makes a given unit test pass
-user-invokable: true
 argument-hint: "[unit tests]"
+user-invokable: true
+disable-model-invocation: true
 ---
 # Implement a New Feature with a Test
 

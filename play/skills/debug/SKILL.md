@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Fix a. bug
+description: Fix a bug
 user-invokable: true
 ---
 # Find and Fix Bugs
