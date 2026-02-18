@@ -191,8 +191,8 @@ class Player
 			print "{item.name} dropped by {this}"
 
 	onKeyDown: Key key, string character
-		if character:	inputText += character
-		if key == Backspace:	inputText = inputText[0 to inputTest.length-1]
+		if character	then inputText += character
+		if key == Backspace	then inputText = inputText[..-1]
 		print "{key} ({character}) pressed by {this}"
 
 	onKeyUp: Key key
