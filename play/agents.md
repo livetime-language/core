@@ -244,14 +244,18 @@ class Item
 // greenPlayer	== players[2]
 // yellowPlayer	== players[3]
 tests
+	// Make your helper functions that are not tests private
+	private gridPos: int x, int y
+		return IntVector2(x, y).toScreenPos
+		
 	// Before each test, the application is reset and app.start is executed
 	// You can add code to change the state if you need a setup that's different from what app.start sets up
 	playerShouldMoveRight
 		// Simulate a click at screen position {250,350} by bluePlayer (players[0])
 		click {250,350} by bluePlayer
 
-		// Simulate a drag from {0,0} to {300,0} by redPlayer (players[1])
-		drag {0,0} to {300,0} by redPlayer
+		// Simulate a drag by redPlayer (players[1])
+		drag gridPos(0,0) to gridPos(1,0) by redPlayer
 
 		// Simulate moving the left stick to {1,0} (right) by greenPlayer (players[2])
 		moveLeftStickTo {1,0} by greenPlayer
@@ -264,11 +268,6 @@ tests
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
-
-	// Make helper functions that are not tests private
-	private setupTestLevel
-		app.cells.each.reset
-		app.cells[1,2].isBlocking = true
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
