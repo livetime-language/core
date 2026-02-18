@@ -1,6 +1,7 @@
 ---
 description: LiveTime Programming Language Examples and Standard Library
-applyTo: "*.l"
+alwaysApply: true
+applyTo: '**'
 ---
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
@@ -208,8 +209,8 @@ class Player
 			print "{item.name} dropped by {this}"
 
 	onKeyDown: Key key, string character
-		if character:	inputText += character
-		if key == Backspace:	inputText = inputText[0 to inputTest.length-1]
+		if character	then inputText += character
+		if key == Backspace	then inputText = inputText[..-1]
 		print "{key} ({character}) pressed by {this}"
 
 	onKeyUp: Key key
