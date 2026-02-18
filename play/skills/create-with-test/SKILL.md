@@ -1,0 +1,15 @@
+---
+name: create-with-test
+description:  Create new feature that makes a given unit test pass
+user-invokable: true
+argument-hint: "[unit tests]"
+---
+# Implement a New Feature with a Test
+
+1. The given unit tests specify the expected behavior of the new feature. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the given unit tests and analyze the output carefully.
+
+2. Analyze the existing code carefully. Before you write code, think about the shortest, simplest, most efficient way to implement the feature. Avoid code duplication.
+
+3. Implement the feature.
+
+4. Run the unit test again and carefully analyze the output. Repeat until all unit tests are passing.

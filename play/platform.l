@@ -238,7 +238,7 @@ transient skipInit unit Platform
 		
 	inline js void sendFinished
 		console.log("[app] Finished initializing")
-		if(Platform.isDebug) _sendToEditor({type:"finished"})
+		if(Platform.isDebug) _sendToEditor({type:"finished", frame:core.frame, frames:core.frames})
 	
 	private float nextHeartbeatTime
 	

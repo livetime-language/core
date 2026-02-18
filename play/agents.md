@@ -1,6 +1,7 @@
 ---
 description: LiveTime Programming Language Examples and Standard Library
-applyTo: "*.l"
+alwaysApply: true
+applyTo: '**'
 ---
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
@@ -26,7 +27,7 @@ The background is black by default.
 # Library Source Code
 When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"
 
-lib/core/js/base.l	Standard Libaray (int, float, string, List, Dictionary, etc).
+lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
 lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/2D/graphics.l	Graphics Library (drawImage, drawRectangle, drawCircle, etc).
 lib/core/2D/geometry.l	Geometry Library (Vector2, IntVector2, Matrix, etc)
@@ -40,6 +41,7 @@ enum State
 
 // Defines the class Document
 // Classes have uppercase names. All members are public by default.
+// A contructor is created automatically
 class Document
 	string id
 	float created
@@ -57,16 +59,29 @@ app
 	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
 	// app.start is the entry point of the application.
 	start
+		// Create objects
+		// Calls the conctructor of the Document class and pass in id, created and state
+		Document doc = {id:"2f", created:Time.now, state:Done}
+
 		// List (array that grows in size as needed)
 		Document[] documents = [
-			{created:DateTime.now, state:InProgress}
+			{created:Time.now, state:InProgress}
 		]
-		Document doc = {id:"2f", created:DateTime.now, state:Done}
 		documents.add doc
 		documents.remove doc
 		documents.orderBy.created
 		documents.clear
 		let itemsFromIndex3To7 = documents[3 to 7]
+
+		// Grid (2-dimensional array with a fixed size)
+		Cell[8,8] grid
+		Cell cell = {cellType:Empty}
+		grid[6,7] = cell
+		IntVector gridPos = {5,4}
+		grid[gridPos] = {cellType:Blocker}
+		IntVector2 gridSize = grid.size
+		for grid as cell, gridPos
+			print "At {gridPos} is a cell with type {cell.cellType}"
 
 		// Dictionary (hashtable that maps keys to values)
 		Document[string] documentsById
@@ -226,9 +241,9 @@ class Item
 // greenPlayer	== players[2]
 // yellowPlayer	== players[3]
 tests
+	// Before each test, the application is reset and app.start is executed
+	// You can add code to change the state if you need a setup that's different from what app.start sets up
 	playerShouldMoveRight
-		setupTestLevel
-
 		// Simulate a click at screen position {250,350} by bluePlayer (players[0])
 		click {250,350} by bluePlayer
 
@@ -242,7 +257,7 @@ tests
 		wait 3 frames
 
 		// Assert
-		expect bluePlayer.gridPos toBe {1,0}
+		expect bluePlayer.gridPos == {1,0}
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
@@ -268,14 +283,13 @@ app
 	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen.
 	const Vector2 totalBoardSize = {700,700}
 	
-	// We use a two dimensional grid of Cell for the cells of the game board
-	// We can access the individual cells with cell[x,y] or cell[gridPos]
-	Grid<Cell> cells = {size:{9, 9}}
+	// We create a object of type Grid (a 2D array) with a size of 9x9 to hold the cells of type Cell
+	Cell[9, 9] grid
 	
-	// To correctly center the board, we need to offset it by cellSize * (cells.size - {1,1}) / -2
+	// To correctly center the board, we need to offset it by cellSize * (grid.size - {1,1}) / -2
 	// Don't make the mistake of multiplying by cellCount / -2
-	const Vector2 cellSize = totalBoardSize / cells.size
-	const Vector2 cellOffset = cellSize * (cells.size - {1,1}) / -2
+	const Vector2 cellSize = totalBoardSize / grid.size
+	const Vector2 cellOffset = cellSize * (grid.size - {1,1}) / -2
 
 	Player currentPlayer
 	Phase phase = PlacePiece
@@ -287,24 +301,26 @@ app
 		// We always need to display the standard menu
 		Menu()
 		
-		// Create empty grid cells
-		for cells.size as gridPos
-			cells[gridPos] = Cell(gridPos)
+		// Create empty grid of cells
+		for grid.size as gridPos
+			grid[gridPos] = Cell(gridPos)
 		
 		// In LiveTime, the global variable players always contains a list of players
 		// We pick a random player as the start player
 		currentPlayer = players.random
-		nextTurn
+		startTurn
 
-	nextTurn
+	startTurn
 		// Set current player to the next player
 		currentPlayer = players next currentPlayer
+
+		// Always print the start of the turn in the player's color!
 		print color:currentPlayer.color, "# Turn of {currentPlayer} started"
 				
 	// Called on every frame (30 times per second)
 	tick
-		// Call tick function for each cell
-		cells.each.tick
+		// Call tick function for each cell in the grid
+		grid.each.tick
 		
 		// Call tick function for each player
 		players.each.tick
@@ -360,7 +376,7 @@ class Player
 	// Important: Only the current player is can make a move
 	onTouchDown: Touch touch
 		if app.currentPlayer != this: return
-		let cell = app.cells[touch.position.toGridPos]
+		let cell = app.grid[touch.position.toGridPos]
 			if cell.player:	print "Cell {cell.gridPos} occupied by {cell.player} clicked by {this}"
 			else	print "Empty cell {cell.gridPos} clicked by {this}"
 			placePiece cell
@@ -368,14 +384,14 @@ class Player
 	placePiece: Cell cell
 		if cell.player: return
 		cell.player = this
-		captureSurroundedPieces cell.gridPos
 		print "Piece placed at {cell.gridPos} by {this}"
-		app.nextTurn
+		captureSurroundedPieces cell.gridPos
+		app.startTurn
 				
 	captureSurroundedPieces: IntVector2 originPos
 		for IntVector2.primaryDirections as dir
 			IntVector2 neighborPos = originPos + dir
-			Cell neighborCell = app.cells[neighborPos]
+			Cell neighborCell = app.grid[neighborPos]
 			
 			if neighborCell and neighborCell.player and neighborCell.player != this
 				Cell[] surroundesCells = collectSurroundesCells neighborPos
@@ -385,20 +401,20 @@ class Player
 	// We can specify the return type in front of the name of a function
 	Cell[] collectSurroundesCells: IntVector2 originPos
 		IntVector2[] queue = [ originPos ]
-		Cell[] surroundedCells = [ app.cells[originPos] ]
+		Cell[] surroundedCells = [ app.grid[originPos] ]
 		
 		// For each player, set the visited variable to false
-		app.cells.each.visited = false
+		app.grid.each.visited = false
 		
 		while queue
 			IntVector2 pos = queue.pop
-			Cell cell = app.cells[pos]
+			Cell cell = app.grid[pos]
 			surroundedCells.add cell
 			cell.visited = true
 			
 			for IntVector2.primaryDirections as dir
 				IntVector2 neighborPos = pos + dir
-				Cell neighborCell = app.cells[neighborPos]
+				Cell neighborCell = app.grid[neighborPos]
 				if neighborCell and not neighborCell.visited
 					if neighborCell.player == null
 						return []
@@ -419,7 +435,7 @@ Player
 		positon += direction
 		print "{this} moved in {direction} to {position}"
 
-4. In case something isn't working, come up with a list of hypothesis of all possible causes. Add detailed print statements that help you identify the true cause of the problem and fix it.
+4. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
 
 5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
 
@@ -428,7 +444,7 @@ tests
 		app.createTestLevel
 		moveLeftStickTo {1,0} by bluePlayer
 		wait 10 frames
-		expect bluePlayer.gridPos toBe {1,0}
+		expect bluePlayer.gridPos == {1,0}
 
 6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
 

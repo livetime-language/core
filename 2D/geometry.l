@@ -951,7 +951,7 @@ immutable Rect
 class Grid<T>
 	IntVector2 size
 	T[] items
-	transient void(T item, IntVector2 pos)[string] itemForCharacter
+	transient void(T item, IntVector2 pos)[string] itemForCharacter = null
 	
 	Grid
 		for size.x * size.y: items.add null
@@ -974,6 +974,7 @@ class Grid<T>
 	
 	map: string character
 		 stored void(T item, IntVector2 pos) to
+		if not itemForCharacter: itemForCharacter = {}
 		itemForCharacter.set(character, to)
 
 	create: string[] strings
