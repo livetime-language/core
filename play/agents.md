@@ -59,8 +59,8 @@ app
 	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
 	// app.start is the entry point of the application.
 	start
-		// Create objects
-		// Calls the conctructor of the Document class and pass in id, created and state
+		// Create an object of type Document
+		// Calls the conctructor of the Document class and passes id, created and state
 		Document doc = {id:"2f", created:Time.now, state:Done}
 
 		// List (array that grows in size as needed)
@@ -102,7 +102,7 @@ app
 		else
 			print "There are no documents."
 
-		// Confitions with if in one line
+		// Conditions with if in one line
 		if not currentPlayer then return
 
 		// Conditions with let
