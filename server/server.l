@@ -1,6 +1,6 @@
 skipInit unit Platform
 	visible bool isDebug
-	public inline js int buildVersion := _buildVersion
+	public inline js int buildVersion => _buildVersion
 		
 	inline js void initPlatform
 		Platform.init()
@@ -26,7 +26,7 @@ skipInit unit Platform
 	private inline js void sendEvaluateFinished
 		if(Platform.isDebug) _sendToEditor({type:"evaluateFinished"})
 	
-	inline js string basePath := __dirname + "/"
+	inline js string basePath => __dirname + "/"
 	
 	js void setupInterval: float interval // The interval in milliseconds
 		                   string name = "interval"
@@ -78,7 +78,7 @@ global skipInit unit math
 	
 PlainDate
 	// The number of milliseconds elapsed since January 1, 1970
-	static inline js float now := Date.now()
+	static inline js float now => Date.now()
 	
 enum HttpMethod: Get, Post, Put, Delete
 			
@@ -303,6 +303,6 @@ class WebsocketHttpResponse
 class Connection
 	inline js bool send(Buffer buffer) this.send(buffer.toByteArray(), /*isBinary*/true, /*compress*/false)
 	inline js int bufferedAmount() this.getBufferedAmount()
-	inline js object data := this.data
+	inline js object data => this.data
 	inline js void data(object value) this.data = value
 	inline js void close() this.close()

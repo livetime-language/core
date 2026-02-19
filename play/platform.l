@@ -14,8 +14,8 @@ transient skipInit unit Platform
 	public IntervalMode intervalMode = JavaScriptInterval
 	
 	// Info
-	public inline js string appName := _appName
-	public inline js int buildVersion := _buildVersion
+	public inline js string appName	=> _appName
+	public inline js int buildVersion	=> _buildVersion
 	
 	visible OperatingSystem os
 	visible bool isMobile
@@ -276,7 +276,7 @@ transient skipInit unit Platform
 	js void navigate: string url
 		window.location.href = url
 
-	inline js bool isConnectedToEditor := _isConnectedToEditor
+	inline js bool isConnectedToEditor => _isConnectedToEditor
 
 	private updateIcon
 		if not isConnectedToEditor	then setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
@@ -307,4 +307,4 @@ skipInit static class Time
 	importance:5 float now
 	
 	// The current frame (by default, there are 30 frames per second)
-	static importance:5 inline js int frame := core.frame
+	static importance:5 inline js int frame => core.frame

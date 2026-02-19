@@ -1,8 +1,8 @@
 	
 string PlainTimeString
-	static PlainTimeString now := PlainDate.fromTime(Time.now - PlainDate.localTimezoneOffset, outputTimezone:0).toPlainTimeString
+	static PlainTimeString now => PlainDate.fromTime(Time.now - PlainDate.localTimezoneOffset, outputTimezone:0).toPlainTimeString
 	
-	inline js bool toBool := this
+	inline js bool toBool => this
 	inline string toString() this
 	
 	// (31.12.)
@@ -55,9 +55,9 @@ class string
 // Calculate dates using pure math for better performance than the Date class.
 // It does not handle the transition to and from daylight saving time and only has rudimentary timezone support.
 immutable skipInit class PlainDate
-	static inline js float preciseTime := performance.now()
+	static inline js float preciseTime => performance.now()
 
-	static internal inline js float realTime := Date.now()
+	static internal inline js float realTime => Date.now()
 
 	static int localTimezoneOffset, defaultTimezoneOffset
 
@@ -100,12 +100,12 @@ immutable skipInit class PlainDate
 	int	milliseconds
 	int	timezoneOffset
 	
-	string twoDigitDay	:= (this.day < 10 ? "0"+this.day : this.day.toString())
-	string twoDigitMonth	:= (this.month < 10 ? "0"+this.month : this.month.toString())
-	string twoDigitHour	:= (this.hour < 10 ? "0"+this.hour : this.hour.toString())
-	string twoDigitMinute	:= (this.minute < 10 ? "0"+this.minute : this.minute.toString())
-	string twoDigitSecond	:= (this.second < 10 ? "0"+this.second : this.second.toString())
-	string threeDigitMilliseconds	:= (this.milliseconds < 10 ? "00"+this.milliseconds : this.milliseconds < 100 ? "0"+this.milliseconds : this.milliseconds.toString())
+	string twoDigitDay	=> (this.day < 10 ? "0"+this.day : this.day.toString())
+	string twoDigitMonth	=> (this.month < 10 ? "0"+this.month : this.month.toString())
+	string twoDigitHour	=> (this.hour < 10 ? "0"+this.hour : this.hour.toString())
+	string twoDigitMinute	=> (this.minute < 10 ? "0"+this.minute : this.minute.toString())
+	string twoDigitSecond	=> (this.second < 10 ? "0"+this.second : this.second.toString())
+	string threeDigitMilliseconds	=> (this.milliseconds < 10 ? "00"+this.milliseconds : this.milliseconds < 100 ? "0"+this.milliseconds : this.milliseconds.toString())
 
 	static inline PlainDate current() PlainDate.fromTime(Time.now)
 		

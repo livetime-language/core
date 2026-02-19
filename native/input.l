@@ -76,7 +76,7 @@ priority class Player
 	Color color = White
 	Vector2 pointerPosition
 	
-	toString := color.name
+	toString => color.name
 	
 	// Touch input
 	internal Touch[] touches
@@ -127,8 +127,8 @@ class Touch
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a input.onTouch method
 	
-	// Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
-	// Vector2 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
+	// Vector2 position	=> referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector2 startPosition	=> referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -138,7 +138,7 @@ transient class ScrollEvent
 	immutable Vector2 referencePosition
 	bool handled
 	
-	// Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector2 position => referencePosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -436,10 +436,10 @@ class DigitalButton
 	Key key
 	
 	bool state, prevState
-	bool down := state and not prevState
-	bool up   := not state and prevState
+	bool down => state and not prevState
+	bool up   => not state and prevState
 	
-	toString := name
+	toString => name
 	
 	internal assign: string name, Key key
 		this.name = name

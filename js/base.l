@@ -107,13 +107,13 @@ immutable struct int
 		(this % divisor)
 		
 	// Returns true if the integer is not zero
-	inline js bool toBool := this
+	inline js bool toBool => this
 	
-	importance:4 inline js string toString := this?.toString()
+	importance:4 inline js string toString => this?.toString()
 		
 	inline js int fromHex(string value) parseInt(value, 16)
 		
-	inline js string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 		
 	// Shift the bits of the int to the left. Excess bits shifted off to the left are discarded
 	importance:3  inline js int shiftLeft: int count // The amount of bits to shift 
@@ -202,7 +202,7 @@ immutable struct int
 		int.enumerate(0, this, selector)
 
 	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
+	const inline js int undefined => undefined
 	
 // A number stored as a double precision 64-bit floating point value
 immutable struct float
@@ -278,7 +278,7 @@ immutable struct float
 	// Example:
 	//     float time = 500 milliseconds
 	importance:3 inline js 
-	float milliseconds := this
+	float milliseconds => this
 	
 	// Take a time in seconds and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -287,7 +287,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 7000
 	importance:3 inline js
-	float seconds := (this*1000)
+	float seconds => (this*1000)
 		
 	// Take a time in minutes and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -296,7 +296,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 120000
 	importance:3 inline js
-	float minutes := (this*60000)
+	float minutes => (this*60000)
 		
 	// Take a time in hours and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -305,7 +305,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 7200000
 	importance:3 inline js
-	float hours := (this*3600000)
+	float hours => (this*3600000)
 	
 	// Take a time in days and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -314,7 +314,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 172800000
 	importance:3 inline js
-	float days := (this*86400000)
+	float days => (this*86400000)
 	
 	// Take a time in weeks and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -323,13 +323,13 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 1209600000
 	importance:3 inline js
-	float weeks := (this*604800000)
+	float weeks => (this*604800000)
 	
 	// Take a time in frames (30 frames are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
 	//     float time = 10 frames
 	importance:3 inline js 
-	float frames := this * 1000 / core.ticksPerSecond
+	float frames => this * 1000 / core.ticksPerSecond
 	
 	// ------------------------------------------- Operators -------------------------------------------
 
@@ -357,19 +357,19 @@ immutable struct float
 		
 	// The largest possible floating point value
 	const importance:5 inline js
-	float maxValue := Number.MAX_VALUE
+	float maxValue => Number.MAX_VALUE
 	
 	// The smallest possible floating point value
 	const importance:5 inline js
-	float minValue := -Number.MAX_VALUE
+	float minValue => -Number.MAX_VALUE
 	
 	// Positiv infinity
 	const importance:4 inline js
-	float infinity := Number.POSITIVE_INFINITY
+	float infinity => Number.POSITIVE_INFINITY
 
-	const inline js float notANumber := Number.NaN 
+	const inline js float notANumber => Number.NaN 
 	
-	const inline js float epsilon := Number.EPSILON
+	const inline js float epsilon => Number.EPSILON
 	
 	inline js float ** (float a, float b) 
 		Math.pow(a,b)
@@ -396,12 +396,12 @@ immutable struct float
 	float remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
 		
-	inline js int toInt := Math.floor(this)
+	inline js int toInt => Math.floor(this)
 		
 	// Returns true if the floot is not zero
-	inline js bool toBool := this
+	inline js bool toBool => this
 	
-	importance:4 inline js string toString := this.toString()
+	importance:4 inline js string toString => this.toString()
 		
 	importance:3 inline js float moveTowards: float value
 		                                      float speed = 1
@@ -418,24 +418,24 @@ immutable struct float
 	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
 		
 	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
-	const inline js int null := null
+	const inline js int undefined => undefined
+	const inline js int null => null
 	
 	
 // A sequence of characters
 js String
 immutable class string
 	// Returns the number of characters in the string
-	importance:5 inline js int length := this.length
+	importance:5 inline js int length => this.length
 	
 	// Returns a string with each character converted to uppercase
-	importance:5 inline js string toUpperCase := this.toUpperCase()
+	importance:5 inline js string toUpperCase => this.toUpperCase()
 		
 	// Returns a string with each character converted to lowercase
-	importance:5 inline js string toLowerCase := this.toLowerCase()
+	importance:5 inline js string toLowerCase => this.toLowerCase()
 	
 	// Returns true if the string is not null and not empty	
-	inline js bool toBool := this
+	inline js bool toBool => this
 	inline js string toString() this
 
 	// Returns the string converted to an integer. Use int.isValidNumber to check if the conversion was successful.
@@ -445,7 +445,7 @@ immutable class string
 	//             int number = str.toInt
 	//             if number.isValidNumber: print "The string is a number: {number}"
 	//             else                     print "The string is not a number"
-	importance:5 inline js int toInt := parseInt(this)
+	importance:5 inline js int toInt => parseInt(this)
 
 	// Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
 	// Example:
@@ -454,7 +454,7 @@ immutable class string
 	//             float number = str.toFloat
 	//             if number.isValidNumber: print "The string is a number: {number}"
 	//             else                     print "The string is not a number"
-	importance:5 inline js float toFloat := parseFloat(this)
+	importance:5 inline js float toFloat => parseFloat(this)
 	
 	// Parse the string as json
 	importance:5 inline js dynamic parseJson() JSON.parse(this)
@@ -467,7 +467,7 @@ immutable class string
 	// Variable values that indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
 	// Example:
 	//     if user.name == string.undefined: user.name = "Guest"
-	const inline js string undefined := undefined
+	const inline js string undefined => undefined
 	
 	// Splits the string at the given character into a list of substrings#
 	importance:5 inline js
@@ -910,7 +910,7 @@ class List<T>
 		return null
 	
 	// Removes all items from the list
-	importance:5 inline js void clear := this.length = 0
+	importance:5 inline js void clear => this.length = 0
 	
 	// ------------------------------------------- Pop -------------------------------------------
 		
@@ -922,7 +922,7 @@ class List<T>
 	// Output:
 	//     Orange
 	//     [Apple, Lemon]
-	importance:4 inline js T pop := this.pop()
+	importance:4 inline js T pop => this.pop()
 		
 	// Remove an item at a specific index from the list and return it
 	// Example: Print and remove "Lemon" from the list
@@ -1070,7 +1070,7 @@ class List<T>
 	inline js T[] clone() [...this]
 	
 	// Returns true if the list is not null and not empty	
-	inline js bool toBool := (this != null && this.length != 0) 
+	inline js bool toBool => (this != null && this.length != 0) 
 
 	// Create a string representation of the list
 	js string toString()
@@ -1429,7 +1429,7 @@ class List<T>
 			this.set(j, temp)
 		return this
 		
-	shuffled := this.clone.shuffle
+	shuffled => this.clone.shuffle
 		
 	private static transient T[] temporaryCopy = null
 		
@@ -2014,7 +2014,7 @@ js Error
 immutable Error
 	string message
 	string stack
-	implicit inline js string toString := this.stack
+	implicit inline js string toString => this.stack
 	
 // A collection of basic system functions
 global transient priority unit System
@@ -2716,7 +2716,7 @@ unit Loca
 	visible Language[] supportedLanguages = [English, German]
 	visible Language language = English
 	visible string locale = defaultLocaleForLanguage[language]
-	string languageName := languageNames[language]
+	string languageName => languageNames[language]
 	
 	internal init
 		setLanguage English

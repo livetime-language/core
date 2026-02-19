@@ -647,7 +647,7 @@ internal transient skipInit unit core
 			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
 			lastChecksumFrame = frame
 				
-	inline js int currentTime := Date.now()
+	inline js int currentTime => Date.now()
 	
 	js void startApp
 		lobby.inLobby = false
@@ -956,7 +956,7 @@ internal class StatisticsGraph
 	int sendingUntil
 	int successfullySentUntil
 	
-	float lastValue := values.length > 0 ? values[values.length-1] : 0
+	float lastValue => values.length > 0 ? values[values.length-1] : 0
 	
 	add: float value
 		recentValues.add value

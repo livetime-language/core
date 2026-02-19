@@ -85,8 +85,8 @@ class Object
 	bool locked
 	SourceCodeLocation location
 	
-	visible siblings := Framework.objects
-	internal debugString := "(Object pos:{position.x} {position.y})"
+	visible siblings => Framework.objects
+	internal debugString => "(Object pos:{position.x} {position.y})"
 	internal tick
 	
 	Object
@@ -362,7 +362,7 @@ Object ParticleSystem
 	layer = int.maxValue
 	
 	private int burst
-	internal debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
+	internal debugString => "(ParticleSystem {position.x} {position.y} {particles.length})"
 	
 	internal override tick
 		if Time.now > nextBurst

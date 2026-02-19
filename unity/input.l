@@ -79,10 +79,10 @@ class Touch
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a Input.onTouch method
 	
-	// Vector3 position := referencePosition.getRelativeTo(graphics.localMatrix)
-	// Vector3 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
+	// Vector3 position => referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector3 startPosition => referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
-	// Touch clone := {id, userId, phase, type, referencePosition, referenceStartPosition, smoothPosition, isDown}
+	// Touch clone => {id, userId, phase, type, referencePosition, referenceStartPosition, smoothPosition, isDown}
 	
 	markAsHandled() handled = true
 	
@@ -92,7 +92,7 @@ transient class WheelEvent
 	Vector3 referencePosition
 	bool handled
 	
-	// Vector3 position := referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector3 position => referencePosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -202,8 +202,8 @@ enum Key
 	
 class DigitalButton
 	bool state, prevState
-	bool down := state and not prevState
-	bool up   := not state and prevState
+	bool down => state and not prevState
+	bool up   => not state and prevState
 	string name
 	
 	internal startFrame

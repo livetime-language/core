@@ -316,9 +316,9 @@ internal transient class Buffer
 			
 		this.writePos = writePos
 		
-	inline js int peekInt8  := this.dataView.getInt8(this.readPos)
-	inline js int peekInt16 := this.dataView.getInt16(this.readPos)
-	inline js int peekInt32 := this.dataView.getInt32(this.readPos)
+	inline js int peekInt8  => this.dataView.getInt8(this.readPos)
+	inline js int peekInt16 => this.dataView.getInt16(this.readPos)
+	inline js int peekInt32 => this.dataView.getInt32(this.readPos)
 	
 	js int readInt8
 		return this.dataView.getInt8(this.readPos++)
@@ -407,7 +407,7 @@ internal transient class Buffer
 		Buffer.textEncoder = new TextEncoder
 		Buffer.textDecoder = new TextDecoder
 		
-	canRead := readPos < writePos
+	canRead => readPos < writePos
 	
 	js object toByteArray
 		return new Uint8Array(this.buffer, 0, this.writePos)

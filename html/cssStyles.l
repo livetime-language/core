@@ -60,13 +60,13 @@ struct Vector2
 	const Vector2 zero = Vector2(0, 0, pixels)
 		
 	// A string representation of the vector
-	toString := "{x}{unit} {y}{unit}"
+	toString => "{x}{unit} {y}{unit}"
 	
 	// Returns true if the vector is not equal to Vector2.None
-	bool toBool := (x != float.infinity || y != float.infinity)
+	bool toBool => (x != float.infinity || y != float.infinity)
 		
 	// Creates a copy of the vector with the same values
-	Vector2 clone() := {x, y, unit}
+	Vector2 clone() => {x, y, unit}
 	
 	inline js Vector2 assignReference(Vector2 value) (this = value)
 		
@@ -81,16 +81,16 @@ struct Vector2
 	Vector2 / float other:     return {x / other, y / other}
 		
 	// The length of the vector
-	importance:5 length := math.sqrt(x * x + y * y)
+	importance:5 length => math.sqrt(x * x + y * y)
 		
 	// A vector with each coordinate rounded down to an integer value
-	floor := Vector2(math.floor(x), math.floor(y))
+	floor => Vector2(math.floor(x), math.floor(y))
 	
 	// A vector with each coordinate rounded down to an integer value
-	ceil := Vector2(math.ceil(x), math.ceil(y))
+	ceil => Vector2(math.ceil(x), math.ceil(y))
 		
 	// A vector with the sign of each coordinate flipped
-	inverse := Vector2(-x, -y)
+	inverse => Vector2(-x, -y)
 		
 	// A vector that points in the same direction, but has a length of 1
 	normalized
@@ -332,7 +332,7 @@ importance:5 struct Dimension
 	global const Dimension auto = {dimensionString:"auto"} // Automatically adjust the value to distribute the space evenly
 
 	string dimensionString
-	toString := dimensionString
+	toString => dimensionString
 		
 	Dimension: float value                  // The value in the specified unit
 		       Unit unit = html.defaultUnit // The unit of the value (pixels, percent, centimeters, points, viewportWidth, viewportHeight, ...)
@@ -348,7 +348,7 @@ importance:5 class Border
 	global const Border none = {borderString:"none"} // Display no border
 		
 	string borderString
-	toString := borderString
+	toString => borderString
 
 	Border: string borderString // Specify all parameters as a single string, e.g. "1px solid #808080"
 		this.borderString = borderString
@@ -360,7 +360,7 @@ importance:5 class Border
 
 importance:5 class BoxShadow
 	string boxShadowString
-	toString := boxShadowString
+	toString => boxShadowString
 
 	BoxShadow: string boxShadowString // Specify all parameters as a single string, e.g. "10px 5px 5px #808080"
 		this.boxShadowString = boxShadowString
@@ -382,7 +382,7 @@ importance:5 class BoxShadow
 
 importance:5 class Padding
 	string paddingString
-	toString := paddingString
+	toString => paddingString
 
 	Padding: implicit Dimension all // Padding on the top, right, bottom and left of the element
 		paddingString = "{all}"
@@ -402,7 +402,7 @@ importance:5 class Padding
 	
 importance:5 class Margin
 	string marginString
-	toString := marginString
+	toString => marginString
 
 	Margin: implicit Dimension all // Margin on the top, right, bottom and left of the element
 		marginString = "{all}"
@@ -426,7 +426,7 @@ importance:5 class BackgroundSize
 	global const BackgroundSize auto = {sizeString:"auto"} // Scales the background image in the corresponding direction such that its intrinsic proportions are maintained.
 
 	string sizeString
-	toString := sizeString
+	toString => sizeString
 
 	Margin: implicit Dimension x = 0 px // Margin on the top and bottom of the element
 		    implicit Dimension y = 0 px // Margin on the left and right of the element
@@ -442,7 +442,7 @@ importance:5 class FontWeight
 	global const FontWeight bolder = {fontWeightString:"bolder"} // One relative font weight heavier than the parent element.
 
 	string fontWeightString
-	toString := fontWeightString
+	toString => fontWeightString
 
 	FontWeight: string fontWeightString
 		this.fontWeightString = fontWeightString

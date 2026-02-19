@@ -100,9 +100,9 @@ priority class Player
 	int score
 	Vector2 pointerPosition
 	
-	internal Player cloneBaseData := {_id, language, email, name, colorPreferences, id, index}
-	toString := color ? "{color.name.toLowerCase} player ({index})" : "player {index}"
-	highlightPerspectiveColor := input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
+	internal Player cloneBaseData => {_id, language, email, name, colorPreferences, id, index}
+	toString => color ? "{color.name.toLowerCase} player ({index})" : "player {index}"
+	highlightPerspectiveColor => input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input
 	internal Touch[] touches
@@ -173,8 +173,8 @@ Touch
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a input.onTouch method
 	
-	importance:4 Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
-	Vector2 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
+	importance:4 Vector2 position	=> referencePosition.getRelativeTo(graphics.localMatrix)
+	Vector2 startPosition	=> referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
 	importance:4 markAsHandled() handled = true
 	
@@ -185,7 +185,7 @@ internal transient ScrollEvent
 	immutable Vector2 referencePosition
 	bool handled
 	
-	Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
+	Vector2 position => referencePosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -350,10 +350,10 @@ internal DigitalButton
 	Key key
 	
 	bool state, prevState
-	bool wasJustPressed := state and not prevState
-	bool wasJustReleased := not state and prevState
+	bool wasJustPressed	=> state and not prevState
+	bool wasJustReleased	=> not state and prevState
 	
-	toString := name
+	toString => name
 	
 	internal assign: string name, Key key
 		this.name = name

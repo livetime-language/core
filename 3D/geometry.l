@@ -1287,15 +1287,15 @@ struct Vector2
 	const Vector2 zero = {0, 0, null}
 		
 	// A string representation of the vector
-	string toString := "({x} {y})"
+	string toString => "({x} {y})"
 	
 	// Returns true if the vector is not equal to Vector2.None
-	bool toBool := (x != float.infinity || y != float.infinity)
+	bool toBool => (x != float.infinity || y != float.infinity)
 		
-	implicit Vector3 toVector3 := {x, y, 0}
+	implicit Vector3 toVector3 => {x, y, 0}
 	
 	// Creates a copy of the vector with the same values
-	Vector2 clone() := {x, y, location}
+	Vector2 clone() => {x, y, location}
 		
 	Vector2 operator = (Vector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
 	
@@ -1360,25 +1360,25 @@ struct Vector2
 	bool operator <= (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) <= length
 	
 	// The length of the vector
-	length := math.sqrt(x * x + y * y)
+	length => math.sqrt(x * x + y * y)
 		
 	// A vector that is orthogonal to the existing vector
-	orthogonal := Vector2(x:-y, y:x)
+	orthogonal => Vector2(x:-y, y:x)
 		
 	// A vector with the sign of each coordinate flipped
-	inverse := Vector2(-x, -y)
+	inverse => Vector2(-x, -y)
 		
 	// A vector with each coordinate rounded to the closest integer value
-	rounded := IntVector2(math.round(x), math.round(y))
+	rounded => IntVector2(math.round(x), math.round(y))
 	
 	// A vector with each coordinate rounded down to an integer value
-	floor := IntVector2(math.floor(x), math.floor(y))
+	floor => IntVector2(math.floor(x), math.floor(y))
 		
 	// A vector with each coordinate rounded up to an integer value
-	ceil := IntVector2(math.ceil(x), math.ceil(y))
+	ceil => IntVector2(math.ceil(x), math.ceil(y))
 		
 	// A vector with the absolute value of each coordinate
-	abs := Vector2(math.abs(x), math.abs(y))
+	abs => Vector2(math.abs(x), math.abs(y))
 		
 	within: Vector2 position
 		    Vector2 size
@@ -1392,10 +1392,10 @@ struct Vector2
 		return x >= -hx && x < hx && y >= -hy && y < hy
 		
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
 	// Move the vector
 	move: Vector2 delta // The vector to move by
@@ -1559,15 +1559,15 @@ struct IntVector2
 	const IntVector2 zero = {0, 0, null}
 	
 	// Creates a copy of the vector with the same values
-	IntVector2 clone := {x, y, location}
+	IntVector2 clone => {x, y, location}
 		
 	// A string representation of the vector
-	string toString := "({x} {y})"
+	string toString => "({x} {y})"
 	
 	// Returns true if the vector is not equal to IntVector2.none
-	bool toBool := (x != int.minValue || y != int.minValue)
+	bool toBool => (x != int.minValue || y != int.minValue)
 	
-	implicit Vector2 toVector2 := {x, y, location}
+	implicit Vector2 toVector2 => {x, y, location}
 	
 	IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
 	
@@ -1597,22 +1597,22 @@ struct IntVector2
 	bool operator <= (IntVector2 a, IntVector2 b) return a.x <= b.x && a.y <= b.y
 	
 	// The length of the vector
-	length := math.sqrt(x * x + y * y)
+	length => math.sqrt(x * x + y * y)
 		
 	// A vector that is orthogonal to the existing vector
-	orthogonal := IntVector2(x:-y, y:x)
+	orthogonal => IntVector2(x:-y, y:x)
 		
 	// A vector with the sign of each coordinate flipped
-	inverse := IntVector2(-x, -y)
+	inverse => IntVector2(-x, -y)
 		
 	// A vector with the absolute value of each coordinate
-	abs := IntVector2(math.abs(x), math.abs(y))
+	abs => IntVector2(math.abs(x), math.abs(y))
 		
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
 	clamp: IntVector2 min
 		   IntVector2 max
@@ -1720,16 +1720,16 @@ struct Matrix2D
 	Matrix2D operator *= (Matrix2D a, Matrix2D b) return multiply(a, b, a)
 		
 	// Returns the translation component of the matrix
-	Vector2 translationVector := {m4, m5}
+	Vector2 translationVector => {m4, m5}
 	
 	// Return the scale component of the matrix
-	Vector2 scaleVector := {m0, m3}
+	Vector2 scaleVector => {m0, m3}
 
 	// Returns a string representation of the matrix
-	string toString := "("+m0.format(1)+" "+m1.format(1)+" "+m2.format(1)+" "+m3.format(1)+" "+m4.format(1)+" "+m5.format(1)+")" 
+	string toString => "("+m0.format(1)+" "+m1.format(1)+" "+m2.format(1)+" "+m3.format(1)+" "+m4.format(1)+" "+m5.format(1)+")" 
 	
 	// Returns true if the matrix isn't the identity matrix
-	bool toBool := (m0 != 1 || m1 != 0 || m2 != 0 || m3 != 1 || m4 != 0 || m5 != 0)
+	bool toBool => (m0 != 1 || m1 != 0 || m2 != 0 || m3 != 1 || m4 != 0 || m5 != 0)
 		
 	// Moves the matrix by a given vector
 	move: Vector2 vector // The matrix will be moved by this vector
@@ -1997,7 +1997,7 @@ class Direction
 	float angle        // The angle in radians starting with "Right" and going around clockwise
 	float isoAngle     // The angle in radians within an isometric grid
 	
-	toString := name
+	toString => name
 	
 	rotated: RotationDirection direction = Clockwise
 		return primaryDirections[(index+(direction == Clockwise ? 1:3))%4]
@@ -2045,15 +2045,15 @@ class Line
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	toString := "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
+	toString => "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
 
 class Rect
 	Vector2 position, size
 	
-	float left := position.x - size.x/2
-	float right := position.x + size.x/2
-	float top := position.y - size.y/2
-	float bottom := position.y + size.y/2
+	float left	=> position.x - size.x/2
+	float right	=> position.x + size.x/2
+	float top	=> position.y - size.y/2
+	float bottom	=> position.y + size.y/2
 	
 	bool contains: Vector2 position
 		return this.position - this.size/2 <=  position < this.position + this.size/2

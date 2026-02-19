@@ -13,7 +13,7 @@ immutable Color
 	importance:4 string hex
 	string name
 	
-	string toString := name or hex
+	string toString => name or hex
 	
 	int red()   return hex[1..3].parseInt(16)
 	int green() return hex[3..5].parseInt(16)

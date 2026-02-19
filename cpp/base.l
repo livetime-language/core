@@ -18,9 +18,9 @@ immutable struct int
 		(this % value)
 		
 	// Returns true if the integer is not zero
-	inline cpp bool toBool := this
+	inline cpp bool toBool => this
 	
-	inline cpp(string) string toString := std::to_string(this)
+	inline cpp(string) string toString => std::to_string(this)
 
 	static cpp(sstream, string) int fromHex: string value
 	    int result;
@@ -156,12 +156,12 @@ immutable struct int
 cpp(,double)
 immutable struct float
 	// The largest possible floating point value
-	const inline cpp(float.h) float maxValue := FLT_MAX
+	const inline cpp(float.h) float maxValue => FLT_MAX
 	
 	// The smallest possible floating point value
-	const inline cpp(float.h) float minValue := FLT_MIN
+	const inline cpp(float.h) float minValue => FLT_MIN
 	
-	const inline cpp(cmath) float infinity := INFINITY
+	const inline cpp(cmath) float infinity => INFINITY
 	
 	inline cpp(cmath) float ** float value
 		std::pow(this,value)
@@ -173,12 +173,12 @@ immutable struct float
 	inline cpp float remainder: float value
 		(this % value)
 		
-	inline cpp(cmath) int toInt := std::floor(this)
+	inline cpp(cmath) int toInt => std::floor(this)
 		
 	// Returns true if the floot is not zero
-	inline cpp bool toBool := this
+	inline cpp bool toBool => this
 	
-	inline cpp(string) string toString := std::to_string(this)
+	inline cpp(string) string toString => std::to_string(this)
 		
 	// Formats the float as a string with fraction digits, minimum integer digits, and grouping
 	cpp(string, iomanip, iostream) string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
@@ -274,22 +274,22 @@ immutable struct float
 	// ------------------------------------------- Time -------------------------------------------
 	
 	// Milliseconds
-	inline cpp float milliseconds := this
+	inline cpp float milliseconds => this
 	
 	// Seconds
-	inline cpp float seconds := (this*1000)
+	inline cpp float seconds => (this*1000)
 		
 	// Minutes
-	inline cpp float minutes := (this*60000)
+	inline cpp float minutes => (this*60000)
 		
 	// Hours
-	inline cpp float hours := (this*3600000)
+	inline cpp float hours => (this*3600000)
 	
 	// Days
-	inline cpp float days := (this*86400000)
+	inline cpp float days => (this*86400000)
 	
 	// Weeks
-	inline cpp float weeks := (this*604800000)
+	inline cpp float weeks => (this*604800000)
 		
 immutable EaseFunction
 	float(float value) function
@@ -750,7 +750,7 @@ struct List<T>
 	// 	return closestItem
 			
 	// // Returns true if the list is not null and not empty
-	// inline cpp bool toBool := (this != null && this.length != 0)
+	// inline cpp bool toBool => (this != null && this.length != 0)
 	
 	// // Reverses the order of the items of the list in place
 	// inline cpp T[] reverse() this.reverse()
@@ -1317,7 +1317,7 @@ cpp exception, std::exception
 immutable Error
 	string message
 	string stack
-	implicit inline cpp string toString := this.stack
+	implicit inline cpp string toString => this.stack
 	
 // A collection of basic system functions
 global transient priority unit system
@@ -1744,7 +1744,7 @@ struct Average
 	// add: float value
 	// 	total += value
 	// 	count++
-	// average := total / count
+	// average => total / count
 
 immutable Range
 	int from // The start of the range

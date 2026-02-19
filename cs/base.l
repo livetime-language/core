@@ -1,10 +1,10 @@
 // A number stored as a 32-bit integer
 struct int
 	// The largest possible integer value
-	static inline cs int maxValue := int.MaxValue
+	static inline cs int maxValue => int.MaxValue
 	
 	// The smallest possible integer value
-	static inline cs int minValue := int.MinValue
+	static inline cs int minValue => int.MinValue
 	
 	inline cs int ** (int a, int b) 
 		Math.pow(a,b)
@@ -17,11 +17,11 @@ struct int
 		(this % value)
 		
 	// Returns true if the integer is not zero
-	inline cs bool toBool := (this != 0)
+	inline cs bool toBool => (this != 0)
 	
-	inline cs string toString := this.ToString()
+	inline cs string toString => this.ToString()
 		
-	inline cs string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+	inline cs string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 		
 	inline cs string format: int minIntegerDigits = 1, bool grouping = false
 		this.toLocaleString('en-US', {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
@@ -98,12 +98,12 @@ struct int
 // A number stored as a double precision 64-bit floating point value
 struct float
 	// The largest possible floating point value
-	static inline cs float maxValue := float.MaxValue
+	static inline cs float maxValue => float.MaxValue
 	
 	// The smallest possible floating point value
-	static inline cs float minValue := float.MinValue
+	static inline cs float minValue => float.MinValue
 	
-	const inline cs float infinity := float.PositiveInfinity
+	const inline cs float infinity => float.PositiveInfinity
 	
 	inline cs float ** (float a, float b) 
 		Math.pow(a,b)
@@ -115,12 +115,12 @@ struct float
 	inline cs float remainder: float value
 		(this % value)
 		
-	inline cs(System) int toInt := (int)(this)
+	inline cs(System) int toInt => (int)(this)
 		
 	// Returns true if the floot is not zero
-	inline cs bool toBool := this
+	inline cs bool toBool => this
 	
-	inline cs string toString := this.ToString()
+	inline cs string toString => this.ToString()
 		
 	inline cs string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
 		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
@@ -192,36 +192,36 @@ struct float
 	// ------------------------------------------- Time -------------------------------------------
 	
 	// Milliseconds
-	inline cs float ms := this
+	inline cs float ms => this
 	
 	// Seconds
-	inline cs float s := (this*1000)
+	inline cs float s => (this*1000)
 		
 	// Minutes
-	inline cs float min := (this*60000)
+	inline cs float min => (this*60000)
 		
 	// Hours
-	inline cs float h := (this*3600000)
+	inline cs float h => (this*3600000)
 	
 	// Days
-	inline cs float days := (this*86400000)
+	inline cs float days => (this*86400000)
 	
 	// Weeks	
-	inline cs float weeks := (this*604800000)
+	inline cs float weeks => (this*604800000)
 		
 	inline js float ° (this/180*math.pi)
 	
 	// One full rotation is 1
-	inline cs float turn := (this*math.twoPi)
+	inline cs float turn => (this*math.twoPi)
 	
 	// One full rotation is 2π (about 6.2832)
-	inline cs float radians := this
+	inline cs float radians => this
 		
 	// One full rotation is 360
-	inline cs float degrees := (this/180*pi)
+	inline cs float degrees => (this/180*pi)
 		
 	// One full rotation is 400
-	inline cs float gradians := (this/200*pi)
+	inline cs float gradians => (this/200*pi)
 
 		
 class EaseFunction
@@ -235,22 +235,22 @@ class EaseFunction
 cs ,string
 class string
 	// Returns the number of characters in the string
-	inline cs int length := this.Length
+	inline cs int length => this.Length
 	
 	// Returns a string with each character converted to uppercase
-	inline cs string toUpperCase := this.toUpperCase()
+	inline cs string toUpperCase => this.toUpperCase()
 		
 	// Returns a string with each character converted to lowercase
-	inline cs string toLowerCase := this.toLowerCase()
+	inline cs string toLowerCase => this.toLowerCase()
 	
 	// Returns true if the string is not null and not empty	
-	inline cs bool toBool := !string.IsNullOrEmpty(this)
+	inline cs bool toBool => !string.IsNullOrEmpty(this)
 	
 	inline cs string toString() this
 	
-	inline cs int toInt := parseInt(this)
+	inline cs int toInt => parseInt(this)
 		
-	inline cs int toFloat := parseFloat(this)
+	inline cs int toFloat => parseFloat(this)
 	
 	inline cs string[] split: string character = " "
 		this.split(character)
@@ -543,7 +543,7 @@ class List<T>
 	// 	return closestItem
 			
 	// // Returns true if the list is not null and not empty	
-	// inline cs bool toBool := (this != null && this.Count != 0) 
+	// inline cs bool toBool => (this != null && this.Count != 0) 
 	
 	// // Reverses the order of the items of the list in place
 	// inline cs T[] reverse() this.reverse()
@@ -1061,7 +1061,7 @@ transient class SourceCodeLocation
 	inline cs bool toBool() (this != null)
 	inline cs string toString() (this.file+":"+this.start)
 	
-	// SourceCodeLocation clone := {file, start, end, left, right}
+	// SourceCodeLocation clone => {file, start, end, left, right}
 			
 	// SourceCodeLocation find: string file, int pos
 	// 	if this.file and this.file == file and pos >= this.start and pos <= this.end
@@ -1099,7 +1099,7 @@ cs System Exception
 class Error
 	string message
 	string stack
-	implicit inline cs string toString := this.stack
+	implicit inline cs string toString => this.stack
 	
 // A collection of basic system functions
 global transient unit System
@@ -1673,7 +1673,7 @@ global skipInit unit Math
 // 	add: float value
 // 		total += value
 // 		count++
-// 	average := total / count		
+// 	average => total / count		
 	
 struct float	
 	static inline cs(UnityEngine) float deltaTime() UnityEngine.float.deltaTime
@@ -1681,7 +1681,7 @@ struct float
 	// // The number of milliseconds elapsed since January 1, 1970
 	static float now
 	
-	static internal inline cs(System) float realTime := (float)(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond)
+	static internal inline cs(System) float realTime => (float)(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond)
 
 	// // The current frame
 	static int frame
@@ -1709,12 +1709,12 @@ struct float
 	// inline cs string toString() this.toString()
 		
 	// // Returns true if the time is not zero
-	// inline cs bool toBool := this
+	// inline cs bool toBool => this
 	
-	// inline cs int milliseconds := Math.floor((this %    1000)          ) 
-	// inline cs int seconds      := Math.floor((this %   60000) /    1000) 
-	// inline cs int minutes      := Math.floor((this % 3600000) /   60000) 
-	// inline cs int hours        := Math.floor((this          ) / 3600000)
+	// inline cs int milliseconds => Math.floor((this %    1000)          ) 
+	// inline cs int seconds      => Math.floor((this %   60000) /    1000) 
+	// inline cs int minutes      => Math.floor((this % 3600000) /   60000) 
+	// inline cs int hours        => Math.floor((this          ) / 3600000)
 		
 	// // (31.12.)
 	// inline cs string dayMonthString(language = Loca.language) new Date(this).dayMonthString(language)
@@ -1759,7 +1759,7 @@ struct float
 		
 	// cs static void startTimer() window._timerStart = performance.now()
 	// cs static void printTimer(string text) log(text+": "+(performance.now()-window._timerStart))
-	// static inline cs float preciseTime := performance.now()
+	// static inline cs float preciseTime => performance.now()
 		
 enum TimeUnit
 	ms   // Milliseconds
@@ -1782,22 +1782,22 @@ enum TimeUnit
 		
 	// inline cs Date() new Date(Time_now)
 	
-	// inline cs int year := this.getFullYear()
-	// inline cs int month := (this.getMonth()+1)
-	// inline cs int day := this.getDate()
-	// inline cs int dayOfWeek := this.getDay()
+	// inline cs int year	=> this.getFullYear()
+	// inline cs int month	=> (this.getMonth()+1)
+	// inline cs int day	=> this.getDate()
+	// inline cs int dayOfWeek	=> this.getDay()
 		
-	// inline cs int hour := this.getHours()
-	// inline cs int minute := this.getMinutes()
-	// inline cs int second := this.getSeconds()
+	// inline cs int hour	=> this.getHours()
+	// inline cs int minute	=> this.getMinutes()
+	// inline cs int second	=> this.getSeconds()
 		
-	// inline cs string twoDigitMonth := (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitDay := this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitHour := this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitMonth => (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitDay => this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitHour => this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitMinute => this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitSecond => this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 		
-	// inline cs float timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	// inline cs float timeOfDay => this.getHours()*3600000 + this.getMinutes()*60000
 	
 	// private static string toTwoDigitString: int value
 	// 	return value < 10 ? "0"+value.toString : value.toString
@@ -1856,7 +1856,7 @@ enum TimeUnit
 	// 	return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	// // The number of milliseconds elapsed since January 1, 1970
-	// inline cs float time := this.getTime()
+	// inline cs float time => this.getTime()
 		
 	// // The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	// cs string isoString()
@@ -1876,12 +1876,12 @@ enum TimeUnit
 	// 		dif + pad(Math.floor(Math.abs(tzo) / 60)) +
 	// 		':' + pad(Math.abs(tzo) % 60);
 
-	// static inline cs Date now := new Date(Time_now)
+	// static inline cs Date now => new Date(Time_now)
 	// static inline cs Date fromTime(float time) new Date(time)
 	// static inline cs Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
 	
 	// // Returns the real time, even during replay. Be careful: This can break the replay.
-	// static inline cs Date realtime := new Date()
+	// static inline cs Date realtime => new Date()
 	
 class Range
 	int from // The start of the range

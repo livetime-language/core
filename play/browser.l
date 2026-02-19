@@ -1,9 +1,9 @@
 transient skipInit unit Platform
-	public inline js string url := location.href
-	public inline js string hostname := location.hostname
-	public protocolAndHost := !Platform.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
-	public inline js int userAgent := navigator.userAgent.replace(/,/g," ")
-	public inline js float usedMemory := (performance.memory ? performance.memory.usedJSHeapSize : 0)
+	public inline js string url	=> location.href
+	public inline js string hostname	=> location.hostname
+	public protocolAndHost	=> !Platform.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
+	public inline js int userAgent	=> navigator.userAgent.replace(/,/g," ")
+	public inline js float usedMemory	=> (performance.memory ? performance.memory.usedJSHeapSize : 0)
 	
 	js string getAbsoluteUrl: string relativeUrl
 		return relativeUrl.startsWith("http") || relativeUrl.startsWith("data:") ? relativeUrl : _basePath+relativeUrl
@@ -353,7 +353,7 @@ internal transient skipInit unit IndexedDB
 	internal dynamic db
 	IndexedDBStore[] stores
 	
-	inline bool isReady := (IndexedDB.db != null)
+	inline bool isReady => (IndexedDB.db != null)
 	
 	js async void start: string databaseName, int version = 1
 		return new Promise((resolve, reject) => {

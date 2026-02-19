@@ -20,7 +20,7 @@ struct Vector2
 	importance:4 string toString => "\{{x.format(maxFractionDigits:1)}, {y.format(maxFractionDigits:1)}\}"
 	
 	// Returns true if the vector is not equal to Vector2.None
-	bool toBool := (x != float.infinity || y != float.infinity)
+	bool toBool => (x != float.infinity || y != float.infinity)
 	
 	// Creates a copy of the vector with the same values
 	importance:4 Vector2 clone => {x, y, location}
@@ -91,19 +91,19 @@ struct Vector2
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
-	importance:4 length := math.sqrt(x * x + y * y)
+	importance:4 length => math.sqrt(x * x + y * y)
 		
 	// The length of the vector
-	importance:4 magnitude := math.sqrt(x * x + y * y)
+	importance:4 magnitude => math.sqrt(x * x + y * y)
 
 	// The square of the length of the vector
-	importance:4 lengthSquared := x * x + y * y
+	importance:4 lengthSquared => x * x + y * y
 		
 	// The sign of each coordinate
-	importance:4 sign := Vector2(math.sign(x), math.sign(y))
+	importance:4 sign => Vector2(math.sign(x), math.sign(y))
 		
 	// Make the vector orthogonal to the existing vector
-	importance:4 orthogonal := {-y, x}
+	importance:4 orthogonal => {-y, x}
 		
 	// Flip the sign of each coordinate
 	importance:4 invert
@@ -112,23 +112,23 @@ struct Vector2
 		return this
 		
 	// Round each coordinate to the closest integer value
-	importance:4 IntVector2 round := IntVector2(math.round(x), math.round(y))
+	importance:4 IntVector2 round => IntVector2(math.round(x), math.round(y))
 	
 	// Round each coordinate down to an integer value
-	importance:4 IntVector2 floor := IntVector2(math.floor(x), math.floor(y))
+	importance:4 IntVector2 floor => IntVector2(math.floor(x), math.floor(y))
 		
 	// Round each coordinate up to an integer value
-	importance:4 IntVector2 ceil := IntVector2(math.ceil(x), math.ceil(y))
+	importance:4 IntVector2 ceil => IntVector2(math.ceil(x), math.ceil(y))
 		
 	// Return a new vector with each coordinate positive
 	importance:4 abs
 		return {math.abs(x), math.abs(y)}
 
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
 	// Move the vector
 	move: Vector2 delta // The vector to move by
@@ -173,7 +173,7 @@ struct Vector2
 		return this
 
 	// A vector that points in the same direction, but has a length of 1
-	normalized := this.clone.normalize
+	normalized => this.clone.normalize
 	
 	// Moves the vector towards the given target by the given distance	
 	importance:4 moveTowards: Vector2 targetPosition // The target to move towards
@@ -297,9 +297,9 @@ Path
 	float[] segmentLengths
 	float length
 	
-	Vector2 first := nodes ? nodes.first : Vector2.None
-	Vector2 last :=  nodes ? nodes.last  : Vector2.None
-	int count := nodes.length
+	Vector2 first	=> nodes ? nodes.first : Vector2.None
+	Vector2 last	=> nodes ? nodes.last  : Vector2.None
+	int count	=> nodes.length
 	inline Vector2 get(int index) this.nodes[index]
 	
 	Path
@@ -404,15 +404,15 @@ struct IntVector2
 	const immutable IntVector2[] centerAndPrimaryDirections = [Center, Up, Right, Down, Left]
 	
 	// Creates a copy of the vector with the same values
-	importance:4 IntVector2 clone := {x, y, location}
+	importance:4 IntVector2 clone => {x, y, location}
 		
 	// A string representation of the vector
-	importance:4 string toString := "\{{x}, {y}\}"
+	importance:4 string toString => "\{{x}, {y}\}"
 	
 	// Returns true if the vector is not equal to IntVector2.none
-	bool toBool := (x != int.minValue || y != int.minValue)
+	bool toBool => (x != int.minValue || y != int.minValue)
 	
-	implicit Vector2 toVector2 := {x, y, location}
+	implicit Vector2 toVector2 => {x, y, location}
 	
 	IntVector2 assign IntVector2 other: x = other.x; y = other.y; location = other.location; return this
 		
@@ -459,25 +459,25 @@ struct IntVector2
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
-	importance:4 length := math.sqrt(x * x + y * y)
+	importance:4 length => math.sqrt(x * x + y * y)
 		
 	// The length of the vector
-	importance:4 magnitude := math.sqrt(x * x + y * y)
+	importance:4 magnitude => math.sqrt(x * x + y * y)
 	
 	// A vector that is orthogonal to the existing vector
-	importance:4 orthogonal := IntVector2(x:-y, y:x)
+	importance:4 orthogonal => IntVector2(x:-y, y:x)
 		
 	// A vector with the sign of each coordinate flipped
-	importance:4 inverse := IntVector2(-x, -y)
+	importance:4 inverse => IntVector2(-x, -y)
 		
 	// A vector with the absolute value of each coordinate
-	importance:4 abs := IntVector2(math.abs(x), math.abs(y))
+	importance:4 abs => IntVector2(math.abs(x), math.abs(y))
 		
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
 	clamp: IntVector2 min
 		   IntVector2 max
@@ -589,16 +589,16 @@ struct Matrix2D
 		return multiply(this, other, this)
 		
 	// Returns the translation component of the matrix
-	Vector2 translationVector := {m4, m5}
+	Vector2 translationVector => {m4, m5}
 	
 	// Return the scale component of the matrix
-	Vector2 scaleVector := {m0, m3}
+	Vector2 scaleVector => {m0, m3}
 
 	// Returns a string representation of the matrix
-	string toString := "("+m0.format(1)+" "+m1.format(1)+" "+m2.format(1)+" "+m3.format(1)+" "+m4.format(1)+" "+m5.format(1)+")" 
+	string toString => "("+m0.format(1)+" "+m1.format(1)+" "+m2.format(1)+" "+m3.format(1)+" "+m4.format(1)+" "+m5.format(1)+")" 
 	
 	// Returns true if the matrix isn't the identity matrix
-	bool toBool := (m0 != 1 || m1 != 0 || m2 != 0 || m3 != 1 || m4 != 0 || m5 != 0)
+	bool toBool => (m0 != 1 || m1 != 0 || m2 != 0 || m3 != 1 || m4 != 0 || m5 != 0)
 		
 	// Moves the matrix by a given vector
 	move: Vector2 vector // The matrix will be moved by this vector
@@ -681,19 +681,19 @@ class List<T>
 		return sum/count
 
 immutable priority low struct float
-	inline float ° := (this/180*math.pi)
+	inline float ° => (this/180*math.pi)
 	
 	// Turns: One full rotation is 1
-	inline float turn := (this*math.twoPi)
+	inline float turn => (this*math.twoPi)
 	
 	// Radians: One full rotation is 2π (about 6.2832)
-	inline float rad := this
+	inline float rad => this
 		
 	// Degrees: One full rotation is 360
-	inline float deg := (this/180*math.pi)
+	inline float deg => (this/180*math.pi)
 		
 	// Gradians: One full rotation is 400
-	inline float grad := (this/200*math.pi)
+	inline float grad => (this/200*math.pi)
 			
 global skipInit unit math
 	// Returns the arctangent of the quotient of the given values
@@ -933,15 +933,15 @@ immutable Line
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	toString := "{start.x.format(maxFractionDigits:2)} {start.y.format(maxFractionDigits:2)} -> {end.x.format(maxFractionDigits:2)} {end.y.format(maxFractionDigits:2)}"
+	toString => "{start.x.format(maxFractionDigits:2)} {start.y.format(maxFractionDigits:2)} -> {end.x.format(maxFractionDigits:2)} {end.y.format(maxFractionDigits:2)}"
 
 immutable Rect
 	importance:4 Vector2 position, size
 	
-	float left := position.x - size.x/2
-	float right := position.x + size.x/2
-	float top := position.y - size.y/2
-	float bottom := position.y + size.y/2
+	float left	=> position.x - size.x/2
+	float right	=> position.x + size.x/2
+	float top	=> position.y - size.y/2
+	float bottom	=> position.y + size.y/2
 	
 	importance:4 bool contains: Vector2 position
 		return this.position - this.size/2 <=  position < this.position + this.size/2

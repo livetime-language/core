@@ -16,7 +16,7 @@ struct Buffer
 	rewind
 		this.readPos = 0
 		
-	bool canRead := readPos < writePos
+	bool canRead => readPos < writePos
 	
 	cs(System) void expandBuffer(int size)
 		var len = Math.Max(this.buffer.Length*2, size);

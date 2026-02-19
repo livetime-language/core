@@ -27,12 +27,12 @@ skipInit global unit Platform
 	bool electron
 	
 	// Location
-	public inline js string url := location.href
-	public inline js string host := location.host
-	public inline js string locationHash := location.hash
-	public inline js string basePath := _basePath
+	public inline js string url	=> location.href
+	public inline js string host	=> location.host
+	public inline js string locationHash	=> location.hash
+	public inline js string basePath	=> _basePath
+	public inline js string referrer	=> document.referrer
 	public inline js string protocolAndHost() (location.host && !Platform.isDebug ? location.origin : "http://localhost")
-	public inline js string referrer := document.referrer
 	public inline js dynamic networkInformation() navigator.connection
 	public inline js void reload() location.reload(/*forceReload=*/true)
 	public inline js int buildVersion() _buildVersion
@@ -55,7 +55,7 @@ skipInit global unit Platform
 			backend.onDataChange = () => html.refresh()
 		}
 
-	inline js float startTime := _startTime
+	inline js float startTime => _startTime
 			
 	async start: bool isDebug
 		try
@@ -386,7 +386,7 @@ class Color
 	string colorString
 	string name
 	
-	string toString := colorString
+	string toString => colorString
 	
 	Color: string colorString = ""
 		let firstChar = colorString[0]

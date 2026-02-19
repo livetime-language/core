@@ -15,7 +15,7 @@ immutable struct Color
 	string name
 	int red, green, blue, alpha
 	
-	// string toString := name or hex
+	// string toString => name or hex
 	
 	Color: string hex = ""
 		this.hex = hex

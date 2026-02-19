@@ -333,10 +333,10 @@ app
 		print "Game won with {winner.score} points by {winner}"
 
 struct IntVector2
-	toScreenPos := app.cellOffset + this * app.cellSize
+	toScreenPos => app.cellOffset + this * app.cellSize
 
 struct Vector2
-	toGridPos := ((this - app.cellOffset) / app.cellSize).round
+	toGridPos => ((this - app.cellOffset) / app.cellSize).round
 		
 class Cell
 	IntVector2 gridPos

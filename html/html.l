@@ -228,7 +228,7 @@ skipInit class Image
 	string src
 	string basePath = Platform.basePath
 	
-	toString := "url('{basePath}{src}')"
+	toString => "url('{basePath}{src}')"
 	
 skipInit class Font
 	string name
@@ -286,19 +286,19 @@ struct float
 immutable priority low struct float
 	inline Dimension toAngle() Angle(this, radians)
 
-	inline Angle ° := Angle(this, degrees)
+	inline Angle ° => Angle(this, degrees)
 	
 	// Turns: One full rotation is 1
-	inline Angle turn := Angle(this, turns)
+	inline Angle turn => Angle(this, turns)
 	
 	// Radians: One full rotation is 2π (about 6.2832)
-	inline Angle rad := Angle(this, radians)
+	inline Angle rad => Angle(this, radians)
 		
 	// Degrees: One full rotation is 360
-	inline Angle deg := Angle(this, degrees)
+	inline Angle deg => Angle(this, degrees)
 		
 	// Gradians: One full rotation is 400
-	inline Angle grad := Angle(this, gradians)
+	inline Angle grad => Angle(this, gradians)
 		
 global skipInit unit math
 	// Returns the arctangent of the quotient of the given values
@@ -317,7 +317,7 @@ struct Angle
 	string toString() return "{this.value}{this.unit}"
 	
 	// Returns true if the angle is not zero
-	inline js bool toBool := this.value
+	inline js bool toBool => this.value
 	
 	Angle assign Angle other: value = other.value; unit = other.unit; return this
 	Angle assign float other: value = other; return this
