@@ -115,11 +115,3 @@ tests
 		string result = expression ? "+" : "-"
 		core.debugLog "expect||{result}|{actualString}|true|{location.file}|{location.start}"
 
-	// Asserts that the application output contains a given string at any point
-	// Example:
-	//     expectToPrint "Cell {2,3} clicked by blue player"
-	importance:5
-	void expectToPrint: string value // The assert will fail if the application output does not contain this string
-		                SourceCodeLocation location
-		let result = (core.output.any.contains value) ? "+" : "-"
-		core.debugLog "expect|to print|{result}|{value}||{location.file}|{location.start}"
