@@ -83,7 +83,7 @@ tests
 	void moveLeftStickTo: Vector2 direction	// The direction to move the left stick to
 	                      nocolon Player by = players[0]	// The player
 		by.gameController.leftStick.assign(direction)
-		print type:GameController "Move left stick to {direction} by {by}"
+		input.appOnGameControllerIfFunctionExists(by, by.gameController)
 		tick
 
 	// Wait for a given amount of time

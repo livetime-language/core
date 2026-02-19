@@ -114,7 +114,7 @@ priority class Player
 	internal Key[] keysCurrentlyDown
 	
 	// Controller input
-	visible GameController gameController = {}
+	visible GameController gameController = {by:this}
 	internal int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
 	internal bool isReadyInLobby
@@ -373,6 +373,7 @@ enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Se
 	
 enum GameControllerType: Keyboard, Xbox, PlayStation
 internal GameController
+	Player by
 	const deadZone = .1
 	
 	// Sticks
@@ -982,6 +983,9 @@ skipInit global unit input
 			for .gameController.buttons
 				if p.controllerKeyDownFrame[i]
 					.state = true
+
+			appOnGameControllerIfFunctionExists(p, p.gameController)
+
 					
 		if Platform.receivedInitialData
 			Platform.waitingForInitialData -= Platform.receivedInitialData
@@ -1209,6 +1213,10 @@ skipInit global unit input
 	inline js void appOnKeyUpIfFunctionExists: Player player, Key key
 		if(app.onKeyUp) app.onKeyUp(key);
 		if(player?.onKeyUp) player.onKeyUp(key);
+		
+	inline js void appOnGameControllerIfFunctionExists: Player player, GameController controller
+		if(app.onGameController) app.onGameController(controller);
+		if(player?.onGameController) player.onGameController(controller);
 		
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	

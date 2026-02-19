@@ -187,6 +187,8 @@ app
 // These functions must be members of the Player class. That way, you know which player triggered an event. 
 class Player
 	string inputText
+	Vector2 position
+	const float speed = 8
 
 	// Important: Always make sure each player can only interact with their own items (or items they are allowed to interact with)
 	onTouchHover: Touch touch
@@ -216,13 +218,14 @@ class Player
 	onKeyUp: Key key
 		print "{key} released by {this}"
 
+	// Called on every frame (30 times per second) if a game controller is connected
+	onGameController: GameController controller
+		pos += controller.leftStick * speed
+
+		if controller.A.wasJustPressed
+			print "Button {controller.A.name} just pressed by {this}"
+
 	tick
-		if gameController.leftStick.magnitude > .1
-			print "Left stick moved to {gameController.leftStick} by {this}"
-
-		if gameController.A.wasJustPressed
-			print "Button A was just pressed by {this}"
-
 		// Draw input text
 		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
 
@@ -238,7 +241,7 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Write units tests in the static class "tests" in a file in the "tests/" folder
+// Write units tests in the static class "tests" in a file in the "tests" folder
 // bluePlayer	== players[0]
 // redPlayer	== players[1]
 // greenPlayer	== players[2]
