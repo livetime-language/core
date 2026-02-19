@@ -187,7 +187,7 @@ app
 // These functions must be members of the Player class. That way, you know which player triggered an event. 
 class Player
 	string inputText
-	Vector2 position
+	Vector2 pos
 	const float speed = 8
 
 	// Important: Always make sure each player can only interact with their own items (or items they are allowed to interact with)
@@ -226,7 +226,7 @@ class Player
 			print "Button {controller.A.name} just pressed by {this}"
 
 	tick
-		// Draw input text
+		drawCircle pos, color, size:64
 		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
 
 class Item
