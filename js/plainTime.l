@@ -115,7 +115,7 @@ immutable skipInit class PlainDate
 		
 	static PlainDate fromTime: float time
 		                      int outputTimezone = PlainDate.defaultTimezoneOffset
-		if not time: return {0, 1970, 1, 1, 4, 0, 0, 0}
+		if not time then return {0, 1970, 1, 1, 4, 0, 0, 0}
 		const outputTime = time - outputTimezone
 		const daysSinceEpoch = math.floor(outputTime / 86400000)
 		
@@ -125,7 +125,7 @@ immutable skipInit class PlainDate
 		
 		loop
 			let daysInYear = ((currentYear remainder 4) == 0 && (currentYear remainder 100) != 0) || (currentYear remainder 400 == 0) ? 366 : 365;
-			if daysLeft < daysInYear: break
+			if daysLeft < daysInYear then break
 			daysLeft -= daysInYear
 			currentYear++
 		
@@ -247,8 +247,8 @@ immutable skipInit class PlainDate
 		
 	// (12:59 pm)
 	hourMinuteString: language = Loca.language
-		if language == German: return ""+hour+":"+(minute < 10 ? "0":"")+minute+" Uhr"
-		else                   return ""+(((hour-1) mod 12)+ 1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
+		if language == German then return ""+hour+":"+(minute < 10 ? "0":"")+minute+" Uhr"
+		else                       return ""+(((hour-1) mod 12)+ 1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
 		
 	// (Monday, December 31 at 12:59 pm)
 	dayOfWeekDayMonthAtHourMinuteString: language = Loca.language
@@ -281,7 +281,7 @@ immutable skipInit class PlainDate
 	// 2024-10-17 15:23:30Z
 	static PlainDate fromIsoString: string str
 		                           int outputTimezone = PlainDate.defaultTimezoneOffset
-		if not str or str.length < 19: return null
+		if not str or str.length < 19 then return null
 		let hasMilliseconds = str[19] == "."
 		let timezoneIndex = hasMilliseconds ? 24 : 20
 		let timezoneSign = str[timezoneIndex-1]

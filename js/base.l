@@ -479,8 +479,8 @@ immutable class string
 		int start
 		while start < this.length
 			int end = this.indexOf(seperator, start)
-			if end == -1: break
-			if end > start+1: result.add this[start to end]
+			if end == -1	then break
+			if end > start+1	then result.add this[start to end]
 			start = end+1
 		return result
 		
@@ -685,8 +685,8 @@ immutable class string
 		let result = ""
 		let prevChar = " "
 		for this
-			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z"): result += .toUpperCase
-			else                                      result += .
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z") then	result += .toUpperCase
+			else	result += .
 			prevChar = .
 		return result
 		
@@ -1050,7 +1050,9 @@ class List<T>
 	void setFilteredList: T[] list
 		                  bool(T it) condition
 		clear
-		for list: if condition(.): add .
+		for list
+			if condition(.)
+				add .
 		
 	void setFilteredList: T[] list
 		                  bool(T it) condition
@@ -1060,7 +1062,7 @@ class List<T>
 		for list
 			if condition .
 				add .
-				if ++count >= maxCount: break
+				if ++count >= maxCount then break
 			
 	// ------------------------------------------- Clone or Convert -------------------------------------------
 
@@ -1096,7 +1098,7 @@ class List<T>
 	
 	// Remove a random item from the list and return it
 	importance:3 T popRandom()
-		if length == 0: return null
+		if length == 0 then return null
 		int index = math.randomInteger(length)
 		T item = get(index)
 		this.removeAt(index)
@@ -1320,7 +1322,7 @@ class List<T>
 	TValue findIn: TValue(T it) selector
 		for this
 			let value = selector(it)
-			if value != null: return value
+			if value != null then return value
 		return null
 
 	T findWithinRangeOrClosest: float(T it) selector
@@ -1332,8 +1334,8 @@ class List<T>
 		for this
 			let value = selector(.)
 			float distance
-			if value > max: distance = value - max; else
-			if value < min: distance = min - value; else
+			if value > max then distance = value - max; else
+			if value < min then distance = min - value; else
 				            this.removeAt(i); return .
 				
 			if distance < closestDistance
@@ -1385,18 +1387,21 @@ class List<T>
 					
 	importance:2 int total: int(T it) selector
 		let sum = 0
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum
 		
 	int total: int(T it) selector
 		       label bool(T it) where
 		let sum = 0
-		for this: if where(.): sum += selector(.)
+		for this
+			if where(.) then sum += selector(.)
 		return sum
 		
 	float total: float(T it) selector
 		let sum = 0.0
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum
 		
 	js int sum
@@ -1412,12 +1417,12 @@ class List<T>
 		                 string separator = ", "
 		let result = ""
 		for this
-			if result: result += separator
+			if result then result += separator
 			result += selector(.)
 		return result
 		
 	importance:5 shuffle
-		for 1 to length <- i
+		for 1 to length backwards
 			var j = math.floor(math.randomFloat * (i + 1))
 			var temp = this.get(i)
 			this.set(i, this.get(j))
@@ -1443,7 +1448,7 @@ class List<T>
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value < resultValue: resultValue = value
+			if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	min: float(T it) selector 
@@ -1452,7 +1457,7 @@ class List<T>
 		float resultValue = threshold
 		for this
 			let value = selector(.)
-			if value < resultValue: resultValue = value
+			if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	min: int(T it) selector 
@@ -1463,7 +1468,7 @@ class List<T>
 		for this
 			if where(.)
 				let value = selector(.)
-				if value < resultValue: resultValue = value
+				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	min: float(T it) selector 
@@ -1474,7 +1479,7 @@ class List<T>
 		for this
 			if where(.)
 				let value = selector(.)
-				if value < resultValue: resultValue = value
+				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: int(T it) selector
@@ -1483,7 +1488,7 @@ class List<T>
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue: resultValue = value
+			if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: float(T it) selector
@@ -1492,7 +1497,7 @@ class List<T>
 		float resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue: resultValue = value
+			if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: int(T it) selector
@@ -1503,7 +1508,7 @@ class List<T>
 		for this 
 			if where(.)
 				let value = selector(.)
-				if value > resultValue: resultValue = value
+				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: float(T it) selector
@@ -1514,7 +1519,7 @@ class List<T>
 		for this
 			if where(.)
 				let value = selector(.)
-				if value > resultValue: resultValue = value
+				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	maxUnique: int(T it) selector
@@ -1523,8 +1528,8 @@ class List<T>
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue:  resultValue = value; else
-			if value == resultValue: resultValue = threshold
+			if value > resultValue then  resultValue = value; else
+			if value == resultValue then resultValue = threshold
 		return resultValue != threshold ? resultValue : default
 		
 	minIndex: float(T it) selector
@@ -1633,7 +1638,7 @@ class List<T>
 				resultItem = .
 				resultIndex = i
 				
-		if resultIndex != -1: removeAt resultIndex
+		if resultIndex != -1 then removeAt resultIndex
 		return resultItem
 		
 	popMax: int(T it) selector
@@ -1648,7 +1653,7 @@ class List<T>
 				resultItem = .
 				resultIndex = i
 				
-		if resultIndex != -1: removeAt resultIndex
+		if resultIndex != -1 then removeAt resultIndex
 		return resultItem
 		
 	withMax: int(T it) selector
@@ -1695,7 +1700,8 @@ class List<T>
 		insert pop
 		
 	rotate: int count
-		for count: insert pop
+		for count
+			insert pop
 		
 	js T[] intersectWith: T[] other
 		const a = this || []
@@ -1940,7 +1946,7 @@ json
 yaml
 	dynamic lib
 	setup
-		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
+		if yaml.lib == null then yaml.lib = await Platform.import("lib/js-yaml.js")
 	dynamic parse: string value
 		return yaml.lib.load(value)
 
@@ -1977,10 +1983,10 @@ internal transient immutable SourceCodeLocation
 			return this
 		if left != null
 			let result = left.find file, pos
-			if result != null: return result
+			if result != null then return result
 		if right != null
 			let result = right.find file, pos
-			if result != null: return result
+			if result != null then return result
 		return null
 			
 	SourceCodeLocation find: SourceCodeLocation location
@@ -1988,20 +1994,20 @@ internal transient immutable SourceCodeLocation
 			return this
 		if left != null
 			let result = left.find location
-			if result != null: return result
+			if result != null then return result
 		if right != null
 			let result = right.find location
-			if result != null: return result
+			if result != null then return result
 		return null
 		
 	SourceCodeLocation leaf
-		if file: return this
+		if file then return this
 		if right
 			let result = right.leaf
-			if result: return result
+			if result then return result
 		if left
 			let result = left.leaf
-			if result: return result
+			if result then return result
 		return null
 		
 js Error
@@ -2370,8 +2376,8 @@ global skipInit unit math
 	importance:3 moveTowards: float value
 		         float targetValue
 		         float speed = 1
-		if targetValue > value: return math.min(value + speed, targetValue) else
-		if targetValue < value: return math.max(value - speed, targetValue)
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
 		
 	// ------------------------------------------------------- floor, ceil, round -------------------------------------------------------
 		
@@ -2434,14 +2440,14 @@ global skipInit unit math
 	moveTowardsAngle: float value
 		              float targetValue
 		              float speed = 10
-		if targetValue > value: return math.min(value + speed, targetValue) else
-		if targetValue < value: return math.max(value - speed, targetValue)
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
 	
 	// Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
 	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi] using true modulo for stability
 		float x = angle mod math.twoPi
-		if x > math.pi: x -= math.twoPi
+		if x > math.pi then x -= math.twoPi
 		
 		// Use symmetries to fold into [-pi/2, pi/2]
 		bool negate = false
@@ -2461,7 +2467,7 @@ global skipInit unit math
 	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi]
 		float x = angle mod math.twoPi
-		if x > math.pi: x -= math.twoPi
+		if x > math.pi then x -= math.twoPi
 		
 		// Use even symmetry and fold to [0, pi/2]
 		x = math.abs(x)
@@ -2487,10 +2493,10 @@ global skipInit unit math
 		// https://stackoverflow.com/questions/42537957/fast-accurate-atan-arctan-approximation-algorithm
 
 		// Handle negative values using atan(-x) = -atan(x)
-		if x < 0: return -atan(-x)
+		if x < 0 then return -atan(-x)
 		
 		// Handle large values using atan(x) = pi/2 - atan(1/x)
-		if x > 1: return math.halfPi - atan(1 / x)
+		if x > 1 then return math.halfPi - atan(1 / x)
 		
 		// Transform to z-space: z = x / (x + pi/3)
 		float z = x / (x + 1.0471975511965976) // pi/3
@@ -2598,43 +2604,44 @@ global skipInit unit math
 	clamp: int value
 		   int min
 		   int max
-		if value < min: return min
-		if value > max: return max
-			            return value
+		if value < min	then return min
+		if value > max	then return max
+			                 return value
 	
 	clamp: int value
 		   int max
-		if value > max: return max
-			            return value
+		if value > max then return max
+			                return value
 	
 	clamp: int value
 		   int min
-		if value < min: return min
-			            return value
+		if value < min then return min
+			                return value
 	
 	clamp: float value
 		   float min
 		   float max
-		if value < min: return min
-		if value > max: return max
-			            return value
+		if value < min then return min
+		if value > max then return max
+			                return value
 	
 	clamp: float value
 		   float max
-		if value > max: return max
-			            return value
+		if value > max then return max
+			                return value
 			
 	clamp: float value
 		   float min
-		if value < min: return min
-			            return value
+		if value < min then return min
+			                return value
 	
 	// ------------------------------------------------------- Random -------------------------------------------------------
 			
 	static randomString: int length = 16
 		string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		string token
-		for length: token += chars[math.randomInteger chars.length-1]
+		for length
+			token += chars[math.randomInteger chars.length-1]
 		return token
 		
 
@@ -2654,21 +2661,24 @@ struct RollingList
 		values[index++ mod length] = PlainDate.preciseTime - startTime
 	
 	average
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float total
-		for values: total += .
+		for values
+			total += .
 		return total / (values.length atMost length)
 	
 	max
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float max = float.minValue
-		for values: if . > max: max = .
+		for values
+			if . > max then max = .
 		return max
 	
 	min
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float min = float.maxValue
-		for values: if . < min: min = .
+		for values
+			if . < min then min = .
 		return min
 	
 	implicit string toString()

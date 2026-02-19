@@ -133,14 +133,14 @@ struct float
 	inline js int totalWeeks        := Math.floor(this / 604800000)
 		
 	private static string toMinutesHoursDaysOrWeeksString: float time, showWeeksAfterDays = 31
-		if time < 2 minutes: return "1 minute"
-		if time < 1 hours:   return "{time.totalMinutes} minutes"
-		if time < 2 hours:   return "1 hour"
-		if time < 1 days:    return "{time.totalHours} hours"
-		if time < 2 days:    return "1 day"
-		if time < showWeeksAfterDays days: return "{time.totalDays} days"
-		if time < 2 weeks:   return "1 week"
-		                     return "{time.totalWeeks} weeks"
+		if time < 2 minutes	then return "1 minute"
+		if time < 1 hours	then return "{time.totalMinutes} minutes"
+		if time < 2 hours	then return "1 hour"
+		if time < 1 days	then return "{time.totalHours} hours"
+		if time < 2 days	then return "1 day"
+		if time < showWeeksAfterDays days	then return "{time.totalDays} days"
+		if time < 2 weeks	then return "1 week"
+		                                         return "{time.totalWeeks} weeks"
 
 	// (31.12.)
 	inline string dayMonthString
@@ -208,7 +208,7 @@ class string
 // It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
 string TimeString
 	static TimeString now := Date.fromTime(Time.now).utcString
-	static TimeString fromTime(float value) := Date.fromTime(value).utcString
+	static TimeString fromTime(float value) => Date.fromTime(value).utcString
 	
 	inline js bool toBool := this
 	inline string toString() this

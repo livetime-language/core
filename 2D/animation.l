@@ -17,7 +17,7 @@ global unit fx
 		for animations <-
 			if now >= .startTime
 				float f = .duration ? (now - .startTime)/.duration : 1
-				if f >= 1: f = 1; animations.removeAt i
+				if f >= 1 then f = 1; animations.removeAt i
 				.tick f
 				
 	global delay: float time = 0 // The delay in milliseconds
@@ -145,7 +145,7 @@ transient global skipInit unit audio
 	global importance:4 playSound: Sound sound
 		              float delay = 0 // The delay before the sound starts in milliseconds
 		              bool needsToBeCertain = false
-		if needsToBeCertain and not input.isCertain: return
+		if needsToBeCertain and not input.isCertain then return
 		
 		if Time.frame == 0
 			fx.add PlaySoundAnimation startTime:math.ceil(Time.now+core.frameTime)+delay, sound
@@ -158,7 +158,7 @@ transient global skipInit unit audio
 	global importance:4 static playSound: Sound sound
 		              nocolon float at = 0 // The time at which the sound starts in milliseconds
 		              bool needsToBeCertain = false
-		if needsToBeCertain and not input.isCertain: return
+		if needsToBeCertain and not input.isCertain then return
 		if Time.now >= at and Time.now < math.floor at + core.frameTime
 			sound.play
 				
@@ -173,7 +173,7 @@ internal Animation FadeAnimation
 	bool removeWhenDone
 	tick(float progress) 
 		object.alpha = startValue + delta * progress
-		if progress >= 1 and removeWhenDone: Framework.objects.remove object
+		if progress >= 1 and removeWhenDone then Framework.objects.remove object
 		
 internal Animation MoveAnimation
 	Vector2 startValue, delta
@@ -193,9 +193,9 @@ internal Animation FadeSoundAnimation
 	float startValue, delta
 	Sound sound
 	tick(float progress)
-		if sound == null: return
+		if sound == null then return
 		sound.volume = startValue + delta * progress
-		if progress >= 1: sound.stop
+		if progress >= 1 then sound.stop
 			
 internal Animation PlaySoundAnimation
 	Sound sound
@@ -215,14 +215,14 @@ internal Animation BezierAnimation
 	bool removeWhenDone
 	tick(float progress) 
 		object.position = getPointOnBezierCurve(points, progress, smoothness)
-		if progress >= 1 and removeWhenDone: Framework.objects.remove object
+		if progress >= 1 and removeWhenDone then Framework.objects.remove object
 
 	static getPointOnBezierCurve: Vector2[] points, float progress, float smoothness = 1.0
 		// Handle edge cases
-		if points.length == 0: return Vector2.Zero
-		if points.length == 1: return points[0]
-		if progress <= 0: return points[0]
-		if progress >= 1: return points.last
+		if points.length == 0	then return Vector2.Zero
+		if points.length == 1	then return points[0]
+		if progress <= 0	then return points[0]
+		if progress >= 1	then return points.last
 		
 		// For 2 points, just use linear interpolation
 		if points.length == 2
@@ -253,7 +253,7 @@ internal Animation BezierAnimation
 		// Find which segment the progress falls into
 		float totalProgress = progress * (points.length - 1)
 		int segmentIndex = math.floor(totalProgress)
-		if segmentIndex >= points.length - 1: segmentIndex = points.length - 2
+		if segmentIndex >= points.length - 1 then segmentIndex = points.length - 2
 		
 		float localProgress = totalProgress - segmentIndex
 		

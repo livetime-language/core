@@ -17,13 +17,13 @@ struct Vector2
 	static importance:4 inline Vector2 Zero() Vector2(0, 0, null)
 		
 	// A string representation of the vector
-	importance:4 string toString() := "\{{x.format(maxFractionDigits:1)}, {y.format(maxFractionDigits:1)}\}"
+	importance:4 string toString => "\{{x.format(maxFractionDigits:1)}, {y.format(maxFractionDigits:1)}\}"
 	
 	// Returns true if the vector is not equal to Vector2.None
 	bool toBool := (x != float.infinity || y != float.infinity)
 	
 	// Creates a copy of the vector with the same values
-	importance:4 Vector2 clone() := {x, y, location}
+	importance:4 Vector2 clone => {x, y, location}
 		
 	// Create a new instance. Useful for data imported from json where the vector might be undefined
 	inline js Vector2 create: float x // The x-coordinate of the vector to create
@@ -169,7 +169,7 @@ struct Vector2
 	// Ensure the vector has a length of 1
 	importance:4 normalize
 		let len = math.sqrt(x * x + y * y)
-		if len != 0: x = x / len; y = y / len
+		if len != 0 then x = x / len; y = y / len
 		return this
 
 	// A vector that points in the same direction, but has a length of 1
@@ -182,9 +182,9 @@ struct Vector2
 		let delta = targetPosition - this
 		if delta.x != 0 || delta.y != 0
 			delta = delta.normalize * speed
-			if delta.x > 0: x = math.min(x + delta.x, targetPosition.x)
+			if delta.x > 0 then x = math.min(x + delta.x, targetPosition.x)
 			else            x = math.max(x + delta.x, targetPosition.x)
-			if delta.y > 0: y = math.min(y + delta.y, targetPosition.y)
+			if delta.y > 0 then y = math.min(y + delta.y, targetPosition.y)
 			else            y = math.max(y + delta.y, targetPosition.y)
 		else
 		if onReachedTarget != null
@@ -253,7 +253,8 @@ struct Vector2
 	
 	static getPathLength: Vector2[] path
 		float length
-		forPairs path: length += .distanceTo next
+		forPairs path
+			length += .distanceTo next
 		return length
 		
 	static Vector2 getPositionAlongPath: Vector2[] path, float distance
@@ -312,8 +313,8 @@ Path
 			length += segmentLengths[i] = math.sqrt(x*x + y*y)
 		
 	Vector2 getPosition: float distance
-		if nodes.length == 0: return Vector2.None
-		if nodes.length == 1: return nodes[0]
+		if nodes.length == 0 then return Vector2.None
+		if nodes.length == 1 then return nodes[0]
 			
 		float travelledSoFar
 		forPairs nodes
@@ -327,8 +328,8 @@ Path
 		return nodes.last
 		
 	PositionAndVector getPositionAndVector: float distance
-		if nodes.length == 0: return { position:Vector2.None }
-		if nodes.length == 1: return { position:nodes[0] }
+		if nodes.length == 0 then return { position:Vector2.None }
+		if nodes.length == 1 then return { position:nodes[0] }
 			
 		float travelledSoFar
 		forPairs nodes
@@ -657,7 +658,8 @@ struct int
 class List<T>
 	Vector2 total: Vector2(T it) selector
 		Vector2 sum = {0,0}
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum	
 		
 	Vector2 average: Vector2(T it) selector
@@ -735,16 +737,16 @@ global skipInit unit math
 		let lineVector = to - from
 		let pointVector = point - from
 		let scalar = (pointVector dot lineVector) / lineVector.lengthSquared
-		if type >= Ray     and scalar < 0: return Vector2.None
-		if type == Segment and scalar > 1: return Vector2.None
+		if type >= Ray     and scalar < 0 then return Vector2.None
+		if type == Segment and scalar > 1 then return Vector2.None
 		return from + lineVector * scalar
 	
 	closestPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
 		let lineVector = to - from
 		let pointVector = point - from
 		let scalar = (pointVector dot lineVector) / lineVector.lengthSquared
-		if type >= Ray     and scalar < 0: scalar = 0
-		if type == Segment and scalar > 1: scalar = 1
+		if type >= Ray     and scalar < 0 then scalar = 0
+		if type == Segment and scalar > 1 then scalar = 1
 		return from + lineVector * scalar
 	
 global transient unit System
@@ -871,8 +873,8 @@ class IsometicGrid
 		Vector2 t = screenPos - basePos + topFaceOffset
 		let x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		let y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
-		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-		else                                                                  return Vector2.None
+		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y) then	return Vector2(x,y)
+		else	return Vector2.None
 		
 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 	getGridPosition: Vector2 screenPos // The screen position
@@ -880,8 +882,8 @@ class IsometicGrid
 		Vector2 t = screenPos - basePos + topFaceOffset
 		let x = math.round((xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y))
 		let y = math.round((xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y))
-		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return IntVector2(x,y)
-		else                                                                  return IntVector2.None
+		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y) then	return IntVector2(x,y)
+		else	return IntVector2.None
 		
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
@@ -954,7 +956,8 @@ class Grid<T>
 	transient void(T item, IntVector2 pos)[string] itemForCharacter = null
 	
 	Grid
-		for size.x * size.y: items.add null
+		for size.x * size.y
+			items.add null
 	
 	get: IntVector2 position // The vector to get the value from
 		return {0,0} <= position < size ? items[position.y*size.x + position.x] : null
@@ -974,7 +977,7 @@ class Grid<T>
 	
 	map: string character
 		 stored void(T item, IntVector2 pos) to
-		if not itemForCharacter: itemForCharacter = {}
+		if not itemForCharacter then itemForCharacter = {}
 		itemForCharacter.set(character, to)
 
 	create: string[] strings

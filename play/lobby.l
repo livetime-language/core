@@ -56,7 +56,7 @@ unit lobby
 	
 	tick
 		tickSettings
-		if Platform.isStaging: drawText "Version:{Platform.buildVersion}", size:20, position:{-940, 520}, align:Left
+		if Platform.isStaging then drawText "Version:{Platform.buildVersion}", size:20, position:{-940, 520}, align:Left
 		if (PeerNetwork.error or core.errorMessage) and Platform.isStaging
 			drawText PeerNetwork.error, size:40
 			drawText core.errorMessage, size:14, position:{0,40}
@@ -68,7 +68,7 @@ unit lobby
 			if key == E and cmd
 				setupFields newHost:pressedBy
 				
-			if not host: return
+			if not host then return
 			if key == Right
 				showName players[showNameIndex++ mod players.length]
 			else
@@ -98,7 +98,7 @@ unit lobby
 				// Start button
 				let text = not .isReadyInLobby ? "START" : Loca.language == German ? "Ich bin bereit" : "I'm ready"
 				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.color, enabled:!.isReadyInLobby, clickableBy:player
-					if enableFullscreen: Platform.setFullscreen true forPlayer:touch.by
+					if enableFullscreen then Platform.setFullscreen true forPlayer:touch.by
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
 					
@@ -117,12 +117,12 @@ unit lobby
 				let field = fields.find.player == player
 					// Set field position
 					field.position = pos + {0, -halfVideoHeight-(players.length<=2 ? 85 : 120)}
-					if field.effect: field.effect.position = field.position + {0,-190}
-					if field.particleSystem: field.particleSystem.position = field.position
+					if field.effect then field.effect.position = field.position + {0,-190}
+					if field.particleSystem then field.particleSystem.position = field.position
 						
 					if editNames
 						// Suggestions
-						for nameSuggestions -> name
+						for nameSuggestions as name
 							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
 								fields[playerIndex].text = name
 								setPlayerName player, name
@@ -133,7 +133,8 @@ unit lobby
 
 		// For testing, display to coordinates when we click the screen
 		if core.drawPointsForTesting
-			onTouchDown: points.add .position.clone
+			onTouchDown
+				points.add .position.clone
 			points.each drawText text:. position:. size:30; drawCircle . outlineColor:White size:200
 			drawText ++counter, {0, -480}, size:100
 		
@@ -192,7 +193,7 @@ unit lobby
 		player.colorPreferences = [player.index]
 	
 	tickSettings
-		for players -> player
+		for players as player
 			graphics.visibleFor player
 				drawImage settingsIcon, {-920,-500}, size:32
 					player.showSettingsInLobby = !player.showSettingsInLobby
@@ -258,11 +259,11 @@ internal Object LobbyTextField
 		if isFocused
 			onType by editableBy
 				text += .; lastTypeTime = Time.now
-				if onChanged != null: onChanged text
+				if onChanged != null then onChanged text
 			onKeyDown Backspace by editableBy
-				if text: text = text.substring(0, text.length-1)
+				if text then text = text.substring(0, text.length-1)
 				lastTypeTime = Time.now
-				if onChanged != null: onChanged text
+				if onChanged != null then onChanged text
 					
 		drawText text, position+{0, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor
 

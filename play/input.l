@@ -71,7 +71,7 @@ internal transient class InternalUser
 		int ahead = frame - inputFrame
 		
 		// Get the maximum number of frames we were ahead in the last 10 seconds
-		if ahead < 50: aheadHistory.add ahead, maxLength:10*core.ticksPerSecond
+		if ahead < 50 then aheadHistory.add ahead, maxLength:10*core.ticksPerSecond
 		// int maxAhead = aheadHistory.max .
 		int maxAhead = aheadHistory.percentile 80
 		
@@ -464,7 +464,7 @@ skipInit global unit input
 	switchPerspectiveTo: Player player
 		watch "Switching to {player}"
 		showPerspectiveOf = player
-		if Platform.mode == Play or Platform.mode == Pause: core.switchToPlayer player
+		if Platform.mode == Play or Platform.mode == Pause then core.switchToPlayer player
 		
 	internal Player[] playersById
 	Cursor cursor
@@ -621,12 +621,12 @@ skipInit global unit input
 		let lastMoveIndex = localUser.lastTouchMoveIndex
 		let i = 0
 		while i < lastMoveIndex.length
-			if lastMoveIndex[i] == id: return lastMoveIndex[i+1]
+			if lastMoveIndex[i] == id then return lastMoveIndex[i+1]
 			i += 2
 		return 0
 		
 	private handleTextInput: InputType type, string text
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -634,7 +634,7 @@ skipInit global unit input
 		inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, Key keyCode, string key
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 		
@@ -646,19 +646,20 @@ skipInit global unit input
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt32 cast keyCode
-		if inputType == KeyDown: inputs.writeString key
+		if inputType == KeyDown then inputs.writeString key
 		
 	internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 		int touchType, id
-		if pointerType == "mouse": touchType = button.clamp(0..2); else
-		if pointerType == "touch": touchType = 3; id = pointerId; else
-			                       touchType = 4
+		switch pointerType
+			"mouse"	touchType = button.clamp(0 to 2)
+			"touch"	touchType = 3; id = pointerId
+			default	touchType = 4
 		
 		Vector2 pixelPos = {x*graphics.pixelRatio, y*graphics.pixelRatio}
 		Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return		
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return		
 		let inputs = localUser.inputs
 
 		if inputType == TouchMove
@@ -682,7 +683,7 @@ skipInit global unit input
 
 	internal handleSynteticTouchEvent: int playerIndex, InputType inputType, float x, float y, TouchType touchType, int id
 		let inputs = internalUsers[playerIndex]?.inputs
-		if !inputs: return
+		if !inputs then return
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
 		              + math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
 		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
@@ -702,7 +703,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(referencePos.y)
 		
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
@@ -734,14 +735,14 @@ skipInit global unit input
 				
 	// Handles navigating back or forward in the browser	
 	internal handleNavigate: string url
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Navigate
 		inputs.writeString url
 		
 	internal handleString: int id, string data
-		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs: return
+		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.String
@@ -749,7 +750,7 @@ skipInit global unit input
 		inputs.writeString data
 		
 	internal handleJson: int id, string data
-		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs: return
+		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Json
@@ -768,9 +769,9 @@ skipInit global unit input
 	
 	internal updateGameControllers
 		let gamepads = getGamepads
-		if gamepads == null: return
+		if gamepads == null then return
 		InternetGamePad gp = gamepads[0]
-		if !gp or gp.axes.length < 2: return
+		if !gp or gp.axes.length < 2 then return
 			
 		let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")
 		
@@ -808,7 +809,7 @@ skipInit global unit input
 		inputs.writeUnsignedInt16 buttons
 			
 	internal parseInputs: int frame
-		for internalUsers -> internalUser if internalUser
+		for internalUsers as internalUser if internalUser
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
@@ -816,25 +817,25 @@ skipInit global unit input
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
-				if nextFrame > frame: break
+				if nextFrame > frame then break
 				inputs.readPos += 4
 				
 				// We create the player as soon as we receive the first input from that player,
 				// which is typically the "Join" message that is sent in "startConnected",
 				// but could also be a player reconnecting that was previously kicked out
 				if not player
-					if core.verbose and not internalUser.local: core.log "<{internalUser.id}> Received first message from new user"
+					if core.verbose and not internalUser.local then core.log "<{internalUser.id}> Received first message from new user"
 					
 					players.add player = {id:userId, index:players.length}
 					playersById[userId] = player
-					if internalUser.local: localPlayer = player
+					if internalUser.local then localPlayer = player
 					updatePlayers
 				
 				let value = inputs.readUnsignedInt16
 				InputType inputType = cast(value mod 32)
 				
 				if inputType >= TouchDown && inputType <= Scroll
-					if !player: core.log " ERROR: userId {userId} not in playersById"
+					if !player then core.log " ERROR: userId {userId} not in playersById"
 					TouchType type = cast((value shiftRight 5) mod 8)
 					int id = (value shiftRight 8) mod 128
 					Vector2 referencePos = {inputs.readInt16, inputs.readInt16}
@@ -842,7 +843,7 @@ skipInit global unit input
 					
 					if inputType == TouchDown
 						touchDown internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
-						if generateIntegrationTest == Clicks: integrationTest += "\tclick window:{userId} x:{referencePos.x} y:{referencePos.y}\n"
+						if generateIntegrationTest == Clicks then integrationTest += "\tclick window:{userId} x:{referencePos.x} y:{referencePos.y}\n"
 					else
 					if inputType == TouchMove
 						touchMove internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
@@ -904,21 +905,21 @@ skipInit global unit input
 					int id = inputs.readInt
 					string valueString = inputs.readString
 					networkData.call id, valueString
-					if Platform.waitingForInitialData > 0: Platform.waitingForInitialData--
+					if Platform.waitingForInitialData > 0 then Platform.waitingForInitialData--
 				else
 				if inputType == Json
 					int id = inputs.readInt
 					string valueString = inputs.readString
 					dynamic object = valueString ? valueString.parseJson : null
 					networkData.call id, object
-					if Platform.waitingForInitialData > 0: Platform.waitingForInitialData--
+					if Platform.waitingForInitialData > 0 then Platform.waitingForInitialData--
 				else
 				if inputType == Object
 					int id = inputs.readInt
 					string valueString = inputs.readString
 					dynamic object = valueString ? valueString.parseJson : null
 					networkData.call id, object
-					if Platform.waitingForInitialData > 0: Platform.waitingForInitialData--
+					if Platform.waitingForInitialData > 0 then Platform.waitingForInitialData--
 				else
 				if inputType == SetState
 					// Set state
@@ -932,8 +933,8 @@ skipInit global unit input
 					let availableUsers = clone input.internalUsers
 					for players as player
 						let user = availableUsers.popWhere.name == player.name
-						if not user: user = availableUsers.popWhere.index == player.index
-						if not user: availableUsers.pop
+						if not user then user = availableUsers.popWhere.index == player.index
+						if not user then availableUsers.pop
 						player.id = user.id
 						
 						user._id = player._id
@@ -966,20 +967,20 @@ skipInit global unit input
 		// 		.gameController.inMotion = math.abs(.gameController.leftStick.x) >= GameController.deadZone
 		// 		                    or math.abs(.gameController.leftStick.y) >= GameController.deadZone
 				
-		for players -> p
+		for players as p
 			// Left stick
 			let right = .controllerKeyDownFrame[ControllerButton.Right]
 			let down  = .controllerKeyDownFrame[ControllerButton.Down]
 			let left  = .controllerKeyDownFrame[ControllerButton.Left]
 			let up    = .controllerKeyDownFrame[ControllerButton.Up]
-			if right or left: .gameController.leftStick.x = right >= left ? 1 : -1
-			if down  or up:   .gameController.leftStick.y = down  >= up   ? 1 : -1
+			if right or left	then .gameController.leftStick.x = right >= left ? 1 : -1
+			if down  or up	then .gameController.leftStick.y = down  >= up   ? 1 : -1
 			.gameController.inMotion = math.abs(.gameController.leftStick.x) >= GameController.deadZone
-			                    or math.abs(.gameController.leftStick.y) >= GameController.deadZone
+			                        or math.abs(.gameController.leftStick.y) >= GameController.deadZone
 			
 			// Buttons
 			for .gameController.buttons
-				if p.controllerKeyDownFrame[i]: 
+				if p.controllerKeyDownFrame[i]
 					.state = true
 					
 		if Platform.receivedInitialData
@@ -1009,7 +1010,7 @@ skipInit global unit input
 			// This flag is preserved throughout "TouchMove" and "TouchUp", so if we mark the touch
 			// as handled at any point, the flags stays set to "true" until we touch down again
 			touch.handled = false
-			if isSmoothPosition: touch.smoothPosition = referencePos
+			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
 			// Evaluate: Set isDown directly instead of in player.postprocessEvents #easier-to-reason-about #evaluate
 			touch = {id, player, Down, type, referencePos, referencePos, referencePos, isDown:true}
@@ -1031,10 +1032,10 @@ skipInit global unit input
 		let touch = player.touches.find.id == id
 		if touch
 			// Update the touch in player.touches
-			if touch.phase == Still: touch.phase = Move
+			if touch.phase == Still then touch.phase = Move
 			touch.referencePosition = referencePos
 			touch.type = type
-			if isSmoothPosition: touch.smoothPosition = referencePos
+			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
 			touch = {id, player, Move, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 			player.touches.add touch
@@ -1057,7 +1058,7 @@ skipInit global unit input
 			touch.referencePosition = referencePos
 			touch.type = type
 			touch.isDown = false
-			if isSmoothPosition: touch.smoothPosition = referencePos
+			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
 			touch = {id, player, Up, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 			player.touches.add touch
@@ -1133,7 +1134,7 @@ skipInit global unit input
 					c.B.assign     "P"     P
 			
 			controllerButtonMap.clear
-			for players -> player
+			for players as player
 				player.controllerKeyDownFrame.clear
 				for .gameController.buttons
 					controllerButtonMap[.key] = {userId:player.id, buttonIndex:i}
@@ -1167,7 +1168,7 @@ skipInit global unit input
 	Player[] playersToRemove
 		
 	removePlayer: Player player
-		if not isCertain: return
+		if not isCertain then return
 		core.log "Removing player {player.id} at frame {core.frame}"
 		playersToRemove.add player
 		
@@ -1231,7 +1232,7 @@ skipInit global unit input
 		                HorizontalAlignment align = Center  // The horizontal alignment of the touch area
 		                VerticalAlignment valign = Middle   // The vertical alignment of the touch area
 		                void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		let sizeX = size.x
 		let sizeY = size.y || size.x
 		let x = align == Left ? position.x : align  == Center ? position.x-sizeX/2 : position.x-sizeX
@@ -1243,19 +1244,19 @@ skipInit global unit input
 			{ x,         y + sizeY }.transform(graphics.localMatrix),
 		]
 		
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].downTouches -> touch
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and touch.referencePosition.insidePolygon(poly)
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 						
 		if cursor != Auto
-			for localUser.movingTouches -> touch
+			for localUser.movingTouches as touch
 				if !touch.handled && touch.referencePosition.insidePolygon(poly)
 					this.cursor = cursor
 				
-		if showClickableArea: drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
+		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
 
 	// Do something when the player touches or clicks within a given rotated rectangle.
 	//
@@ -1279,7 +1280,7 @@ skipInit global unit input
 		                HorizontalAlignment align = Center  // The horizontal alignment of the touch area
 		                VerticalAlignment valign = Middle   // The vertical alignment of the touch area
 		                void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		let halfSizeX = size.x/2
 		let halfSizeY = (size.y || size.x)/2
 		let x = align == Left ? position.x+halfSizeX : align  == Center ? position.x : position.x-halfSizeX
@@ -1291,19 +1292,19 @@ skipInit global unit input
 			{ -halfSizeX, +halfSizeY }.rotate(angle).move(x,y).transform(graphics.localMatrix),
 		]
 		
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].downTouches -> touch
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and touch.referencePosition.insidePolygon(poly)
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 						
 			if cursor != Auto
-				for localUser.movingTouches -> touch
+				for localUser.movingTouches as touch
 					if !touch.handled && touch.referencePosition.insidePolygon(poly)
 						this.cursor = cursor
 				
-		if showClickableArea: drawPolygon poly, color:{"#ff000080"}, layer:10000000
+		if showClickableArea then drawPolygon poly, color:{"#ff000080"}, layer:10000000
 
 	// Do something when the player touches or clicks within a given circle.
 	//
@@ -1322,7 +1323,7 @@ skipInit global unit input
 		                bool showClickableArea = false      // Highlight the clickable area for debugging
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		let referencePosition = position.transformed(graphics.localMatrix)
 		let referenceRadius = radius * graphics.localMatrix.scaleVector.x
 		for getTargetedPlayers(by) as player
@@ -1330,14 +1331,14 @@ skipInit global unit input
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and (touch.referencePosition distanceTo referencePosition) <= referenceRadius
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 						
 			if cursor != Auto
 				for localUser.movingTouches as touch
 					if !touch.handled && (touch.referencePosition distanceTo position) <= radius
 						this.cursor = cursor
 				
-		if showClickableArea: drawCircle position, radius*2, color:{"#ff0000b0"}, layer:10000000
+		if showClickableArea then drawCircle position, radius*2, color:{"#ff0000b0"}, layer:10000000
 
 	// Do something when the player touches or clicks within a given polygon.
 	//
@@ -1359,23 +1360,24 @@ skipInit global unit input
 		                bool showClickableArea = false      // Highlight the clickable area for debugging
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		Vector2[] poly
-		for points: poly.add (position + .).transform(graphics.localMatrix)
+		for points
+			poly.add (position + .).transform(graphics.localMatrix)
 			
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].downTouches -> touch
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
 				and touch.referencePosition.insidePolygon(poly)
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 						
 			if cursor != Auto
-				for localUser.movingTouches -> touch
+				for localUser.movingTouches as touch
 					if !touch.handled && touch.referencePosition.insidePolygon(poly)
 						this.cursor = cursor
 				
-		if showClickableArea: drawPolygon position, points, color:{"#ff0000b0"}, layer:10000000
+		if showClickableArea then drawPolygon position, points, color:{"#ff0000b0"}, layer:10000000
 			
 	// Do something when the player touches or clicks anywhere on the screen.
 	//
@@ -1388,20 +1390,20 @@ skipInit global unit input
 	global importance:0 onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].downTouches -> touch
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 
 	// Do something when the player touches or clicks, even if the event is already handled.
 	//
 	// Image: onTouchDown0.png
 	global importance:0 onTouchDownAny: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                   void(Touch touch) do                // Do this for each touch or click, even those that are already marked as handled
-		if not active: return
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].downTouches -> touch
+		if not active then return
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].downTouches as touch
 				if player.enableTouch or touch.type != Finger
 					do touch
 
@@ -1428,7 +1430,7 @@ skipInit global unit input
 		                HorizontalAlignment align = Center  // The horizontal alignment of the touch area
 		                VerticalAlignment valign = Middle   // The vertical alignment of the touch area
 		                void(Touch touch) do                // Do this for each mouse that is hovering over the given area
-		if not active: return
+		if not active then return
 		let sizeX = size.x
 		let sizeY = size.y || size.x
 		let x = align == Left ? position.x : align  == Center ? position.x-sizeX/2 : position.x-sizeX
@@ -1440,17 +1442,17 @@ skipInit global unit input
 			{ x,         y + sizeY }.transform(graphics.localMatrix),
 		]
 		
-		for getTargetedPlayers(by) -> player
-			for player.touches -> touch
+		for getTargetedPlayers(by) as player
+			for player.touches as touch
 				if touch.referencePosition.insidePolygon(poly)
 					do touch
 					
 			if cursor != Auto
-				for localUser.movingTouches -> touch
+				for localUser.movingTouches as touch
 					if !touch.handled && touch.referencePosition.insidePolygon(poly)
 						this.cursor = cursor
 				
-		if showClickableArea: drawRectangle position, size, color:{"#ff000080"}
+		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
 
 			
 	// ---------------------------------------------- Touch Move ----------------------------------------------
@@ -1480,7 +1482,7 @@ skipInit global unit input
 	global importance:0 onTouchMove: Touch touch                 // Only consider this particular touch or click
 		                triggeredOnTouchDown = true // Ensure we also get a touchMove before the touchDown event on touch screens
 		                void(Touch touch) do        // Do this for each touch or click
-		if not touch or not active: return
+		if not touch or not active then return
 		let touchId = touch.id
 		let user = internalUsers[touch.by.id]
 			if triggeredOnTouchDown
@@ -1502,7 +1504,7 @@ skipInit global unit input
 	global importance:0 onTouchMove: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                triggeredOnTouchDown = true         // Ensure we also get a touchMove before the touchDown event on touch screens
 		                void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		for getTargetedPlayers(by)
 			let user = internalUsers[.id]
 				if triggeredOnTouchDown
@@ -1535,14 +1537,14 @@ skipInit global unit input
 	global importance:0 onTouchUp: Touch touch          // Only consider this particular touch or click
 		              markAsHandled = true // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do // Do this for each touch or click
-		if not touch or not active: return
+		if not touch or not active then return
 		let touchId = touch.id
 		let user = internalUsers[touch.by.id]
 			for user.upTouches
 				if .id == touchId
 					do .
 					Snapshot.autoSave
-					if markAsHandled: .handled = true
+					if markAsHandled then .handled = true
 				
 	// Do something when a given player ends a touch or click.
 	//
@@ -1555,7 +1557,7 @@ skipInit global unit input
 	global importance:0 onTouchUp: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		for getTargetedPlayers(by)
 			for internalUsers[.id].upTouches
 				if !.handled
@@ -1579,21 +1581,21 @@ skipInit global unit input
 		              bool showClickableArea = false      // Highlight the clickable area for debugging
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		Vector2[] poly = [
 			{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
 			{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
 			{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
 			{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
 		]
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].upTouches -> touch
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].upTouches as touch
 				if !touch.handled && touch.referencePosition.insidePolygon(poly)
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
 						
-		if showClickableArea: drawRectangle position, size, color:{"#ff000080"}
+		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
 
 	// Do something when the player ends a touch or click within a given circle.
 	//
@@ -1612,29 +1614,29 @@ skipInit global unit input
 		              bool showClickableArea = false      // Highlight the clickable area for debugging
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
-		if not active: return
+		if not active then return
 		let referencePosition = position.transform(graphics.localMatrix)
 		let referenceRadius = radius * graphics.localMatrix.scaleVector.x
-		for getTargetedPlayers(by) -> player
-			for internalUsers[player.id].upTouches -> touch
+		for getTargetedPlayers(by) as player
+			for internalUsers[player.id].upTouches as touch
 				if !touch.handled && (touch.referencePosition distanceTo referencePosition) <= referenceRadius
 					do touch
-					if markAsHandled: touch.handled = true
+					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
 					
 			if cursor != Auto
-				for localUser.movingTouches -> touch
+				for localUser.movingTouches as touch
 					if !touch.handled && (touch.referencePosition distanceTo position) <= radius
 						this.cursor = cursor
 				
-		if showClickableArea: drawCircle position, radius*2, color:{"#ff000080"}
+		if showClickableArea then drawCircle position, radius*2, color:{"#ff000080"}
 						
 	// ---------------------------------------------- Scroll ----------------------------------------------
 	
 	// Do something when a player scrolls with the touch pad or mouse wheel
 	global onScroll: implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		             void(ScrollEvent event) do          // Do this for each event
-		if not active: return
+		if not active then return
 		for getTargetedPlayers(by)
 			for internalUsers[.id].wheelEvents
 				do .
@@ -1646,7 +1648,7 @@ skipInit global unit input
 		                    bool showClickableArea = false      // Highlight the rectangle for debugging
 		                    bool markAsHandled = true           // Mark the touch as handled so it won't trigger more events
 		                    void(ScrollEvent event) do          // Do this for each event
-		if not active: return
+		if not active then return
 		Vector2[] poly = [
 			{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
 			{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
@@ -1657,9 +1659,9 @@ skipInit global unit input
 			for internalUsers[.id].wheelEvents
 				if !.handled && .referencePosition.insidePolygon(poly)
 					do .
-					if markAsHandled: .markAsHandled
+					if markAsHandled then .markAsHandled
 						
-		if showClickableArea: drawRectangle position, size, Red
+		if showClickableArea then drawRectangle position, size, Red
 			
 	// ---------------------------------------------- Text Input ----------------------------------------------
 	
@@ -1708,14 +1710,14 @@ skipInit global unit input
 		document.body.style.cursor = input.cursor
 
 	onTextComposition: void(string characters) do
-		for internalUsers -> user if .
-			for user.textCompositions -> characters
+		for internalUsers as user if user
+			for user.textCompositions as characters
 				do characters
 				
 	onTextInput: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		         void(string textInput) do           // Do this for each key that is pressed
 		for getTargetedPlayers(by)
-			for internalUsers[.id].textInputs -> textInput
+			for internalUsers[.id].textInputs as textInput
 				do textInput
 				
 	// ---------------------------------------------- Keys ----------------------------------------------
@@ -1782,15 +1784,15 @@ skipInit global unit input
 	// Do something when a player releases a key
 	global importance:0 onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
 		            void(Key key, Player pressedBy) do  // Do this for each key that is released
-		for getTargetedPlayers(by) -> player
-			for internalUsers[.id].upKeys -> key
+		for getTargetedPlayers(by) as player
+			for internalUsers[.id].upKeys as key
 				do key, player
 					
 	// Do something when a player types a character
 	global importance:0 onType: implicit nocolon Player[] by = null         // Only consider characters typed by this player or list of players
 		           void(string character, Player pressedBy) do // Do this for each character that is typed
-		for getTargetedPlayers(by) -> player
-			for internalUsers[.id].pressedKeys -> character
+		for getTargetedPlayers(by) as player
+			for internalUsers[.id].pressedKeys as character
 				do character, player
 			
 	// Returns true if a given key is currently held down
@@ -1808,7 +1810,7 @@ skipInit global unit input
 	// Do something when the user navigates back or forward in the browser	
 	global onNavigate: implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		               void(string url) do                 // Do this for each event
-		for getTargetedPlayers(by) -> player
-			for internalUsers[.id].navigations -> url
+		for getTargetedPlayers(by) as player
+			for internalUsers[.id].navigations as url
 				do url
 				

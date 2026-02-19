@@ -84,13 +84,14 @@ internal transient skipInit unit ServerNetwork
 		
 	private onMessageFromServer: Buffer buffer
 		NetworkMessageType type = cast buffer.readInt8
-		if type == JoinResponse: onJoinResponse buffer; else
-		if type == Pong:         onPong buffer; else
-		if type == Signal:       onSignal buffer; else
-		if type == Ice:          onIce buffer; else
-		if type == Tick:         onTick buffer; else
-		if type == Switch:       onSwitch buffer; else
-		if type == Reload:       onReload buffer;
+		switch type
+			NetworkMessageType.JoinResponse	onJoinResponse buffer; break
+			NetworkMessageType.Pong	onPong buffer; break
+			NetworkMessageType.Signal	onSignal buffer; break
+			NetworkMessageType.Ice	onIce buffer; break
+			NetworkMessageType.Tick	onTick buffer; break
+			NetworkMessageType.Switch	onSwitch buffer; break
+			NetworkMessageType.Reload	onReload buffer; break
 		
 	private void sendJoinMessage: string roomId, int userId, int version
 		sendBuffer.reset
@@ -104,7 +105,7 @@ internal transient skipInit unit ServerNetwork
 	bool alreadyJoinedBefore
 		
 	private onJoinResponse: Buffer buffer
-		if alreadyJoinedBefore: return
+		if alreadyJoinedBefore then return
 		alreadyJoinedBefore = true
 		
 		try
@@ -119,7 +120,7 @@ internal transient skipInit unit ServerNetwork
 			for userCount
 				let id = buffer.readInt32
 				InternalUser user
-				if id == userId: user = input.internalUsers[id] ?= input.localUser
+				if id == userId then user = input.internalUsers[id] ?= input.localUser
 				else             user = input.internalUsers[id] ?= {offerByMe:true, connectionId:nextConnectionId++}
 				user.id = id
 				
@@ -303,5 +304,5 @@ internal transient skipInit unit ServerNetwork
 		let keepMaster = buffer.readBool
 		let newUserId = buffer.readBool
 		let url = buffer.readString
-		if !newUserId: url += "u{input.localUser.id}"
+		if !newUserId then url += "u{input.localUser.id}"
 		Platform.setLocation url

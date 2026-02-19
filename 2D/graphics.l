@@ -298,8 +298,8 @@ transient skipInit global unit graphics
 		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
 		float scale
 		if scaleMode == Auto
-			if ratio.x < ratio.y: effectiveScaleMode = FixedWidth;  scale = ratio.x
-			else                  effectiveScaleMode = FixedHeight; scale = ratio.y
+			if ratio.x < ratio.y then	effectiveScaleMode = FixedWidth;  scale = ratio.x
+			else	effectiveScaleMode = FixedHeight; scale = ratio.y
 		else
 			effectiveScaleMode = scaleMode
 			
@@ -337,16 +337,16 @@ transient skipInit global unit graphics
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
-		if core.frame < core.frames or core.runningTest:	showPointersMode = input.showPointersDuringPlayback; else
-		if Platform.isDebug:	showPointersMode = input.showPointersModeInEditor; else
-															showPointersMode = input.showPointersMode
-		if showPointersMode != None: players.each drawPointer ., showPointersMode
+		if core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback; else
+		if Platform.isDebug	then showPointersMode = input.showPointersModeInEditor; else
+															 showPointersMode = input.showPointersMode
+		if showPointersMode != None then players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
 			.videoElementIndex = 0
 		drawItems
 		drawMargins
-		for input.internalUsers -> user if .
+		for input.internalUsers as user if user
 			for user.videoElementIndex to user.videoElements.length
 				PeerNetwork.removeVideoElement user.videoElements[.]
 			user.videoElements.setLength user.videoElementIndex
@@ -406,12 +406,17 @@ transient skipInit global unit graphics
 	alignmentDescription: HorizontalAlignment align, VerticalAlignment valign
 		string result
 
-		if align == Center:  result = " align:Center"; else
-		if align == Left:    result = " align:Left"; else
-		                     result = " align:Right";
+		switch align
+			Left	result = " align:Left"
+			Right	result = " align:Right"
+			default	result = " align:Center"
 
-		if valign == Top:    result = " valign:Top"; else
-		if valign == Bottom: result = " valign:Bottom";
+		if valign == Top then    result = " valign:Top"; else
+		if valign == Bottom then result = " valign:Bottom";
+		switch valign
+			Top	result += " valign:Top"
+			Bottom	result += " valign:Bottom"
+			default	result += " valign:Middle"
 
 		return result
 
@@ -582,8 +587,8 @@ transient skipInit global unit graphics
 			
 		// Handle click (only visible buttons are clickable)
 		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
-			if size.x == 0 and size.y == 0: size = image.size; else
-			if size.y == 0: size.y = size.x * image.size.y / image.size.x
+			if size.x == 0 and size.y == 0	then size = image.size; else
+			if size.y == 0	then size.y = size.x * image.size.y / image.size.x
 			input.onTouchDown position, size + clickableMargin, align, valign, by:effectiveClickableBy, showClickableArea, do:onClick
 			if hotkey
 				input.onKeyDown hotkey, by:effectiveClickableBy
@@ -618,8 +623,8 @@ transient skipInit global unit graphics
 			
 		// Handle click (only visible buttons are clickable)
 		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
-			if size.x == 0 and size.y == 0: size = image.size; else
-			if size.y == 0: size.y = size.x * image.size.y / image.size.x
+			if size.x == 0 and size.y == 0	then size = image.size; else
+			if size.y == 0	then size.y = size.x * image.size.y / image.size.x
 			input.onTouchDown position, size + clickableMargin, by:effectiveClickableBy, showClickableArea, do:onClick
 			if hotkey
 				input.onKeyDown hotkey, by:effectiveClickableBy
@@ -734,15 +739,15 @@ transient skipInit global unit graphics
 		
 		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
 		or text.contains("\n")
-			if maxWidth == 0: maxWidth = float.maxValue
-			if overflow == Ellipsis: maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
+			if maxWidth == 0	then maxWidth = float.maxValue
+			if overflow == Ellipsis	then maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
 			// Split text into words
 			string word
 			string[] words
 			for text.length
 				let c = text[.]
 				if c == " "
-					if word: words.add word
+					if word then words.add word
 					word = ""
 				else
 				if c == "\n"
@@ -750,7 +755,7 @@ transient skipInit global unit graphics
 					word = ""
 				else
 					word += c
-			if word: words.add word
+			if word then words.add word
 				
 			// Layout lines
 			let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
@@ -760,7 +765,7 @@ transient skipInit global unit graphics
 			for words as word
 				float wordWidth = getTextWidth(word, {x:fontSize}, effectiveFont, style)
 				if totalWidth + wordWidth > maxWidth
-					if overflow == Ellipsis: line += "..."
+					if overflow == Ellipsis then line += "..."
 						
 					if line
 						// Finish the line and start a new line with the current word
@@ -786,7 +791,7 @@ transient skipInit global unit graphics
 					line = ""
 					totalWidth = 0
 					
-			if line: lines.add line
+			if line then lines.add line
 			
 			// Calculate offset for each line and find widest line
 			string widestLine
@@ -833,7 +838,7 @@ transient skipInit global unit graphics
 		if isVisible
 			Matrix2D matrix
 			float x, y
-			if not angle: matrix = totalMatrix; x = position.x; y = position.y
+			if not angle then matrix = totalMatrix; x = position.x; y = position.y
 			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
 			let halfSizeX = math.round(sizeX*.5)
 			let halfSizeY = math.round(sizeY*.5)
@@ -912,7 +917,7 @@ transient skipInit global unit graphics
 		for text.length
 			let c = text[.]
 			if c == " "
-				if word: words.add word
+				if word then words.add word
 				word = ""
 			else
 			if c == "\n"
@@ -920,7 +925,7 @@ transient skipInit global unit graphics
 				word = ""
 			else
 				word += c
-		if word: words.add word
+		if word then words.add word
 			
 		// Layout lines
 		let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
@@ -968,7 +973,7 @@ transient skipInit global unit graphics
 			// Is there something in the current line?
 			if segment.text or segment.position.x > 0
 				expectedSegmentWidth += spaceWidth
-				if highlight: expectedSegmentWidth += highlight.margin.x
+				if highlight then expectedSegmentWidth += highlight.margin.x
 				
 				// Check if the current word still fits in the line
 				if segment.position.x + expectedSegmentWidth + wordWidth > maxWidth
@@ -1026,7 +1031,7 @@ transient skipInit global unit graphics
 		if isVisible
 			Matrix2D matrix
 			float x, y
-			if not angle: matrix = totalMatrix; x = position.x; y = position.y
+			if not angle then matrix = totalMatrix; x = position.x; y = position.y
 			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
 			items.add new DisplayTextWithHighlights(
 				matrix,
@@ -1128,25 +1133,25 @@ transient skipInit global unit graphics
 			bool switchFrameOnHover = frameOnHover != -1 and frame == -1 and (image?.frames.length > frameOnHover or accentImage?.frames.length > frameOnHover)
 			if switchFrameOnHover or scaleOnHover != 1.0 or textColorOnHover
 				input.onTouchOver position, sizeWithMargin, by:effectiveClickableBy
-					if textColorOnHover:    textColor = textColorOnHover
-					if switchFrameOnHover:  frame = frameOnHover
-					if scaleOnHover != 1.0: scale = scaleOnHover
+					if textColorOnHover	then textColor = textColorOnHover
+					if switchFrameOnHover	then frame = frameOnHover
+					if scaleOnHover != 1.0	then scale = scaleOnHover
 			input.onTouchDown position, sizeWithMargin, by:effectiveClickableBy, showClickableArea, do:onClick
 			if hotkey
 				input.onKeyDown hotkey, by:effectiveClickableBy
 					onClick null
 					
 		if isVisibleFor(visibleFor)
-			if frame == -1: frame = 0
-			if scale != 1.0: textSize = math.round(textSize * scale); effectiveSize *= scale
+			if frame == -1	then frame = 0
+			if scale != 1.0	then textSize = math.round(textSize * scale); effectiveSize *= scale
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
-			if text:  drawText text, position+textOffset, textSize, textColor, visibleFor, layer:layer+2, effectiveAlpha, location
+			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:layer+2, effectiveAlpha, location
 			if accentImage
 				if not accentColor
-					if effectiveClickableBy and effectiveClickableBy[0]: accentColor = effectiveClickableBy[0].color
+					if effectiveClickableBy and effectiveClickableBy[0] then accentColor = effectiveClickableBy[0].color
 					else                                                 accentColor = input.localPlayer.color
 				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:layer+1, effectiveAlpha, location, color:accentColor
-			if image: drawImage image, position, frame, effectiveSize, visibleFor, layer:layer, effectiveAlpha, location
+			if image then drawImage image, position, frame, effectiveSize, visibleFor, layer:layer, effectiveAlpha, location
 			
 			
 	// ------------------------------------------------------- Rectangle -------------------------------------------------------
@@ -1387,7 +1392,7 @@ transient skipInit global unit graphics
 		              implicit Player[] visibleFor = null // Only this player or list of players will see the video
 		              SourceCodeLocation location
 		if isVisibleFor(visibleFor)
-			if not size.y: size.y = shape == Rectangle ? size.x * 3/4 : size.x
+			if not size.y then size.y = shape == Rectangle ? size.x * 3/4 : size.x
 			if core.mode == Local or !PeerNetwork.enableVideo
 				drawImage VideoScreen, position, size, frame:shape == Circle ? 1:0, layer:1000000, location
 			else
@@ -1414,7 +1419,7 @@ transient skipInit global unit graphics
 		if mode == LocalAndRemote or mode == WhenDown
 		or (player.id == input.localUser.id and mode == Local)
 		or (player.id != input.localUser.id and mode == Remote)
-			if !color: color = player.color
+			if not color then color = player.color
 			for player.touches
 				System.log "% drawPointer isDown:{.isDown} position:{.position}"
 				if mode != WhenDown or .isDown
@@ -1594,7 +1599,7 @@ transient skipInit global unit graphics
 	// Image: graphicsRotate.png
 	rotate: float angle  // The angle in radians (one full rotation is 2*pi)
 		    void() code  // All drawing operations within this block of code will be rotated
-		if angle == 0: code; return
+		if angle == 0 then code; return
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
 		localMatrix.rotate angle
@@ -1614,7 +1619,7 @@ transient skipInit global unit graphics
 	// Image: graphicsScale.png
 	scale: float factor // The factor to scale by
 		   void() code  // All drawing operations within this block of code will be scaled
-		if factor == 1: code; return
+		if factor == 1 then code; return
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
 		localMatrix.scale {factor, factor}
@@ -1870,7 +1875,7 @@ transient skipInit global unit graphics
 		scaleAsPointerGetsCloserRadius = prevRadius
 		
 	private getScaleImagesAsPointerGetsCloserFactor: Vector2 position
-		if not scaleAsPointerGetsCloserRadius: return 1.0
+		if not scaleAsPointerGetsCloserRadius then return 1.0
 		let distance = scaleAsPointerGetsCloserBy ? scaleAsPointerGetsCloserBy.pointerPosition.distanceTo(position) : players.min.pointerPosition.distanceTo(position)
 		// return math.map distance, 0, scaleAsPointerGetsCloserRadius, scaleAsPointerGetsCloserFactor, 1
 		return scaleAsPointerGetsCloserFactor interpolateTo 1 progress:distance 0..scaleAsPointerGetsCloserRadius
@@ -1937,8 +1942,8 @@ transient skipInit global unit graphics
 		drawLine { 960-margin1,  540-margin2} to { 960-margin1, math.map(time, 960+1080+1920..960+1080+1920+1080, 540-margin2, -540+margin2)}, width
 		drawLine { 960-margin2, -540+margin1} to {math.map(time, 960+1080+1920+1080..960+1080+1920+1080+960, 960-margin2, 0), -540+margin1}, width
 		
-		if completionSound and Time.now > startTime + duration - timeBeforeCompletionToPlaySound and not completionSound.isPlaying: playSound completionSound
-		if onComplete != null and completion >= 1: onComplete
+		if completionSound and Time.now > startTime + duration - timeBeforeCompletionToPlaySound and not completionSound.isPlaying then playSound completionSound
+		if onComplete != null and completion >= 1 then onComplete
 
 // --------------------------------------------- Gizmo ---------------------------------------------
 	
@@ -1969,7 +1974,7 @@ internal skipInit transient unit gizmo
 	private findInfluencedItems
 		items.clear
 		cursorLocation = null
-		if !isCursorSet: return
+		if !isCursorSet then return
 		
 		// Find the item and location at the cursor position
 		for graphics.items
@@ -1989,15 +1994,15 @@ internal skipInit transient unit gizmo
 			for graphics.items
 				if .location == cursorLocation or .positionLocation?.find(cursorLocation) != null
 					items.add .
-					if .x < min.x: min.x = .x
-					if .y < min.y: min.y = .y
-					if .x + .w > max.x: max.x = .x + .w
-					if .y + .h > max.y: max.y = .y + .h
+					if .x < min.x	then min.x = .x
+					if .y < min.y	then min.y = .y
+					if .x + .w > max.x	then max.x = .x + .w
+					if .y + .h > max.y	then max.y = .y + .h
 		// handleSize = math.map math.min(max.x-min.x, max.y-min.y) 64..256 start:16 target:32
 		handleSize = 16 interpolateTo 32 progress:math.min(max.x-min.x, max.y-min.y) 64..256
 	
 	internal tick
-		if Platform.mode != Manipulator: return
+		if Platform.mode != Manipulator then return
 		findInfluencedItems
 		
 		if items
@@ -2030,24 +2035,24 @@ internal skipInit transient unit gizmo
 		max = Vector2.None
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
-		if Platform.mode != Manipulator: return
+		if Platform.mode != Manipulator then return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
-		if inputType == TouchDown: touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if inputType == TouchUp:   touchDownPos = Vector2.None; isManipulating = false
+		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
+		if inputType == TouchUp	then touchDownPos = Vector2.None; isManipulating = false
 			
 		// Which handle are we currently hovering over?
 		if items and not touchDownPos
 			let center = (min + max)/2
-			if referencePos manhattanDistanceTo max < handleSize:               overHandleDirection = IntVector2.DownRight; else
-			if referencePos manhattanDistanceTo min < handleSize:               overHandleDirection = IntVector2.UpLeft; else
-			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize:    overHandleDirection = IntVector2.UpRight; else
-			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize:    overHandleDirection = IntVector2.DownLeft; else
-			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize: overHandleDirection = IntVector2.Right; else
-			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize: overHandleDirection = IntVector2.Left; else
-			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize: overHandleDirection = IntVector2.Up; else
-			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize: overHandleDirection = IntVector2.Down; else
-				                                                                overHandleDirection = IntVector2.None
+			if referencePos manhattanDistanceTo max < handleSize	then overHandleDirection = IntVector2.DownRight; else
+			if referencePos manhattanDistanceTo min < handleSize	then overHandleDirection = IntVector2.UpLeft; else
+			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize	then overHandleDirection = IntVector2.UpRight; else
+			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize	then overHandleDirection = IntVector2.DownLeft; else
+			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize	then overHandleDirection = IntVector2.Right; else
+			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize	then overHandleDirection = IntVector2.Left; else
+			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize	then overHandleDirection = IntVector2.Up; else
+			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize	then overHandleDirection = IntVector2.Down; else
+				                                                                     overHandleDirection = IntVector2.None
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
@@ -2056,14 +2061,17 @@ internal skipInit transient unit gizmo
 			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
 				GizmoOverItem[] overItems
-				for graphics.items -> item
+				for graphics.items as item
 					if pixelPos.insidePolygon item.poly
-						if item.positionLocation: flattenLocations overItems, item, item.positionLocation; else
-						if item.location:         overItems.add {item, item.location}
+						if item.positionLocation
+							flattenLocations overItems, item, item.positionLocation
+						else
+						if item.location != null
+							overItems.add {item, item.location}
 									
 				if overItems.length
 					// Select next item cycling through all items the mouse pointer is over
-					if inputType == TouchDown: locationIndex = 0
+					if inputType == TouchDown then locationIndex = 0
 					let selectedStackItem = overItems[locationIndex++ mod overItems.length]
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
@@ -2136,16 +2144,17 @@ internal skipInit transient unit gizmo
 		document.body.style.cursor = cursor
 		
 	private void flattenLocations: GizmoOverItem[] stack, DisplayItem item, SourceCodeLocation location
-		if location.file:  stack.add {item, location}
-		if location.right: flattenLocations stack, item, location.right
-		if location.left:  flattenLocations stack, item, location.left
+		if location.file	then stack.add {item, location}
+		if location.right	then flattenLocations stack, item, location.right
+		if location.left	then flattenLocations stack, item, location.left
 			
 // --------------------------------------------- Award Screen ---------------------------------------------
 
 awardScreen
 	bool active
 	tick
-		onKeyDown Alt W: active = not active
+		onKeyDown Alt W
+			active = not active
 		if active
 			let size = {720, 540}
 			forPositions players, grid:{2,2}, delta:size

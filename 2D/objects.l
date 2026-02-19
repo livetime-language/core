@@ -9,7 +9,7 @@ unit Framework
 	
 	clear: bool includingLockedObjects = false
 		for objects <-
-			if not .locked or includingLockedObjects: objects.removeAt i
+			if not .locked or includingLockedObjects then objects.removeAt i
 				
 	clearAtEndOfFrame
 		for objects
@@ -18,7 +18,7 @@ unit Framework
 				toBeRemoved.add .
 		
 	removeWhere: bool(Object value) condition
-		for objects -> obj
+		for objects as obj
 			if condition obj
 				obj.hide
 				toBeRemoved.add obj
@@ -26,7 +26,8 @@ unit Framework
 	tick
 		fx.tick
 		objects.eachChangable.tick
-		onTouchUp: deselect touch.by
+		onTouchUp
+			deselect touch.by
 		
 		if toBeRemoved
 			toBeRemoved.each.siblings.remove .
@@ -37,7 +38,8 @@ unit Framework
 		
 	debugString
 		let result = ""
-		for objects: result +=  .debugString
+		for objects
+			result +=  .debugString
 		return result
 		
 // Draw on the screen
@@ -56,7 +58,7 @@ transient global unit graphics
 		let videoObject = getVideoObject player
 			
 		// if !videoObject or Framework.toBeRemoved.contains(videoObject): videoObject = VideoObject(userId)
-		if !videoObject: videoObject = VideoObject(player)
+		if not videoObject then videoObject = VideoObject(player)
 		videoObject.position = pos
 		videoObject.size = size
 		videoObject.shape = shape
@@ -154,7 +156,7 @@ class Object
 		Vector2 curvePoint = middlePoint + orthogonal * curvature
 		float startTime = fx.endOfPrevAnimation(this)+delay
 		fx.add BezierAnimation startTime, duration, this, points:[startPosition, curvePoint, targetPosition], smoothness, removeWhenDone
-		if targetSize: fx.add ScaleAnimation startTime, duration, this, startValue:size, delta:targetSize-size
+		if targetSize then fx.add ScaleAnimation startTime, duration, this, startValue:size, delta:targetSize-size
 		return this
 		
 	fadeIn: float duration = 100 // After the this time in milliseconds, the object should be fully visible
@@ -214,12 +216,12 @@ class Object
 Object RectangleObject
 	Color color = White
 	internal override tick
-		if alpha: drawRectangle position, size, color, visibleFor, layer, alpha
+		if alpha then drawRectangle position, size, color, visibleFor, layer, alpha
 
 Object CircleObject
 	Color color = White
 	internal override tick
-		if alpha: drawCircle position, size, color:color, visibleFor, layer
+		if alpha then drawCircle position, size, color:color, visibleFor, layer
 
 global transient unit System
 	global visualize: Vector2 position = {}
@@ -250,7 +252,7 @@ Object TextObject
 	float maxWidth
 	
 	internal override tick
-		if alpha: drawText text, position, size, angle, color, align, valign, font, visibleFor, alpha, layer, maxWidth
+		if alpha then drawText text, position, size, angle, color, align, valign, font, visibleFor, alpha, layer, maxWidth
 		
 // Draw text around a circle
 Object CircularTextObject
@@ -262,17 +264,17 @@ Object CircularTextObject
 	float spacing = .2   // The spacing between the letters of the text
 	
 	internal override tick
-		if alpha: drawCircularText text, position, size.x, color, font, layer, radius, angle, spacing, visibleFor
+		if alpha then drawCircularText text, position, size.x, color, font, layer, radius, angle, spacing, visibleFor
 		
 Object ImageObject
 	Image image
 	int frame
 	
 	ImageObject
-		if size.x == 0 and size.y == 0: size = image.size
+		if size.x == 0 and size.y == 0 then size = image.size
 	
 	internal override tick
-		if alpha: drawImage image, position, size, frame, angle, alpha, visibleFor, layer
+		if alpha then drawImage image, position, size, frame, angle, alpha, visibleFor, layer
 		
 Object Effect
 	Image image
@@ -280,7 +282,7 @@ Object Effect
 	private startFrame = Time.frame
 	
 	Effect
-		if size.x == 0 and size.y == 0: size = image.size
+		if size.x == 0 and size.y == 0 then size = image.size
 	
 	internal override tick
 		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.ticksPerSecond)
@@ -294,7 +296,7 @@ Object VideoObject
 	VideoShape shape
 
 	internal override tick
-		if alpha and player: drawVideo player, position, size, shape
+		if alpha and player then drawVideo player, position, size, shape
 			
 Object Button
 	Image image                  // The image of the button
@@ -318,7 +320,7 @@ Object Button
 		if alpha
 			drawButton image, text, position, textColor, frame, size, fontSize, clickableMargin, textOffset, scaleOnHover, frameOnHover, showClickableArea, visibleFor, clickableBy, hotkey, layer, alpha, enabled, alphaWhenDisabled
 			onClick:
-				if removeOnClick: this.removeAtEndOfFrame
+				if removeOnClick then this.removeAtEndOfFrame
 				onClick(touch)
 				
 			
@@ -334,7 +336,7 @@ Object StandardButton
 		if alpha
 			drawStandardButton text, position, visibleFor, clickableBy, hotkey, layer, enabled
 			onClick:
-				if removeOnClick: this.removeAtEndOfFrame
+				if removeOnClick then this.removeAtEndOfFrame
 				onClick(touch)
 
 struct Particle
@@ -421,10 +423,10 @@ Object Menu
 	internal override tick
 		bool doNotClose
 		if active
-			forPositions items, center:popupPosition, delta:{0,60} -> item
+			forPositions items, center:popupPosition, delta:{0,60} as item
 				drawText .label, pos+{-60}, size:30, align:Left, layer:int.maxValue
 				if item.type == Button
-					if .image: drawImage .image, pos+{-120}, layer:int.maxValue
+					if .image then drawImage .image, pos+{-120}, layer:int.maxValue
 					onTouchDown pos, size:{500,60}, do:item.onClick(true, touch)
 				else
 				if item.type == Check

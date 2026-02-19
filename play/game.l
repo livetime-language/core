@@ -167,9 +167,9 @@ unit algorithms
 		                  int(IntVector2 a, IntVector2 b) heuristic
 		
 		AStarNode[][] grid
-		for size.x -> x
+		for size.x as x
 			grid[x] = []
-			for size.y -> y
+			for size.y as y
 				grid[x][y] = {pos:{x,y}}
 				
 		let diagonal = false
@@ -243,7 +243,7 @@ unit algorithms
 		let primarilyX = math.abs(targetPosition.x - sourcePosition.x) > math.abs(targetPosition.y - sourcePosition.y)
 		Line movement = {sourcePosition, targetPosition, Segment}
 		bool hasCollided
-		for colliders -> c
+		for colliders as c
 			// Migrate to 3D
 			// if showColliders
 			// 	if c.leftLine: drawLine c.leftLine.start, c.leftLine.end, color:Red, width:5
@@ -257,12 +257,12 @@ unit algorithms
 				let p = movement intersectionWith line
 					hasCollided = true
 					if c.topLeft and (p.y - line.start.y) <= threshold
-						if log: watch "Move Right, Hit TopLeft Corner"
+						if log then watch "Move Right, Hit TopLeft Corner"
 						//           o
 						//                 o
 						//                       o     ⬆
 						//                             ┌─
-						if primarilyX: targetPosition.y = math.min(targetPosition.y, line.start.y-1)
+						if primarilyX then targetPosition.y = math.min(targetPosition.y, line.start.y-1)
 						//                          o
 						//                           o
 						//                            o
@@ -270,19 +270,19 @@ unit algorithms
 						else           targetPosition.x = math.min(targetPosition.x, line.start.x-1)
 					else
 					if c.bottomLeft and (line.end.y - p.y) <= threshold
-						if log: watch "Move Right, Hit BottomLeft Corner"
+						if log then watch "Move Right, Hit BottomLeft Corner"
 						//                             └─
 						//                       o     ⬇
 						//                 o
 						//           o
-						if primarilyX: targetPosition.y = math.max(targetPosition.y, line.end.y+1)
+						if primarilyX then targetPosition.y = math.max(targetPosition.y, line.end.y+1)
 						//                         ⬅  └─    
 						//                            o
 						//                           o
 						//                          o
 						else           targetPosition.x = math.min(targetPosition.x, line.end.x-1)
 					else
-						if log: watch "Move Right, Hit Left Side"
+						if log then watch "Move Right, Hit Left Side"
 						//                              │
 						//            o     o     o     │ ⬅
 						//                              │
@@ -294,12 +294,12 @@ unit algorithms
 				let p = movement intersectionWith line
 					hasCollided = true
 					if c.topRight and (p.y - line.start.y) <= threshold
-						if log: watch "Move Left, Hit TopRight Corner"
+						if log then watch "Move Left, Hit TopRight Corner"
 						//                                                 o
 						//                                           o     
 						//                               ⬆    o
 						//                              ─┐
-						if primarilyX: targetPosition.y = math.min(targetPosition.y, line.start.y-1)
+						if primarilyX then targetPosition.y = math.min(targetPosition.y, line.start.y-1)
 						//                                  o
 						//                                 o     
 						//                                o
@@ -307,19 +307,19 @@ unit algorithms
 						else           targetPosition.x = math.max(targetPosition.x, line.start.x+1)
 					else
 					if c.bottomRight and (line.end.y - p.y) <= threshold
-						if log: watch "Move Left, Hit BottomRight Corner"
+						if log then watch "Move Left, Hit BottomRight Corner"
 						//                               ─┘
 						//                               ⬇    o
 						//                                           o     
 						//                                                 o
-						if primarilyX: targetPosition.y = math.max(targetPosition.y, line.end.y+1)
+						if primarilyX then targetPosition.y = math.max(targetPosition.y, line.end.y+1)
 						//                              ─┘  ⮕
 						//                                o
 						//                                 o     
 						//                                  o
 						else           targetPosition.x = math.max(targetPosition.x, line.end.x+1)
 					else
-						if log: watch "Move Left, Hit Right Side"
+						if log then watch "Move Left, Hit Right Side"
 						//                              │
 						//                              │ ⮕   o      o      o
 						//                              │
@@ -331,12 +331,12 @@ unit algorithms
 				let p = movement intersectionWith line
 					hasCollided = true
 					if c.topLeft and (p.x - line.start.x) <= threshold
-						if log: watch "Move Down, Hit TopLeft Corner"
+						if log then watch "Move Down, Hit TopLeft Corner"
 						//           o
 						//                 o
 						//                       o     ⬆
 						//                             ┌─
-						if primarilyX: targetPosition.y = math.min(targetPosition.y, line.start.y-1)
+						if primarilyX then targetPosition.y = math.min(targetPosition.y, line.start.y-1)
 						//                          o
 						//                           o
 						//                            o
@@ -344,19 +344,19 @@ unit algorithms
 						else           targetPosition.x = math.min(targetPosition.x, line.start.x-1)
 					else
 					if c.topRight and (line.end.x - p.x) <= threshold
-						if log: watch "Move Down, Hit TopRight Corner"
+						if log then watch "Move Down, Hit TopRight Corner"
 						//                                                 o
 						//                                           o     
 						//                               ⬆    o
 						//                              ─┐
-						if primarilyX: targetPosition.y = math.min(targetPosition.y, line.end.y-1)
+						if primarilyX then targetPosition.y = math.min(targetPosition.y, line.end.y-1)
 						//                                  o
 						//                                 o     
 						//                                o
 						//                              ─┐  ⮕
 						else           targetPosition.x = math.max(targetPosition.x, line.end.x+1)
 					else
-						if log: watch "Move Down, Hit Top Side"
+						if log then watch "Move Down, Hit Top Side"
 						//                              o
 						//                              o
 						//                              o
@@ -370,12 +370,12 @@ unit algorithms
 				let p = movement intersectionWith line
 					hasCollided = true
 					if c.bottomLeft and (p.x - line.start.x) <= threshold
-						if log: watch "Move Up, Hit BottomLeft Corner"
+						if log then watch "Move Up, Hit BottomLeft Corner"
 						//                             └─
 						//                       o     ⬇
 						//                 o
 						//           o
-						if primarilyX: targetPosition.y = math.max(targetPosition.y, line.start.y+1)
+						if primarilyX then targetPosition.y = math.max(targetPosition.y, line.start.y+1)
 						//                         ⬅  └─    
 						//                            o
 						//                           o
@@ -383,19 +383,19 @@ unit algorithms
 						else           targetPosition.x = math.min(targetPosition.x, line.start.x-1)
 					else
 					if c.bottomRight and (line.end.x - p.x) <= threshold
-						if log: watch "Move Up, Hit BottomRight Corner"
+						if log then watch "Move Up, Hit BottomRight Corner"
 						//                               ─┘
 						//                               ⬇    o
 						//                                           o     
 						//                                                 o
-						if primarilyX: targetPosition.y = math.max(targetPosition.y, line.end.y+1)
+						if primarilyX then targetPosition.y = math.max(targetPosition.y, line.end.y+1)
 						//                              ─┘  ⮕
 						//                                o
 						//                                 o     
 						//                                  o
 						else           targetPosition.x = math.max(targetPosition.x, line.end.x+1)
 					else
-						if log: watch "Move Up, Hit Bottom Side"
+						if log then watch "Move Up, Hit Bottom Side"
 						//                           ───────
 						//                              o
 						//                              o
@@ -412,15 +412,15 @@ unit algorithms
 			hasCollided = false
 			
 			// Prevent endless loops: If we are still colliding after 3 iteration, we don't move at all
-			if ++iterations > 3: return sourcePosition
+			if ++iterations > 3 then return sourcePosition
 				
-			for colliders -> c
+			for colliders as c
 				if c.leftLine and movement.end.x > movement.start.x
 					// We are moving right -> check left side
 					Line line = c.leftLine
 					let p = movement intersectionWith line
 						hasCollided = true
-						if log: watch "Check after collision, Hit Left Side"
+						if log then watch "Check after collision, Hit Left Side"
 						//                              │
 						//            o     o     o     │ ⬅
 						//                              │
@@ -431,7 +431,7 @@ unit algorithms
 					Line line = c.rightLine
 					let p = movement intersectionWith line
 						hasCollided = true
-						if log: watch "Check after collision, Hit Right Side"
+						if log then watch "Check after collision, Hit Right Side"
 						//                              │
 						//                              │ ⮕   o      o      o
 						//                              │
@@ -442,7 +442,7 @@ unit algorithms
 					Line line = c.topLine
 					let p = movement intersectionWith line
 						hasCollided = true
-						if log: watch "Check after collision, Hit Top Side"
+						if log then watch "Check after collision, Hit Top Side"
 						//                              o
 						//                              o
 						//                              o
@@ -454,7 +454,7 @@ unit algorithms
 					Line line = c.bottomLine
 					let p = movement intersectionWith line
 						hasCollided = true
-						if log: watch "Check after collision, Hit Bottom Side"
+						if log then watch "Check after collision, Hit Bottom Side"
 						//                           ───────
 						//                              o
 						//                              o
@@ -642,7 +642,7 @@ internal PathfindingNode
 
 				// The travelCostSoFar score is the shortest distance from start to current node.
 				// We need to check if the path we have arrived at this neighbor is the shortest one we have seen yet.
-				if not neighbor.cost: neighbor.cost = currentNode.location distanceTo neighborNode.location
+				if not neighbor.cost then neighbor.cost = currentNode.location distanceTo neighborNode.location
 				let travelCostUpToThisNeighbor = currentNode.travelCostSoFar + neighbor.cost
 					
 				if not beenVisited || travelCostUpToThisNeighbor < neighborNode.travelCostSoFar

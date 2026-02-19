@@ -204,7 +204,7 @@ internal HTMLElement HTMLInput
 	HTMLInput
 		changeCallbackId = networkData.addCallback
 			value = .
-			if not core.isPremiere: this.element.value = .
+			if not core.isPremiere then this.element.value = .
 				
 		enterCallbackId = networkData.addCallback
 			value = .
@@ -254,7 +254,7 @@ internal IndexedDBIndex
 	string[] keyPaths
 	
 	IndexedDBIndex
-		if not keyPaths: keyPaths.add name
+		if not keyPaths then keyPaths.add name
 		
 internal IndexedDBStore
 	string name

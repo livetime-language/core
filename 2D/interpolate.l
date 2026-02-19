@@ -71,8 +71,8 @@ struct Vector2
 	// Interpolates to another vector
 	interpolateTo: Vector2 target  // The target position to interpolate to
 		           float progress  // The progress of the interpolation (0: return the start vector, 1: returns the target vector)
-		if progress <= 0: return this
-		if progress >= 1: return target
+		if progress <= 0 then return this
+		if progress >= 1 then return target
 		let iprogress = 1 - progress
 		return new Vector2(x * iprogress + target.x * progress, y * iprogress + target.y * progress)
 
@@ -81,8 +81,8 @@ struct Vector2
 		           float startTime      // The start time in milliseconds
 		           float duration = 300 // The duration in milliseconds
 		let progress = (Time.now - startTime) / duration
-		if progress <= 0: return this
-		if progress >= 1: return target
+		if progress <= 0 then return this
+		if progress >= 1 then return target
 		let iprogress = 1 - progress
 		return new Vector2(x * iprogress + target.x * progress, y * iprogress + target.y * progress)
 
@@ -90,8 +90,8 @@ struct Vector2
 	interpolateTo: Vector2 target  // The target position to interpolate to
 		           float progress  // The progress of the interpolation (0: return the start vector, 1: returns the target vector)
 		           EaseFunction ease
-		if progress <= 0: return this
-		if progress >= 1: return target
+		if progress <= 0 then return this
+		if progress >= 1 then return target
 		progress = ease.function(progress)
 		let iprogress = 1 - progress
 		return new Vector2(x * iprogress + target.x * progress, y * iprogress + target.y * progress)
@@ -102,8 +102,8 @@ struct Vector2
 		           float duration = 300 // The duration in milliseconds
 		           EaseFunction ease
 		let progress = (Time.now - startTime) / duration
-		if progress <= 0: return this
-		if progress >= 1: return target
+		if progress <= 0 then return this
+		if progress >= 1 then return target
 		progress = ease.function(progress)
 		let iprogress = 1 - progress
 		return new Vector2(x * iprogress + target.x * progress, y * iprogress + target.y * progress)
@@ -113,8 +113,8 @@ struct Vector2
 		           float progress // Between "from" and "to" ("from" returns the start value, "to" returns the target value)
 		           float from     // The beginning of the input range, if "progress" is "from" or less, the start value is returned
 		           float to       // The end of the input range, if "progress" is "to" or more, the target value is returned
-		if progress <= from: return this
-		if progress >= to: return target
+		if progress <= from	then return this
+		if progress >= to	then return target
 		let factor = (progress-from) / (to-from)
 		return new Vector2(x + (target.x-x)*factor, y + (target.y-y)*factor)
 
@@ -124,8 +124,8 @@ struct Vector2
 		           float from        // The beginning of the input range, if "progress" is "from" or less, the start value is returned
 		           float to          // The end of the input range, if "progress" is "to" or more, the target value is returned
 		           EaseFunction ease // The easing function to apply
-		if progress <= from: return this
-		if progress >= to: return target
+		if progress <= from	then return this
+		if progress >= to	then return target
 		let factor = ease.function((progress-from) / (to-from))
 		return new Vector2(x + (target.x-x)*factor, y + (target.y-y)*factor)
 		
@@ -133,8 +133,8 @@ Color
 	// Interpolates to another color
 	Color interpolateTo: Color target
 		                 float progress
-		if progress <= 0: return this
-		if progress >= 1: return target
+		if progress <= 0	then return this
+		if progress >= 1	then return target
 		let iprogress = 1 - progress
 		return {
 			math.floor(red   * iprogress + target.red   * progress)
@@ -149,8 +149,8 @@ global skipInit unit math
 		 float to       // The end of the input range
 		 float start    // The lowest possible output value, will be returned for values smaller than "from".
 		 float target   // The highest possible output value, will be returned for values larger than "to".
-		if progress <= from: return start
-		if progress >= to:   return target
+		if progress <= from	then return start
+		if progress >= to	then return target
 		let factor = (progress-from) / (to-from)
 		return start + (target-start) * factor
 			
@@ -158,8 +158,8 @@ global skipInit unit math
 	map: float progress  // The input value 
 		 float start     // The lowest possible output value, will be returned for values smaller than "from".
 		 float target    // The highest possible output value, will be returned for values larger than "to".
-		if progress <= 0: return start
-		if progress >= 1: return target
+		if progress <= 0	then return start
+		if progress >= 1	then return target
 		return start + (target-start) * progress
 			
 	// // Maps a value from an input range to an output range
@@ -169,8 +169,8 @@ global skipInit unit math
 		 float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
 		 float target = 1  // The highest possible output value, will be returned for values larger than "to".
 		 EaseFunction ease // The easing function to apply
-		if progress <= from: return start
-		if progress >= to:   return target
+		if progress <= from	then return start
+		if progress >= to	then return target
 		let factor = ease.function((progress-from) / (to-from))
 		return start + (target-start) * factor
 		
@@ -179,8 +179,8 @@ global skipInit unit math
 		                float startTime = 0 // The start time in milliseconds
 		                float duration = 1  // The duration in milliseconds
 		let value = Time.now - startTime
-		if value <= 0:        return from
-		if value >= duration: return to
+		if value <= 0	then return from
+		if value >= duration	then return to
 		return from + (to-from) * (value/duration)
 		
 	global interpolate: Color from

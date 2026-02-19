@@ -10,8 +10,8 @@ skipInit debug
 			core.onError .
 
 	click: int playerIndex, int x, int y, int framesToWaitAfterwards
-		if playerIndex == int.undefined: playerIndex = 0
-		if not framesToWaitAfterwards: framesToWaitAfterwards = 30
+		if playerIndex == int.undefined	then playerIndex = 0
+		if not framesToWaitAfterwards	then framesToWaitAfterwards = 30
 
 		if playerIndex < 0 or playerIndex >= input.internalUsers.length
 			print "click: playerIndex out of range"
@@ -25,7 +25,7 @@ skipInit debug
 				wait framesToWaitAfterwards
 
 	drag: int playerIndex, int x, int y, int dragToX, int dragToY
-		if playerIndex == int.undefined: playerIndex = 0
+		if playerIndex == int.undefined then playerIndex = 0
 		if playerIndex < 0 or playerIndex >= input.internalUsers.length
 			print "click: playerIndex out of range"
 		else
@@ -67,7 +67,8 @@ skipInit debug
 
 		if logs
 			result += "# Debug logs:\n"
-			for logs: result += . + "\n"
+			for logs
+				result += . + "\n"
 			logs.clear
 			result += "\n"
 		else

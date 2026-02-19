@@ -315,7 +315,7 @@ internal transient skipInit unit PeerNetwork
 	disconnect: InternalUser user
 		core.log "####### disconnect"
 		user.dataChannels.each.close()
-		if user.peerConnection != null: user.peerConnection.close
+		if user.peerConnection != null then user.peerConnection.close
 		input.internalUsers[user.id] = null
 		
 	js void setBitrate: InternalUser user, float scaleResolutionDownBy = 1, float maxBitrate
@@ -440,13 +440,14 @@ internal transient skipInit unit PeerNetwork
 	private onMessage: InternalUser user, Buffer buffer
 		user.lastIncomingMessageTime = PlainDate.realTime
 		NetworkMessageType type = cast buffer.readInt8
-		if type == Tick:         onTick user, buffer; else
-		if type == Ping:         onPing user, buffer; else
-		if type == Pong:         onPong user, buffer;
+		switch type
+			Tick	onTick user, buffer
+			Ping	onPing user, buffer
+			Pong	onPong user, buffer
 			
 	sendInputs: int inputFrame
 		let inputs = input.localUser.inputs
-		for input.internalUsers -> receiver if receiver
+		for input.internalUsers as receiver if receiver
 			let length = inputs.writePos - receiver.receivedMyInputsUpToPos
 			
 			if not receiver.local and receiver.dataChannels
@@ -491,14 +492,14 @@ internal transient skipInit unit PeerNetwork
 			// Checksum
 			int checksumFor = buffer.readInt
 			float checksum = buffer.readFloat64
-			if core.verbose: core.log "<{sender.id}> #{checksumFor} {checksum}"
+			if core.verbose then core.log "<{sender.id}> #{checksumFor} {checksum}"
 			
 			let myChecksum = core.checksums[checksumFor]
 			if !myChecksum                           core.checksums[checksumFor] = checksum; else
-			if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
+			if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine: myChecksum theirs:checksum
 				
 			// Store incoming inputs
-			if length: core.storeInputsToDB sender
+			if length then core.storeInputsToDB sender
 		
 	js void onReceivedAnswer: InternalUser user, string sdp
 		core.log("#peer <"+user.id+"> Received Answer");
@@ -543,7 +544,7 @@ internal transient skipInit unit PeerNetwork
 	// --------------------------------------------- Ping/Pong ---------------------------------------------
 	
 	ping
-		for input.internalUsers -> user
+		for input.internalUsers as user
 			if user and user.dataChannels
 				sendBuffer.reset
 				sendBuffer.writeInt8 cast NetworkMessageType.Ping
@@ -572,14 +573,14 @@ internal transient skipInit unit PeerNetwork
 		sendBuffer.writeInt checksumFor
 		sendBuffer.writeFloat64 checksum
 		
-		for input.internalUsers -> user
+		for input.internalUsers as user
 			if user and user.dataChannels
 				send ., sendBuffer
 
 	onChecksum: InternalUser user, Buffer buffer
 		int checksumFor = buffer.readInt
 		float checksum = buffer.readFloat64
-		if core.verbose: core.log "<{user.id}> #{checksumFor} {checksum}"
+		if core.verbose then core.log "<{user.id}> #{checksumFor} {checksum}"
 		
 		let myChecksum = core.checksums[checksumFor]
 		if !myChecksum

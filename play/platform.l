@@ -96,7 +96,7 @@ transient skipInit unit Platform
 			await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
 			graphics.onResize
 			// graphics.drawStatus "Loading media"
-			if mode >= Play: mode = Pause
+			if mode >= Play then mode = Pause
 			let path = url.getUntil("?").split("/")
 			let gameId = path[3]
 			let roomId = path[4]
@@ -109,7 +109,7 @@ transient skipInit unit Platform
 			let userId = -1
 			if roomId
 				let dashIndex = roomId.indexOf("x")
-				if dashIndex != -1: isStaging = true;
+				if dashIndex != -1 then isStaging = true;
 				else                dashIndex = roomId.indexOf("u")
 				
 				if dashIndex != -1
@@ -122,11 +122,11 @@ transient skipInit unit Platform
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
 					startInterval
-					if isDebug || isLocal || roomId == "local" || url.startsWith("file"): core.startLocal
-					else                                                                  core.join gameId, roomId, userId
+					if isDebug || isLocal || roomId == "local" || url.startsWith("file") then core.startLocal
+					else                                                                      core.join gameId, roomId, userId
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
-					if !isDebug: record
+					if !isDebug then record
 						
 				catch
 					core.onError .
@@ -204,7 +204,7 @@ transient skipInit unit Platform
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
-		if mode == Pause: core.step fastForward:false draw:true
+		if mode == Pause then core.step fastForward:false draw:true
 	
 	internal js void sendSelectToEditor: string cursorFile, int cursorPos
 		_sendToEditor({type:"select", cursorFile, cursorPos})
@@ -279,13 +279,13 @@ transient skipInit unit Platform
 	inline js bool isConnectedToEditor := _isConnectedToEditor
 
 	private updateIcon
-		if not isConnectedToEditor:	setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
-		if mode == Pause and core.frame <= 1:	setPageTitleAndIcon title:"Stop" iconUrl:"/_dev/Stop.png"; else
-		if mode == Pause:	setPageTitleAndIcon title:"Pause" iconUrl:"/_dev/Pause.png"; else
-		if mode == Play:	setPageTitleAndIcon title:"Play" iconUrl:"/_dev/Play.png"; else
-		if mode == Record:	setPageTitleAndIcon title:"Record" iconUrl:"/_dev/Record.png"; else
-		if mode == Manipulator:	setPageTitleAndIcon title:"Manipulator" iconUrl:"/_dev/Manipulator.png"; else
-		if mode == Slide:	setPageTitleAndIcon title:"Slide" iconUrl:"/_dev/Slide.png";
+		if not isConnectedToEditor	then setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
+		if mode == Pause and core.frame <= 1	then setPageTitleAndIcon title:"Stop" iconUrl:"/_dev/Stop.png"; else
+		if mode == Pause	then setPageTitleAndIcon title:"Pause" iconUrl:"/_dev/Pause.png"; else
+		if mode == Play	then setPageTitleAndIcon title:"Play" iconUrl:"/_dev/Play.png"; else
+		if mode == Record 	then setPageTitleAndIcon title:"Record" iconUrl:"/_dev/Record.png"; else
+		if mode == Manipulator	then setPageTitleAndIcon title:"Manipulator" iconUrl:"/_dev/Manipulator.png"; else
+		if mode == Slide	then setPageTitleAndIcon title:"Slide" iconUrl:"/_dev/Slide.png";
 
 	js void setPageTitleAndIcon: string title = null, string iconUrl = null
 		if(title) {

@@ -31,14 +31,14 @@ skipInit immutable Sound
 		if(this.audioElement) this.audioElement.pause()
 		
 	play: needsToBeCertain = false
-		if needsToBeCertain and not input.isCertain: return
+		if needsToBeCertain and not input.isCertain then return
 			
 		// We can play sounds immediately to ensure there is no lag
 		// If a sound turns out to be wrong after receiving new inputs, we stop it
 		let playingSound = audio.playingSounds.find(.sound == this and .frame == Time.frame)
 		if !playingSound
 			audio.playingSounds.add playingSound = {this, frame:Time.frame, isConfirmed:true}
-			if core.isPremiere: doPlay playingSound
+			if core.isPremiere then doPlay playingSound
 		else
 			playingSound.isConfirmed = true
 			
