@@ -172,6 +172,15 @@ struct Vector2
 		if len != 0 then x = x / len; y = y / len
 		return this
 
+	js Vector2 swapWith: Vector2 other
+		let temp = this.x
+		this.x = other.x
+		other.x = temp
+		temp = this.y
+		this.y = other.y
+		other.y = temp
+		return this
+
 	// A vector that points in the same direction, but has a length of 1
 	normalized => this.clone.normalize
 	
