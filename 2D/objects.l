@@ -410,6 +410,7 @@ Object Menu
 	includeDefaultItems = true
 	overlayColor = #000000b0
 	locked = true
+	layer = 1
 	
 	visible bool active
 		
@@ -436,8 +437,8 @@ Object Menu
 						item.onClick(item.value, touch)
 						doNotClose = true
 					
-			drawRectangle popupPosition, outlineColor:White, color:Black, size:{500,60+items.length*60}, outlineWidth:3, layer:int.maxValue
-			drawRectangle size:{1920,1080}, color:overlayColor, layer:int.maxValue
+			drawRectangle popupPosition, outlineColor:White, color:Black, size:{500,60+items.length*60}, outlineWidth:3, layer:int.maxValue-1
+			drawRectangle size:{1920,1080}, color:overlayColor, layer:int.maxValue-2
 			
 			if not doNotClose
 				onTouchDownAny
