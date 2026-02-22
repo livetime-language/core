@@ -672,7 +672,7 @@ skipInit global unit input
 	// 	return 0
 		
 	// private handleTextInput: InputType type, string text
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
 	// 	inputs.writeInt32 localUser.inputFrame
@@ -680,7 +680,7 @@ skipInit global unit input
 	// 	inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, int scanCode, Key keyCode
-		// if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		// if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 		// let inputs = localUser.inputs
 		// int composite = cast inputType                                  // inputType:   0 - 31 (5 bit)
 		
@@ -707,7 +707,7 @@ skipInit global unit input
 	// 	Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 	// 	gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 
 	// 	if inputType == TouchMove
@@ -742,7 +742,7 @@ skipInit global unit input
 	// 	inputs.writeInt16 math.round(referencePos.y)
 	
 	// private handleWheelEvent: float x, float y, float deltaX, float deltaY
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
 	// 	Vector2 referencePos = {x*graphics.pixelRatio, y*graphics.pixelRatio}.getRelativeTo(graphics.baseMatrix)
@@ -767,7 +767,7 @@ skipInit global unit input
 				
 	// // Handles navigating back or forward in the browser	
 	// internal handleNavigate: string url
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
 	// 	inputs.writeInt16 cast InputType.Navigate

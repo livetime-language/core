@@ -465,7 +465,7 @@ skipInit global unit input
 	switchPerspectiveTo: Player player
 		watch "Switching to {player}"
 		showPerspectiveOf = player
-		if Platform.mode == Play or Platform.mode == Pause then core.switchToPlayer player
+		if Platform.playMode == Play or Platform.playMode == Pause then core.switchToPlayer player
 		
 	internal Player[] playersById
 	Cursor cursor
@@ -495,7 +495,7 @@ skipInit global unit input
 	private js void initHandlers
 		let pointerX = 0, pointerY = 0, clickWithAltKeyX = 0, clickWithAltKeyY = 0
 		window.onpointerdown = e => {
-			if(e.button == 0 && Platform.mode == 0) {
+			if(e.button == 0 && Platform.playMode == 0) {
 				Platform.record();
 				if(input.ignoreFirstClick) return;
 			}
@@ -605,7 +605,7 @@ skipInit global unit input
 			window.addEventListener('wheel', e => {
 				e.preventDefault();
 				e.stopPropagation();
-				if(e.button == 0 && Platform.mode == 0) Platform.record();
+				if(e.button == 0 && Platform.playMode == 0) Platform.record();
 				input.handleWheelEvent(e.pageX, e.pageY, e.deltaX, e.deltaY, e.ctrlKey)
 				return false;			
 			}, {passive: false})
@@ -627,7 +627,7 @@ skipInit global unit input
 		return 0
 		
 	private handleTextInput: InputType type, string text
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -635,7 +635,7 @@ skipInit global unit input
 		inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, Key keyCode, string key
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 		
@@ -660,7 +660,7 @@ skipInit global unit input
 		Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return		
+		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return		
 		let inputs = localUser.inputs
 
 		if inputType == TouchMove
@@ -704,7 +704,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(referencePos.y)
 		
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
@@ -736,7 +736,7 @@ skipInit global unit input
 				
 	// Handles navigating back or forward in the browser	
 	internal handleNavigate: string url
-		if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Navigate
@@ -1714,7 +1714,7 @@ skipInit global unit input
 		field.handleTextInput(7, value)
 		
 	js void updateCursor
-		// document.body.style.cursor = (input.showPointers == 2 && Platform.mode == 4 ? "none" : input.cursor)
+		// document.body.style.cursor = (input.showPointers == 2 && Platform.playMode == 4 ? "none" : input.cursor)
 		document.body.style.cursor = input.cursor
 
 	onTextComposition: void(string characters) do

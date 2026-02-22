@@ -272,7 +272,7 @@ skipInit unit Input
 		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.LeftMouseButton, 0, mousePosition);
 			
 	private handleKeyEvent: InputType type, int keyCode, string key
-		// if Core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		// if Core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -281,7 +281,7 @@ skipInit unit Input
 		if type == KeyDown: inputs.writeString key
 		
 	internal handleTouchEvent: InputType inputType, TouchType touchType, int id, Vector2 screenPosition
-		// if Core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		// if Core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 		let worldPosition = graphics.toGroundPlane screenPosition
 		let inputs = localUser.inputs
 		int composite = cast(inputType)                   // inputType: 0 -  31 (5 bit)

@@ -351,7 +351,7 @@ internal transient skipInit unit core
 			// Ensure that step is called every frameTime milliseconds
 			try
 				while frame < targetFrame
-					if Platform.mode == Record
+					if Platform.playMode == Record
 						for input.internalUsers as user
 							if user?.local then user.startInputFrame frame+1
 					step fastForward:false, draw:frame == targetFrame-1
@@ -367,7 +367,7 @@ internal transient skipInit unit core
 				core.storeRoomToDB
 				
 		lastAnimationFrame = now
-		if Platform.mode == Play and frame >= frames then Platform.record()
+		if Platform.playMode == Play and frame >= frames then Platform.record()
 			
 		// Ping
 		if currentTime - lastPingTime > 1000
@@ -544,7 +544,7 @@ internal transient skipInit unit core
 			if draw and not Platform.waitingForInitialData
 				drawTimes.add drawTime = PlainDate.measure
 					graphics.finishFrame
-				if Platform.mode != Manipulator then input.updateCursor
+				if Platform.playMode != Manipulator then input.updateCursor
 			audio.finishFrame
 
 			// Cleanup
@@ -657,7 +657,7 @@ internal transient skipInit unit core
 		startTime = math.round(currentTime - frame*frameTime - (frameTime*.5))
 		
 	adjustStartTimeIfNeeded
-		if Platform.mode < Play then adjustStartTime
+		if Platform.playMode < Play then adjustStartTime
 			
 	Buffer snapshotBuffer = {}
 	Buffer eventStreamSnapshotBuffer = {}

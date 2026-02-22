@@ -2002,7 +2002,7 @@ internal skipInit transient unit gizmo
 		handleSize = 16 interpolateTo 32 progress:math.min(max.x-min.x, max.y-min.y) 64..256
 	
 	internal tick
-		if Platform.mode != Manipulator then return
+		if Platform.playMode != Manipulator then return
 		findInfluencedItems
 		
 		if items
@@ -2035,7 +2035,7 @@ internal skipInit transient unit gizmo
 		max = Vector2.None
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
-		if Platform.mode != Manipulator then return
+		if Platform.playMode != Manipulator then return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
