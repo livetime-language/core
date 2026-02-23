@@ -382,6 +382,7 @@ global priority low skipInit static class html
 			currentOverlay.remove
 			currentOverlay = next
 		focusTabIndex = int.minValue
+		defaultButtonToTriggerWithEnterKey = null
 		// if not overlayNode
 		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
 		// 	body.parentNode.appendChild overlayNode
