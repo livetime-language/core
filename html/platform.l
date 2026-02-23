@@ -66,8 +66,8 @@ skipInit global unit Platform
 			
 			this.isDebug = isDebug
 			this.referenceSizes = [
-				{1920}
-				{960 forWidthBelow:600 isMobile:true}
+				// {1920}
+				// {960 forWidthBelow:600 isMobile:true}
 			]
 			this.ticksPerSecond = 0
 			this.tickMode = Interval
