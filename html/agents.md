@@ -15,20 +15,214 @@ Do not spread out the code over too many functions.
 Elements that are grouped together visually should be in the same function.
 Aim for about 1 to 5 draw functions per page.
 
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
+# Library Source Code
+When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/html/" and "lib/core/pocketbase/"
 
-2. Double check you are calling refresh after changing data.
+lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
+lib/core/js/time.l	Time Library (Time, Date, etc).
+lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
+lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
+lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
 
-3. Double check you fixed all linter errors.
+# Basics of the LiveTime programming language
+enum State
+	InProgress
+	Done
 
-4. Your code should contain print statements that output all relevant information to verify that everything works as specified. For example:
+// Defines the class Document
+// Classes have uppercase names. All members are public by default.
+// A contructor is created automatically
+class Document
+	string id
+	float created
+	State state
 
-5. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem.
+// Defines the static class app, the main class of every application.
+// Static classes have lowercase names. Their members are public and static by default.
+// You can access their members from anywhere like this: app.primaryColor, app.start, app.tick, ...
+app
+	Color primaryColor = #0000ff
+	Document[] documents
+	Player currentPlayer
 
-6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+	// Defines the member function start of the class app. 
+	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
+	// app.start is the entry point of the application.
+	start
+		// Create an object of type Document
+		// Calls the conctructor of the Document class and passes id, created and state
+		Document doc = {id:"2f", created:Time.now, state:Done}
 
-7. Fix all problems and repeat until you verified everything works as specified.
+		// List (array that grows in size as needed)
+		Document[] documents = [
+			{created:Time.now, state:InProgress}
+		]
+		documents.add doc
+		documents.remove doc
+		documents.orderBy.created
+		documents.clear
+		let itemsFromIndex3To7 = documents[3 to 7]
+
+		// Dictionary (hashtable that maps keys to values)
+		Document[string] documentsById
+		documentsById["2f"] = {id:"2f"}
+		documentsById.remove "2f"
+		documentsById.clear
+		for documents as doc
+			documentsById[doc.id] = doc
+		for documentsById as doc, id
+			print "id:{id} created:{doc.created.toDayMonthYearString}"
+
+		// Find
+		let doc = documents.find.id == "2f"
+
+		// Conditions with if
+		if documents.length > 0
+			print "There are {documents.length} documents."
+		else
+			print "There are no documents."
+
+		// Conditions with if in one line
+		if not currentPlayer then return
+
+		// Conditions with let
+		let mike = players.find.name == "Mike"
+			print "Found player with name Mike, his score is {mike.score}"
+		else
+			print "Did not find player with name Mike"
+
+		// Iterate over a List
+		for documents as doc
+			print doc.id
+
+		// Iterate over an integer range
+		// Prints "01234", the upper bound is exclusive 
+		for 0 to 5 as i
+			print i
+
+		// If you leave out the lower bound, it defaults to 0
+		// If you leave out the declaration of the index variable, it defaults to i
+		for 5
+			print i
+
+		// You can use "." to refer to the current item while iterating
+		for documents
+			print .
+
+		// Prints "01234"
+		for 5
+			print .
+			
+		// Use the "backwards" keyword to iterate backwards
+		// Prints "43210"
+		for 5 backwards as i
+			print i
+
+		// Iterate over a List by index
+		for documents.length as i
+			print documents[i].state
+
+		// Iterate over a Dictionary
+		for documentsById as value, key
+			print "{key}: {value}"
+
+		// If you divide an integer by an integer in LiveTime, you always get a float
+		float fraction = 1 / 2	// fraction = 0.5
+
+		// Use math.floor after a division if you need an integer
+		int flooredInteger = math.floor(1 / 2)
+
+		// Query
+		Player[] healthyPlayers	= players.where.health > 0
+		Player[] top10Players	= (players.orderByDescending.score).take 10
+		Player[] seniors	= (users.where.age > 65).orderBy.age
+		Player[] highscoreList	= (player.where.isAlive).orderByDescending.score
+
+		// Cast
+		string jsonString	= "\{value:7\}"
+		dynamic config	= json.parse(jsonString)
+		int value	= (int)config.value
+
+		// In LiveTime, the % symbol is used for percentages, like in css.
+		div width:100%
+
+		// To calucate the remainder of a division, use mod or remainder. 
+		// mod returns the remainder after a floored division, like in Python.
+		// A negative value mod a positive value will always be positive.
+		let a = 107 mod 100	// a = 7
+		let b =  -1 mod 100	// b = 99
+		let c =  -1 remainder 100	// c = -1
+			
+	// This function renders the html elements (on startup and when refresh is called)
+	draw
+		// Html div element with blue text. Refer to the Styles class for all available css styles.
+		div text:"Hello", color:#ff0000, border:{width:1px, style:solid, color:black}, margin:{top:10%, right:auto, bottom:10%, left:auto}
+
+		// Html div element with children
+		let doneItems = helpers.getAllDoneItems
+		div display:flex, flexDirection:column
+			for doneItems as doc
+				div text:"{doc.created.toDayMonthYearHourMinuteString} {doc.state}"
+
+		// Html div element children and onClick listener
+		div display:flex, flexDirection:row, backgroundColor:app.buttonColor
+			img SaveIcon
+			div "Save", fontSize:64, color:white
+		onClick:
+			print "Saving document"
+
+		// Call refresh to re-render the html after you changed any data.
+		div "Counter: {counter}"
+		button "Increment counter", onClick:counter++; refresh
+		
+		// Headlines
+		div tag:"h1", text:"Title"
+		div tag:"h2", text:"Section"
+
+		// Images
+		// Read the file "src/media.l" for all available images 
+		img Done, width:64
+		img NotDone, width:64
+
+		// Form
+		field model:name
+		button "Clear name", onClick:name = ""; refresh
+		button "Submit name", onClick:http.post "/api/name", body:{name}
+
+		// Units
+		div borderRadius:8px
+		div width:100%
+
+		// If you don't specify a unit, it defaults to pixels
+		div borderBottomWidth:8
+
+		// Border
+		div border:{width:1, style:solid, color:#808080}
+
+		// Shadow
+		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
+
+		// Instead of a value, you can specify a css string. In css, you always need to specify units.
+		div width:"calc(100% - 16px)"
+
+static class helpers
+	// bool(Document doc) defines a function that takes a Document as an argument and returns a boolean
+	Document[] filterDocuments: bool(Document doc) predicate
+		return app.documents.where predicate(.)
+
+	// void(Document[] documents) defines a function that takes a list of Documents as an argument and doesn't return anything
+	async fetchAllDocuments: void(Document[] documents) callback
+		await app.documentsDatabaseTable.fetchAll
+		callback(app.documentsDatabaseTable.items)
+
+	bool areAllItemsDone
+		return app.documents.all.state == Done
+
+	Document getName: string id
+		return (app.documents.find.id == id).id
+
+	Document[] getAllDoneItems
+		return (app.documents.where.state == Done).orderBy.created
 
 # Example application
 // Defines the enum ItemState that stores its values as strings
@@ -135,200 +329,6 @@ static class app
 		newItemText = ""
 		refresh
 
-# Basics of the LiveTime programming language
-enum State
-	InProgress
-	Done
-
-// Defines the class Document
-// Classes have uppercase names. All members are public by default.
-class Document
-	string id
-	float created
-	State state
-
-// Defines the static class app, the main class of every application.
-// Static classes have lowercase names. Their members are public and static by default.
-// You can access their members from anywhere like this: app.primaryColor, app.start, app.tick, ...
-app
-	Color primaryColor = #0000ff
-	Document[] documents
-	Player currentPlayer
-
-	// Defines the member function start of the class app. 
-	// All functions need to be part of a class. There are no top-level functions in LiveTime.
-	// app.start is the entry point of the application.
-	start
-		// List (array that grows in size as needed)
-		Document[] documents = [
-			{created:DateTime.now, state:InProgress}
-		]
-		Document doc = {id:"2f", created:DateTime.now, state:Done}
-		documents.add doc
-		documents.remove doc
-		documents.orderBy.created
-		documents.clear
-		let firstTwoItems = documents[..2]
-		let lastTwoItems = documents[-2..]
-
-		// Dictionary (hashtable that maps keys to values)
-		Document[string] documentsById
-		documentsById["2f"] = {id:"2f"}
-		documentsById.remove "2f"
-		documentsById.clear
-		for documents as doc
-			documentsById[doc.id] = doc
-		for documentsById as doc, id
-			print "id:{id} created:{doc.created.toDayMonthYearString}"
-
-		// Find
-		let doc = documents.find.id == "2f"
-
-		// Conditions with if
-		if documents.length > 0
-			print "There are {documents.length} documents."
-		else
-			print "There are no documents."
-
-		// Conditions with let
-		let mike = players.find.name == "Mike"
-			print "Found player with name Mike, his score is {mike.score}"
-		else
-			print "Did not find player with name Mike"
-
-		// Iterate over a List
-		for documents as doc
-			print doc.id
-
-		// Iterate over an integer range
-		// Prints "01234", the upper bound is exclusive 
-		for 0 to 5 as i
-			print i
-
-		// If you leave out the lower bound, it defaults to 0
-		// If you leave out the declaration of the index variable, it defaults to i
-		for 5
-			print i
-
-		// You can use "." to refer to the current item while iterating
-		for documents
-			print .
-
-		// Prints "01234"
-		for 5
-			print .
-			
-		// Use the "backwards" keyword to iterate backwards
-		// Prints "43210"
-		for 5 backwards as i
-			print i
-
-		// Iterate over a List by index
-		for documents.length as i
-			print documents[i].state
-
-		// Iterate over a Dictionary
-		for documentsById as value, key
-			print "{key}: {value}"
-
-		// If you divide an integer by an integer in LiveTime, you always get a float
-		float fraction = 1 / 2	// fraction = 0.5
-
-		// Use math.floor after a division if you need an integer
-		int flooredInteger = math.floor(1 / 2)
-
-		// Query
-		Player[] healthyPlayers	= players.where.health > 0
-		Player[] top10Players	= (players.orderByDescending.score).take 10
-		Player[] seniors	= (users.where.age > 65).orderBy.age
-		Player[] highscoreList	= (player.where.isAlive).orderByDescending.score
-
-		// Cast
-		string jsonString	= "\{value:7\}"
-		dynamic config	= json.parse(jsonString)
-		int value	= (int)config.value
-
-		// In LiveTime, the % symbol is used for percentages, like in css.
-		div width:100%
-
-		// To calucate the remainder of a division, use mod or remainder. 
-		// mod returns the remainder after a floored division, like in Python.
-		// A negative value mod a positive value will always be positive.
-		let a = 107 mod 100	// a = 7
-		let b =  -1 mod 100	// b = 99
-		let c =  -1 remainder 100	// c = -1
-		
-	// This function renders the html elements (on startup and when refresh is called)
-	draw
-		// Html div element with blue text. Refer to the Styles class for all available css styles.
-		div text:"Hello", color:#ff0000, border:{width:1px, style:solid, color:black}, margin:{top:10%, right:auto, bottom:10%, left:auto}
-
-		// Html div element with children
-		let doneItems = helpers.getAllDoneItems
-		div display:flex, flexDirection:column
-			for doneItems as doc
-				div text:"{doc.created.toDayMonthYearHourMinuteString} {doc.state}"
-
-		// Html div element children and onClick listener
-		div display:flex, flexDirection:row, backgroundColor:app.buttonColor
-			img SaveIcon
-			div "Save", fontSize:64, color:white
-		onClick:
-			print "Saving document"
-
-		// Call refresh to re-render the html after you changed any data.
-		div "Counter: {counter}"
-		button "Increment counter", onClick:counter++; refresh
-		
-		// Headlines
-		div tag:"h1", text:"Title"
-		div tag:"h2", text:"Section"
-
-		// Images
-		// Read the file "src/media.l" for all available images 
-		img Done, width:64
-		img NotDone, width:64
-
-		// Form
-		field model:name
-		button "Clear name", onClick:name = ""; refresh
-		button "Submit name", onClick:http.post "/api/name", body:{name}
-
-		// Units
-		div borderRadius:8px
-		div width:100%
-
-		// If you don't specify a unit, it defaults to pixels
-		div borderBottomWidth:8
-
-		// Border
-		div border:{width:1, style:solid, color:#808080}
-
-		// Shadow
-		div boxShadow:{offset:{4,4}, blur:16, spread:4, color:#c0c0c0}
-
-		// Instead of a value, you can specify a css string. In css, you always need to specify units.
-		div width:"calc(100% - 16px)"
-
-static class helpers
-	// bool(Document doc) defines a function that takes a Document as an argument and returns a boolean
-	Document[] filterDocuments: bool(Document doc) predicate
-		return app.documents.where predicate(.)
-
-	// void(Document[] documents) defines a function that takes a list of Documents as an argument and doesn't return anything
-	async fetchAllDocuments: void(Document[] documents) callback
-		await app.documentsDatabaseTable.fetchAll
-		callback(app.documentsDatabaseTable.items)
-
-	bool areAllItemsDone
-		return app.documents.all.state == Done
-
-	Document getName: string id
-		return (app.documents.find.id == id).id
-
-	Document[] getAllDoneItems
-		return (app.documents.where.state == Done).orderBy.created
-
 # Images
 Place images in the folder "assets/pb_public/media". 
 If you place "Example.png" in this folder, you can use "Example" in the img component:
@@ -336,11 +336,18 @@ app
 	draw
 		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
 
-# More information
-Read the full LiveTime library documentation "lib/core/html/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
+# When you are done writing code, test if it is working
+1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-"lib/core/js/" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
+2. Double check you are calling refresh after changing data.
 
-"lib/core/html/" contains the implementation of the LiveTime HTML framework (html, div, img, button, etc).
+3. Make sure you fixed all diagnostics and linter errors.
 
-"lib/core/pocketbase/" contains the PocketBase API (backend, DatabaseTable, etc)
+4. Your code should contain print statements that output all relevant information to verify that everything works as specified.
+
+5. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
+
+6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+
+7. Fix all problems and repeat until you verified everything works as specified.
+
