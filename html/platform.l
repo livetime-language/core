@@ -106,7 +106,7 @@ skipInit global unit Platform
 	async replay
 		try
 			heartbeat "replay"
-			if resetWhenCodeChanged: html.reset
+			if resetWhenCodeChanged then html.reset
 			initMedia
 			initBackend
 			initAll

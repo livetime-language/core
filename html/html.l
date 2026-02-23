@@ -95,11 +95,11 @@ dynamic HTMLElement
 	
 	onTouchDown: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointerdown = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			TouchType type
-			if ev.pointerType == Mouse: type = cast ev.button.clamp(0 to 2); else
-			if ev.pointerType == Touch: type = Touch; else
-				                        type = Pen
+			if ev.pointerType == Mouse then type = cast ev.button.clamp(0 to 2); else
+			if ev.pointerType == Touch then type = Touch; else
+				                            type = Pen
 			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, pixels)}
 			touch.shiftKey = ev.shiftKey
 			touch.ctrlKey = ev.ctrlKey
@@ -111,7 +111,7 @@ dynamic HTMLElement
 	
 	onTouchMove: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointermove = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			Touch touch = this.touches.find.id == ev.pointerId
 			if touch
 				touch.phase = Move
@@ -122,7 +122,7 @@ dynamic HTMLElement
 	
 	onTouchUp: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointerup = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			int index = this.touches.indexWhere.id == ev.pointerId
 			if index != -1
 				let touch = this.touches[index]
@@ -141,7 +141,7 @@ dynamic HTMLElement
 		
 	onTouchCancel: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointercancel = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			int index = this.touches.indexWhere.id == ev.pointerId
 			if index != -1
 				let touch = this.touches[index]

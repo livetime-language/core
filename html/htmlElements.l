@@ -28,14 +28,14 @@ global static class html
 		
 		if key
 			// If a key is specified, we store all nodes in a dictionary on the parent object
-			if not parentNode.childrenByKey: parentNode.childrenByKey = {}
+			if not parentNode.childrenByKey then parentNode.childrenByKey = {}
 			element = parentNode.childrenByKey[key]
 			if not element
 				// Create new element (with key)
 				element = HTMLElement.create tag
 				parentNode.childrenByKey[key] = element
 				nextNode = currentNode
-				if nextNode: parentNode.insertBefore element, nextNode
+				if nextNode then parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
 				nodesCreated++
 			else
@@ -50,10 +50,11 @@ global static class html
 				element = HTMLElement.create tag
 				element.sourceLocation = sourceLocation
 				nextNode = currentNode
-				if nextNode: parentNode.insertBefore element, nextNode
+				if nextNode then parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
 				if focusInitially
-					delay 0: element.focus
+					delay 0
+						element.focus
 				nodesCreated++
 			else
 				// Resuse existing element
@@ -65,23 +66,23 @@ global static class html
 		setDataAttributes element, data
 		
 		if attributes != null
-			if attributes.id and attributes.id != element.id:	element.id = attributes.id
-			if attributes.class and attributes.class != element.class:	element.class = attributes.class
-			if attributes.title and attributes.title != element.title:	element.title = attributes.title
-			if attributes.tabIndex:	element.set("tabindex", attributes.tabIndex.toString)
+			if attributes.id and attributes.id != element.id then	element.id = attributes.id
+			if (attributes.class and attributes.class != element.class) then	element.class = attributes.class
+			if attributes.title and attributes.title != element.title then	element.title = attributes.title
+			if attributes.tabIndex then	element.set("tabindex", attributes.tabIndex.toString)
 			
-			if attributes.onClick != null: 	element.onclick = attributes.onClick
-			if attributes.onRightClick != null:	element.oncontextmenu = attributes.onRightClick
-			if attributes.onPointerDown != null:	element.onpointerdown = attributes.onPointerDown
-			if attributes.onPointerOver != null:	element.onpointerover = attributes.onPointerOver
-			if attributes.onPointerOut != null: 	element.onpointerout  = attributes.onPointerOut
+			if attributes.onClick != null then 	element.onclick = attributes.onClick
+			if attributes.onRightClick != null then	element.oncontextmenu = attributes.onRightClick
+			if attributes.onPointerDown != null then	element.onpointerdown = attributes.onPointerDown
+			if attributes.onPointerOver != null then	element.onpointerover = attributes.onPointerOver
+			if attributes.onPointerOut != null then 	element.onpointerout  = attributes.onPointerOut
 
-			if attributes.onKeyDown != null:	element.onkeydown = attributes.onKeyDown
-			if attributes.onKeyUp != null:	element.onkeyup = attributes.onKeyUp
+			if attributes.onKeyDown != null then	element.onkeydown = attributes.onKeyDown
+			if attributes.onKeyUp != null then	element.onkeyup = attributes.onKeyUp
 
 			if styleWhenFocused == null
-				if attributes.onBlur != null:	element.onblur = attributes.onBlur
-				if attributes.onFocus != null:	element.onfocus = attributes.onFocus
+				if attributes.onBlur != null then	element.onblur = attributes.onBlur
+				if attributes.onFocus != null then	element.onfocus = attributes.onFocus
 			
 		if styleWhenHovering != null
 			Style styleWhenNotHovering = getStyleToRevert originalStyle:style, styleWhenHovering
@@ -90,9 +91,9 @@ global static class html
 		
 		if styleWhenFocused != null
 			Style styleWhenNotFocused = getStyleToRevert originalStyle:style, styleWhenFocused
-			element.onfocus = print "#div onfocus"; setStyle(element, styleWhenFocused); if attributes?.onFocus != null: attributes.onFocus(.)
-			element.onblur  = print "#div onblur"; setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null: attributes.onBlur(.)
-			if html.activeElement == element: setStyle(element, styleWhenFocused)
+			element.onfocus = print "#div onfocus"; setStyle(element, styleWhenFocused); if attributes?.onFocus != null then attributes.onFocus(.)
+			element.onblur  = print "#div onblur"; setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null then attributes.onBlur(.)
+			if html.activeElement == element then setStyle(element, styleWhenFocused)
 
 		if text != null
 			if element.shadowInnerHtml != text
@@ -175,7 +176,7 @@ global static class html
 		let result = ""
 		for str as char
 			if char >= "A" and char <= "Z"
-				if result.length > 0: result += "-"
+				if result.length > 0 then result += "-"
 				result += char.toLowerCase()
 			else
 				result += char
@@ -209,8 +210,8 @@ global static class html
 		        dynamic data = null               // The data attributes of the element
 		        bool visible = true
 		        SourceCodeLocation location
-		if not visible: return
-		if data == null: data = {}
+		if not visible then return
+		if data == null then data = {}
 		data.src = Platform.basePath + image.src
 		let element = div tag:"img", attributes, style, data, location
 		element.onclick = onClick
@@ -240,7 +241,7 @@ global static class html
 		        expand Style style = null         // The css style of the HTML element
 		        dynamic data                      // The data attributes of the element
 		        SourceCodeLocation location
-		if data == null: data = {}
+		if data == null then data = {}
 		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") ? src : Platform.basePath + src
 		return div tag:"img", attributes, style, data, location
 
@@ -261,7 +262,7 @@ global static class html
 				   bool triggerWithEnterKey = false  // Make this the default button that triggers the onClick handler when the user presses the enter key
 		           SourceCodeLocation location
 		let element = div text, tag:"button", attributes, style, location
-		if triggerWithEnterKey: html.defaultButtonToTriggerWithEnterKey = onClick
+		if triggerWithEnterKey then html.defaultButtonToTriggerWithEnterKey = onClick
 		element.onpointerdown = onClick
 		return element
 		
@@ -275,7 +276,7 @@ global static class html
 		let element = div text, tag:"button", attributes, style, location
 		if disableAfterClick
 			element.disabled = false
-			element.onpointerdown = let success = onClick(.); if not object.isEqualAndSameType(success, false): element.disabled = true
+			element.onpointerdown = let success = onClick(.); if not object.isEqualAndSameType(success, false) then element.disabled = true
 		else
 			element.onpointerdown = onClick(.)
 		return element
@@ -453,7 +454,7 @@ global static class html
 		element.placeholder = placeholder
 		element.type = type
 		element.oninput = model = element.value; changeHandler
-		if focused: element.focus
+		if focused then element.focus
 	
 	// Render a html input element in the draw function.
 	// The model variable you pass in will be updated automatically after every keystroke.
@@ -469,7 +470,7 @@ global static class html
 		element.value = model
 		element.oninput = model = element.value; changeHandler
 		element.onkeydown = if(ev.keyCode == Enter) onEnter()
-		if focused or focusTabIndex == attributes.tabIndex: element.focus
+		if focused or focusTabIndex == attributes.tabIndex then element.focus
 		
 	// Render a manual html input element in the draw function. 
 	// If you specify a onChange handler, the model won't be updated automatically.
@@ -484,9 +485,9 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"input", attributes, style, location
 		element.value = text or ""
-		if updateWithEveryKeystroke: element.oninput = onChange(element.value); changeHandler
+		if updateWithEveryKeystroke then element.oninput = onChange(element.value); changeHandler
 		else         element.onchange = onChange(element.value); changeHandler
-		if focused or focusTabIndex == attributes.tabIndex: element.focus
+		if focused or focusTabIndex == attributes.tabIndex then element.focus
 			
 	// Render a html element to upload files. The children will determine the look of the element. 
 	// The native html input element itself is hidden. 
@@ -499,12 +500,12 @@ global static class html
 		                   void(HTMLElement element) onChange = null   // Called when the user selected a file
 		                   SourceCodeLocation location
 		dynamic data = {type:"file" accept capture}
-		if multiple: data.multiple = true
+		if multiple then data.multiple = true
 		let element = div tag:"input", data, display:none, location
 		element.onchange = onChange(element)
 		element.setAttribute("capture", "environment")
 		// This causes the change event not to fire in Nomand's Guide to the Galaxy on mobile
-		if children != null: div children, onClick: element.click
+		if children != null then div children, onClick: element.click
 		return element
 		
 	// Render a html editable text element in the draw function.
@@ -520,14 +521,16 @@ global static class html
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
-		if model != element.innerText: element.innerText = model
+		if model != element.innerText then element.innerText = model
 		element.contentEditable = "plaintext-only"
 		let prevModel = model
 		if updateWithEveryKeystroke
 			element.oninput = model = element.innerText; onChanged(model); changeHandler
 		else         
-			element.onblur = model = element.innerText; if model != prevModel: onChanged(model); changeHandler
-		if focusTabIndex == tabIndex: delay 100: element.focus
+			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		if focusTabIndex == tabIndex
+			delay 100
+				element.focus
 
 	// Render a html editable text element in the draw function.
 	// The model variable you pass in will be updated automatically.
@@ -543,15 +546,17 @@ global static class html
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
-		if model != element.innerText: element.innerText = model
+		if model != element.innerText then element.innerText = model
 		element.onclick = onClick
 		element.contentEditable = "plaintext-only"
 		let prevModel = model
 		if updateWithEveryKeystroke
 			element.oninput = model = element.innerText; onChanged(model); changeHandler
 		else         
-			element.onblur = model = element.innerText; if model != prevModel: onChanged(model); changeHandler
-		if focusTabIndex == tabIndex: delay 100: element.focus
+			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		if focusTabIndex == tabIndex
+			delay 100
+				element.focus
 
 	// Render a html textarea element in the draw function.
 	// The model variable you pass in will be updated automatically after every keystroke.
@@ -567,7 +572,7 @@ global static class html
 		element.style.minHeight = 16px
 		element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden
 		element.oninput = model = element.value; element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden; changeHandler
-		if focused or focusTabIndex == attributes.tabIndex: element.focus
+		if focused or focusTabIndex == attributes.tabIndex then element.focus
 
 	// ---------------------------------------- Canvas ----------------------------------------
 	
@@ -586,14 +591,14 @@ global static class html
 		           expand Style style = null         // The css style of the HTML element
 		           void() draw
 		           SourceCodeLocation location
-		if style == null: style = {}
+		if style == null then style = {}
 		style.width = {size.x}
 		style.height = {size.y}
 		let canvas = div tag:"canvas", attributes, style, location
 		canvas.width = size.x
 		canvas.height = size.y 
 		currentContext = canvas.context
-		if currentContext == null: currentContext = canvas.context = canvas.getContext("2d")
+		if currentContext == null then currentContext = canvas.context = canvas.getContext("2d")
 		currentContext.clearRect(0,0,style.width,style.height)
 		draw()
 		return canvas
@@ -647,7 +652,7 @@ global static class html
 						parseInline line
 
 	private void parseInline: string text
-		if text == "": return
+		if text == "" then return
 
 		// Image: ![Alt](Url)
 		let imageStart = text.indexOf("![")
@@ -704,14 +709,14 @@ global static class html
 	importance:4 script: string src
 			dynamic data = {}
 		let element = div tag:"script", data
-		if !element.src.endsWith(src): element.src = src
+		if !element.src.endsWith(src) then element.src = src
 		element.onload = refresh
 		
 	// Render a html link element to include a css stylesheet file
 	importance:4 css: string src
 		dynamic element = cast div tag:"link"
 		element.rel = "stylesheet" 
-		if !element.href.endsWith(src): element.href = Platform.basePath + src
+		if !element.href.endsWith(src) then element.href = Platform.basePath + src
 		
 		
 	// Render a html video element to display a video
@@ -740,7 +745,7 @@ global static class html
 		data.referrerpolicy = referrerpolicy
 		data.allowfullscreen = allowfullscreen
 		let element = div tag:"iframe", attributes, style, data, location
-		if element.src != src: element.src = src
+		if element.src != src then element.src = src
 		return element
 
 	// Render a electron webview element to display a web page
@@ -752,10 +757,12 @@ global static class html
 		            SourceCodeLocation location
 		WebView element = cast div tag:"webview", attributes, style, data, location
 		element.onWillNavigate = onNavigate
-		if not element.src: element.src = initialUrl
+		if not element.src then element.src = initialUrl
 		if !element.hasHandlers
 			element.hasHandlers = true
-			element.on "will-navigate": if element.onWillNavigate != null: element.onWillNavigate(event.url)
+			element.on "will-navigate"
+				if element.onWillNavigate != null
+					element.onWillNavigate(event.url)
 		return element
 
 	global body: expand Attributes attributes = {} // The attributes of the element
@@ -784,29 +791,29 @@ global static class html
 			element = HTMLElement.create "div"
 			element.sourceLocation = sourceLocation
 			nextNode = currentOverlay
-			if nextNode: documentBody.parentNode.insertBefore element, nextNode
+			if nextNode then documentBody.parentNode.insertBefore element, nextNode
 			else         documentBody.parentNode.appendChild element
 		else
 			element = currentOverlay
 			nextNode = currentOverlay.nextSibling
 		
-		if style == null: style = {}	
-		if not style.inset:           style.inset = {0,0,0,0}
-		if not style.position:        style.position = fixed
-		if not style.backgroundColor: style.backgroundColor = #00000080
-		if not style.display:         style.display = flex
-		if not style.alignItems:      style.alignItems = center
-		if not style.justifyContent:  style.justifyContent = center
+		if style == null then style = {}	
+		if not style.inset then           style.inset = {0,0,0,0}
+		if not style.position then        style.position = fixed
+		if not style.backgroundColor then style.backgroundColor = #00000080
+		if not style.display then         style.display = flex
+		if not style.alignItems then      style.alignItems = center
+		if not style.justifyContent then  style.justifyContent = center
 		setStyle element, style
 		
 		if attributes != null
-			if attributes.id != null:           element.id = attributes.id
-			if attributes.class != null:        element.class = attributes.class
-			if attributes.onClick != null:      element.onclick = attributes.onClick
-			if attributes.onRightClick != null: element.oncontextmenu = attributes.onRightClick
+			if attributes.id != null then           element.id = attributes.id
+			if attributes.class != null then        element.class = attributes.class
+			if attributes.onClick != null then      element.onclick = attributes.onClick
+			if attributes.onRightClick != null then element.oncontextmenu = attributes.onRightClick
 		
 		if onClickOutside != null
-			element.onclick = if .target == element: onClickOutside()
+			element.onclick = if .target == element then onClickOutside()
 
 		let prevParentNode = parentNode
 		let prevCurrentNode = currentNode
