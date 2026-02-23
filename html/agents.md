@@ -245,7 +245,7 @@ class TodoItem
 	ItemState state = NotStarted
 	string text
 
-// Defines the static class app, the main class of every application.
+// Defines the static class app, the main class of every LiveTime application.
 // Static classes have lowercase names. Their members are public and static by default.
 // You can access their members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
 static class app
@@ -268,7 +268,7 @@ static class app
 		fetchItems
 
 	fetchItems
-		if not user: return
+		if not user then return
 		await items.fetch filter:"userId = '{user.id}'"
 		refresh
 
