@@ -172,6 +172,15 @@ app
 		let a = 107 mod 100	// a = 7
 		let b =  -1 mod 100	// b = 99
 		let c =  -1 remainder 100	// c = -1
+
+		// Print: Use type:Action for actions performed by a player
+		print "Piece placed at {cell.gridPos} by {currentPlayer}" type:Action
+
+		// Print: Use type:Reaction for reactions or consequences of an action
+		print "Game won with {winner.score} points by {winner}" type:Reaction
+
+		// Print: Use type:Debug for temporary debug messages
+		print "Possible moves for {currentPlayer}: {possibleMoves}" type:Debug
 	
 app
 	Player currentPlayer
@@ -316,7 +325,17 @@ app
 		currentPlayer = players next currentPlayer
 
 		// Always print the start of the turn in the player's color!
-		print color:currentPlayer.color, "# Turn of {currentPlayer} started"
+		print "# Turn of {currentPlayer} started" color:currentPlayer.color
+
+	// Called when a player touches the screen
+	// Important: If isOnlineMultiplayer it true, the touch must be by the current player
+	onTouchDown: Touch touch
+		if isOnlineMultiplayer and touch.by != currentPlayer then return
+		let cell = app.grid[touch.position.toGridPos]
+			if not cell.player
+				currentPlayer.placePiece cell
+			else
+				print "Invalid cell {cell.gridPos} occupied by {cell.player} clicked" type:Error
 				
 	// Called on every frame (30 times per second)
 	tick
@@ -329,7 +348,7 @@ app
 	finishGame
 		Player winner = players.withMax.score
 		ParticleSystem(position:winner.pos)
-		print "Game won with {winner.score} points by {winner}"
+		print "Game won with {winner.score} points by {winner}" type:Reaction
 
 struct IntVector2
 	toScreenPos => app.cellOffset + this * app.cellSize
@@ -373,19 +392,10 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-	// Called when the player touches the screen
-	// Important: Only the current player is can make a move
-	onTouchDown: Touch touch
-		if app.currentPlayer != this then return
-		let cell = app.grid[touch.position.toGridPos]
-			if cell.player then	print "Cell {cell.gridPos} occupied by {cell.player} clicked by {this}"
-			else	print "Empty cell {cell.gridPos} clicked by {this}"
-			placePiece cell
-
 	placePiece: Cell cell
 		if cell.player then return
 		cell.player = this
-		print "Piece placed at {cell.gridPos} by {this}"
+		print "Piece placed at {cell.gridPos} by {this}" type:Action
 		captureSurroundedPieces cell.gridPos
 		app.startTurn
 				
@@ -397,7 +407,7 @@ class Player
 			if neighborCell and neighborCell.player and neighborCell.player != this
 				Cell[] surroundesCells = collectSurroundesCells neighborPos
 					surroundesCells.each.player = null
-					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}"
+					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}" type:Reaction
 	
 	// We can specify the return type in front of the name of a function
 	Cell[] collectSurroundesCells: IntVector2 originPos

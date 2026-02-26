@@ -861,7 +861,7 @@ internal transient skipInit unit core
 		errorMessage = error.stack
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {
-			addToOutput "error|{errorMessage}||0"
+			addToOutput "exception|{errorMessage}||0"
 		} else {
 			core.log errorMessage
 		}
