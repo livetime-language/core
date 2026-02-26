@@ -198,13 +198,16 @@ app
 		players.each.tick
 
 
+
 // Handle input
 app
 	Item[] items
+	start
+		items.add {owner:players[0]}
 
-	// Important: If isOnlineMultiplayer it true, the touch must be by the owner of the item
 	onTouchHover: Touch touch
 		for items as item
+			// Important: If isOnlineMultiplayer it true, the touch must be by the owner of the item
 			if isOnlineMultiplayer and touch.by != item.owner then continue
 			item.hoverTouch = touch.position insideRectangle item.position, item.size ? touch : null
 			print item.hoverTouch
@@ -343,9 +346,10 @@ app
 		print "# Turn of {currentPlayer} started" color:currentPlayer.color
 
 	// Called when a player touches the screen
-	// Important: If isOnlineMultiplayer it true, the touch must be by the current player
 	onTouchDown: Touch touch
+		// Important: If isOnlineMultiplayer it true, the touch must be by the current player
 		if isOnlineMultiplayer and touch.by != currentPlayer then return
+		
 		let cell = app.grid[touch.position.toGridPos]
 			if not cell.player
 				currentPlayer.placePiece cell
