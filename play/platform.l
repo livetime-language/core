@@ -132,11 +132,11 @@ transient skipInit unit Platform
 					core.onError .
 				finally 
 					sendFinished
-					updateIcon
+					updateTitle
 		catch
 			core.onError .
 			sendFinished
-			updateIcon
+			updateTitle
 	
 	private async js void preload
 		if(app.preload) await app.preload();
@@ -278,28 +278,35 @@ transient skipInit unit Platform
 
 	inline js bool isConnectedToEditor => _isConnectedToEditor
 
-	private updateIcon
-		if not isConnectedToEditor	then setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
-		if playMode == Pause and core.frame <= 1	then setPageTitleAndIcon title:"Stop" iconUrl:"/_dev/Stop.png"; else
-		if playMode == Pause	then setPageTitleAndIcon title:"Pause" iconUrl:"/_dev/Pause.png"; else
-		if playMode == Play	then setPageTitleAndIcon title:"Play" iconUrl:"/_dev/Play.png"; else
-		if playMode == Record 	then setPageTitleAndIcon title:"Record" iconUrl:"/_dev/Record.png"; else
-		if playMode == Manipulator	then setPageTitleAndIcon title:"Manipulator" iconUrl:"/_dev/Manipulator.png"; else
-		if playMode == Slide	then setPageTitleAndIcon title:"Slide" iconUrl:"/_dev/Slide.png";
 
-	js void setPageTitleAndIcon: string title = null, string iconUrl = null
-		if(title) {
-			document.title = title;
+	const string[PlayMode] iconForPlayMode = {
+		Stop:	"⏹"
+		Pause:	"⏸"
+		Play:	"▶"
+		Record:	"⏺"
+		Manipulator:	"✥"
+		Slide:	"⏭"
+	}
+
+	internal updateTitle
+		if not isDebug then return
+		if not isConnectedToEditor
+			setPageTitle "✗"
+		else
+			let playerName = input.localPlayer?.toString or ""
+			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+
+	js void setPageTitle: string title
+		document.title = title;
+
+	js void setPageIcon: string iconUrl
+		var link = document.querySelector("link[rel~='icon']");
+		if (!link) {
+			link = document.createElement('link');
+			link.rel = 'icon';
+			document.head.appendChild(link);
 		}
-		if(iconUrl) {
-			var link = document.querySelector("link[rel~='icon']");
-			if (!link) {
-				link = document.createElement('link');
-				link.rel = 'icon';
-				document.head.appendChild(link);
-			}
-			link.href = iconUrl;
-		}
+		link.href = iconUrl;
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
