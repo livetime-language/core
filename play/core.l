@@ -1,7 +1,6 @@
 enum NetworkMode: None, Ping, Local, Connected
 internal transient immutable RoomInfo: int time, userId
 enum SendInputsMode: None, Peer, Server
-enum TestRunMode: FirstRun, FullReplay, PartialReplay
 	
 internal transient skipInit unit core
 	int eventStreamVersion = 2
@@ -82,13 +81,15 @@ internal transient skipInit unit core
 		
 	// Clear all inputs and reset the application to the first frame
 	void stop
+		output.clear
+		outputIndex = 0
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
 		startTime = serverStartTime = currentTime
 		frames = 0
 		targetFrame = -1
-		targetOutputId = -1
+		interrruptAtOutputIndex = -1
 		frameWithNewWatches = 0
 		watchIndex = 0
 		startInLobby = false
@@ -107,13 +108,11 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.writePos = .inputs.readPos
 			.startInputFrame frame
-		if Platform.isDebug then Platform.sendFrame frame, frames
 		
 	// Keep inputs, call init functions, create the local players, reset read positions and start app
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
-		output.clear
-		outputId = 0
+		outputIndex = 0
 		players.clear
 		input.playersById.clear
 		input.host = null
@@ -192,20 +191,19 @@ internal transient skipInit unit core
 	// to replay all inputs with the new code from the beginning,
 	// and when stepping through the timeline with replayFromStart = false
 	// to only replay from the beginning when going to a frame in the past
-	goToFrame: int targetFrame, int targetOutputId = -1, replayFromStart = false
-		System.log "------------------------- goToFrame targetFrame:{targetFrame} targetOutputId:{targetOutputId}"
-		replayFromStart = true
+	goToFrame: int targetFrame, int interrruptAtOutputIndex = -1, codeChanged = false
+		let previouylyInterrupted = this.interrruptAtOutputIndex != -1
 		this.targetFrame = targetFrame
-		this.targetOutputId = targetOutputId
+		this.interrruptAtOutputIndex = interrruptAtOutputIndex
 		this.reachedOutputId = false
 		isPremiere = false
 		try
 			try
-				if replayFromStart
+				if codeChanged
 					frameWithNewWatches = 0
 					reset
 				else
-				if targetFrame < frame
+				if targetFrame < frame or previouylyInterrupted
 					let milestoneIndex = enabledMilestones ? math.floor(targetFrame/milestoneInterval) - 1 : -1
 					if 0 <= milestoneIndex < milestones.length
 						let milestone = milestones[milestoneIndex]
@@ -220,27 +218,29 @@ internal transient skipInit unit core
 			catch
 				onError .
 
-			Platform.fastForward = false
-			if frame < targetFrame+1
+			// If we interrupted in the middle of a tick, we draw the current state without events
+			if frame <= targetFrame
+				Platform.fastForward = false
+				for input.internalUsers as user
+					user?.clearEvent
 				tick draw:true
 		catch
 			onError .
 		finally
 			adjustStartTime
 			isPremiere = true
-			Platform.sendFinished
+			let output = codeChanged ? core.output : null
+			Platform.sendToEditor {type:"finished", frame:core.frame-1, frames:core.frames, playMode:Platform.playMode, output}
 
-	runTest: TestRunMode testRunMode, string testFunctionName, int id = -1, int targetFrame = -1, int targetOutputId = -1
-		System.log "Running test {testFunctionName}"
+	runTest: string testFunctionName, int id = -1, int targetFrame = -1, int interrruptAtOutputIndex = -1
 		let parts = testFunctionName.split(".")
 		if parts.length < 2 then parts = ["tests", testFunctionName or "main"]
 		dynamic testFunction = globals[parts[0]][parts[1]]
 		if not testFunction then return
 		isPremiere = false
 		runningTest = true
-		this.testRunMode = testRunMode
 		this.targetFrame = targetFrame
-		this.targetOutputId = targetOutputId
+		this.interrruptAtOutputIndex = interrruptAtOutputIndex
 		this.reachedOutputId = false
 		Platform.fastForward = false
 		try
@@ -250,49 +250,38 @@ internal transient skipInit unit core
 			catch
 				onError .
 
+			// We draw the current state without events
+			// We don't draw in the test function since we don't know when we are on the final frame
+			Platform.fastForward = false
 			for input.internalUsers as user
 				user?.clearEvent
-			Platform.fastForward = false
 			tick draw:true
-
-			// Execute a full tick after each test to: #evaluate
-			// - draw the current state after throwing an exception in the middle of tick (before drawing)
-			// - ensure that all events are processed
-			// tick draw:true
-			// if frame == 0: tick draw:true
-			// else           graphics.finishFrame
 		catch
 			core.onError .
 		finally		
 			isPremiere = true
 			runningTest = false
-			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, testRunMode, frame, frames})
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, frame, frames})
 			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
 
 	bool runningTest
 	string[] output
-	int outputId = -1
-	int targetOutputId = -1
+	int outputIndex = -1
+	int interrruptAtOutputIndex = -1
 	int targetFrame = -1
 	bool reachedOutputId = false
-	TestRunMode testRunMode
 
-	debugLog: string value
-		System.log "{value} outputId:{outputId} targetOutputId:{targetOutputId} frame:{frame} targetFrame:{targetFrame}"
-		value += "|{outputId}|{frame}"
-		if runningTest	then output.add value; else 
-		if targetOutputId == -1	then Platform.sendStringToEditor value
-		if targetOutputId != -1
-			// Throw an exception when we reach targetOutputId #evaluate
-			if outputId == targetOutputId and not reachedOutputId
-				System.log "Throwing exception"
+	addToOutput: string value
+		value += "|{outputIndex}|{frame}"
+		output[outputIndex] = value
+		if Platform.playMode == Record then Platform.sendStringToEditor value
+		if interrruptAtOutputIndex != -1
+			// Throw an exception when we reach interrruptAtOutputIndex
+			if outputIndex == interrruptAtOutputIndex and not reachedOutputId
 				reachedOutputId = true
 				throw {message: "reached end of replay"}
-		outputId++
+		outputIndex++
 
-	addOutput: string value
-		if runningTest	then output.add value; else 
-		if targetOutputId == -1	then Platform.sendStringToEditor value
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -489,7 +478,7 @@ internal transient skipInit unit core
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
-		if Platform.isDebug and !fastForward then Platform.sendFrame(frame, math.max(frame+1, frames))
+		if Platform.isDebug and !fastForward then Platform.sendFrameAndPlayMode
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
 		checkSaveState
@@ -816,7 +805,6 @@ internal transient skipInit unit core
 			if Platform.isDebug then Platform.sendClearTimeline
 			frame = int.maxValue
 			goToFrame targetFrame
-			if Platform.isDebug then Platform.sendFrame(targetFrame, frames)
 		
 	string roomString
 	int roomId
@@ -873,7 +861,7 @@ internal transient skipInit unit core
 		errorMessage = error.stack
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {
-			debugLog "error|{errorMessage}||0"
+			addToOutput "error|{errorMessage}||0"
 		} else {
 			core.log errorMessage
 		}
@@ -920,7 +908,7 @@ internal transient unit Snapshot
 		
 	autoSave() autoSaveAtEndOfStep = true
 
-enum lowercase string PrintIcon: Info, Error, Warning, Event, Action, Touch, Key, GameController
+enum lowercase string PrintIcon: Info, Action, Reaction, Error, Warning, Event, Touch, Key, GameController
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
@@ -937,10 +925,10 @@ global transient unit System
 		if((core.runningTest || Platform.isDebug) && location) {
 			if(color) console.log(`%c${text}`, `color then ${color.hex}`)
 			else      console.log(text)
-			if(drawDebugInformation != null && (core.targetOutputId == -1 ||core.outputId <= core.targetOutputId)) {
-				drawDebugInformation(core.outputId == core.targetOutputId)
+			if(drawDebugInformation != null && (core.interrruptAtOutputIndex == -1 ||core.outputIndex <= core.interrruptAtOutputIndex)) {
+				drawDebugInformation(core.outputIndex == core.interrruptAtOutputIndex)
 			}
-			core.debugLog(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+			core.addToOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
 			core.log(text);
 		}
@@ -1248,7 +1236,7 @@ tests
 			result = "-"
 			try		expectedString = json.stringify(expected)
 			catch		expectedString = expected?.toString()
-		core.debugLog "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
+		core.addToOutput "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
 
 	// Used internally in the compiled code. Do not call in your code.
 	//     expect players.all.ready      ->    tests.expectToBeTrue(`players.all.ready`, players.all.ready, new SourceCodeLocation("tests/tests.l", 69312, 69317, null, null));
@@ -1260,7 +1248,7 @@ tests
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()
 		string result = actual ? "+" : "-"
-		core.debugLog "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
+		core.addToOutput "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
 	
 	// Used internally. Do not call in your code.
 	internal tick

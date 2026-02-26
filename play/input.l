@@ -465,7 +465,7 @@ skipInit global unit input
 	switchPerspectiveTo: Player player
 		watch "Switching to {player}"
 		showPerspectiveOf = player
-		if Platform.playMode == Play or Platform.playMode == Pause then core.switchToPlayer player
+		if Platform.playMode == Play or Platform.playMode == Pause or Platform.playMode == Stop then core.switchToPlayer player
 		
 	internal Player[] playersById
 	Cursor cursor
@@ -473,7 +473,7 @@ skipInit global unit input
 	bool showPointers = true
 	ShowPointersMode showPointersMode = Remote
 	ShowPointersMode showPointersModeInEditor = None
-	ShowPointersMode showPointersDuringPlayback = WhenDown
+	ShowPointersMode showPointersDuringPlayback = LocalAndRemote
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
@@ -1074,9 +1074,9 @@ skipInit global unit input
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.referenceStartPosition
 			if length < 8
-				core.addOutput "code|click {touch.referenceStartPosition} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+				core.addToOutput "code|click {touch.referenceStartPosition} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
 			else
-				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+				core.addToOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
