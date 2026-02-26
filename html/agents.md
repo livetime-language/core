@@ -15,125 +15,14 @@ Do not spread out the code over too many functions.
 Elements that are grouped together visually should be in the same function.
 Aim for about 1 to 5 draw functions per page.
 
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
+# Library Source Code
+When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/html/" and "lib/core/pocketbase/"
 
-2. Double check you are calling refresh after changing data.
-
-3. Double check you fixed all linter errors.
-
-4. Your code should contain print statements that output all relevant information to verify that everything works as specified. For example:
-
-5. In case something isn't working, come up with a list of hypothesis of all possible causes. Add print statements that help you identify the true cause of the problem.
-
-6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
-
-7. Fix all problems and repeat until you verified everything works as specified.
-
-# Example application
-// Defines the enum ItemState that stores its values as strings
-enum string ItemState
-	NotStarted
-	InProgress
-	Done
-
-// Defines the class User
-// Classes have uppercase names. All members are public by default.
-class User
-	string id
-	string email
-	string password
-
-// Defines the class TodoItem
-class TodoItem
-	string id
-	string userId
-	ItemState state = NotStarted
-	string text
-
-// Defines the static class app, the main class of every application.
-// Static classes have lowercase names. Their members are public and static by default.
-// You can access their members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
-static class app
-	const Color primaryColor = #118ab2
-	const fontSize = 16px
-	const Padding buttonPadding = {topAndBottom:6 leftAndRight:16}
-
-	// Used to add, remove, fetch and update items from a remote PocketBase collection. Also stores TodoItems locally in the member variable items.
-	DatabaseTable<TodoItem> items = {name:"todoItems"}
-
-	User user
-	string newItemText
-	string email, password
-
-	// Defines the member function start of the class app. 
-	// All functions need to be part of a class. There are no top-level functions in LiveTime.
-	// app.start is the entry point of the application. It is called when the application starts.
-	start
-		user = await backend.getAuthenticatedUser
-		fetchItems
-
-	fetchItems
-		if not user: return
-		await items.fetch filter:"userId = '{user.id}'"
-		refresh
-
-	// Defines the member function draw of the class app. 
-	// app.draw is called to render the html elements when the application starts and when the refresh function is called.
-	draw
-		if not user
-			column gap:8 margin:{all:40px}
-				div tag:"h1", text:"Login"
-				field model:email, type:email, placeholder:"Email", fontSize
-				field model:password, type:password, placeholder:"Password", fontSize
-
-				button text:"Login", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
-					onClick:
-						user = await backend.authWithPassword email, password
-						fetchItems
-		else
-			div display:flex, flexDirection:column, gap:16, fontSize, margin:{left:32 right:32}
-				row alignItems:center
-					div tag:"h1", text:"Todo List", flex:1
-
-					button "Logout", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
-						onClick:
-							backend.logout
-							user = null
-							refresh
-
-				if items.length > 0
-					for items as item
-						drawItem item
-				else
-					div text:"No items", fontSize, fontStyle:italic
-
-				div display:flex, gap:20, margin:{top:16}, height:30px
-					field model:newItemText, flex:1, width:400, fontSize, onEnter:addItem newItemText
-					button text:"Add", fontSize, padding:buttonPadding, cursor:pointer, color:white, backgroundColor:primaryColor, onClick:addItem newItemText
-
-	// All functions that render html should start with "draw"
-	drawItem: TodoItem item
-		div display:flex, 
-			gap:16,
-			cursor:pointer,
-			padding:{top:8 right:8 bottom:8 left:8},
-			border:{width:2px, style:solid, color:#808080},
-			boxShadow:{offset:{4,4}, blur:12, spread:4, color:#d0d0d0},
-			children:
-				div text:item.state == Done ? "☑" : "☐"
-				div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? linethrough : none
-				div text:"❌", cursor:pointer, onClick:await items.remove item; refresh
-			onClick:
-				// Toggle the state of the item
-				ItemState state = item.state != Done ? Done : NotStarted
-				await items.update item, {state}
-				refresh
-
-	addItem: string text
-		await items.add {userId:user.id, state:NotStarted, text}
-		newItemText = ""
-		refresh
+lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
+lib/core/js/time.l	Time Library (Time, Date, etc).
+lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
+lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
+lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
 
 # Basics of the LiveTime programming language
 enum State
@@ -142,6 +31,7 @@ enum State
 
 // Defines the class Document
 // Classes have uppercase names. All members are public by default.
+// A contructor is created automatically
 class Document
 	string id
 	float created
@@ -156,20 +46,22 @@ app
 	Player currentPlayer
 
 	// Defines the member function start of the class app. 
-	// All functions need to be part of a class. There are no top-level functions in LiveTime.
+	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
 	// app.start is the entry point of the application.
 	start
+		// Create an object of type Document
+		// Calls the conctructor of the Document class and passes id, created and state
+		Document doc = {id:"2f", created:Time.now, state:Done}
+
 		// List (array that grows in size as needed)
 		Document[] documents = [
-			{created:DateTime.now, state:InProgress}
+			{created:Time.now, state:InProgress}
 		]
-		Document doc = {id:"2f", created:DateTime.now, state:Done}
 		documents.add doc
 		documents.remove doc
 		documents.orderBy.created
 		documents.clear
-		let firstTwoItems = documents[..2]
-		let lastTwoItems = documents[-2..]
+		let itemsFromIndex3To7 = documents[3 to 7]
 
 		// Dictionary (hashtable that maps keys to values)
 		Document[string] documentsById
@@ -189,6 +81,9 @@ app
 			print "There are {documents.length} documents."
 		else
 			print "There are no documents."
+
+		// Conditions with if in one line
+		if not currentPlayer then return
 
 		// Conditions with let
 		let mike = players.find.name == "Mike"
@@ -257,7 +152,7 @@ app
 		let a = 107 mod 100	// a = 7
 		let b =  -1 mod 100	// b = 99
 		let c =  -1 remainder 100	// c = -1
-		
+			
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
 		// Html div element with blue text. Refer to the Styles class for all available css styles.
@@ -329,6 +224,111 @@ static class helpers
 	Document[] getAllDoneItems
 		return (app.documents.where.state == Done).orderBy.created
 
+# Example application
+// Defines the enum ItemState that stores its values as strings
+enum string ItemState
+	NotStarted
+	InProgress
+	Done
+
+// Defines the class User
+// Classes have uppercase names. All members are public by default.
+class User
+	string id
+	string email
+	string password
+
+// Defines the class TodoItem
+class TodoItem
+	string id
+	string userId
+	ItemState state = NotStarted
+	string text
+
+// Defines the static class app, the main class of every LiveTime application.
+// Static classes have lowercase names. Their members are public and static by default.
+// You can access their members from anywhere like this: app.items, app.newItemText, app.start, app.draw, ...
+static class app
+	const Color primaryColor = #118ab2
+	const fontSize = 16px
+	const Padding buttonPadding = {topAndBottom:6 leftAndRight:16}
+
+	// Used to add, remove, fetch and update items from a remote PocketBase collection. Also stores TodoItems locally in the member variable items.
+	DatabaseTable<TodoItem> items = {name:"todoItems"}
+
+	User user
+	string newItemText
+	string email, password
+
+	// Defines the member function start of the class app. 
+	// All functions need to be part of a class. There are no top-level functions in LiveTime.
+	// app.start is the entry point of the application. It is called when the application starts.
+	start
+		user = await backend.getAuthenticatedUser
+		fetchItems
+
+	fetchItems
+		if not user then return
+		await items.fetch filter:"userId = '{user.id}'"
+		refresh
+
+	// Defines the member function draw of the class app. 
+	// app.draw is called to render the html elements when the application starts and when the refresh function is called.
+	draw
+		if not user
+			column gap:8 margin:{all:40px}
+				div tag:"h1", text:"Login"
+				field model:email, type:email, placeholder:"Email", fontSize
+				field model:password, type:password, placeholder:"Password", fontSize
+
+				button text:"Login", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
+					onClick:
+						user = await backend.authWithPassword email, password
+						fetchItems
+		else
+			div display:flex, flexDirection:column, gap:16, fontSize, margin:{left:32 right:32}
+				row alignItems:center
+					div tag:"h1", text:"Todo List", flex:1
+
+					button "Logout", fontSize, padding:buttonPadding, color:white, backgroundColor:primaryColor
+						onClick:
+							backend.logout
+							user = null
+							refresh
+
+				if items.length > 0
+					for items as item
+						drawItem item
+				else
+					div text:"No items", fontSize, fontStyle:italic
+
+				div display:flex, gap:20, margin:{top:16}, height:30px
+					field model:newItemText, flex:1, width:400, fontSize, onEnter:addItem newItemText
+					button text:"Add", fontSize, padding:buttonPadding, cursor:pointer, color:white, backgroundColor:primaryColor, onClick:addItem newItemText
+
+	// All functions that render html should start with "draw"
+	drawItem: TodoItem item
+		div display:flex, 
+			gap:16,
+			cursor:pointer,
+			padding:{top:8 right:8 bottom:8 left:8},
+			border:{width:2px, style:solid, color:#808080},
+			boxShadow:{offset:{4,4}, blur:12, spread:4, color:#d0d0d0},
+			children:
+				div text:item.state == Done ? "☑" : "☐"
+				div text:item.text, flex:1, fontWeight:bold, textDecoration:item.state == Done ? linethrough : none
+				div text:"❌", cursor:pointer, onClick:await items.remove item; refresh
+			onClick:
+				// Toggle the state of the item
+				ItemState state = item.state != Done ? Done : NotStarted
+				await items.update item, {state}
+				refresh
+
+	addItem: string text
+		await items.add {userId:user.id, state:NotStarted, text}
+		newItemText = ""
+		refresh
+
 # Images
 Place images in the folder "assets/pb_public/media". 
 If you place "Example.png" in this folder, you can use "Example" in the img component:
@@ -336,11 +336,18 @@ app
 	draw
 		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
 
-# More information
-Read the full LiveTime library documentation "lib/core/html/documentation.md" if you have problems resolving linter errors or you want to find the name of a function.
+# When you are done writing code, test if it is working
+1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
 
-"lib/core/js/" contains the implementation of the LiveTime Standard Libaray (int, float, string, List, Dictionary, etc).
+2. Double check you are calling refresh after changing data.
 
-"lib/core/html/" contains the implementation of the LiveTime HTML framework (html, div, img, button, etc).
+3. Make sure you fixed all diagnostics and linter errors.
 
-"lib/core/pocketbase/" contains the PocketBase API (backend, DatabaseTable, etc)
+4. Your code should contain print statements that output all relevant information to verify that everything works as specified.
+
+5. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
+
+6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
+
+7. Fix all problems and repeat until you verified everything works as specified.
+

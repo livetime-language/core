@@ -269,7 +269,8 @@ DatabaseTable<T>
 	async void update: T item
 		               dynamic update
 		dynamic dynamicItem = item
-		forDynamic update: dynamicItem[key] = .
+		forDynamic update
+			dynamicItem[key] = .
 		await backend.pb.collection(this.name).update(dynamicItem.id, update)
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
@@ -481,7 +482,7 @@ DatabaseTable<T>
 	// Remove a random item from the items stored locally in the member variable "items" and return it
 	importance:1
 	T popRandom()
-		if length == 0: return null
+		if length == 0 then return null
 		int index = math.randomInteger(length)
 		T item = items[index]
 		items.removeAt(index)
