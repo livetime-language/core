@@ -908,7 +908,7 @@ internal transient unit Snapshot
 		
 	autoSave() autoSaveAtEndOfStep = true
 
-enum lowercase string PrintIcon: Info, Action, Reaction, Error, Warning, Event, Touch, Key, GameController
+enum lowercase string PrintIcon: Action, Reaction, Debug, Info, Error, Warning, Touch, Key, GameController
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
@@ -918,12 +918,12 @@ global transient unit System
 		
 	// Prints a message to the console
 	global js void print: logstring text	// The text, variables or expressions to print
-	                      PrintIcon type = Info	// Info, Error, Warning, Event, Action. This determines the icon to show in the event stream panel.
+	                      PrintIcon type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
 						  Color color = null	// The color to use when showing the message in the console or the event stream panel
 		                  void(bool isSelected) drawDebugInformation = null	// A function that will be called to draw debug information. The isSelected parameter indicates whether this message is currently selected in the event stream panel, which can be used to hightlight the information or draw more detailed information.
 		                  SourceCodeLocation location
 		if((core.runningTest || Platform.isDebug) && location) {
-			if(color) console.log(`%c${text}`, `color then ${color.hex}`)
+			if(color) console.log(`%c${text}`, `color: ${color.hex}`)
 			else      console.log(text)
 			if(drawDebugInformation != null && (core.interrruptAtOutputIndex == -1 ||core.outputIndex <= core.interrruptAtOutputIndex)) {
 				drawDebugInformation(core.outputIndex == core.interrruptAtOutputIndex)
