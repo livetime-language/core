@@ -1918,7 +1918,7 @@ transient skipInit global unit graphics
 		graphics.canvas.toBlob((blob) => {
 			const item = new ClipboardItem({ 'image/png': blob });
 			navigator.clipboard.write([item]);
-			log("Copied screenshot to clipboard");
+			console.log("Copied screenshot to clipboard");
 		});
 	
 	// Directly manipulate the pixels on the screen or an image
