@@ -6,8 +6,13 @@ applyTo: '**'
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
+# Write simple, efficient code
 Always write the shortest, simplest possible and most efficient code.
-Avoid code duplication. Do not overengineer. Keep it simple.
+Avoid code duplication.
+Analyze the complete code carefully. Check if there are opportunities to simplify the code or extract repeated functionality into functions.
+
+# Write extensive print statements
+Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action.
 
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
