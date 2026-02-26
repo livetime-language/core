@@ -101,7 +101,7 @@ priority class Player
 	Vector2 pointerPosition
 	
 	internal Player cloneBaseData => {_id, language, email, name, colorPreferences, id, index}
-	toString => color ? "{color.name.toLowerCase} player ({index})" : "player {index}"
+	toString => name ? "{name} (Player {index})" : "Player {index}"
 	highlightPerspectiveColor => input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input

@@ -242,10 +242,6 @@ class Item
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
 // Write units tests in the static class "tests" in a file in the "tests" folder
-// bluePlayer	== players[0]
-// redPlayer	== players[1]
-// greenPlayer	== players[2]
-// yellowPlayer	== players[3]
 tests
 	// Make your helper functions that are not tests private
 	private gridPos: int x, int y
@@ -254,20 +250,20 @@ tests
 	// Before each test, the application is reset and app.start is executed
 	// You can add code to change the state if you need a setup that's different from what app.start sets up
 	playerShouldMoveRight
-		// Simulate a click at screen position {250,350} by bluePlayer (players[0])
-		click {250,350} by bluePlayer
+		// Simulate a click at screen position {250,350} by player 0
+		click {250,350} by players[0]
 
-		// Simulate a drag by redPlayer (players[1])
-		drag gridPos(0,0) to gridPos(1,0) by redPlayer
+		// Simulate a drag by player 1
+		drag gridPos(0,0) to gridPos(1,0) by players[1]
 
-		// Simulate moving the left stick to {1,0} (right) by greenPlayer (players[2])
-		moveLeftStickTo {1,0} by greenPlayer
+		// Simulate moving the left stick to {1,0} (right) by player 0
+		moveLeftStickTo {1,0} by players[0]
 
 		// Wait for 3 frames. At 30 ticks per second, this corresponds to 100 milliseconds.
 		wait 3 frames
 
 		// Assert
-		expect bluePlayer.gridPos == {1,0}
+		expect players[0].gridPos == {1,0}
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
@@ -447,9 +443,9 @@ Player
 tests
 	playerShouldMoveRight
 		app.createTestLevel
-		moveLeftStickTo {1,0} by bluePlayer
+		moveLeftStickTo {1,0} by players[0]
 		wait 10 frames
-		expect bluePlayer.gridPos == {1,0}
+		expect players[0].gridPos == {1,0}
 
 6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
 
