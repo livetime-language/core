@@ -449,31 +449,3 @@ class Player
 						
 		return surroundedCells
 
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
-
-2. Make sure you fixed all diagnostics and linter errors.
-
-3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
-
-Player
-	tick
-		positon += direction
-		print "{this} moved in {direction} to {position}"
-
-4. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
-
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). Make sure you test every single rule in the specifications and every edge case. The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
-
-tests
-	playerShouldMoveRight
-		app.createTestLevel
-		moveLeftStickTo {1,0} by players[0]
-		wait 10 frames
-		expect players[0].gridPos == {1,0}
-
-6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
-
-7. Carefully analyze the output and check if everything is working.
-
-8. Fix all problems and repeat until you verified everything works as specified.
