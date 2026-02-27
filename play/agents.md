@@ -250,32 +250,37 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Write units tests in the static class "tests" in a file in the "tests" folder
+// Place unit test in the "tests" folder
 tests
-	// Make your helper functions that are not tests private
-	private gridPos: int x, int y
+	pos: int x, int y
 		return IntVector2(x, y).toScreenPos
 		
-	// Before each test, the application is reset and app.start is executed
-	// You can add code to change the state if you need a setup that's different from what app.start sets up
-	playerShouldMoveRight
-		// Simulate a click at screen position {250,350} by player 0
-		click {250,350} by players[0]
+	// Use the test keyword to declare a unit test. The test name should be in plain English.
+	// Before each test, the application is reset and app.start is executed.
+	// You can add code to change the state if you need a setup that's different from what app.start sets up.
+	test Rule 7: Clicking a cell should place a piece
+		app.currentPlayer = players[0]
+		app.grid[0,0].player = players[0]
+		print "Setup: Placed piece for player 0 at {0,0}" type:Info
 
-		// Simulate a drag by player 1
-		drag gridPos(0,0) to gridPos(1,0) by players[1]
+		// Simulate a drag from screen position {100,0} to {200,0} by player 0
+		drag {100,0} to {200,0} by players[0]
+
+		// Simulate a click at grid position {1,0} by player 1
+		click pos(1,0) by players[1]
 
 		// Simulate moving the left stick to {1,0} (right) by player 0
 		moveLeftStickTo {1,0} by players[0]
 
-		// Wait for 3 frames. At 30 ticks per second, this corresponds to 100 milliseconds.
-		wait 3 frames
-
-		// Assert
-		expect players[0].gridPos == {1,0}
+		// If you need to wait for animations to finish before continuing, use wait.
+		// Wait for 15 ticks. At 30 ticks per second, this corresponds to 500 milliseconds.
+		wait 15 ticks
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
+
+		// Assert
+		expect app.grid[1,0].player == players[1]
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
