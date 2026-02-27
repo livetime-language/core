@@ -271,7 +271,7 @@ internal transient skipInit unit core
 	int targetFrame = -1
 	bool reachedOutputId = false
 
-	addToOutput: string value
+	addOutput: string value
 		value += "|{outputIndex}|{frame}"
 		output[outputIndex] = value
 		if Platform.playMode == Record then Platform.sendStringToEditor value
@@ -861,7 +861,7 @@ internal transient skipInit unit core
 		errorMessage = error.stack
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {
-			addToOutput "exception|{errorMessage}||0"
+			addOutput "exception|{errorMessage}||0"
 		} else {
 			core.log errorMessage
 		}
@@ -928,7 +928,7 @@ global transient unit System
 			if(drawDebugInformation != null && (core.interrruptAtOutputIndex == -1 ||core.outputIndex <= core.interrruptAtOutputIndex)) {
 				drawDebugInformation(core.outputIndex == core.interrruptAtOutputIndex)
 			}
-			core.addToOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+			core.addOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
 			core.log(text);
 		}
@@ -1236,7 +1236,7 @@ tests
 			result = "-"
 			try		expectedString = json.stringify(expected)
 			catch		expectedString = expected?.toString()
-		core.addToOutput "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
+		core.addOutput "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
 
 	// Used internally in the compiled code. Do not call in your code.
 	//     expect players.all.ready      ->    tests.expectToBeTrue(`players.all.ready`, players.all.ready, new SourceCodeLocation("tests/tests.l", 69312, 69317, null, null));
@@ -1248,7 +1248,7 @@ tests
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()
 		string result = actual ? "+" : "-"
-		core.addToOutput "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
+		core.addOutput "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
 	
 	// Used internally. Do not call in your code.
 	internal tick

@@ -101,5 +101,5 @@ tests
 		try	actualString = json.stringify(expression)
 		catch	actualString = expression?.toString()
 		string result = expression ? "+" : "-"
-		core.addToOutput "expect||{result}|{actualString}|true|{location.file}|{location.start}"
+		core.addOutput "expect||{result}|{actualString}|true|{location.file}|{location.start}"
 

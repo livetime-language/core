@@ -1073,10 +1073,11 @@ skipInit global unit input
 
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.referenceStartPosition
+			let playerVariable = "players[{player.index}]"
 			if length < 8
-				core.addToOutput "code|click {touch.referenceStartPosition} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|click {touch.referenceStartPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
 			else
-				core.addToOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
