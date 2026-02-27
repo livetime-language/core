@@ -495,7 +495,7 @@ skipInit global unit input
 	private js void initHandlers
 		let pointerX = 0, pointerY = 0, clickWithAltKeyX = 0, clickWithAltKeyY = 0
 		window.onpointerdown = e => {
-			if(e.button == 0 && Platform.playMode == 0) {
+			if(e.button == 0 && Platform.playMode <= 1 /*Stop,Pause*/) {
 				Platform.record();
 				if(input.ignoreFirstClick) return;
 			}
