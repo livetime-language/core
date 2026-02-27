@@ -265,7 +265,8 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Write unit tests in the "tests" folder
+// Write unit tests in the "tests" static class in the "tests" folder
+// Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run unit tests
 tests
 	pos: int x, int y
 		return IntVector2(x, y).toScreenPos
