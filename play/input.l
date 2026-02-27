@@ -1194,12 +1194,12 @@ skipInit global unit input
 		if(player?.onTouchHover) player.onTouchHover(touch);
 			
 	inline js void appOnTouchMoveIfFunctionExists: Player player, Touch touch
-		if(player) {
-			if(!touch.isDown) {
-				if(player.onTouchHover) player.onTouchHover(touch);
-			} else {
-				if(player.onTouchDrag) player.onTouchDrag(touch);
-			}
+		if(!touch.isDown) {
+			if(app.onTouchHover) app.onTouchHover(touch);
+			if(player?.onTouchHover) player.onTouchHover(touch);
+		} else {
+			if(app.onTouchDrag) app.onTouchDrag(touch);
+			if(player?.onTouchDrag) player.onTouchDrag(touch);
 		}
 			
 	inline js void appOnTouchUpIfFunctionExists: Player player, Touch touch

@@ -6,8 +6,10 @@ applyTo: '**'
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
+# Write simple, efficient code
 Always write the shortest, simplest possible and most efficient code.
-Avoid code duplication. Do not overengineer. Keep it simple.
+Avoid code duplication.
+Analyze the complete code carefully. Check if there are opportunities to simplify the code or extract repeated functionality into functions.
 
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
@@ -192,47 +194,60 @@ app
 		items.each.tick
 		players.each.tick
 
-// Use these member functions of the Player class to handle input. 
-// These functions must be members of the Player class. That way, you know which player triggered an event. 
+
+
+// Handle input
+app
+	Item[] items
+	start
+		items.add {owner:players[0]}
+
+	onTouchHover: Touch touch
+		for items as item
+			// Important: If isOnlineMultiplayer it true, the touch must be by the owner of the item
+			if isOnlineMultiplayer and touch.by != item.owner then continue
+			item.hoverTouch = touch.position insideRectangle item.position, item.size ? touch : null
+			print item.hoverTouch
+
+	onTouchDown: Touch touch
+		let item = app.items.find.hoverTouch == touch
+			item.dragTouch = touch
+			item.dragOffset = item.position - touch.position
+			print "{item.name} clicked by {touch.by}" type:Action
+	
+	onTouchDrag: Touch touch
+		let item = app.items.find.dragTouch == touch
+			item.position = touch.position + item.dragOffset
+			print "{item.name} dragged by {touch.by}" type:Action
+	
+	onTouchUp: Touch touch
+		let item = app.items.find.dragTouch == touch
+			item.dragTouch = null
+			print "{item.name} dropped by {touch.by}" type:Action
+
+	tick
+		items.each.tick
+		players.each.tick
+
 class Player
 	string inputText
 	Vector2 pos
 	const float speed = 8
 
-	// Important: Always make sure each player can only interact with their own items (or items they are allowed to interact with)
-	onTouchHover: Touch touch
-		app.items.each.hoverTouch = .owner == this and touch.position insideRectangle .position, .size ? touch : null
-	
-	onTouchDown: Touch touch
-		let item = app.items.find.hoverTouch == touch
-			item.dragTouch = touch
-			item.dragOffset = item.position - touch.position
-			print "{item.name} clicked by {this}"
-	
-	onTouchDrag: Touch touch
-		let item = app.items.find.dragTouch == touch
-			item.position = touch.position + item.dragOffset
-			print "{item.name} dragged by {this}"
-	
-	onTouchUp: Touch touch
-		let item = app.items.find.dragTouch == touch
-			item.dragTouch = null
-			print "{item.name} dropped by {this}"
-
 	onKeyDown: Key key, string character
 		if character	then inputText += character
 		if key == Backspace	then inputText = inputText[..-1]
-		print "{key} ({character}) pressed by {this}"
+		print "{key} ({character}) pressed by {this}" type:Action
 
 	onKeyUp: Key key
-		print "{key} released by {this}"
+		print "{key} released by {this}" type:Action
 
 	// Called on every frame (30 times per second) if a game controller is connected
 	onGameController: GameController controller
 		pos += controller.leftStick * speed
 
 		if controller.A.wasJustPressed
-			print "Button {controller.A.name} just pressed by {this}"
+			print "Button {controller.A.name} just pressed by {this}" type:Action
 
 	tick
 		drawCircle pos, color, size:64
@@ -279,8 +294,15 @@ tests
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
 
-		// Assert
-		expect app.grid[1,0].player == players[1]
+# Write extensive print statements
+Write extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action. For example:
+
+app
+	tick
+		drawStandardButton "Swap"
+			print "Swap button clicked by {touch.by}" type:Action
+			players[0].pos swapWith players[1].pos
+			print "Positions swapped, player 0: {players[0].pos}, player 1: {players[1].pos}" type:Reaction
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
@@ -294,7 +316,7 @@ enum Phase: PlacePiece, GameOver
 
 app
 	// The screen size is always {1920, 1080}.
-	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen.
+	// All LiveTime games are online multiplayer games. You must show the video feed of each player on the screen.
 	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen.
 	const Vector2 totalBoardSize = {700,700}
 	
@@ -333,9 +355,10 @@ app
 		print "# Turn of {currentPlayer} started" color:currentPlayer.color
 
 	// Called when a player touches the screen
-	// Important: If isOnlineMultiplayer it true, the touch must be by the current player
 	onTouchDown: Touch touch
+		// Important: If isOnlineMultiplayer it true, the touch must be by the current player
 		if isOnlineMultiplayer and touch.by != currentPlayer then return
+		
 		let cell = app.grid[touch.position.toGridPos]
 			if not cell.player
 				currentPlayer.placePiece cell
@@ -439,31 +462,3 @@ class Player
 						
 		return surroundedCells
 
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
-
-2. Make sure you fixed all diagnostics and linter errors.
-
-3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
-
-Player
-	tick
-		positon += direction
-		print "{this} moved in {direction} to {position}"
-
-4. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
-
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). Make sure you test every single rule in the specifications and every edge case. The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
-
-tests
-	playerShouldMoveRight
-		app.createTestLevel
-		moveLeftStickTo {1,0} by players[0]
-		wait 10 frames
-		expect players[0].gridPos == {1,0}
-
-6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
-
-7. Carefully analyze the output and check if everything is working.
-
-8. Fix all problems and repeat until you verified everything works as specified.
