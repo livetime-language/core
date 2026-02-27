@@ -198,12 +198,9 @@ app
 		players.each.tick
 
 
-
 // Handle input
 app
 	Item[] items
-	start
-		items.add {owner:players[0]}
 
 	onTouchHover: Touch touch
 		for items as item
@@ -268,7 +265,7 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Place unit test in the "tests" folder
+// Write unit tests in the "tests" folder
 tests
 	pos: int x, int y
 		return IntVector2(x, y).toScreenPos
