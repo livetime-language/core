@@ -360,5 +360,5 @@ skipInit static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 float now
 	
-	// The current frame (by default, there are 30 frames per second)
-	static importance:5 inline js int frame => core.frame
+	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second)
+	static importance:5 inline js int ticks => core.frame

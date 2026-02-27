@@ -1557,8 +1557,8 @@ global transient priority unit system
 	global log: logstring text 
 		logs += text + "\n"
 		
-	saveLogEvery: int frames = 60
-		if logs != "" and Time.frame % frames == 0
+	saveLogEvery: int ticks = 60
+		if logs != "" and Time.ticks % ticks == 0
 			print logs
 			logs = ""
 		

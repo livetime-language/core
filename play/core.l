@@ -1001,7 +1001,7 @@ skipInit transient unit statistics
 	
 	// Log game events (like scores, playtimes, etc)
 	log: dynamic value
-		value.frame = Time.frame
+		value.frame = Time.ticks
 		this.gameLogs.add value
 	
 	private startSession
