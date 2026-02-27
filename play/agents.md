@@ -176,13 +176,16 @@ app
 		let c =  -1 remainder 100	// c = -1
 
 		// Print: Use type:Action for actions performed by a player
-		print "Piece placed at {cell.gridPos} by {currentPlayer}" type:Action
+		print "Piece placed at {cell.gridPos} by {currentPlayer}", type:Action
 
 		// Print: Use type:Reaction for reactions or consequences of an action
-		print "Game won with {winner.score} points by {winner}" type:Reaction
+		print "Game won with {winner.score} points by {winner}", type:Reaction
 
 		// Print: Use type:Debug for temporary debug messages
-		print "Possible moves for {currentPlayer}: {possibleMoves}" type:Debug
+		print "Possible moves for {currentPlayer}: {possibleMoves}", type:Debug
+
+		// Print: Use type:Headline when a new turn or round started. Pass in the current player's color.
+		print "# Turn of {currentPlayer} started", type:Headline, color:currentPlayer.color
 	
 app
 	Player currentPlayer
@@ -213,17 +216,17 @@ app
 		let item = app.items.find.hoverTouch == touch
 			item.dragTouch = touch
 			item.dragOffset = item.position - touch.position
-			print "{item.name} clicked by {touch.by}" type:Action
+			print "{item.name} clicked by {touch.by}", type:Action
 	
 	onTouchDrag: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.position = touch.position + item.dragOffset
-			print "{item.name} dragged by {touch.by}" type:Action
+			print "{item.name} dragged by {touch.by}", type:Action
 	
 	onTouchUp: Touch touch
 		let item = app.items.find.dragTouch == touch
 			item.dragTouch = null
-			print "{item.name} dropped by {touch.by}" type:Action
+			print "{item.name} dropped by {touch.by}", type:Action
 
 	tick
 		items.each.tick
@@ -237,17 +240,17 @@ class Player
 	onKeyDown: Key key, string character
 		if character	then inputText += character
 		if key == Backspace	then inputText = inputText[..-1]
-		print "{key} ({character}) pressed by {this}" type:Action
+		print "{key} ({character}) pressed by {this}", type:Action
 
 	onKeyUp: Key key
-		print "{key} released by {this}" type:Action
+		print "{key} released by {this}", type:Action
 
 	// Called on every frame (30 times per second) if a game controller is connected
 	onGameController: GameController controller
 		pos += controller.leftStick * speed
 
 		if controller.A.wasJustPressed
-			print "Button {controller.A.name} just pressed by {this}" type:Action
+			print "Button {controller.A.name} just pressed by {this}", type:Action
 
 	tick
 		drawCircle pos, color, size:64
@@ -276,7 +279,7 @@ tests
 	test Rule 7: Clicking a cell should place a piece
 		app.currentPlayer = players[0]
 		app.grid[0,0].player = players[0]
-		print "Setup: Placed piece for player 0 at {0,0}" type:Info
+		print "Setup: Placed piece for player 0 at {0,0}", type:Info
 
 		// Simulate a drag from screen position {100,0} to {200,0} by player 0
 		drag {100,0} to {200,0} by players[0]
@@ -300,9 +303,9 @@ Write extensive print statements that describe each action after it happened. Us
 app
 	tick
 		drawStandardButton "Swap"
-			print "Swap button clicked by {touch.by}" type:Action
+			print "Swap button clicked by {touch.by}", type:Action
 			players[0].pos swapWith players[1].pos
-			print "Positions swapped, player 0: {players[0].pos}, player 1: {players[1].pos}" type:Reaction
+			print "Positions swapped, player 0: {players[0].pos}, player 1: {players[1].pos}", type:Reaction
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
@@ -352,7 +355,7 @@ app
 		currentPlayer = players next currentPlayer
 
 		// Always print the start of the turn in the player's color!
-		print "# Turn of {currentPlayer} started" color:currentPlayer.color
+		print "# Turn of {currentPlayer} started", type:Headline, color:currentPlayer.color
 
 	// Called when a player touches the screen
 	onTouchDown: Touch touch
@@ -363,7 +366,7 @@ app
 			if not cell.player
 				currentPlayer.placePiece cell
 			else
-				print "Invalid cell {cell.gridPos} occupied by {cell.player} clicked" type:Error
+				print "Invalid cell {cell.gridPos} occupied by {cell.player} clicked", type:Error
 				
 	// Called on every frame (30 times per second)
 	tick
@@ -376,7 +379,7 @@ app
 	finishGame
 		Player winner = players.withMax.score
 		ParticleSystem(position:winner.pos)
-		print "Game won with {winner.score} points by {winner}" type:Reaction
+		print "Game won with {winner.score} points by {winner}", type:Reaction
 
 struct IntVector2
 	toScreenPos => app.cellOffset + this * app.cellSize
@@ -423,7 +426,7 @@ class Player
 	placePiece: Cell cell
 		if cell.player then return
 		cell.player = this
-		print "Piece placed at {cell.gridPos} by {this}" type:Action
+		print "Piece placed at {cell.gridPos} by {this}", type:Action
 		captureSurroundedPieces cell.gridPos
 		app.startTurn
 				
@@ -435,7 +438,7 @@ class Player
 			if neighborCell and neighborCell.player and neighborCell.player != this
 				Cell[] surroundesCells = collectSurroundesCells neighborPos
 					surroundesCells.each.player = null
-					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}" type:Reaction
+					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}", type:Reaction
 	
 	// We can specify the return type in front of the name of a function
 	Cell[] collectSurroundesCells: IntVector2 originPos
@@ -461,4 +464,3 @@ class Player
 						queue.add neighborPos
 						
 		return surroundedCells
-

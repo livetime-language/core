@@ -908,7 +908,7 @@ internal transient unit Snapshot
 		
 	autoSave() autoSaveAtEndOfStep = true
 
-enum lowercase string PrintIcon: Action, Reaction, Debug, Info, Error, Warning, Touch, Key, GameController
+enum lowercase string PrintIcon: Action, Reaction, Headline, Debug, Info, Error, Warning, Touch, Key, GameController
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
