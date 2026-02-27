@@ -11,9 +11,6 @@ Always write the shortest, simplest possible and most efficient code.
 Avoid code duplication.
 Analyze the complete code carefully. Check if there are opportunities to simplify the code or extract repeated functionality into functions.
 
-# Write extensive print statements
-Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action.
-
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
 
@@ -294,6 +291,16 @@ tests
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
+
+# Write extensive print statements
+Write extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action. For example:
+
+app
+	tick
+		drawStandardButton "Swap"
+			print "Swap button clicked by {touch.by}" type:Action
+			players[0].pos swapWith players[1].pos
+			print "Positions swapped, player 0: {players[0].pos}, player 1: {players[1].pos}" type:Reaction
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
