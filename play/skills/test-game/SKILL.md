@@ -22,7 +22,7 @@ tests
 		click pos(1,0) by players[0]
 		expect app.grid[1,0].pieceType == Pawn
 
-3. Use vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests for the current rule.
+3. Use vscode's built-in test-runner tool execute/runTests or the runTests tool to run the unit tests for the current rule.
 
 4. If something is not working as expected, analyze the output of the tests and fix the problem.
 
