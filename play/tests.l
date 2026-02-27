@@ -1,16 +1,4 @@
 tests
-	// The first player (players[0])
-	bluePlayer	=> players[0]	
-	
-	// The second player (players[1])
-	redPlayer	=> players[1]	
-
-	// The third player (players[2])
-	greenPlayer	=> players[2]
-
-	// The fourth player (players[3])
-	yellowPlayer	=> players[3]
-
 	// Simulate a click by a given player.
 	// Always test that each player can only interact with items they are allowed to interact with.
 	// Example:
