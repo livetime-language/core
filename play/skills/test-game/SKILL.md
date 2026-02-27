@@ -10,10 +10,18 @@ Analyze the code and "docs/rules.md" carefully. Make sure you have a deep unders
 1. To verify the rule, write one or more unit tests in the file "tests/tests.l". Make sure you test every aspect and every edge case of the rule. The tests should use these functions to simulate user input: click, drag, hover, moveLeftStickTo, etc. For example:
 
 tests
-	playerShouldMoveRight
-		click {250,350} by players[0]
-		expect players[0].gridPos == {1,0}
+	test Rule 7: Clicking a cell should place a piece
+		app.currentPlayer = players[0]
+		app.grid[0,0].player = players[0]
+		print "Setup: Placed piece for player 0 at {0,0}", type:Info
 
+		click {200,400} by players[1]
+		// If you need to wait for animations to finish before continuing, use wait.
+		// Wait for 15 ticks. At 30 ticks per second, this corresponds to 500 milliseconds.
+		wait 15 ticks
+
+		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
+		printWhatIsOnScreen
 2. Use vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
 
 3. If something is not working as expected, analyze the output of the tests and fix the problem.
