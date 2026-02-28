@@ -1,7 +1,7 @@
 CompilerSettings
 	logSerialize = false
 	
-enum PlayMode: Pause, Manipulator, Slide, Play, Record
+enum PlayMode: Stop, Pause, Manipulator, Slide, Play, Record
 enum OperatingSystem: Windows, Mac, Linux, Android, iOS
 enum IntervalMode: JavaScriptInterval, AnimationFrame
 
@@ -17,17 +17,21 @@ transient skipInit unit Platform
 	public inline js string appName	=> _appName
 	public inline js int buildVersion	=> _buildVersion
 	
+	global visible bool isDebug
+	global public bool isOnlineMultiplayer
+
 	visible OperatingSystem os
 	visible bool isMobile
 	visible bool isBrowser
 	visible bool isNode
-	visible bool isDebug
 	visible bool isSmallScreen
 	public bool isStaging
 	
 	// Internal
 	internal bool engineStarted
 	internal PlayMode playMode
+	internal int homeFrame
+	internal int homeInterrruptAtOutputIndex
 	internal bool fastForward
 	internal bool isDrawing
 	internal int waitingForInitialData
@@ -67,7 +71,7 @@ transient skipInit unit Platform
 		if(!Platform.isMobile) 
 			window.onresize = e => { 
 				graphics.onResize();
-				if(Platform.playMode < 3/*Pause,Manipulator,Slide*/ && Platform.engineStarted) Platform.goToCurrentFrame();
+				if(Platform.playMode <= 3/*Stop,Pause,Manipulator,Slide*/ && Platform.engineStarted) core.tick(/*draw*/true);
 			}
 		if(app.init) app.init();
 			
@@ -84,6 +88,8 @@ transient skipInit unit Platform
 			initMedia
 			initPlatform
 			this.engineStarted = false
+			this.homeFrame = 0
+			this.homeInterrruptAtOutputIndex = -1
 			this.isDebug = isDebug
 			this.userCount = userCount
 			initBackend
@@ -95,8 +101,7 @@ transient skipInit unit Platform
 			// await graphics.setup {referenceSizeX, referenceSizeY}
 			await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
 			graphics.onResize
-			// graphics.drawStatus "Loading media"
-			if playMode >= Play then playMode = Pause
+			playMode = Stop
 			let path = url.getUntil("?").split("/")
 			let gameId = path[3]
 			let roomId = path[4]
@@ -122,8 +127,9 @@ transient skipInit unit Platform
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
 					startInterval
-					if isDebug || isLocal || roomId == "local" || url.startsWith("file") then core.startLocal
-					else                                                                      core.join gameId, roomId, userId
+					isOnlineMultiplayer = not (isDebug or isLocal or roomId == "local" or url.startsWith("file"))
+					if isOnlineMultiplayer	core.join gameId, roomId, userId
+					else	core.startLocal
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
 					if !isDebug then record
@@ -132,11 +138,11 @@ transient skipInit unit Platform
 					core.onError .
 				finally 
 					sendFinished
-					updateIcon
+					updateTitle
 		catch
 			core.onError .
 			sendFinished
-			updateIcon
+			updateTitle
 	
 	private async js void preload
 		if(app.preload) await app.preload();
@@ -145,28 +151,42 @@ transient skipInit unit Platform
 	private runTest: string testFunction, int id
 		playMode = Pause
 		runningTestFunction = testFunction
-		core.runTest FirstRun, testFunction, id
+		core.output.clear
+		core.runTest testFunction, id
 			
 	// This is called after every code change to replay all inputs with the new code
 	private async replay: bool updateMedia
 		if runningTestFunction
-			core.runTest FullReplay, runningTestFunction
+			core.runTest runningTestFunction, core.frame-1, core.interrruptAtOutputIndex
 		else
-			core.goToFrame core.frames-1, replayFromStart:true
+			core.goToFrame core.frame-1, core.interrruptAtOutputIndex, codeChanged:true
+
+	private async home
+		goToFrame homeFrame, homeInterrruptAtOutputIndex
+
+	private async clearHomeAndGoToEnd
+		homeFrame = 0
+		homeInterrruptAtOutputIndex = -1
+		goToFrame core.frames-1, interrruptAtOutputIndex:-1
 
 	// This is called when clicking on an event stream item
-	goToFrame: int targetFrame, int targetOutputId
-		playMode = Pause
+	goToFrame: int targetFrame, int interrruptAtOutputIndex, bool saveHome = false
+		if playMode != Pause
+			playMode = Pause
+			updateTitle
+		if saveHome
+			homeFrame = targetFrame
+			homeInterrruptAtOutputIndex = interrruptAtOutputIndex
 		if runningTestFunction
-			core.runTest PartialReplay, runningTestFunction, targetFrame, targetOutputId
+			core.runTest runningTestFunction, targetFrame, interrruptAtOutputIndex
 		else
-			core.goToFrame targetFrame, targetOutputId
+			core.goToFrame targetFrame, interrruptAtOutputIndex, codeChanged:false
 
 	generateIntegrationTest: GenerateIntegrationTestMode mode
 		input.generateIntegrationTest = mode
 		input.integrationTest = ""
 		try
-			core.goToFrame core.frames-1, replayFromStart:true
+			core.goToFrame core.frames-1, codeChanged:true
 		catch
 			core.onError .
 		finally 
@@ -195,16 +215,47 @@ transient skipInit unit Platform
 		if playMode == Play or playMode == Record or waitingForInitialData
 			core.animationFrame
 				
-	private enterSlideMode(PlayMode playMode) this.playMode = playMode; updateIcon; sendMode
+	private enterSlideMode:PlayMode playMode
+		this.playMode = playMode
+		updateTitle
+		sendFrameAndPlayMode
 	
-	internal stop()    playMode = Pause; gizmo.clear; runningTestFunction = null; core.frame = 0; updateIcon; sendMode; core.stop
-	internal pause()   playMode = Pause; gizmo.clear; updateIcon; sendMode; audio.stop
-	internal record()  core.adjustStartTimeIfNeeded; playMode = Record; gizmo.clear; updateIcon; sendMode; core.record
-	internal play()    core.adjustStartTimeIfNeeded; playMode = Play; gizmo.clear; updateIcon; sendMode
+	internal stop
+		playMode = Stop
+		gizmo.clear
+		runningTestFunction = null
+		updateTitle
+		try
+			core.stop
+		catch
+			core.onError .
+		finally
+			sendFinished
+
+	internal pause
+		playMode = Pause
+		gizmo.clear
+		updateTitle
+		sendFrameAndPlayMode frame:core.frame-1
+		audio.stop
+
+	internal record
+		core.adjustStartTimeIfNeeded
+		playMode = Record
+		gizmo.clear
+		updateTitle
+		core.record
+
+	internal play
+		gizmo.clear
+		goToFrame core.frame-1, interrruptAtOutputIndex:-1, saveHome:false
+		core.adjustStartTimeIfNeeded
+		playMode = Play
+		updateTitle
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
-		if playMode == Pause then core.step fastForward:false draw:true
+		if playMode == Pause or playMode == Stop then core.step fastForward:false draw:true
 	
 	internal js void sendSelectToEditor: string cursorFile, int cursorPos
 		_sendToEditor({type:"select", cursorFile, cursorPos})
@@ -218,27 +269,23 @@ transient skipInit unit Platform
 	internal js void sendMoveManipulationToEditor: GizomInfluence[] influences, int codeId
 		_sendToEditor({type:"moveManipulation", influences, codeId})
 	
-	internal js void sendFrame: int frame, int frames
-		_sendToEditor({type:"frame", frame, frames})
-	
 	internal js void sendWatch: int frame, string text, int location, string file
 		_sendToEditor({type:"watch", frame, text, location, file})
 	
 	internal js void sendClearTimeline:
 		_sendToEditor({type:"clearTimeline"})
 	
-	private js void sendMode
-		if(Platform.isDebug) _sendToEditor({type:"setPlatformMode", mode:Platform.playMode, frame:core.frame})
-		
 	internal inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)
 		
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
+
+	sendFrameAndPlayMode: int frame = core.frame, int frames = core.frames, PlayMode playMode = Platform.playMode
+		if Platform.isDebug then sendStringToEditor("#{frame}|{frames}|{playMode}")
 		
-	inline js void sendFinished
-		console.log("[app] Finished initializing")
-		if(Platform.isDebug) _sendToEditor({type:"finished", frame:core.frame, frames:core.frames})
+	sendFinished
+		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:Platform.playMode, output:core.output})
 	
 	private float nextHeartbeatTime
 	
@@ -278,33 +325,40 @@ transient skipInit unit Platform
 
 	inline js bool isConnectedToEditor => _isConnectedToEditor
 
-	private updateIcon
-		if not isConnectedToEditor	then setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
-		if playMode == Pause and core.frame <= 1	then setPageTitleAndIcon title:"Stop" iconUrl:"/_dev/Stop.png"; else
-		if playMode == Pause	then setPageTitleAndIcon title:"Pause" iconUrl:"/_dev/Pause.png"; else
-		if playMode == Play	then setPageTitleAndIcon title:"Play" iconUrl:"/_dev/Play.png"; else
-		if playMode == Record 	then setPageTitleAndIcon title:"Record" iconUrl:"/_dev/Record.png"; else
-		if playMode == Manipulator	then setPageTitleAndIcon title:"Manipulator" iconUrl:"/_dev/Manipulator.png"; else
-		if playMode == Slide	then setPageTitleAndIcon title:"Slide" iconUrl:"/_dev/Slide.png";
 
-	js void setPageTitleAndIcon: string title = null, string iconUrl = null
-		if(title) {
-			document.title = title;
+	const string[PlayMode] iconForPlayMode = {
+		Stop:	"⏹"
+		Pause:	"⏸"
+		Play:	"▶"
+		Record:	"⏺"
+		Manipulator:	"✥"
+		Slide:	"⏭"
+	}
+
+	internal updateTitle
+		if not isDebug then return
+		if not isConnectedToEditor
+			setPageTitle "✗"
+		else
+			let playerName = input.localPlayer?.toString or ""
+			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+
+	js void setPageTitle: string title
+		document.title = title;
+
+	js void setPageIcon: string iconUrl
+		var link = document.querySelector("link[rel~='icon']");
+		if (!link) {
+			link = document.createElement('link');
+			link.rel = 'icon';
+			document.head.appendChild(link);
 		}
-		if(iconUrl) {
-			var link = document.querySelector("link[rel~='icon']");
-			if (!link) {
-				link = document.createElement('link');
-				link.rel = 'icon';
-				document.head.appendChild(link);
-			}
-			link.href = iconUrl;
-		}
+		link.href = iconUrl;
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 float now
 	
-	// The current frame (by default, there are 30 frames per second)
-	static importance:5 inline js int frame => core.frame
+	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second)
+	static importance:5 inline js int ticks => core.frame

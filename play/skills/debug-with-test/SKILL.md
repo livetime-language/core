@@ -6,7 +6,7 @@ argument-hint: "[test function]"
 ---
 # Find and Fix a Problem
 
-1. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the given unit tests and analyze the output carefully.
+1. Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run the unit tests and analyze the output carefully.
 
 2. Analyze the code carefully to find all possible causes of the problem.
 

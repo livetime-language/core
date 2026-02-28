@@ -6,8 +6,10 @@ applyTo: '**'
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
+# Write simple, efficient code
 Always write the shortest, simplest possible and most efficient code.
-Avoid code duplication. Do not overengineer. Keep it simple.
+Avoid code duplication.
+Analyze the complete code carefully. Check if there are opportunities to simplify the code or extract repeated functionality into functions.
 
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
@@ -172,6 +174,18 @@ app
 		let a = 107 mod 100	// a = 7
 		let b =  -1 mod 100	// b = 99
 		let c =  -1 remainder 100	// c = -1
+
+		// Print: Use type:Action for actions performed by a player
+		print "Piece placed at {cell.gridPos} by {currentPlayer}", type:Action
+
+		// Print: Use type:Reaction for reactions or consequences of an action
+		print "Game won with {winner.score} points by {winner}", type:Reaction
+
+		// Print: Use type:Debug for temporary debug messages
+		print "Possible moves for {currentPlayer}: {possibleMoves}", type:Debug
+
+		// Print: Use type:Headline when a new turn or round started. Pass in the current player's color.
+		print "# Turn of {currentPlayer} started", type:Headline, color:currentPlayer.color
 	
 app
 	Player currentPlayer
@@ -183,47 +197,57 @@ app
 		items.each.tick
 		players.each.tick
 
-// Use these member functions of the Player class to handle input. 
-// These functions must be members of the Player class. That way, you know which player triggered an event. 
+
+// Handle input
+app
+	Item[] items
+
+	onTouchHover: Touch touch
+		for items as item
+			// Important: If isOnlineMultiplayer it true, the touch must be by the owner of the item
+			if isOnlineMultiplayer and touch.by != item.owner then continue
+			item.hoverTouch = touch.position insideRectangle item.position, item.size ? touch : null
+			print item.hoverTouch
+
+	onTouchDown: Touch touch
+		let item = app.items.find.hoverTouch == touch
+			item.dragTouch = touch
+			item.dragOffset = item.position - touch.position
+			print "{item.name} clicked by {touch.by}", type:Action
+	
+	onTouchDrag: Touch touch
+		let item = app.items.find.dragTouch == touch
+			item.position = touch.position + item.dragOffset
+			print "{item.name} dragged by {touch.by}", type:Action
+	
+	onTouchUp: Touch touch
+		let item = app.items.find.dragTouch == touch
+			item.dragTouch = null
+			print "{item.name} dropped by {touch.by}", type:Action
+
+	tick
+		items.each.tick
+		players.each.tick
+
 class Player
 	string inputText
 	Vector2 pos
 	const float speed = 8
 
-	// Important: Always make sure each player can only interact with their own items (or items they are allowed to interact with)
-	onTouchHover: Touch touch
-		app.items.each.hoverTouch = .owner == this and touch.position insideRectangle .position, .size ? touch : null
-	
-	onTouchDown: Touch touch
-		let item = app.items.find.hoverTouch == touch
-			item.dragTouch = touch
-			item.dragOffset = item.position - touch.position
-			print "{item.name} clicked by {this}"
-	
-	onTouchDrag: Touch touch
-		let item = app.items.find.dragTouch == touch
-			item.position = touch.position + item.dragOffset
-			print "{item.name} dragged by {this}"
-	
-	onTouchUp: Touch touch
-		let item = app.items.find.dragTouch == touch
-			item.dragTouch = null
-			print "{item.name} dropped by {this}"
-
 	onKeyDown: Key key, string character
 		if character	then inputText += character
 		if key == Backspace	then inputText = inputText[..-1]
-		print "{key} ({character}) pressed by {this}"
+		print "{key} ({character}) pressed by {this}", type:Action
 
 	onKeyUp: Key key
-		print "{key} released by {this}"
+		print "{key} released by {this}", type:Action
 
 	// Called on every frame (30 times per second) if a game controller is connected
 	onGameController: GameController controller
 		pos += controller.leftStick * speed
 
 		if controller.A.wasJustPressed
-			print "Button {controller.A.name} just pressed by {this}"
+			print "Button {controller.A.name} just pressed by {this}", type:Action
 
 	tick
 		drawCircle pos, color, size:64
@@ -241,36 +265,45 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Write units tests in the static class "tests" in a file in the "tests" folder
-// bluePlayer	== players[0]
-// redPlayer	== players[1]
-// greenPlayer	== players[2]
-// yellowPlayer	== players[3]
+// Write unit tests in the "tests" static class in the "tests" folder
+// Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run unit tests
 tests
-	// Make your helper functions that are not tests private
-	private gridPos: int x, int y
+	pos: int x, int y
 		return IntVector2(x, y).toScreenPos
 		
-	// Before each test, the application is reset and app.start is executed
-	// You can add code to change the state if you need a setup that's different from what app.start sets up
-	playerShouldMoveRight
-		// Simulate a click at screen position {250,350} by bluePlayer (players[0])
-		click {250,350} by bluePlayer
+	// Use the test keyword to declare a unit test. The test name should be in plain English.
+	// Before each test, the application is reset and app.start is executed.
+	// You can add code to change the state if you need a setup that's different from what app.start sets up.
+	test Rule 7: Clicking a cell should place a piece
+		app.currentPlayer = players[0]
+		app.grid[0,0].player = players[0]
+		print "Setup: Placed piece for player 0 at {0,0}", type:Info
 
-		// Simulate a drag by redPlayer (players[1])
-		drag gridPos(0,0) to gridPos(1,0) by redPlayer
+		// Simulate a drag from screen position {100,0} to {200,0} by player 0
+		drag {100,0} to {200,0} by players[0]
 
-		// Simulate moving the left stick to {1,0} (right) by greenPlayer (players[2])
-		moveLeftStickTo {1,0} by greenPlayer
+		// Simulate a click at grid position {1,0} by player 1
+		click pos(1,0) by players[1]
 
-		// Wait for 3 frames. At 30 ticks per second, this corresponds to 100 milliseconds.
-		wait 3 frames
+		// Simulate moving the left stick to {1,0} (right) by player 0
+		moveLeftStickTo {1,0} by players[0]
 
-		// Assert
-		expect bluePlayer.gridPos == {1,0}
+		// If you need to wait for animations to finish before continuing, use wait.
+		// Wait for 15 ticks. At 30 ticks per second, this corresponds to 500 milliseconds.
+		wait 15 ticks
 
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
+
+# Write extensive print statements
+Write extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action. For example:
+
+app
+	tick
+		drawStandardButton "Swap"
+			print "Swap button clicked by {touch.by}", type:Action
+			players[0].pos swapWith players[1].pos
+			print "Positions swapped, player 0: {players[0].pos}, player 1: {players[1].pos}", type:Reaction
 
 # Images, Sounds and Fonts
 Read "src/media.l" for all images, sounds and fonts available in the project. Place new images in the "media/" folder. For instance, if you place "Example.png" in this folder, you can use "Example" in drawImage:
@@ -284,7 +317,7 @@ enum Phase: PlacePiece, GameOver
 
 app
 	// The screen size is always {1920, 1080}.
-	// All LiveTime games are online multiplayer games that show the video feed of each player on the screen.
+	// All LiveTime games are online multiplayer games. You must show the video feed of each player on the screen.
 	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen.
 	const Vector2 totalBoardSize = {700,700}
 	
@@ -320,7 +353,18 @@ app
 		currentPlayer = players next currentPlayer
 
 		// Always print the start of the turn in the player's color!
-		print color:currentPlayer.color, "# Turn of {currentPlayer} started"
+		print "# Turn of {currentPlayer} started", type:Headline, color:currentPlayer.color
+
+	// Called when a player touches the screen
+	onTouchDown: Touch touch
+		// Important: If isOnlineMultiplayer it true, the touch must be by the current player
+		if isOnlineMultiplayer and touch.by != currentPlayer then return
+		
+		let cell = app.grid[touch.position.toGridPos]
+			if not cell.player
+				currentPlayer.placePiece cell
+			else
+				print "Invalid cell {cell.gridPos} occupied by {cell.player} clicked", type:Error
 				
 	// Called on every frame (30 times per second)
 	tick
@@ -333,7 +377,7 @@ app
 	finishGame
 		Player winner = players.withMax.score
 		ParticleSystem(position:winner.pos)
-		print "Game won with {winner.score} points by {winner}"
+		print "Game won with {winner.score} points by {winner}", type:Reaction
 
 struct IntVector2
 	toScreenPos => app.cellOffset + this * app.cellSize
@@ -377,19 +421,10 @@ class Player
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
 		drawText score, scorePos, size:31
 
-	// Called when the player touches the screen
-	// Important: Only the current player is can make a move
-	onTouchDown: Touch touch
-		if app.currentPlayer != this then return
-		let cell = app.grid[touch.position.toGridPos]
-			if cell.player then	print "Cell {cell.gridPos} occupied by {cell.player} clicked by {this}"
-			else	print "Empty cell {cell.gridPos} clicked by {this}"
-			placePiece cell
-
 	placePiece: Cell cell
 		if cell.player then return
 		cell.player = this
-		print "Piece placed at {cell.gridPos} by {this}"
+		print "Piece placed at {cell.gridPos} by {this}", type:Action
 		captureSurroundedPieces cell.gridPos
 		app.startTurn
 				
@@ -401,7 +436,7 @@ class Player
 			if neighborCell and neighborCell.player and neighborCell.player != this
 				Cell[] surroundesCells = collectSurroundesCells neighborPos
 					surroundesCells.each.player = null
-					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}"
+					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}", type:Reaction
 	
 	// We can specify the return type in front of the name of a function
 	Cell[] collectSurroundesCells: IntVector2 originPos
@@ -427,32 +462,3 @@ class Player
 						queue.add neighborPos
 						
 		return surroundedCells
-
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
-
-2. Make sure you fixed all diagnostics and linter errors.
-
-3. Your code should contain extensive print statements that describe each action after it happened. Use the past tense. Output all relevant information to verify that everything works as specified. For example:
-
-Player
-	tick
-		positon += direction
-		print "{this} moved in {direction} to {position}"
-
-4. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
-
-5. Write unit tests in the static class "tests" in a new file in the "tests" folder (for example "tests/playerMovement.l"). Make sure you test every single rule in the specifications and every edge case. The tests should simulate user inputs with click, drag, moveLeftStickTo, etc to test the complete code and all edge cases. For example:
-
-tests
-	playerShouldMoveRight
-		app.createTestLevel
-		moveLeftStickTo {1,0} by bluePlayer
-		wait 10 frames
-		expect bluePlayer.gridPos == {1,0}
-
-6. Use the vscode's build-in tool (execute/runTests) or the runTests tool to run the unit tests.
-
-7. Carefully analyze the output and check if everything is working.
-
-8. Fix all problems and repeat until you verified everything works as specified.

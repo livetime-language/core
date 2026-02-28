@@ -279,13 +279,13 @@ Object ImageObject
 Object Effect
 	Image image
 	int framesPerSecond = 15
-	private startFrame = Time.frame
+	private startFrame = Time.ticks
 	
 	Effect
 		if size.x == 0 and size.y == 0 then size = image.size
 	
 	internal override tick
-		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.ticksPerSecond)
+		var frame = math.floor((Time.ticks - startFrame) * math.max(framesPerSecond, 0) / core.ticksPerSecond)
 		if alpha and frame < image.frames.length
 			drawImage image, position, size, alpha, visibleFor, layer, frame, location
 		else

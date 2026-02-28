@@ -101,7 +101,7 @@ priority class Player
 	Vector2 pointerPosition
 	
 	internal Player cloneBaseData => {_id, language, email, name, colorPreferences, id, index}
-	toString => color ? "{color.name.toLowerCase} player ({index})" : "player {index}"
+	toString => name ? "{name} (Player {index})" : "Player {index}"
 	highlightPerspectiveColor => input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
 	
 	// Touch input
@@ -465,7 +465,7 @@ skipInit global unit input
 	switchPerspectiveTo: Player player
 		watch "Switching to {player}"
 		showPerspectiveOf = player
-		if Platform.playMode == Play or Platform.playMode == Pause then core.switchToPlayer player
+		if Platform.playMode == Play or Platform.playMode == Pause or Platform.playMode == Stop then core.switchToPlayer player
 		
 	internal Player[] playersById
 	Cursor cursor
@@ -473,7 +473,7 @@ skipInit global unit input
 	bool showPointers = true
 	ShowPointersMode showPointersMode = Remote
 	ShowPointersMode showPointersModeInEditor = None
-	ShowPointersMode showPointersDuringPlayback = WhenDown
+	ShowPointersMode showPointersDuringPlayback = LocalAndRemote
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
@@ -495,7 +495,7 @@ skipInit global unit input
 	private js void initHandlers
 		let pointerX = 0, pointerY = 0, clickWithAltKeyX = 0, clickWithAltKeyY = 0
 		window.onpointerdown = e => {
-			if(e.button == 0 && Platform.playMode == 0) {
+			if(e.button == 0 && Platform.playMode <= 1 /*Stop,Pause*/) {
 				Platform.record();
 				if(input.ignoreFirstClick) return;
 			}
@@ -1073,10 +1073,11 @@ skipInit global unit input
 
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.referenceStartPosition
+			let playerVariable = "players[{player.index}]"
 			if length < 8
-				core.addOutput "code|click {touch.referenceStartPosition} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|click {touch.referenceStartPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
 			else
-				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {player.color.name.toLowerCase}Player|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
@@ -1194,12 +1195,12 @@ skipInit global unit input
 		if(player?.onTouchHover) player.onTouchHover(touch);
 			
 	inline js void appOnTouchMoveIfFunctionExists: Player player, Touch touch
-		if(player) {
-			if(!touch.isDown) {
-				if(player.onTouchHover) player.onTouchHover(touch);
-			} else {
-				if(player.onTouchDrag) player.onTouchDrag(touch);
-			}
+		if(!touch.isDown) {
+			if(app.onTouchHover) app.onTouchHover(touch);
+			if(player?.onTouchHover) player.onTouchHover(touch);
+		} else {
+			if(app.onTouchDrag) app.onTouchDrag(touch);
+			if(player?.onTouchDrag) player.onTouchDrag(touch);
 		}
 			
 	inline js void appOnTouchUpIfFunctionExists: Player player, Touch touch

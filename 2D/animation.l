@@ -147,7 +147,7 @@ transient global skipInit unit audio
 		              bool needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain then return
 		
-		if Time.frame == 0
+		if Time.ticks == 0
 			fx.add PlaySoundAnimation startTime:math.ceil(Time.now+core.frameTime)+delay, sound
 		else
 		if delay

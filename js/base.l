@@ -325,11 +325,11 @@ immutable struct float
 	importance:3 inline js
 	float weeks => (this*604800000)
 	
-	// Take a time in frames (30 frames are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in ticks (30 ticks are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
-	//     float time = 10 frames
+	//     float time = 10 ticks
 	importance:3 inline js 
-	float frames => this * 1000 / core.ticksPerSecond
+	float ticks => this * 1000 / core.ticksPerSecond
 	
 	// ------------------------------------------- Operators -------------------------------------------
 
