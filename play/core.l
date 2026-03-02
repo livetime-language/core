@@ -196,7 +196,6 @@ internal transient skipInit unit core
 		let previouylyInterrupted = this.interrruptAtOutputIndex != -1
 		this.targetFrame = targetFrame
 		this.interrruptAtOutputIndex = interrruptAtOutputIndex
-		this.reachedOutputId = false
 		isPremiere = false
 		try
 			try
@@ -244,7 +243,6 @@ internal transient skipInit unit core
 		runningTest = true
 		this.targetFrame = targetFrame
 		this.interrruptAtOutputIndex = interrruptAtOutputIndex
-		this.reachedOutputId = false
 		Platform.fastForward = false
 		try
 			try
@@ -259,6 +257,7 @@ internal transient skipInit unit core
 			for input.internalUsers as user
 				user?.clearEvent
 			tick draw:true
+			graphics.drawDebugInfoItems
 		catch
 			core.onError .
 		finally		
@@ -272,19 +271,15 @@ internal transient skipInit unit core
 	int outputIndex = -1
 	int interrruptAtOutputIndex = -1
 	int targetFrame = -1
-	bool reachedOutputId = false
 
 	addOutput: string value
 		value += "|{outputIndex}|{frame}"
 		output[outputIndex] = value
 		if Platform.playMode == Record then Platform.sendStringToEditor value
-		if interrruptAtOutputIndex != -1
-			// Throw an exception when we reach interrruptAtOutputIndex
-			if outputIndex == interrruptAtOutputIndex and not reachedOutputId
-				reachedOutputId = true
-				throw {message: "reached end of replay"}
-		outputIndex++
-
+		
+		// Throw an exception when we reach interrruptAtOutputIndex
+		if outputIndex++ == interrruptAtOutputIndex
+			throw {"interrrupt"}
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -858,7 +853,7 @@ internal transient skipInit unit core
 		onError {message}
 		
 	onError: Error error
-		if error.message == "reached end of replay" then return
+		if error.message == "interrrupt" then return
 		errorMessage = error.stack
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {
