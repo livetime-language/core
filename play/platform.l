@@ -45,7 +45,6 @@ transient skipInit unit Platform
 		
 	private js void initPlatform
 		statistics.init();
-		debug.init();
 		IndexedDB?.init();
 		PlainDate.init();
 		Platform.init();
@@ -157,7 +156,7 @@ transient skipInit unit Platform
 	// This is called after every code change to replay all inputs with the new code
 	private async replay: bool updateMedia
 		if runningTestFunction
-			core.runTest runningTestFunction, core.frame-1, core.interrruptAtOutputIndex
+			core.runTest runningTestFunction, targetFrame:core.frame-1, interrruptAtOutputIndex:core.interrruptAtOutputIndex
 		else
 			core.goToFrame core.frame-1, core.interrruptAtOutputIndex, codeChanged:true
 
@@ -181,18 +180,6 @@ transient skipInit unit Platform
 			core.runTest runningTestFunction, targetFrame, interrruptAtOutputIndex
 		else
 			core.goToFrame targetFrame, interrruptAtOutputIndex, codeChanged:false
-
-	generateIntegrationTest: GenerateIntegrationTestMode mode
-		input.generateIntegrationTest = mode
-		input.integrationTest = ""
-		try
-			core.goToFrame core.frames-1, codeChanged:true
-		catch
-			core.onError .
-		finally 
-			sendFinished
-		input.generateIntegrationTest = None
-		sendToEditor {type:"integrationTest", text:input.integrationTest}
 			
 	object interval
 	private js void startInterval

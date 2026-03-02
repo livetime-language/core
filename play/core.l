@@ -198,7 +198,6 @@ internal transient skipInit unit core
 		let previouylyInterrupted = this.interrruptAtOutputIndex != -1
 		this.targetFrame = targetFrame
 		this.interrruptAtOutputIndex = interrruptAtOutputIndex
-		this.reachedOutputId = false
 		isPremiere = false
 		try
 			try
@@ -246,7 +245,6 @@ internal transient skipInit unit core
 		runningTest = true
 		this.targetFrame = targetFrame
 		this.interrruptAtOutputIndex = interrruptAtOutputIndex
-		this.reachedOutputId = false
 		Platform.fastForward = false
 		try
 			try
@@ -275,19 +273,15 @@ internal transient skipInit unit core
 	int outputIndex = -1
 	int interrruptAtOutputIndex = -1
 	int targetFrame = -1
-	bool reachedOutputId = false
 
 	addOutput: string value
 		value += "|{outputIndex}|{frame}"
 		output[outputIndex] = value
 		if Platform.playMode == Record then Platform.sendStringToEditor value
-		if interrruptAtOutputIndex != -1
-			// Throw an exception when we reach interrruptAtOutputIndex
-			if outputIndex == interrruptAtOutputIndex and not reachedOutputId
-				reachedOutputId = true
-				throw {message: "reached end of replay"}
-		outputIndex++
-
+		
+		// Throw an exception when we reach interrruptAtOutputIndex
+		if outputIndex++ == interrruptAtOutputIndex
+			throw {"interrrupt"}
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -308,7 +302,6 @@ internal transient skipInit unit core
 	// We ensure that step is called every frameTime milliseconds.
 	internal animationFrame
 		now = currentTime
-		if debug.waitUntilFrame and frame >= debug.waitUntilFrame	then debug.onWaitFinished; return
 		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
 		ServerNetwork.tick
@@ -476,7 +469,6 @@ internal transient skipInit unit core
 	internal step: bool fastForward // If we are replaying after a rollback or a code change
 		           bool draw        // We don't draw if we are stepping multiple frames in one animation frame
 		if verbose	then core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
-		if debug.waitUntilFrame	then print "# Frame {frame}"
 
 		// Flags
 		Platform.fastForward = fastForward
@@ -863,7 +855,7 @@ internal transient skipInit unit core
 		onError {message}
 		
 	onError: Error error
-		if error.message == "reached end of replay" then return
+		if error.message == "interrrupt" then return
 		errorMessage = error.stack
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {
@@ -953,6 +945,12 @@ global transient unit System
 		} else {
 			core.log(text);
 		}
+
+	global debug: void() drawDebugInfo
+		if Platform.isDebug
+			graphics.isDrawingDebugInfo = true
+			drawDebugInfo()
+			graphics.isDrawingDebugInfo = false
 
 internal class StatisticsGraph
 	int userIndex = -1
