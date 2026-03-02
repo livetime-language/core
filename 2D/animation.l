@@ -2,6 +2,30 @@ global unit fx
 	internal Animation[] animations
 	importance:4 global bool runningAnimations => animations.length > 0
 
+	importance:4
+	global animate: float delay = 0	// Start animation after this time in milliseconds
+		            float duration = 300	// The duration of the animation in milliseconds
+		            stored void(float progress, float time) tick	// Execute this code on every tick of the animation, passing in the progress (0 to 1) and elapsed time in milliseconds
+				    stored void() then = null	// Execute this code once after the animation finishes
+		add InterpolateAnimation startTime:Time.now+delay, duration
+			graphics.currentLayer += 65535
+			tick(progress, time)
+			graphics.currentLayer -= 65535
+			if progress >= 1 and then != null then then()
+
+	private void()[] whenAllAnimationsFinishedCallbacks
+
+	importance:4
+	global whenAllAnimationsFinished: stored void() do
+		if animations.length == 0
+			do()
+		else
+			whenAllAnimationsFinishedCallbacks.add do
+
+	global delay: float time = 0 // The delay in milliseconds
+		          stored void() do
+		add DelayAnimation startTime:Time.now+time, do
+				
 	add: Animation animation
 		animations.add animation
 		
@@ -15,6 +39,7 @@ global unit fx
 		return Time.now
 		
 	internal tick
+		if animations.length == 0 then return
 		let now = Time.now
 		for animations <-
 			if now >= .startTime
@@ -22,21 +47,11 @@ global unit fx
 				float progress = .duration ? time/.duration : 1
 				if progress >= 1 then progress = 1; animations.removeAt i
 				.tick progress, time
-				
-	global delay: float time = 0 // The delay in milliseconds
-		          stored void() do
-		add DelayAnimation startTime:Time.now+time, do
-		
-	importance:4
-	global animate: float delay = 0	// Start animation after this time in milliseconds
-		            float duration = 300	// The duration of the animation in milliseconds
-		            stored void(float progress, float time) tick	// Execute this code on every tick of the animation, passing in the progress (0 to 1) and elapsed time in milliseconds
-				    stored void() then = null	// Execute this code once after the animation finishes
-		add InterpolateAnimation startTime:Time.now+delay, duration
-			graphics.currentLayer += 65535
-			tick(progress, time)
-			graphics.currentLayer -= 65535
-			if progress >= 1 and then != null then then()
+
+		if animations.length == 0
+			for whenAllAnimationsFinishedCallbacks as callback
+				callback()
+			whenAllAnimationsFinishedCallbacks.clear
 				
 	// Animate a variable to a target value over a given period of time
 	importance:0 inline animateVariable: float variable = 0   // The variable to animate
