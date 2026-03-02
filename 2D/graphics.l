@@ -356,7 +356,7 @@ transient skipInit global unit graphics
 		
 		for input.internalUsers if .
 			.videoElementIndex = 0
-		drawItems items
+		finishDrawingItems items
 		drawMargins
 		for input.internalUsers as user if user
 			for user.videoElementIndex to user.videoElements.length
@@ -364,10 +364,10 @@ transient skipInit global unit graphics
 			user.videoElements.setLength user.videoElementIndex
 			PeerNetwork.setAudioMuted user.audioElement, muted:core.muteInvisibleUsers and user.videoElementIndex == 0
 
-	internal drawDebugInfoItems
-		drawItems debugInfoItems	
+	internal finishDrawingDebugInfo
+		finishDrawingItems debugInfoItems	
 	
-	private drawItems: DisplayItem[] items
+	private finishDrawingItems: DisplayItem[] items
 		core.displayItems = items.length
 		gizmo.tick
 		if drawingOrder == FirstDrawnWillBeInFront

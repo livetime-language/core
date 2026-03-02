@@ -226,7 +226,7 @@ internal transient skipInit unit core
 					user?.clearEvent
 				tick draw:true
 
-			graphics.drawDebugInfoItems
+			graphics.finishDrawingDebugInfo
 		catch
 			onError .
 		finally
@@ -259,6 +259,7 @@ internal transient skipInit unit core
 			for input.internalUsers as user
 				user?.clearEvent
 			tick draw:true
+			graphics.finishDrawingDebugInfo
 		catch
 			core.onError .
 		finally		
