@@ -1342,6 +1342,44 @@ transient skipInit global unit graphics
 			))
 		}
 		
+	// ------------------------------------------------------- Arrow -------------------------------------------------------
+	
+	// Draw an arrow on the screen.
+	global importance:4 drawArrow: Vector2 from	// The point to start the arrow from
+	                               nocolon Vector2 to	// The point to draw the arrow to
+								   float width = 16
+								   float arrowHeadWidth = 0
+								   float arrowHeadLength = 0
+		                           Color color = null	// The color of the arrow
+		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
+		                           implicit int layer = 0	// Higher layers are drawn in front of lower layers
+		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
+		if width <= 0 then width = graphics.currentLineWidth
+		let delta = to - from
+		let length = delta.length
+		if length <= 0 then return
+
+		if arrowHeadLength <= 0	then arrowHeadLength	= math.min width * 4, delta.length * 0.5
+		if arrowHeadWidth <= 0	then arrowHeadWidth	= math.max arrowHeadLength * .8, width * 2.5
+
+		let dir = delta / length
+		let normal = {-dir.y, dir.x}
+		let halfLineWidth = width / 2
+		let halfHeadWidth = arrowHeadWidth / 2
+		let headBase = to - dir * arrowHeadLength
+
+		Vector2[] points = [
+			from + normal * halfLineWidth
+			headBase + normal * halfLineWidth
+			headBase + normal * halfHeadWidth
+			to
+			headBase - normal * halfHeadWidth
+			headBase - normal * halfLineWidth
+			from - normal * halfLineWidth
+		]
+		drawPolygon points, color:color, visibleFor:visibleFor, layer:layer, alpha:alpha
+	
+	
 	// ------------------------------------------------------- Polygon -------------------------------------------------------
 	
 	// Draw a polygon on the screen.
