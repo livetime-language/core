@@ -34,7 +34,7 @@ global unit fx
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
-		interpolate variable, to, delay, duration, variable = .
+		animateValue variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
 	importance:0 inline animateVariable: float variable = 0   // The variable to animate
@@ -42,14 +42,14 @@ global unit fx
 		                   float delay = 0       // The delay before the animation starts in milliseconds
 		                   float duration = 300  // The duration of the animation in milliseconds
 		                   EaseFunction ease    // The easing function to apply
-		interpolate variable, to, delay, duration, ease, variable = .
+		animateValue variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
 	importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
-		interpolate variable, to, delay, duration, variable = .
+		animateValue variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
 	importance:0 inline animateVariable: Vector2 variable    // The variable to animate
@@ -57,23 +57,23 @@ global unit fx
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		                   EaseFunction ease   // The easing function to apply
-		interpolate variable, to, delay, duration, ease, variable = .
+		animateValue variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
 	importance:0 inline animateVariable: Color variable      // The variable to animate
 		                   Color to            // The target color to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
-		interpolate variable, to, delay, duration, variable = .
+		animateValue variable, to, delay, duration, variable = .
 		
-	interpolate: float from = 0
+	importance:0 animateValue: float from = 0
 		         float to = 1
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
 		         float duration = 300  // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from + (to - from) * .)
 				
-	interpolate: float from = 0
+	importance:0 animateValue: float from = 0
 		         float to = 1
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
@@ -81,14 +81,14 @@ global unit fx
 		         EaseFunction ease
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(ease.function(from + (to - from) * .))
 				
-	interpolate: Vector2 from
+	importance:0 animateValue: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
-	interpolate: Vector2 from
+	importance:0 animateValue: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
@@ -96,7 +96,7 @@ global unit fx
 		         EaseFunction ease
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress, ease)
 				
-	interpolate: Color from
+	importance:0 animateValue: Color from
 		         Color to
 		         stored void(Color progress) do
 		         float delay = 0      // The delay in milliseconds
@@ -111,35 +111,35 @@ struct float
 	inline animateTo: float target        // The target value to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
-		fx.interpolate this, target, delay, duration, this = .
+		fx.animateValue this, target, delay, duration, this = .
 	
 	// Animate the float to a target value over a given period of time	
 	inline animateTo: float target        // The target value to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
 		              EaseFunction ease   // The easing function to apply
-		fx.interpolate this, target, delay, duration, ease, this = .
+		fx.animateValue this, target, delay, duration, ease, this = .
 		
 struct Vector2
 	// Animate the vector to a target vector over a given period of time
 	inline animateTo: Vector2 target      // The target vector to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
-		fx.interpolate this, target, delay, duration, this.x = .x; this.y = .y
+		fx.animateValue this, target, delay, duration, this.x = .x; this.y = .y
 
 	// Animate the vector to a target vector over a given period of time
 	inline animateTo: Vector2 target      // The target vector to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
 		              EaseFunction ease   // The easing function to apply
-		fx.interpolate this, target, delay, duration, ease, this.x = .x; this.y = .y
+		fx.animateValue this, target, delay, duration, ease, this.x = .x; this.y = .y
 		
 Color
 	// Animate the color to a target vector over a given period of time
 	inline animateTo: Color target        // The target color to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
-		fx.interpolate this, target, delay, duration, this = .
+		fx.animateValue this, target, delay, duration, this = .
 
 transient global skipInit unit audio
 	global importance:4 playSound: Sound sound
