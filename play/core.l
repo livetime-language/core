@@ -5,7 +5,7 @@ enum SendInputsMode: None, Peer, Server
 internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
-	bool enabledMilestones = true
+	bool enabledMilestones = false
 	int milestoneInterval = 1800
 	int smoothStrength = 90
 	bool smoothTouchPosition = true
@@ -113,6 +113,8 @@ internal transient skipInit unit core
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
 		outputIndex = 0
+		if targetFrame == frame-1 and interrruptAtOutputIndex == -1
+			output.clear
 		players.clear
 		input.playersById.clear
 		input.host = null
@@ -225,7 +227,7 @@ internal transient skipInit unit core
 					user?.clearEvent
 				tick draw:true
 
-			graphics.drawDebugInfoItems
+			graphics.finishDrawingDebugInfo
 		catch
 			onError .
 		finally
@@ -257,13 +259,13 @@ internal transient skipInit unit core
 			for input.internalUsers as user
 				user?.clearEvent
 			tick draw:true
-			graphics.drawDebugInfoItems
+			graphics.finishDrawingDebugInfo
 		catch
 			core.onError .
 		finally		
 			isPremiere = true
 			runningTest = false
-			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, frame, frames})
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, frame, frames, playMode:Platform.playMode})
 			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
 
 	bool runningTest
@@ -904,16 +906,16 @@ internal transient unit Snapshot
 		
 	autoSave() autoSaveAtEndOfStep = true
 
-enum lowercase string PrintIcon
-	Action
-	Reaction
-	NoAction
-	Headline
+enum lowercase string PrintType
+	Action	// Use for actions performed by a player
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
+	NoAction	// Use when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
+	Headline	// Use when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
 
-	Debug
-	Info
-	Error
-	Warning
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
 	
 	Touch
 	Key
@@ -927,7 +929,7 @@ global transient unit System
 		
 	// Prints a message to the console
 	global js void print: logstring text	// The text, variables or expressions to print
-	                      PrintIcon type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
 						  Color color = null	// The color to use when showing the message in the console or the event stream panel
 		                  void() drawDebugInfo = null	// A function that will be called to draw debug information.
 		                  SourceCodeLocation location
@@ -1244,6 +1246,9 @@ tests
 	                          dynamic actual
 		                      dynamic expected
 				              SourceCodeLocation location
+		if core.interrruptAtOutputIndex != -1 or core.targetFrame != -1
+			core.outputIndex++
+			return
 		string actualString, expectedString, result
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()
@@ -1261,6 +1266,9 @@ tests
 	internal expectToBeTrue: string expressionString
 	                         dynamic actual
 				             SourceCodeLocation location
+		if core.interrruptAtOutputIndex != -1 or core.targetFrame != -1
+			core.outputIndex++
+			return
 		string actualString
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()

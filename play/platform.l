@@ -272,7 +272,7 @@ transient skipInit unit Platform
 		if Platform.isDebug then sendStringToEditor("#{frame}|{frames}|{(int)playMode}")
 		
 	sendFinished
-		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:Platform.playMode, output:core.output})
+		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
 	
 	private float nextHeartbeatTime
 	
