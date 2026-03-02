@@ -460,7 +460,7 @@ transient skipInit global unit graphics
 		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = 0	// Higher layers are drawn in front of lower layers
+		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
 		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White	// Tint the image with this color
 		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -480,7 +480,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
 				`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -501,7 +501,7 @@ transient skipInit global unit graphics
 		                      implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the image
 		                      implicit frame = 0                  // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = 0                  // Higher layers are drawn in front of lower layers
+		                      implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White                 // Tint the image with this color
 		                      angle = 0.0                         // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -529,7 +529,7 @@ transient skipInit global unit graphics
 					-halfSizeX,
 					-halfSizeY,
 					sizeX, sizeY,
-					layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
 					`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
@@ -553,7 +553,7 @@ transient skipInit global unit graphics
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", "Walk2.png", ...)
 						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
 		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
-						   implicit int layer = 0	// Higher layers are drawn in front of lower layers
+					       implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
 		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White	// Tint the image with this color
 		                   SourceCodeLocation location
@@ -572,7 +572,7 @@ transient skipInit global unit graphics
 		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
 		                   framesPerSecond = 0                  // Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit int layer = 0               // Higher layers are drawn in front of lower layers
+		                   implicit int layer = int.minValue    // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
 		                   angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -588,7 +588,7 @@ transient skipInit global unit graphics
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
 		                   implicit Player[] clickableBy = null // Only this player or list of players can touch or click the image
 		                   implicit frame = 0                   // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		                   implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
 	                       HorizontalAlignment align = Center   // The horizontal alignment of the image
@@ -623,7 +623,7 @@ transient skipInit global unit graphics
 		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
 		                   implicit Player[] clickableBy = null // Only this player or list of players can touch or click the image
 		                   implicit frame = 0                   // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		                   implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White                  // Tint the image with this color
 		                   angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -650,7 +650,7 @@ transient skipInit global unit graphics
 		                         implicit Vector2 size = {}
 		                         implicit Player[] visibleFor = null
 								 implicit frame = 0
-		                         implicit layer = 0
+		                         implicit layer = int.minValue
 		                         alpha = 1.0
 		                         Color color = White
 								 float leftSlice = 0
@@ -674,7 +674,7 @@ transient skipInit global unit graphics
 				y,
 				scaledLeftSlice, 
 				sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
 				`Image ${image.name} Left Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -687,7 +687,7 @@ transient skipInit global unit graphics
 				y,
 				sizeX - scaledLeftSlice - scaledRightSlice, 
 				sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
 				`Image ${image.name} Middle Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -700,7 +700,7 @@ transient skipInit global unit graphics
 				y,
 				scaledRightSlice, 
 				sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
 				`Image ${image.name} Right Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -729,7 +729,7 @@ transient skipInit global unit graphics
 		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		             Color outlineColor = null            // The color of the outline around the text
 		             outlineWidth = 0                     // The width of the outline around the text in pixels
-		             implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		             implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		             implicit Player[] visibleFor = null  // Only this player or list of players will see the text
@@ -863,7 +863,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, text,
+				layer != int.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, text,
 				"Text \"{text.replaceAll("\n", "\\n").replaceAll("\"", "\\\"")}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(sizeX)} topLeft:\{{math.round(position.x-halfSizeX)},{math.round(position.y-halfSizeY)}\} bottomRight:\{{math.round(position.x+halfSizeX)},{math.round(position.y+halfSizeY)}\} color:{effectiveColor}",
 				location, position.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 
@@ -905,7 +905,7 @@ transient skipInit global unit graphics
 		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		                                Color outlineColor = null            // The color of the outline around the text
 		                                outlineWidth = 0                     // The width of the outline around the text in pixels
-		                                implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		                                implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		                                implicit Player[] visibleFor = null  // Only this player or list of players will see the text
@@ -1053,7 +1053,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer, alpha * graphics.currentAlpha, currentClippingPath, text,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, text,
 				"Text \"{text}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(size.x)}",
 				location, position.location, size.location,
 				(color || currentColor).hex, 
@@ -1085,7 +1085,7 @@ transient skipInit global unit graphics
 		                     size = 0.0                           // The font size of the text
 		                     Color color = null                   // The color of the text
 		                     Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		                     implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		                     implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                     radius = 100.0                       // The radius of the circle to draw the text around
 		                     angle = 0.0                          // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
 		                     spacing = .2                         // The spacing between the letters of the text
@@ -1133,7 +1133,7 @@ transient skipInit global unit graphics
 		                    implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                    implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
 		                    hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		                    implicit layer = 0                   // Higher layers are drawn in front of lower layers
+		                    implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                    alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                    enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
 		                    alphaWhenDisabled = .5               // The opacity of the button will be multiplied with this factor when its disabled
@@ -1159,14 +1159,15 @@ transient skipInit global unit graphics
 		if isVisibleFor(visibleFor)
 			if frame == -1	then frame = 0
 			if scale != 1.0	then textSize = math.round(textSize * scale); effectiveSize *= scale
+			int effectiveLayer = layer != int.minValue ? layer : math.floor(graphics.currentLayer)
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
-			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:layer+2, effectiveAlpha, location
+			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
 			if accentImage
 				if not accentColor
 					if effectiveClickableBy and effectiveClickableBy[0] then accentColor = effectiveClickableBy[0].color
 					else                                                 accentColor = input.localPlayer.color
-				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:layer+1, effectiveAlpha, location, color:accentColor
-			if image then drawImage image, position, frame, effectiveSize, visibleFor, layer:layer, effectiveAlpha, location
+				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:effectiveLayer+1, effectiveAlpha, location, color:accentColor
+			if image then drawImage image, position, frame, effectiveSize, visibleFor, layer:effectiveLayer, effectiveAlpha, location
 			
 			
 	// ------------------------------------------------------- Rectangle -------------------------------------------------------
@@ -1184,7 +1185,7 @@ transient skipInit global unit graphics
 		                          Color outlineColor = null           // The color of the outline around the rectangle
 		                          outlineWidth = 0                    // The width of the outline around the rectangle in pixels
 		                          implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
-		                          implicit layer = 0                  // Higher layers are drawn in front of lower layers
+		                          implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                          HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                          VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
@@ -1199,7 +1200,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
 				`Rectangle position:{${Math.round(position.x)},${Math.round(position.y)}} size:{${Math.round(sizeX)},${Math.round(sizeY)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}} color:${color?.hex}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1222,7 +1223,7 @@ transient skipInit global unit graphics
 		                                 Color outlineColor = null           // The color of the outline around the rectangle
 		                                 outlineWidth = 0                    // The width of the outline around the rectangle in pixels
 		                                 implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
-		                                 implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                                 implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                                 HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                                 VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
@@ -1234,7 +1235,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
 				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
@@ -1274,7 +1275,7 @@ transient skipInit global unit graphics
 		                       angle = math.twoPi                 // Draw an arc with this angle in radians (one full rotation is 2*pi)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
 		                       implicit Player[] visibleFor = null     // Only this player or list of players will see the circle
-		                       implicit layer = 0                      // Higher layers are drawn in front of lower layers
+		                       implicit layer = int.minValue           // Higher layers are drawn in front of lower layers
 		                       alpha = 1.0                             // The opacity of the circle (0: fully transparent, 1: fully visible)
 		                       SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1285,7 +1286,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
 				`Circle position:{${Math.round(position.x)},${Math.round(position.y)}} size:${Math.round(sizeX)} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
@@ -1310,14 +1311,14 @@ transient skipInit global unit graphics
 		                     Color color = null                  // The color of the line
 		                     width = 0                           // The width of the line in pixels
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
-		                     implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                     implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayLine(
 				graphics.totalMatrix,
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
 				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, from.location, null,
 				to,
@@ -1339,14 +1340,14 @@ transient skipInit global unit graphics
 		                      width = 0                           // The width of the line in pixels
 		                      smooth = false                      // Smooth the corners of the line
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the line
-		                      implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                      implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
 				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, position.location, null,
 				points,
@@ -1369,7 +1370,7 @@ transient skipInit global unit graphics
 		                           Color outlineColor = null	// The color of the outline around the arrow
 		                           outlineWidth = 0	// The width of the outline around the arrow
 		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
-		                           implicit int layer = 0	// Higher layers are drawn in front of lower layers
+		                           implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
 		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
 		if width <= 0 then width = graphics.currentLineWidth
 		let delta = to - from
@@ -1413,14 +1414,14 @@ transient skipInit global unit graphics
 		                        outlineWidth = 0                    // The width of the outline around the polygon in pixels
 		                        smooth = false                      // Smooth the corners of the polygon
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
-		                        implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
 				`Polygon {points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
@@ -1499,7 +1500,7 @@ transient skipInit global unit graphics
 		                        Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                        implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                        implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(!texture?.ensureIsAvailable()) return
@@ -1511,7 +1512,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
 				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1534,7 +1535,7 @@ transient skipInit global unit graphics
 		                        Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                        Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                        implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(!texture?.ensureIsAvailable()) return
@@ -1546,7 +1547,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
 				`Texture "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1566,7 +1567,7 @@ transient skipInit global unit graphics
 		                             Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                             Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
 		                             implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                             implicit int layer = 0              // Higher layers are drawn in front of lower layers
+		                             implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                             Color color = White                 // Tint the texture with this color
 		if(!graphics.imagesFromUrl) graphics.imagesFromUrl = new Map()
@@ -1583,7 +1584,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
 				`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1615,7 +1616,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer, 1, graphics.currentClippingPath, "Clear", 
+				layer != int.minValue ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, "Clear", 
 				`ClearRectangle position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX*.5)},${Math.round(position.y-sizeY*.5)}} bottomRight:{${Math.round(position.x+sizeX*.5)},${Math.round(position.y+sizeY*.5)}}`,
 				location, position.location, size.location,
 				"clear", null, 0
@@ -1873,6 +1874,10 @@ transient skipInit global unit graphics
 		currentAlpha = prev
 		return currentAlpha
 	private float currentAlpha = 1.0
+
+	// ------------------------------------------------------- Layer -------------------------------------------------------
+	
+	float currentLayer = 0
 	
 	// ------------------------------------------------------- Measure text -------------------------------------------------------
 	
