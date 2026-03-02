@@ -178,14 +178,17 @@ app
 		// Print: Use type:Action for actions performed by a player
 		print "Piece placed at {cell.gridPos} by {currentPlayer}", type:Action
 
-		// Print: Use type:Reaction for reactions or consequences of an action
+		// Print: Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
 		print "Game won with {winner.score} points by {winner}", type:Reaction
+
+		// Print: Use type:NoAction when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
+		print "Play clicked by {touch.by}, but we are already playing", type:NoAction
 
 		// Print: Use type:Debug for temporary debug messages
 		print "Possible moves for {currentPlayer}: {possibleMoves}", type:Debug
 
-		// Print: Use type:Headline when a new turn or round started. Pass in the current player's color.
-		print "# Turn of {currentPlayer} started", type:Headline, color:currentPlayer.color
+		// Print: Use type:Headline when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
+		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.color
 	
 app
 	Player currentPlayer
@@ -353,18 +356,22 @@ app
 		currentPlayer = players next currentPlayer
 
 		// Always print the start of the turn in the player's color!
-		print "# Turn of {currentPlayer} started", type:Headline, color:currentPlayer.color
+		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.color
 
 	// Called when a player touches the screen
 	onTouchDown: Touch touch
 		// Important: If isOnlineMultiplayer it true, the touch must be by the current player
-		if isOnlineMultiplayer and touch.by != currentPlayer then return
-		
+		if isOnlineMultiplayer and touch.by != currentPlayer
+			print "Click by {touch.by} ignored because it's {currentPlayer}'s turn", type:NoAction
+			return
+			
 		let cell = app.grid[touch.position.toGridPos]
 			if not cell.player
 				currentPlayer.placePiece cell
 			else
-				print "Invalid cell {cell.gridPos} occupied by {cell.player} clicked", type:Error
+				print "Can't place piece at {cell.gridPos} because it's occupied by {cell.player}", type:NoAction
+		else
+			print "Can't place piece because there's no valid cell at {touch.position}", type:NoAction
 				
 	// Called on every frame (30 times per second)
 	tick

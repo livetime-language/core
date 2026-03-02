@@ -914,16 +914,16 @@ internal transient unit Snapshot
 		
 	autoSave() autoSaveAtEndOfStep = true
 
-enum lowercase string PrintIcon
-	Action
-	Reaction
-	NoAction
-	Headline
+enum lowercase string PrintType
+	Action	// Use for actions performed by a player
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
+	NoAction	// Use when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
+	Headline	// Use when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
 
-	Debug
-	Info
-	Error
-	Warning
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
 	
 	Touch
 	Key
@@ -937,7 +937,7 @@ global transient unit System
 		
 	// Prints a message to the console
 	global js void print: logstring text	// The text, variables or expressions to print
-	                      PrintIcon type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
 						  Color color = null	// The color to use when showing the message in the console or the event stream panel
 		                  void() drawDebugInfo = null	// A function that will be called to draw debug information.
 		                  SourceCodeLocation location
