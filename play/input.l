@@ -422,8 +422,6 @@ internal transient immutable InternetGamePad
 	ImmutableList<InternetGamePadButton> buttons
 	string id
 	
-enum GenerateIntegrationTestMode: None, Clicks, Drags
-	
 // Collect user input
 skipInit global unit input
 	transient visible InternalUser[] internalUsers
@@ -477,9 +475,6 @@ skipInit global unit input
 	
 	bool enableClickingWithAltKey
 	bool ignoreFirstClick
-	
-	GenerateIntegrationTestMode generateIntegrationTest
-	string integrationTest
 	
 	string textInput
 		let localPlayer = playersById[input.localUser.id]
@@ -844,7 +839,6 @@ skipInit global unit input
 					
 					if inputType == TouchDown
 						touchDown internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
-						if generateIntegrationTest == Clicks then integrationTest += "\tclick window:{userId} x:{referencePos.x} y:{referencePos.y}\n"
 					else
 					if inputType == TouchMove
 						touchMove internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition

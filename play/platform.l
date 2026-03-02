@@ -181,18 +181,6 @@ transient skipInit unit Platform
 			core.runTest runningTestFunction, targetFrame, interrruptAtOutputIndex
 		else
 			core.goToFrame targetFrame, interrruptAtOutputIndex, codeChanged:false
-
-	generateIntegrationTest: GenerateIntegrationTestMode mode
-		input.generateIntegrationTest = mode
-		input.integrationTest = ""
-		try
-			core.goToFrame core.frames-1, codeChanged:true
-		catch
-			core.onError .
-		finally 
-			sendFinished
-		input.generateIntegrationTest = None
-		sendToEditor {type:"integrationTest", text:input.integrationTest}
 			
 	object interval
 	private js void startInterval

@@ -305,7 +305,6 @@ internal transient skipInit unit core
 	// We ensure that step is called every frameTime milliseconds.
 	internal animationFrame
 		now = currentTime
-		if debug.waitUntilFrame and frame >= debug.waitUntilFrame	then debug.onWaitFinished; return
 		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
 		ServerNetwork.tick
@@ -473,7 +472,6 @@ internal transient skipInit unit core
 	internal step: bool fastForward // If we are replaying after a rollback or a code change
 		           bool draw        // We don't draw if we are stepping multiple frames in one animation frame
 		if verbose	then core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
-		if debug.waitUntilFrame	then print "# Frame {frame}"
 
 		// Flags
 		Platform.fastForward = fastForward
