@@ -267,6 +267,9 @@ transient skipInit global unit graphics
 	private Vector2 pixelSize
 	internal Vector2 size
 	internal float pixelRatio
+
+	private DisplayItem[] debugInfoItems		
+	bool isDrawingDebugInfo
 	
 	async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
@@ -317,7 +320,7 @@ transient skipInit global unit graphics
 		
 	internal js void startFrame
 		graphics.reset()
-		if(!Platform.fastForward && !Platform.waitingForInitialData)
+		if(!Platform.fastForward && !Platform.waitingForInitialData) {
 			if(!graphics.backgroundColor || graphics.backgroundColor.hex == "#000000") {
 				graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			} else {
@@ -325,11 +328,20 @@ transient skipInit global unit graphics
 				graphics.context.fillRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			}
 			graphics.context.textBaseline = "top"
+		}
+
+	internal clearDebugInfo
+		graphics.debugInfoItems.clear
+
+	internal add: DisplayItem item
+		if isDrawingDebugInfo	-> debugInfoItems.add item
+		else	-> items.add item
 			
 	internal reset
 		totalMatrix = baseMatrix
 		localMatrix.clear
 		currentlyVisibleFor = null
+		isDrawingDebugInfo = false
 		items.clear
 
 	internal finishFrame
@@ -344,15 +356,18 @@ transient skipInit global unit graphics
 		
 		for input.internalUsers if .
 			.videoElementIndex = 0
-		drawItems
+		drawItems items
 		drawMargins
 		for input.internalUsers as user if user
 			for user.videoElementIndex to user.videoElements.length
 				PeerNetwork.removeVideoElement user.videoElements[.]
 			user.videoElements.setLength user.videoElementIndex
 			PeerNetwork.setAudioMuted user.audioElement, muted:core.muteInvisibleUsers and user.videoElementIndex == 0
-		
-	private drawItems
+
+	internal drawDebugInfoItems
+		drawItems debugInfoItems	
+	
+	private drawItems: DisplayItem[] items
 		core.displayItems = items.length
 		gizmo.tick
 		if drawingOrder == FirstDrawnWillBeInFront
@@ -368,7 +383,7 @@ transient skipInit global unit graphics
 		graphics.context.globalAlpha = 1
 				
 	internal isVisibleFor: Player[] visibleFor
-		if(Platform.fastForward) return false
+		if(Platform.fastForward && !isDrawingDebugInfo) return false
 		// Use currentlyVisibleFor when visibleFor is null or [null]
 		let effectiveVisibleFor = visibleFor and (visibleFor.length != 1 or visibleFor[0]) ? visibleFor : currentlyVisibleFor
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
@@ -460,7 +475,7 @@ transient skipInit global unit graphics
 			if(factor > 1) { sizeX *= factor; sizeY *= factor }
 			let halfSizeX = Math.round(sizeX*.5)
 			let halfSizeY = Math.round(sizeY*.5)
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
@@ -509,7 +524,7 @@ transient skipInit global unit graphics
 				if(flipX || flipY) matrix.scale(new Vector2(flipX ? -1:1, flipY ? -1:1	))
 				let halfSizeX = Math.round(sizeX*.5)
 				let halfSizeY = Math.round(sizeY*.5)
-				graphics.items.push(new DisplayImage(
+				graphics.add(new DisplayImage(
 					matrix,
 					-halfSizeX,
 					-halfSizeY,
@@ -653,7 +668,7 @@ transient skipInit global unit graphics
 			let sizeY = size.y || f.h
 			let x = align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX
 			let y = valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				x,
 				y,
@@ -666,7 +681,7 @@ transient skipInit global unit graphics
 				f.x1, f.y1, leftSlice, f.h,
 				color
 			))
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				x + scaledLeftSlice,
 				y,
@@ -679,7 +694,7 @@ transient skipInit global unit graphics
 				f.x1+leftSlice, f.y1, f.w-leftSlice-rightSlice, f.h,
 				color
 			))
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				x + (sizeX-scaledRightSlice),
 				y,
@@ -1179,7 +1194,7 @@ transient skipInit global unit graphics
 			let sizeY = size.y || size.x
 			let halfSizeX = Math.round(sizeX*.5)
 			let halfSizeY = Math.round(sizeY*.5)
-			graphics.items.push(new DisplayRectangle(
+			graphics.add(new DisplayRectangle(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
@@ -1214,7 +1229,7 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
-			graphics.items.push(new DisplayRoundedRectangle(
+			graphics.add(new DisplayRoundedRectangle(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
@@ -1265,7 +1280,7 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x, sizeY = size.y || size.x
 			let effectiveColor = color || !outlineColor ? color || graphics.currentColor : null
-			graphics.items.push(new DisplayCircle(
+			graphics.add(new DisplayCircle(
 				graphics.totalMatrix, 
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
@@ -1298,7 +1313,7 @@ transient skipInit global unit graphics
 		                     implicit int layer = 0              // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
-			graphics.items.push(new DisplayLine(
+			graphics.add(new DisplayLine(
 				graphics.totalMatrix,
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
@@ -1327,7 +1342,7 @@ transient skipInit global unit graphics
 		                      implicit int layer = 0              // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
-			graphics.items.push(new DisplayPolygon(
+			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
@@ -1399,7 +1414,7 @@ transient skipInit global unit graphics
 		                        implicit int layer = 0              // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
-			graphics.items.push(new DisplayPolygon(
+			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
@@ -1489,7 +1504,7 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				position.x - sizeX/2,
 				position.y - sizeY/2,
@@ -1524,7 +1539,7 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				position.x - sizeX/2,
 				position.y - sizeY/2,
@@ -1561,7 +1576,7 @@ transient skipInit global unit graphics
 		if(texture?.isAvailable() && graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
-			graphics.items.push(new DisplayImage(
+			graphics.add(new DisplayImage(
 				graphics.totalMatrix,
 				position.x - sizeX/2,
 				position.y - sizeY/2,
@@ -1593,7 +1608,7 @@ transient skipInit global unit graphics
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
-			graphics.items.push(new DisplayRectangle(
+			graphics.add(new DisplayRectangle(
 				graphics.totalMatrix,
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,

@@ -129,6 +129,7 @@ internal transient skipInit unit core
 		checksums.clear
 		lastChecksumFrame = -1
 		audio.stop
+		graphics.clearDebugInfo
 		initAll
 		
 		if !startInLobby or testLobby
@@ -224,6 +225,8 @@ internal transient skipInit unit core
 				for input.internalUsers as user
 					user?.clearEvent
 				tick draw:true
+
+			graphics.drawDebugInfoItems
 		catch
 			onError .
 		finally
@@ -933,13 +936,15 @@ global transient unit System
 	global js void print: logstring text	// The text, variables or expressions to print
 	                      PrintIcon type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
 						  Color color = null	// The color to use when showing the message in the console or the event stream panel
-		                  void(bool isSelected) drawDebugInformation = null	// A function that will be called to draw debug information. The isSelected parameter indicates whether this message is currently selected in the event stream panel, which can be used to hightlight the information or draw more detailed information.
+		                  void() drawDebugInfo = null	// A function that will be called to draw debug information.
 		                  SourceCodeLocation location
 		if((core.runningTest || Platform.isDebug) && location) {
 			if(color) console.log(`%c${text}`, `color: ${color.hex}`)
 			else      console.log(text)
-			if(drawDebugInformation != null && (core.interrruptAtOutputIndex == -1 ||core.outputIndex <= core.interrruptAtOutputIndex)) {
-				drawDebugInformation(core.outputIndex == core.interrruptAtOutputIndex)
+			if(drawDebugInfo != null && core.outputIndex == core.interrruptAtOutputIndex) {
+				graphics.isDrawingDebugInfo = true
+				drawDebugInfo()
+				graphics.isDrawingDebugInfo = false
 			}
 			core.addOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
