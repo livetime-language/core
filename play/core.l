@@ -267,7 +267,7 @@ internal transient skipInit unit core
 		finally		
 			isPremiere = true
 			runningTest = false
-			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, frame, frames})
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, frame, frames, playMode:Platform.playMode})
 			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
 
 	bool runningTest
@@ -1248,6 +1248,9 @@ tests
 	                          dynamic actual
 		                      dynamic expected
 				              SourceCodeLocation location
+		if core.interrruptAtOutputIndex != -1 or core.targetFrame != -1
+			core.outputIndex++
+			return
 		string actualString, expectedString, result
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()
@@ -1265,6 +1268,9 @@ tests
 	internal expectToBeTrue: string expressionString
 	                         dynamic actual
 				             SourceCodeLocation location
+		if core.interrruptAtOutputIndex != -1 or core.targetFrame != -1
+			core.outputIndex++
+			return
 		string actualString
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()
