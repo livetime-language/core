@@ -801,10 +801,10 @@ class List<T>
 			this.push(item)
 		
 	// Add each item from a list if it isn't already in there
-	importance:5 js void ensure: stored T[] items // The list of items to add
-		for(let it of items)
-			if(!this.includes(it))
-				this.push(it)
+	importance:5 ensure: T[] items // The list of items to add
+		for items
+			if not contains .
+				add .
 
 	// ------------------------------------------- Remove -------------------------------------------
 		
