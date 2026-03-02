@@ -282,7 +282,7 @@ transient skipInit unit Platform
 		if(Platform.isDebug) _sendStringToEditor(message)
 
 	sendFrameAndPlayMode: int frame = core.frame, int frames = core.frames, PlayMode playMode = Platform.playMode
-		if Platform.isDebug then sendStringToEditor("#{frame}|{frames}|{playMode}")
+		if Platform.isDebug then sendStringToEditor("#{frame}|{frames}|{(int)playMode}")
 		
 	sendFinished
 		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:Platform.playMode, output:core.output})
