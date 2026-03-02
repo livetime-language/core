@@ -1362,10 +1362,12 @@ transient skipInit global unit graphics
 	// Draw an arrow on the screen.
 	global importance:4 drawArrow: Vector2 from	// The point to start the arrow from
 	                               nocolon Vector2 to	// The point to draw the arrow to
-								   float width = 16
-								   float arrowHeadWidth = 0
-								   float arrowHeadLength = 0
+								   float width = 18	// The width of the arrow line
+								   float arrowHeadWidth = 0	// The width of the arrow head
+								   float arrowHeadLength = 0	// The length of the arrow head
 		                           Color color = null	// The color of the arrow
+		                           Color outlineColor = null	// The color of the outline around the arrow
+		                           outlineWidth = 0	// The width of the outline around the arrow
 		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
 		                           implicit int layer = 0	// Higher layers are drawn in front of lower layers
 		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
@@ -1392,7 +1394,7 @@ transient skipInit global unit graphics
 			headBase - normal * halfLineWidth
 			from - normal * halfLineWidth
 		]
-		drawPolygon points, color:color, visibleFor:visibleFor, layer:layer, alpha:alpha
+		drawPolygon points, color:color, outlineColor, outlineWidth, visibleFor:visibleFor, layer:layer, alpha:alpha
 	
 	
 	// ------------------------------------------------------- Polygon -------------------------------------------------------
