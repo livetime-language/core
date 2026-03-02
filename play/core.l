@@ -944,6 +944,12 @@ global transient unit System
 			core.log(text);
 		}
 
+	global debug: void() drawDebugInfo
+		if Platform.isDebug
+			graphics.isDrawingDebugInfo = true
+			drawDebugInfo()
+			graphics.isDrawingDebugInfo = false
+
 internal class StatisticsGraph
 	int userIndex = -1
 	int set
