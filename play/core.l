@@ -5,7 +5,7 @@ enum SendInputsMode: None, Peer, Server
 internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
-	bool enabledMilestones = true
+	bool enabledMilestones = false
 	int milestoneInterval = 1800
 	int smoothStrength = 90
 	bool smoothTouchPosition = true
@@ -113,6 +113,8 @@ internal transient skipInit unit core
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
 		outputIndex = 0
+		if targetFrame == frame-1 and interrruptAtOutputIndex == -1
+			output.clear
 		players.clear
 		input.playersById.clear
 		input.host = null
