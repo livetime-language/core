@@ -30,14 +30,14 @@ global unit fx
 		})
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: float variable = 0   // The variable to animate
+	importance:0 inline animateVariable: float variable = 0   // The variable to animate
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		interpolate variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: float variable = 0   // The variable to animate
+	importance:0 inline animateVariable: float variable = 0   // The variable to animate
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0       // The delay before the animation starts in milliseconds
 		                   float duration = 300  // The duration of the animation in milliseconds
@@ -45,14 +45,14 @@ global unit fx
 		interpolate variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: Vector2 variable    // The variable to animate
+	importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		interpolate variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: Vector2 variable    // The variable to animate
+	importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
@@ -60,7 +60,7 @@ global unit fx
 		interpolate variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: Color variable      // The variable to animate
+	importance:0 inline animateVariable: Color variable      // The variable to animate
 		                   Color to            // The target color to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
