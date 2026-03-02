@@ -298,6 +298,9 @@ tests
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
 
+		// Assert
+		expect app.grid[1,0].player == players[1]
+
 # Write extensive print statements
 Write extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action. For example:
 
