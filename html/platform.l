@@ -322,6 +322,9 @@ skipInit global unit Platform
 			else?.(e.message)
 		}
 		
+	inline js void openPrintDialog
+		window.print()
+		
 enum lowercase string DataTransferItemKind: String, File
 		
 interface DataTransferItem
