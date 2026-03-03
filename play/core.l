@@ -220,11 +220,12 @@ internal transient skipInit unit core
 			catch
 				onError .
 
-			// If we interrupted in the middle of a tick, we draw the current state without events
+			// If we interrupted in the middle of a tick, we draw the current state without events and animations
 			if frame <= targetFrame
 				Platform.fastForward = false
 				for input.internalUsers as user
 					user?.clearEvent
+				runningAnimations.clear
 				tick draw:true
 
 			graphics.finishDrawingDebugInfo
@@ -253,11 +254,12 @@ internal transient skipInit unit core
 			catch
 				onError .
 
-			// We draw the current state without events
+			// We draw the current state without events and animations
 			// We don't draw in the test function since we don't know when we are on the final frame
 			Platform.fastForward = false
 			for input.internalUsers as user
 				user?.clearEvent
+			runningAnimations.clear
 			tick draw:true
 			graphics.finishDrawingDebugInfo
 		catch

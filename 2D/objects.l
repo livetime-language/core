@@ -110,7 +110,7 @@ class Object
 		Vector2 startPosition = position
 		
 		// When chaining serveral move animations together, continue where the last one left off
-		MoveAnimation moveAnimation = cast fx.animations.find backwards .type == MoveAnimation and .object == this
+		MoveAnimation moveAnimation = cast runningAnimations.find backwards .type == MoveAnimation and .object == this
 			startPosition = moveAnimation.startValue + moveAnimation.delta
 
 		let delta = pos - startPosition
@@ -126,7 +126,7 @@ class Object
 		Vector2 endSize = size.y ? size : {size.x, size.x * startSize.y/startSize.x}
 		
 		// When chaining serveral move animations together, continue where the last one left off
-		MoveAnimation moveAnimation = cast fx.animations.find backwards .type == MoveAnimation and .object == this
+		MoveAnimation moveAnimation = cast runningAnimations.find backwards .type == MoveAnimation and .object == this
 			startPosition = moveAnimation.startValue + moveAnimation.delta
 
 		let startTime = fx.endOfPrevAnimation(this)+delay
@@ -167,7 +167,7 @@ class Object
 		
 	// 	// When chaining serveral fade animations together, continue where the last one left off
 	// 	// If the last fade animation is already a fade out, don't do anything
-	// 	FadeAnimation lastFadeAnimation = cast fx.animations.find backwards .type == FadeAnimation and .object == this
+	// 	FadeAnimation lastFadeAnimation = cast runningAnimations.find backwards .type == FadeAnimation and .object == this
 	// 		if lastFadeAnimation.startValue + lastFadeAnimation.delta <= 0: 
 	// 			return
 	// 		startValue = lastFadeAnimation.startValue + lastFadeAnimation.delta

@@ -1,6 +1,5 @@
 global unit fx
-	internal Animation[] animations
-	importance:4 global bool runningAnimations => animations.length > 0
+	global Animation[] runningAnimations
 
 	importance:4
 	global animate: float delay = 0	// Start animation after this time in milliseconds
@@ -17,7 +16,7 @@ global unit fx
 
 	importance:4
 	global whenAllAnimationsFinished: stored void() do
-		if animations.length == 0
+		if runningAnimations.length == 0
 			do()
 		else
 			whenAllAnimationsFinishedCallbacks.add do
@@ -27,28 +26,28 @@ global unit fx
 		add DelayAnimation startTime:Time.now+time, do
 				
 	add: Animation animation
-		animations.add animation
+		runningAnimations.add animation
 		
 	removeForObject: Object object
-		animations.removeWhere.object == object
+		runningAnimations.removeWhere.object == object
 		
 	endOfPrevAnimation: Object object
-		let lastAnimation = animations.last
+		let lastAnimation = runningAnimations.last
 		if lastAnimation?.object == object
 			return math.max(Time.now, lastAnimation.startTime + lastAnimation.duration)
 		return Time.now
 		
 	internal tick
-		if animations.length == 0 then return
+		if runningAnimations.length == 0 then return
 		let now = Time.now
-		for animations <-
+		for runningAnimations <-
 			if now >= .startTime
 				float time = now - .startTime
 				float progress = .duration ? time/.duration : 1
-				if progress >= 1 then progress = 1; animations.removeAt i
+				if progress >= 1 then progress = 1; runningAnimations.removeAt i
 				.tick progress, time
 
-		if animations.length == 0
+		if runningAnimations.length == 0
 			for whenAllAnimationsFinishedCallbacks as callback
 				callback()
 			whenAllAnimationsFinishedCallbacks.clear
