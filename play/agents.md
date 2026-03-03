@@ -29,12 +29,13 @@ The background is black by default.
 # Library Source Code
 When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"
 
-lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
-lib/core/js/time.l	Time Library (Time, Date, etc).
-lib/core/2D/graphics.l	Graphics Library (drawImage, drawRectangle, drawCircle, etc).
-lib/core/2D/geometry.l	Geometry Library (Vector2, IntVector2, Matrix, etc)
-lib/core/play/sound.l	Sound Library (playSound, setVolume, etc)
-lib/core/play/tests.l	Unit Test Framework (click, drag, moveLeftStickTo, wait, expect, etc)
+lib/core/js/base.l	int, float, string, List, Grid, Dictionary, ...
+lib/core/js/time.l	Time, Date, ...
+lib/core/2D/graphics.l	drawImage, drawText, drawRectangle, drawCircle, ...
+lib/core/2D/geometry.l	Vector2, IntVector2, Matrix, ...
+lib/core/2D/animation.l	animate, delay, whenAnimationsFinished, ...
+lib/core/play/sound.l	playSound, setVolume, ...
+lib/core/play/tests.l	click, drag, moveLeftStickTo, wait, waitForAnimationsToFinish, expect, ...
 
 # Basics of the LiveTime programming language
 enum State
@@ -176,7 +177,7 @@ app
 		let c =  -1 remainder 100	// c = -1
 
 		// Print: Use type:Action for actions performed by a player
-		print "Piece placed at {cell.gridPos} by {currentPlayer}", type:Action
+		print "Placed piece at {cell.gridPos} by {currentPlayer}", type:Action
 
 		// Print: Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
 		print "Game won with {winner.score} points by {winner}", type:Reaction
@@ -291,10 +292,12 @@ tests
 		// Simulate moving the left stick to {1,0} (right) by player 0
 		moveLeftStickTo {1,0} by players[0]
 
-		// If you need to wait for animations to finish before continuing, use wait.
 		// Wait for 15 ticks. At 30 ticks per second, this corresponds to 500 milliseconds.
 		wait 15 ticks
 
+		// Wait for all animation to finish
+		waitForAnimationsToFinish
+		
 		// Use printWhatIsOnScreen to check if the what is shown on screen is correct
 		printWhatIsOnScreen
 
@@ -386,7 +389,7 @@ app
 						
 	finishGame
 		Player winner = players.withMax.score
-		ParticleSystem(position:winner.pos)
+		ParticleSystem(position:winner.videoPos)
 		print "Game won with {winner.score} points by {winner}", type:Reaction
 
 struct IntVector2
@@ -416,27 +419,28 @@ class Cell
 		
 // The Player class automatically has the following member variables: index, color and score. Do not declare them again.
 class Player
-	IntVector2 dir = IntVector2.horizontalDirections[index]
-	Vector2 pos = dir * {690,265}
+	Vector2 videoPos = IntVector2.horizontalDirections[index] * {690,265}
+	int capturedPiecesCount
 		
 	tick
 		// You must draw the video feed of each player.
 		float radius = 255
-		drawCircle pos, size:radius*2, outlineColor:color, outlineWidth:12
-		drawVideo this, pos, size:radius*2-75, shape:Circle
+		drawCircle videoPos, size:radius*2, outlineColor:color, outlineWidth:12
+		drawVideo this, videoPos, size:radius*2-75, shape:Circle
 		
-		// Draw the score
+		// Draw captured pieces count
 		// When drawing the player's UI, we need to make sure it doesn't overlap with the board
-		Vector2 scorePos = pos + math.getVectorForAngle(-45°)*radius
+		Vector2 scorePos = videoPos + math.getVectorForAngle(-45°)*radius
 		drawCircle scorePos, color:Black, outlineColor:color, size:60
-		drawText score, scorePos, size:31
+		drawText capturedPiecesCount, scorePos, size:31
 
 	placePiece: Cell cell
 		if cell.player then return
 		cell.player = this
 		print "Piece placed at {cell.gridPos} by {this}", type:Action
 		captureSurroundedPieces cell.gridPos
-		app.startTurn
+		whenAnimationsFinished
+			app.startTurn
 				
 	captureSurroundedPieces: IntVector2 originPos
 		for IntVector2.primaryDirections as dir
@@ -446,7 +450,18 @@ class Player
 			if neighborCell and neighborCell.player and neighborCell.player != this
 				Cell[] surroundesCells = collectSurroundesCells neighborPos
 					surroundesCells.each.player = null
-					print "{surroundesCells.length} cells captued by {this}: {surroundesCells.joinToString.gridPos.toString}", type:Reaction
+					print "{surroundesCells.length} pieces captued by {this}: {surroundesCells.joinToString.gridPos.toString}", type:Reaction
+					
+					// Animate the captured pieces to the player's video feed
+					animate duration:500 milliseconds
+						// Called on every tick of the animation, passing in the progress ranging from 0 to 1
+						for surroundesCells as cell
+							let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
+							drawCircle pos, size:60, color:this.color
+					then
+						// Called when the animation finished
+						capturedPiecesCount += surroundesCells.length
+						print "Finished animation", type:Reaction
 	
 	// We can specify the return type in front of the name of a function
 	Cell[] collectSurroundesCells: IntVector2 originPos
