@@ -46,17 +46,17 @@ enum State
 // Classes have uppercase names. All members are public by default.
 // A contructor is created automatically
 class Document
-	string id
-	float created
-	State state
+	string	id
+	float	created
+	State	state
 
 // Defines the static class app, the main class of every application.
 // Static classes have lowercase names. Their members are public and static by default.
 // You can access their members from anywhere like this: app.primaryColor, app.start, app.tick, ...
 app
-	Color primaryColor = #0000ff
-	Document[] documents
-	Player currentPlayer
+	const Color	primaryColor = #0000ff
+	Document[]	documents
+	Player	currentPlayer
 
 	// Defines the member function start of the class app. 
 	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
@@ -192,8 +192,9 @@ app
 		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.color
 	
 app
-	Player currentPlayer
-	Item[] items
+	Player	currentPlayer
+	Item[]	items
+
 	start
 		items.add {}
 
@@ -201,10 +202,9 @@ app
 		items.each.tick
 		players.each.tick
 
-
 // Handle input
 app
-	Item[] items
+	Item[]	items
 
 	onTouchHover: Touch touch
 		for items as item
@@ -234,9 +234,9 @@ app
 		players.each.tick
 
 class Player
-	string inputText
-	Vector2 pos
-	const float speed = 8
+	const float	speed = 8
+	string	inputText
+	Vector2	pos
 
 	onKeyDown: Key key, string character
 		if character	then inputText += character
@@ -328,18 +328,18 @@ app
 	// The screen size is always {1920, 1080}.
 	// All LiveTime games are online multiplayer games. You must show the video feed of each player on the screen.
 	// We display the videos at the left and right side of the screen, leaving a usable area of about {700,700} in the middle of the screen.
-	const Vector2 totalBoardSize = {700,700}
+	const Vector2	totalBoardSize	= {700,700}
 	
 	// We create a object of type Grid (a 2D array) with a size of 9x9 to hold the cells of type Cell
-	Cell[9, 9] grid
+	Cell[9, 9]	grid
 	
 	// To correctly center the board, we need to offset it by cellSize * (grid.size - {1,1}) / -2
 	// Don't make the mistake of multiplying by cellCount / -2
-	const Vector2 cellSize = totalBoardSize / grid.size
-	const Vector2 cellOffset = cellSize * (grid.size - {1,1}) / -2
+	const Vector2	cellSize	= totalBoardSize / grid.size
+	const Vector2	cellOffset	= cellSize * (grid.size - {1,1}) / -2
 
-	Player currentPlayer
-	Phase phase = PlacePiece
+	Player	currentPlayer
+	Phase	phase = PlacePiece
 	
 	// Called when the app starts
 	start
@@ -399,10 +399,10 @@ struct Vector2
 	toGridPos => ((this - app.cellOffset) / app.cellSize).round
 		
 class Cell
-	IntVector2 gridPos
-	Player player
-	int liberties
-	bool visited
+	IntVector2	gridPos
+	Player	player
+	int	liberties
+	bool	visited
 
 	tick
 		Vector2 screenPos = gridPos.toScreenPos
@@ -419,8 +419,8 @@ class Cell
 		
 // The Player class automatically has the following member variables: playerIndex, playerColor, playerDarkColor and playerScore. Do not declare them again.
 class Player
-	Vector2 videoPos = IntVector2.horizontalDirections[playerIndex] * {690,265}
-	int capturedPiecesCount
+	Vector2	videoPos = IntVector2.horizontalDirections[playerIndex] * {690,265}
+	int	capturedPiecesCount
 		
 	tick
 		// You must draw the video feed of each player.
@@ -450,34 +450,33 @@ class Player
 			Player opponent = neighborCell.player
 			
 			if neighborCell and opponent and opponent != this
-				Cell[] surroundesCells = collectSurroundesCells neighborPos
-					surroundesCells.each.player = null
-					print "{surroundesCells.length} pieces captued by {this}: {surroundesCells.joinToString.gridPos.toString}", type:Reaction
+				Cell[] surroundedCells = collectsurroundedCells neighborPos
+					surroundedCells.each.player = null
+					print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.joinToString.gridPos.toString}", type:Reaction
 					
 					// Animate the captured pieces to the player's video feed
 					animate duration:500 milliseconds
 						// Called on every tick of the animation, passing in the progress ranging from 0 to 1
-						for surroundesCells as cell
+						for surroundedCells as cell
 							let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
 							drawCircle pos, size:60, color:opponent.playerColor
 					then
 						// Called when the animation finished
-						capturedPiecesCount += surroundesCells.length
+						capturedPiecesCount += surroundedCells.length
 						print "Finished animation", type:Reaction
 	
 	// We can specify the return type in front of the name of a function
-	Cell[] collectSurroundesCells: IntVector2 originPos
+	Cell[] collectsurroundedCells: IntVector2 originPos
 		IntVector2[] queue = [ originPos ]
 		Cell[] surroundedCells = [ app.grid[originPos] ]
 		
 		// For each player, set the visited variable to false
 		app.grid.each.visited = false
+		surroundedCells[0].visited = true
 		
 		while queue
 			IntVector2 pos = queue.pop
 			Cell cell = app.grid[pos]
-			surroundedCells.add cell
-			cell.visited = true
 			
 			for IntVector2.primaryDirections as dir
 				IntVector2 neighborPos = pos + dir
@@ -486,6 +485,8 @@ class Player
 					if neighborCell.player == null
 						return []
 					if neighborCell.player != this
+						surroundedCells.add neighborCell
+						neighborCell.visited = true
 						queue.add neighborPos
 						
 		return surroundedCells
