@@ -1186,7 +1186,7 @@ class List<T>
 
 	// Sort the list by a given expression in descending order
 	// Example:
-	//    let bestPlayers = (players.where.isAlive).orderByDescending.score
+	//    let bestPlayers = (players.where.isAlive).orderByDescending.playerScore
 	importance:5
 	T[] orderByDescending: float(T it) expression // First order by this expression
 		return this.sort(expression(b) - expression(a))
@@ -1247,7 +1247,7 @@ class List<T>
 		
 	// Return a list that contains the selected field or expression for each item
 	// Example: Get a list of all player names
-	//     let playerNames = players.select.name
+	//     let playerNames = players.select.playerName
 	importance:4 inline js 
 	TValue[] select: TValue(
 		                 T it,  // The current item of the list
@@ -1257,7 +1257,7 @@ class List<T>
 
 	// Return a list of all items that meet a specific condition
 	// Example: Get all players with more than 0 health, ordered by their score
-	//     let healthyPlayers = (players.where.health > 0).orderByDescending.score
+	//     let healthyPlayers = (players.where.health > 0).orderByDescending.playerScore
 	// Example: Get all active enemies in a random order
 	//    let activeEnemies = (enemies.where.isActive).shuffle
 	importance:4 inline js 
@@ -1276,7 +1276,7 @@ class List<T>
 	// Example: Find the name of the player with a specific id
 	//     app
 	//         string getName: int id
-	//             return (players.find.id == id)?.name
+	//             return (players.find.id == id)?.playerName
 	importance:5 inline js T find: bool(T it) condition // The condition to check
 		this.find(condition)
 		

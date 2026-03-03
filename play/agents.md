@@ -362,7 +362,7 @@ app
 		currentPlayer = players next currentPlayer
 
 		// Always print the start of the turn in the player's color!
-		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.color
+		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.playerColor
 
 	// Called when a player touches the screen
 	onTouchDown: Touch touch
@@ -388,9 +388,9 @@ app
 		players.each.tick
 						
 	finishGame
-		Player winner = players.withMax.score
+		Player winner = players.withMax.playerScore
 		ParticleSystem(position:winner.videoPos)
-		print "Game won with {winner.score} points by {winner}", type:Reaction
+		print "Game won with {winner.playerScore} points by {winner}", type:Reaction
 
 struct IntVector2
 	toScreenPos => app.cellOffset + this * app.cellSize
@@ -410,21 +410,22 @@ class Cell
 		if player
 			// Draw a circle with its center at screenPos
 			// The background is black in LiveTime, so we need to make sure we use colors that are different from black.
-			drawCircle screenPos, size:60, color:player.color
+			drawCircle screenPos, size:60, color:player.playerColor
 
 			// Draw text with its center at screenPos
 			drawText "{liberties}", screenPos, size:30					
 		else
 			drawCircle screenPos, size:8
 		
-// The Player class automatically has the following member variables: index, color and score. Do not declare them again.
+// The Player class automatically has the following member variables: playerIndex, playerColor, playerDarkColor and playerScore. Do not declare them again.
 class Player
-	Vector2 videoPos = IntVector2.horizontalDirections[index] * {690,265}
+	Vector2 videoPos = IntVector2.horizontalDirections[playerIndex] * {690,265}
 	int capturedPiecesCount
 		
 	tick
 		// You must draw the video feed of each player.
 		float radius = 255
+		Color color = app.currentPlayer == this ? playerColor : playerDarkColor
 		drawCircle videoPos, size:radius*2, outlineColor:color, outlineWidth:12
 		drawVideo this, videoPos, size:radius*2-75, shape:Circle
 		
@@ -446,8 +447,9 @@ class Player
 		for IntVector2.primaryDirections as dir
 			IntVector2 neighborPos = originPos + dir
 			Cell neighborCell = app.grid[neighborPos]
+			Player opponent = neighborCell.player
 			
-			if neighborCell and neighborCell.player and neighborCell.player != this
+			if neighborCell and opponent and opponent != this
 				Cell[] surroundesCells = collectSurroundesCells neighborPos
 					surroundesCells.each.player = null
 					print "{surroundesCells.length} pieces captued by {this}: {surroundesCells.joinToString.gridPos.toString}", type:Reaction
@@ -457,7 +459,7 @@ class Player
 						// Called on every tick of the animation, passing in the progress ranging from 0 to 1
 						for surroundesCells as cell
 							let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
-							drawCircle pos, size:60, color:this.color
+							drawCircle pos, size:60, color:opponent.playerColor
 					then
 						// Called when the animation finished
 						capturedPiecesCount += surroundesCells.length

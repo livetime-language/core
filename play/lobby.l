@@ -87,17 +87,17 @@ unit lobby
 			float halfVideoHeight = videoWidth*3/8
 			
 			for players as player, playerIndex
-				Vector2 pos = {offset+videoWidth*.index, 0}
+				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				onTouchDown position:pos size:{videoWidth, videoWidth*3/4}
 					cyclePlayer player
 					
 			for players as player, playerIndex
-				Vector2 pos = {offset+videoWidth*.index, 0}
+				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				drawVideo ., pos, videoWidth
 				
 				// Start button
 				let text = not .isReadyInLobby ? "START" : Loca.language == German ? "Ich bin bereit" : "I'm ready"
-				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.color, enabled:!.isReadyInLobby, clickableBy:player
+				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.playerColor, enabled:!.isReadyInLobby, clickableBy:player
 					if enableFullscreen then Platform.setFullscreen true forPlayer:touch.by
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
@@ -146,7 +146,7 @@ unit lobby
 		
 	setupFields: Player newHost
 		input.host = newHost
-		this.showNameIndex = host.index + 1
+		this.showNameIndex = host.playerIndex + 1
 		Framework.clear
 		fields.clear
 		if not editNames
@@ -174,23 +174,23 @@ unit lobby
 		// playSound LobbyImpact
 		
 	createField: Player player, implicit Player[] visibleFor = null
-		let field = LobbyTextField(text:player.name, player, visibleFor, editableBy:host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
+		let field = LobbyTextField(text:player.playerName, player, visibleFor, editableBy:host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
 		fields.add field
 		return field
 		
 	setPlayerName: Player player, string name
-		player.name = name.capitalizeWords
+		player.playerName = name.capitalizeWords
 		let user = input.internalUsers[player.id]
-			user.name = player.name
+			user.name = player.playerName
 		if player.id == input.localUser.id
-			core.account.name = player.name
+			core.account.name = player.playerName
 			Platform.setLocalStorageObject("user", core.account)
 	
 	cyclePlayer: Player player
-		watch "Cycle color {player.index}"
+		watch "Cycle color {player.playerIndex}"
 		players.moveToBack player
 		input.updatePlayers
-		player.colorPreferences = [player.index]
+		player.colorPreferences = [player.playerIndex]
 	
 	tickSettings
 		for players as player
@@ -204,7 +204,7 @@ unit lobby
 					drawImage cameraIcon, pos
 					forPositions 10 start:pos+{36} delta:{0,26}
 						let device = PeerNetwork.devices.videoInput[i]
-							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.videoInputId == device.deviceId ? player.color : White
+							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.videoInputId == device.deviceId ? player.playerColor : White
 						onTouchDown pos+{200,0}, size:{400,30} by player
 							PeerNetwork.setVideoInput device?.deviceId, player
 					pos += {450}
@@ -212,7 +212,7 @@ unit lobby
 					drawImage microphoneIcon, pos
 					forPositions 10 start:pos+{36} delta:{0,26}
 						let device = PeerNetwork.devices.audioInput[i]
-							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioInputId == device.deviceId ? player.color : White
+							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioInputId == device.deviceId ? player.playerColor : White
 						onTouchDown pos+{200,0}, size:{400,30} by player
 							PeerNetwork.setAudioInput device?.deviceId, player
 					pos += {550}
@@ -221,7 +221,7 @@ unit lobby
 						drawImage speakerIcon, pos
 					forPositions 10 start:pos+{36} delta:{0,26}
 						let device = PeerNetwork.devices.audioOutput[i]
-							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioOutputId == device.deviceId ? player.color : White
+							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioOutputId == device.deviceId ? player.playerColor : White
 						onTouchDown pos+{200,0}, size:{400,30} by player
 							PeerNetwork.setAudioOutput device?.deviceId, player
 						

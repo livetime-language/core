@@ -1164,8 +1164,8 @@ transient skipInit global unit graphics
 			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
 			if accentImage
 				if not accentColor
-					if effectiveClickableBy and effectiveClickableBy[0] then accentColor = effectiveClickableBy[0].color
-					else                                                 accentColor = input.localPlayer.color
+					if effectiveClickableBy and effectiveClickableBy[0] then accentColor = effectiveClickableBy[0].playerColor
+					else                                                 accentColor = input.localPlayer.playerColor
 				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:effectiveLayer+1, effectiveAlpha, location, color:accentColor
 			if image then drawImage image, position, frame, effectiveSize, visibleFor, layer:effectiveLayer, effectiveAlpha, location
 			
@@ -1475,7 +1475,7 @@ transient skipInit global unit graphics
 		if mode == LocalAndRemote or mode == WhenDown
 		or (player.id == input.localUser.id and mode == Local)
 		or (player.id != input.localUser.id and mode == Remote)
-			if not color then color = player.color
+			if not color then color = player.playerColor
 			for player.touches
 				System.log "% drawPointer isDown:{.isDown} position:{.position}"
 				if mode != WhenDown or .isDown
@@ -2219,7 +2219,7 @@ awardScreen
 			let size = {720, 540}
 			forPositions players, grid:{2,2}, delta:size
 				drawVideo . position:pos, size
-				drawText .score, pos * {2.13, 1.8}, font:ByTheWay
+				drawText .playerScore, pos * {2.13, 1.8}, font:ByTheWay
 				
 // --------------------------------------------- Display Item ---------------------------------------------
 

@@ -1120,7 +1120,7 @@ skipInit global unit input
 					.state = true
 	
 	internal #miyoo updatePlayers
-		players.each.index = i
+		players.each.playerIndex = i
 			
 		GameController c = players[0].gameController
 		c.right.assign "→"     DPadRight
@@ -1141,8 +1141,8 @@ skipInit global unit input
 	internal #keyboard updatePlayers
 		// players.orderBy.id
 		for players
-			.index = i
-			// .color = graphics.defaultColors[i]
+			.playerIndex = i
+			// .playerColor = graphics.defaultColors[i]
 			// internalUsers[.id].index = i
 			
 		if core.mode == Local

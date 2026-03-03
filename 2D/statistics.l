@@ -35,7 +35,7 @@ internal unit networkVisualizer
 	internal draw
 		if core.simulateInputsForTesting
 			for players as player
-				drawCircle {1110+player.index*20, -540+posForPlayer[player.index]}, size:20, color:.color
+				drawCircle {1110+player.playerIndex*20, -540+posForPlayer[player.playerIndex]}, size:20, color:.playerColor
 		
 		// // AheadMin
 		// let minY = 510 - getHeightForFrame(core.frame-core.aheadMin+1)
@@ -47,10 +47,10 @@ internal unit networkVisualizer
 			let internaluser = input.internalUsers[.id]
 				// BufferFrames
 				let bufferY = 510 - getHeightForFrame(core.frame-internaluser.bufferFrames+1)
-				drawLine {960,bufferY} to {1100,bufferY} width:3, color:.color
-				drawText cast internaluser.bufferFrames, {1110, bufferY}, size:20, color:.color, align:Left
+				drawLine {960,bufferY} to {1100,bufferY} width:3, color:.playerColor
+				drawText cast internaluser.bufferFrames, {1110, bufferY}, size:20, color:.playerColor, align:Left
 		
-				drawRectangle {984+player.index*32, 510} size:{24, getHeightForFrame(internaluser.inputFrame)}, valign:Bottom, color:.color
+				drawRectangle {984+player.playerIndex*32, 510} size:{24, getHeightForFrame(internaluser.inputFrame)}, valign:Bottom, color:.playerColor
 		
 		// Replay from
 		if core.replayFrom != -1

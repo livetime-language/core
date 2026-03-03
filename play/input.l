@@ -88,26 +88,28 @@ internal transient class InternalUser
 		smoothFrame = frame - bufferFrames		
 		
 priority class Player
-	string _id             // User account id
-	Language language
-	string email
-	string name
-	int[] colorPreferences
+	int	playerIndex	// The index of the player in the players list
+	Color	playerColor	// Use this color to draw an outline around the current player (blue, red, green, yellow by default)
+	Color	playerDarkColor	// Use this colorto draw an outline around players who are not the current player (darker version of playerColor)
+	int	playerScore	// The score that will be shown in the leaderboard
+
+	string	playerName
+	string	playerEmail
+	Language	playerLanguage
+
+	int	id
+	string	_id	// User account id
+	int[]	colorPreferences
 	
-	int id
-	int index
-	Color color, darkColor
-	int score
-	Vector2 pointerPosition
-	
-	internal Player cloneBaseData => {_id, language, email, name, colorPreferences, id, index}
-	toString => name ? "{name} (Player {index})" : "Player {index}"
-	highlightPerspectiveColor => input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.color : this.darkColor
+	internal Player cloneBaseData => {_id, playerLanguage, playerEmail, playerName, colorPreferences, id, playerIndex}
+	toString => playerName ? "{playerName} (Player {playerIndex})" : "Player {playerIndex}"
+	highlightPerspectiveColor => input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.playerColor : this.playerDarkColor
 	
 	// Touch input
 	internal Touch[] touches
 	internal Touch[] downTouches
 	internal bool enableTouch = true
+	Vector2 pointerPosition
 	
 	// Text input
 	internal string textInput
@@ -822,7 +824,7 @@ skipInit global unit input
 				if not player
 					if core.verbose and not internalUser.local then core.log "<{internalUser.id}> Received first message from new user"
 					
-					players.add player = {id:userId, index:players.length}
+					players.add player = {id:userId, playerIndex:players.length}
 					playersById[userId] = player
 					if internalUser.local then localPlayer = player
 					updatePlayers
@@ -927,22 +929,22 @@ skipInit global unit input
 					playersById.clear
 					let availableUsers = clone input.internalUsers
 					for players as player
-						let user = availableUsers.popWhere.name == player.name
-						if not user then user = availableUsers.popWhere.index == player.index
+						let user = availableUsers.popWhere.name == player.playerName
+						if not user then user = availableUsers.popWhere.index == player.playerIndex
 						if not user then availableUsers.pop
 						player.id = user.id
 						
 						user._id = player._id
-						user.index = player.index
-						user.name = player.name
+						user.index = player.playerIndex
+						user.name = player.playerName
 						playersById[player.id] = player
 						
 				else
 				if inputType == Join
 					player._id = internalUser._id = inputs.readString
-					player.language = cast inputs.readInt8
-					player.name = internalUser.name = inputs.readString 
-					player.email = inputs.readString
+					player.playerLanguage = cast inputs.readInt8
+					player.playerName = internalUser.name = inputs.readString 
+					player.playerEmail = inputs.readString
 					string colorPreferencesString = inputs.readString
 					player.colorPreferences = colorPreferencesString.split(",").select.toInt
 	
@@ -1067,7 +1069,7 @@ skipInit global unit input
 
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.referenceStartPosition
-			let playerVariable = "players[{player.index}]"
+			let playerVariable = "players[{player.playerIndex}]"
 			if length < 8
 				core.addOutput "code|click {touch.referenceStartPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
 			else
@@ -1096,9 +1098,9 @@ skipInit global unit input
 	internal updatePlayers
 		players.orderBy.id
 		for players
-			.index = i
-			.color = graphics.defaultColors[i]
-			.darkColor = graphics.darkDefaultColors[i]
+			.playerIndex = i
+			.playerColor = graphics.defaultColors[i]
+			.playerDarkColor = graphics.darkDefaultColors[i]
 			internalUsers[.id].index = i
 			
 		if core.mode == Local and not core.simulateConnection

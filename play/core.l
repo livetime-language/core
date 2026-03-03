@@ -145,7 +145,7 @@ internal transient skipInit unit core
 			// We always recreating players, because developers might have added fields to Player or Touch
 			// By the time we call startApp, all players need to exist
 			for input.internalUsers as internalUser
-				Player user = {id:.id, index:i}
+				Player user = {id:.id, playerIndex:i}
 				input.playersById[.id] = user
 				players.add user
 				
@@ -406,9 +406,9 @@ internal transient skipInit unit core
 				let internalUser = input.internalUsers[.id]
 				if not internalUser.local
 					internalUser.collectStatistics frame
-					statistics.add "input", userIndex:.index, value:frame - internalUser.inputFrame, .color, set:0
-					statistics.add "smooth", userIndex:.index, value:frame - internalUser.smoothFrame, .color, set:1
-					statistics.add "delta", userIndex:.index, value:internalUser.certainFrame - internalUser.prevCertainFrame, .color, set:2
+					statistics.add "input", userIndex:.playerIndex, value:frame - internalUser.inputFrame, .playerColor, set:0
+					statistics.add "smooth", userIndex:.playerIndex, value:frame - internalUser.smoothFrame, .playerColor, set:1
+					statistics.add "delta", userIndex:.playerIndex, value:internalUser.certainFrame - internalUser.prevCertainFrame, .playerColor, set:2
 
 			if replayFrom != -1 then statistics.add "replay", value:frame - replayFrom, color:Gray
 		else
@@ -1128,14 +1128,14 @@ unit networkVisualizer
 	internal tick
 		if core.simulateInputsForTesting
 			for players
-				if posForPlayer[.index] == -10000 then posForPlayer[.index] = posForPlayer[0]
+				if posForPlayer[.playerIndex] == -10000 then posForPlayer[.playerIndex] = posForPlayer[0]
 					
 			// Move circle with artificially created inputs to test the smoothness
 			for players as player
 				core.smooth player
 					input.onKeyDown by:player
-						if (posForPlayer[player.index] += 2) > 1080
-							posForPlayer[player.index] -= 1080
+						if (posForPlayer[player.playerIndex] += 2) > 1080
+							posForPlayer[player.playerIndex] -= 1080
 				
 		draw
 				
