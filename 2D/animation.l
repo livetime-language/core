@@ -28,10 +28,10 @@ global unit fx
 	add: Animation animation
 		runningAnimations.add animation
 		
-	removeForObject: Object object
+	internal removeForObject: Object object
 		runningAnimations.removeWhere.object == object
 		
-	endOfPrevAnimation: Object object
+	internal endOfPrevAnimation: Object object
 		let lastAnimation = runningAnimations.last
 		if lastAnimation?.object == object
 			return math.max(Time.now, lastAnimation.startTime + lastAnimation.duration)
@@ -48,19 +48,19 @@ global unit fx
 				.tick progress, time
 
 		if runningAnimations.length == 0
-			for whenAllAnimationsFinishedCallbacks as callback
+			for whenAnimationsFinishedCallbacks as callback
 				callback()
-			whenAllAnimationsFinishedCallbacks.clear
+			whenAnimationsFinishedCallbacks.clear
 				
 	// Animate a variable to a target value over a given period of time
-	importance:0 inline animateVariable: float variable = 0   // The variable to animate
+	internal importance:0 inline animateVariable: float variable = 0   // The variable to animate
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		animateValue variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	importance:0 inline animateVariable: float variable = 0   // The variable to animate
+	internal importance:0 inline animateVariable: float variable = 0   // The variable to animate
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0       // The delay before the animation starts in milliseconds
 		                   float duration = 300  // The duration of the animation in milliseconds
@@ -68,14 +68,14 @@ global unit fx
 		animateValue variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	importance:0 inline animateVariable: Vector2 variable    // The variable to animate
+	internal importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		animateValue variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	importance:0 inline animateVariable: Vector2 variable    // The variable to animate
+	internal importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
@@ -83,20 +83,20 @@ global unit fx
 		animateValue variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	importance:0 inline animateVariable: Color variable      // The variable to animate
+	internal importance:0 inline animateVariable: Color variable      // The variable to animate
 		                   Color to            // The target color to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		animateValue variable, to, delay, duration, variable = .
 		
-	importance:0 animateValue: float from = 0
+	internal importance:0 animateValue: float from = 0
 		         float to = 1
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
 		         float duration = 300  // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from + (to - from) * .)
 				
-	importance:0 animateValue: float from = 0
+	internal importance:0 animateValue: float from = 0
 		         float to = 1
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
@@ -104,14 +104,14 @@ global unit fx
 		         EaseFunction ease
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(ease.function(from + (to - from) * .))
 				
-	importance:0 animateValue: Vector2 from
+	internal importance:0 animateValue: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
-	importance:0 animateValue: Vector2 from
+	internal importance:0 animateValue: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
@@ -119,7 +119,7 @@ global unit fx
 		         EaseFunction ease
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress, ease)
 				
-	importance:0 animateValue: Color from
+	internal importance:0 animateValue: Color from
 		         Color to
 		         stored void(Color progress) do
 		         float delay = 0      // The delay in milliseconds
