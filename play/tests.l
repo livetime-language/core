@@ -82,8 +82,12 @@ tests
 		let targetFrame = core.frame + math.round time * core.ticksPerSecond / 1000
 		if core.targetFrame != -1 and targetFrame > core.targetFrame
 			targetFrame = core.targetFrame
-		System.log "wait until {targetFrame} (frame: {core.frame}, core.targetFrame: {core.targetFrame})"
 		while core.frame <= targetFrame
+			tick
+
+	importance:5
+	void waitForAnimationsToFinish
+		while runningAnimations
 			tick
 
 	// Use printWhatIsOnScreen to check if the what is shown on screen is correct
