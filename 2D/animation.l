@@ -1,6 +1,17 @@
 global unit fx
 	global Animation[] runningAnimations
+	private void()[] whenAnimationsFinishedCallbacks
 
+	// Start an animation with a given duration. Executes a 'tick' callback on every frame and a 'then' callback when the animation finishes
+	// Example:
+	//     animate duration:500 milliseconds
+	//         // Called on every tick of the animation, passing in the progress ranging from 0 to 1
+	//         for capturedPieces as piece
+	//             let pos = piece.gridPos.toScreenPos interpolateTo videoPos, progress
+	//             drawCircle pos, size:60, color:this.color
+	//     then
+	//         // Called when the animation finished
+	//         capturedPiecesCount += capturedPieces.length
 	importance:4
 	global animate: float delay = 0	// Start animation after this time in milliseconds
 		            float duration = 300	// The duration of the animation in milliseconds
@@ -12,20 +23,33 @@ global unit fx
 			graphics.currentLayer -= 65535
 			if progress >= 1 and then != null then then()
 
-	private void()[] whenAllAnimationsFinishedCallbacks
-
-	importance:4
-	global whenAllAnimationsFinished: stored void() do
-		if runningAnimations.length == 0
-			do()
-		else
-			whenAllAnimationsFinishedCallbacks.add do
-
+	// Execute code after a delay
+	// Example:
+	//     delay 3 seconds
+	//         app.startTurn
 	global delay: float time = 0 // The delay in milliseconds
 		          stored void() do
 		add DelayAnimation startTime:Time.now+time, do
-				
-	add: Animation animation
+	
+	// Execute code on the next tick
+	// Example:
+	//     defer
+	//         app.cleanup
+	global defer: stored void() do
+		add DelayAnimation startTime:Time.now, do
+		
+	// Execute code when all running animations have finished. If there are no running animations, the callback is called immediately.
+	// Example:
+	//     whenAnimationsFinished
+	//         app.startTurn
+	importance:4
+	global whenAnimationsFinished: stored void() do // Execute this code when all running animations have finished
+		if runningAnimations.length == 0
+			do()
+		else
+			whenAnimationsFinishedCallbacks.add do
+
+	internal add: Animation animation
 		runningAnimations.add animation
 		
 	internal removeForObject: Object object
@@ -126,9 +150,6 @@ global unit fx
 		         float duration = 300 // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
-	global defer: stored void() do
-		add DelayAnimation startTime:Time.now, do
-		
 struct float
 	// Animate the float to a target value over a given period of time	
 	inline animateTo: float target        // The target value to animate to

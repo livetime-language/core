@@ -85,6 +85,7 @@ tests
 		while core.frame <= targetFrame
 			tick
 
+	// Wait for all animations to finish
 	importance:5
 	void waitForAnimationsToFinish
 		while runningAnimations
