@@ -453,7 +453,7 @@ internal transient skipInit unit core
 		input.localUser = input.internalUsers.find . and .id == player.id
 		for prevPlayer.touches
 			input.handleUpdateTouchAfterSwitchingUser .id, .referencePosition
-		Platform.updateTitle
+		Platform.updatePageIconAndTitle
 			
 	switchSendInterval: int sendInterval
 		this.sendInterval = sendInterval
