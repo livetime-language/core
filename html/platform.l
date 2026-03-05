@@ -152,6 +152,12 @@ skipInit global unit Platform
 	internal inline js void sendErrorToEditor: Error error
 		if(window._sendErrorToEditor) _sendErrorToEditor(error)
 		else                          console.error(error)
+
+	internal inline js void sendToEditor: dynamic message
+		if(Platform.isDebug) _sendToEditor(message)
+		
+	internal inline js void sendStringToEditor: string message
+		if(Platform.isDebug) _sendStringToEditor(message)	
 		
 	private inline js void sendFinished
 		console.log("[app] ----- Finished -----")
@@ -358,6 +364,20 @@ global transient unit System
 		if(Platform.isDebug) {
 			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
 			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location?.start, file:location?.file});
+		}
+
+enum lowercase string PrintIcon: Action, Reaction, Headline, Debug, Info, Error, Warning, Touch, Key, GameController
+	
+global transient unit System
+	// Prints a message to the console
+	global js void print: logstring text	// The text, variables or expressions to print
+	                      PrintIcon type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+						  Color color = null	// The color to use when showing the message in the console or the event stream panel
+		                  SourceCodeLocation location
+		if(color) console.log(`%c${text}`, `color: ${color.hex}`)
+		else      console.log(text)
+		if(Platform.isDebug && location) {
+			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		}
 	
 global skipInit unit math
