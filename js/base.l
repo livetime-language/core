@@ -1326,17 +1326,22 @@ class List<T>
 		return null
 
 	T findWithinRangeOrClosest: float(T it) selector
-		                        float min = -float.infinity
-		                        float max = float.infinity
+		                        float from = -float.infinity
+		                        float to = float.infinity
 		float closestDistance = float.infinity
 		int closestIndex = -1
 		T closestItem = null
-		for this
+		for this as item
 			let value = selector(.)
 			float distance
-			if value > max then distance = value - max; else
-			if value < min then distance = min - value; else
-				            this.removeAt(i); return .
+			// if value > to then distance = value - to; else
+			// if value < from then distance = from - value; else
+			// 	            this.removeAt(i); return .
+
+			switch value
+				> to	then distance = value - to
+				< from	then distance = from - value
+				default	then this.removeAt(i); return item
 				
 			if distance < closestDistance
 				closestDistance = distance

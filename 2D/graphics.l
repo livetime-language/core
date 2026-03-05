@@ -334,8 +334,8 @@ transient skipInit global unit graphics
 		graphics.debugInfoItems.clear
 
 	internal add: DisplayItem item
-		if isDrawingDebugInfo	-> debugInfoItems.add item
-		else	-> items.add item
+		if isDrawingDebugInfo then	debugInfoItems.add item
+		else	items.add item
 			
 	internal reset
 		totalMatrix = baseMatrix
@@ -349,9 +349,13 @@ transient skipInit global unit graphics
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
-		if core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback; else
-		if Platform.isDebug	then showPointersMode = input.showPointersModeInEditor; else
-															 showPointersMode = input.showPointersMode
+		// if core.frame < core.frames or core.runningTest then	showPointersMode = input.showPointersDuringPlayback
+		// else if Platform.isDebug then	showPointersMode = input.showPointersModeInEditor
+		// else	showPointersMode = input.showPointersMode
+		switch
+			core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback
+			Platform.isDebug	then showPointersMode = input.showPointersModeInEditor
+			default	then showPointersMode = input.showPointersMode
 		if showPointersMode != None then players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
@@ -405,8 +409,7 @@ transient skipInit global unit graphics
 				graphics.context.fillRect(0,0,graphics.pixelSize.x, margin)
 				graphics.context.fillRect(0,graphics.pixelSize.y-margin,graphics.pixelSize.x, margin)
 			}
-		} else 
-		if(graphics.effectiveScaleMode == 2) {
+		} else if(graphics.effectiveScaleMode == 2) {
 			if(graphics.leftAndRightMarginColor) {
 				// Left and Right Letterbox
 				graphics.resetTransform()
@@ -426,8 +429,6 @@ transient skipInit global unit graphics
 			Right	result = " align:Right"
 			default	result = " align:Center"
 
-		if valign == Top then    result = " valign:Top"; else
-		if valign == Bottom then result = " valign:Bottom";
 		switch valign
 			Top	result += " valign:Top"
 			Bottom	result += " valign:Bottom"
@@ -853,8 +854,8 @@ transient skipInit global unit graphics
 		if isVisible
 			Matrix2D matrix
 			float x, y
-			if not angle then matrix = totalMatrix; x = position.x; y = position.y
-			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
+			if not angle then	matrix = totalMatrix; x = position.x; y = position.y
+			else	matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
 			let halfSizeX = math.round(sizeX*.5)
 			let halfSizeY = math.round(sizeY*.5)
 			let effectiveColor = color || currentColor
@@ -1164,8 +1165,8 @@ transient skipInit global unit graphics
 			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
 			if accentImage
 				if not accentColor
-					if effectiveClickableBy and effectiveClickableBy[0] then accentColor = effectiveClickableBy[0].playerColor
-					else                                                 accentColor = input.localPlayer.playerColor
+					if effectiveClickableBy and effectiveClickableBy[0] then	accentColor = effectiveClickableBy[0].playerColor
+					else	accentColor = input.localPlayer.playerColor
 				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:effectiveLayer+1, effectiveAlpha, location, color:accentColor
 			if image then drawImage image, position, frame, effectiveSize, visibleFor, layer:effectiveLayer, effectiveAlpha, location
 			
@@ -2104,15 +2105,27 @@ internal skipInit transient unit gizmo
 		// Which handle are we currently hovering over?
 		if items and not touchDownPos
 			let center = (min + max)/2
-			if referencePos manhattanDistanceTo max < handleSize	then overHandleDirection = IntVector2.DownRight; else
-			if referencePos manhattanDistanceTo min < handleSize	then overHandleDirection = IntVector2.UpLeft; else
-			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize	then overHandleDirection = IntVector2.UpRight; else
-			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize	then overHandleDirection = IntVector2.DownLeft; else
-			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize	then overHandleDirection = IntVector2.Right; else
-			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize	then overHandleDirection = IntVector2.Left; else
-			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize	then overHandleDirection = IntVector2.Up; else
-			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize	then overHandleDirection = IntVector2.Down; else
-				                                                                     overHandleDirection = IntVector2.None
+
+			// if referencePos manhattanDistanceTo max < handleSize	then overHandleDirection = IntVector2.DownRight; else
+			// if referencePos manhattanDistanceTo min < handleSize	then overHandleDirection = IntVector2.UpLeft; else
+			// if referencePos manhattanDistanceTo {max.x, min.y} < handleSize	then overHandleDirection = IntVector2.UpRight; else
+			// if referencePos manhattanDistanceTo {min.x, max.y} < handleSize	then overHandleDirection = IntVector2.DownLeft; else
+			// if referencePos manhattanDistanceTo {max.x, center.y} < handleSize	then overHandleDirection = IntVector2.Right; else
+			// if referencePos manhattanDistanceTo {min.x, center.y} < handleSize	then overHandleDirection = IntVector2.Left; else
+			// if referencePos manhattanDistanceTo {center.x, min.y} < handleSize	then overHandleDirection = IntVector2.Up; else
+			// if referencePos manhattanDistanceTo {center.x, max.y} < handleSize	then overHandleDirection = IntVector2.Down; else
+			// 	     overHandleDirection = IntVector2.None
+			
+			switch referencePos
+				.manhattanDistanceTo(max) < handleSize	then overHandleDirection = IntVector2.DownRight
+				.manhattanDistanceTo(min) < handleSize	then overHandleDirection = IntVector2.UpLeft
+				.manhattanDistanceTo({max.x, min.y}) < handleSize	then overHandleDirection = IntVector2.UpRight
+				.manhattanDistanceTo({min.x, max.y}) < handleSize	then overHandleDirection = IntVector2.DownLeft
+				.manhattanDistanceTo({max.x, center.y}) < handleSize	then overHandleDirection = IntVector2.Right
+				.manhattanDistanceTo({min.x, center.y}) < handleSize	then overHandleDirection = IntVector2.Left
+				.manhattanDistanceTo({center.x, min.y}) < handleSize	then overHandleDirection = IntVector2.Up
+				.manhattanDistanceTo({center.x, max.y}) < handleSize	then overHandleDirection = IntVector2.Down
+				default 	then overHandleDirection = IntVector2.None
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over

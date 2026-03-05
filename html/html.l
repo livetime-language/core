@@ -97,9 +97,13 @@ dynamic HTMLElement
 		this.onpointerdown = {
 			if this.touches == null then this.touches = []
 			TouchType type
-			if ev.pointerType == Mouse then type = cast ev.button.clamp(0 to 2); else
-			if ev.pointerType == Touch then type = Touch; else
-				                            type = Pen
+			// if ev.pointerType == Mouse then type = cast ev.button.clamp(0 to 2); else
+			// if ev.pointerType == Touch then type = Touch; else
+			// 	                               type = Pen
+			switch ev.pointerType
+				Mouse	then type = cast ev.button.clamp(0 to 2)
+				Touch	then type = Touch
+				default	then type = Pen
 			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, pixels)}
 			touch.shiftKey = ev.shiftKey
 			touch.ctrlKey = ev.ctrlKey

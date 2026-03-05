@@ -191,10 +191,10 @@ struct Vector2
 		let delta = targetPosition - this
 		if delta.x != 0 || delta.y != 0
 			delta = delta.normalize * speed
-			if delta.x > 0 then x = math.min(x + delta.x, targetPosition.x)
-			else            x = math.max(x + delta.x, targetPosition.x)
-			if delta.y > 0 then y = math.min(y + delta.y, targetPosition.y)
-			else            y = math.max(y + delta.y, targetPosition.y)
+			if delta.x > 0 then	x = math.min(x + delta.x, targetPosition.x)
+			else	x = math.max(x + delta.x, targetPosition.x)
+			if delta.y > 0 then	y = math.min(y + delta.y, targetPosition.y)
+			else	y = math.max(y + delta.y, targetPosition.y)
 		else
 		if onReachedTarget != null
 			onReachedTarget
