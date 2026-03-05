@@ -203,7 +203,8 @@ transient skipInit unit Platform
 		if playMode == Play or playMode == Record or waitingForInitialData
 			core.animationFrame
 				
-	private enterSlideMode:PlayMode playMode
+	private startManipulator:PlayMode playMode
+		print "startManipulatior", playMode
 		this.playMode = playMode
 		updatePageIconAndTitle
 		sendFrameAndPlayMode
