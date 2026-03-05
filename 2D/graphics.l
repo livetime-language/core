@@ -654,8 +654,8 @@ transient skipInit global unit graphics
 		                         implicit layer = int.minValue
 		                         alpha = 1.0
 		                         Color color = White
-								 float leftSlice = 0
-								 float rightSlice = 0
+								 float leftSlice = 0.0
+								 float rightSlice = 0.0
 		                         HorizontalAlignment align = Center  // The horizontal alignment of the image
 		                         VerticalAlignment valign = Middle   // The vertical alignment of the image
 		                         SourceCodeLocation location
@@ -729,7 +729,7 @@ transient skipInit global unit graphics
 		             FontStyle style = Normal             // Whether the text should be bold or normal style
 		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		             Color outlineColor = null            // The color of the outline around the text
-		             outlineWidth = 0                     // The width of the outline around the text in pixels
+		             outlineWidth = 0.0                     // The width of the outline around the text in pixels
 		             implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -905,7 +905,7 @@ transient skipInit global unit graphics
 		                                FontStyle style = Normal             // Whether the text should be bold or normal style
 		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		                                Color outlineColor = null            // The color of the outline around the text
-		                                outlineWidth = 0                     // The width of the outline around the text in pixels
+		                                outlineWidth = 0.0                     // The width of the outline around the text in pixels
 		                                implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -1122,7 +1122,7 @@ transient skipInit global unit graphics
 		                    implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                    frame = -1                           // The frame from a sequence of images (for example "Button0.png", "Button1.png", ...)
 		                    Color textColor = null               // The color of the text
-		                    textSize = 24                        // The font size in pixels   
+		                    textSize = 24.0                      // The font size in pixels   
 		                    textOffset = Vector2(0,0)            // Draw the text at this offset to the image
 		                    clickableMargin = Vector2(16,16)     // The margin around the button within which it is clickable
 		                    showClickableArea = false            // Highlight the clickable area for debugging
@@ -1184,7 +1184,7 @@ transient skipInit global unit graphics
 		                          implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                          Color color = null                  // The color of the area within the rectangle
 		                          Color outlineColor = null           // The color of the outline around the rectangle
-		                          outlineWidth = 0                    // The width of the outline around the rectangle in pixels
+		                          outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                          implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
 		                          implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
@@ -1217,12 +1217,12 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawRoundedRectangle size:{500,100}, outlineColor:Black, outlineWidth:8, radius:20
 	// Image: drawRoundedRectangle.png
-	global importance:4 js void drawRoundedRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                                 implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
-		                                 radius = 32                         // The radius of the rounded corners
-		                                 Color color = null                  // The color of the area within the rectangle
+	global importance:4 js void drawRoundedRectangle: position = Vector2()	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                                 implicit size = Vector2(256,256)	// The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
+		                                 radius = 32.0	// The radius of the rounded corners
+		                                 Color color = null	// The color of the area within the rectangle
 		                                 Color outlineColor = null           // The color of the outline around the rectangle
-		                                 outlineWidth = 0                    // The width of the outline around the rectangle in pixels
+		                                 outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                                 implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
 		                                 implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
@@ -1271,7 +1271,7 @@ transient skipInit global unit graphics
 		                       implicit Vector2 size = {256,256}       // The size of the circle, use a float to draw a circle, use a vector draw an ellipse
 		                       Color color = null                      // The color of the area within the circle
 		                       Color outlineColor = null               // The color of the outline around the circle
-		                       outlineWidth = 0                        // The width of the outline around the circle in pixels
+		                       outlineWidth = 0.0                        // The width of the outline around the circle in pixels
 		                       startAngle = 0.0                        // Draw an arc with this start angle in radians, measured from the positive x-axis
 		                       angle = math.twoPi                 // Draw an arc with this angle in radians (one full rotation is 2*pi)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
@@ -1307,10 +1307,10 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawLine {-100,0} to {100,0} color:Blue
 	// Image: drawLine.png
-	global importance:4 js void drawLine: Vector2 from                        // The point to start the line from
-		                     nocolon Vector2 to                  // The point to draw the line to
-		                     Color color = null                  // The color of the line
-		                     width = 0                           // The width of the line in pixels
+	global importance:4 js void drawLine: Vector2 from	// The point to start the line from
+		                     nocolon Vector2 to	// The point to draw the line to
+		                     Color color = null	// The color of the line
+		                     width = 0.0	// The width of the line in pixels
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                     implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
@@ -1364,12 +1364,12 @@ transient skipInit global unit graphics
 	// Draw an arrow on the screen.
 	global importance:4 drawArrow: Vector2 from	// The point to start the arrow from
 	                               nocolon Vector2 to	// The point to draw the arrow to
-								   float width = 18	// The width of the arrow line
-								   float arrowHeadWidth = 0	// The width of the arrow head
-								   float arrowHeadLength = 0	// The length of the arrow head
+								   float width = 18.0	// The width of the arrow line
+								   float arrowHeadWidth = 0.0	// The width of the arrow head
+								   float arrowHeadLength = 0.0	// The length of the arrow head
 		                           Color color = null	// The color of the arrow
 		                           Color outlineColor = null	// The color of the outline around the arrow
-		                           outlineWidth = 0	// The width of the outline around the arrow
+		                           outlineWidth = 0.0	// The width of the outline around the arrow
 		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
 		                           implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
 		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
@@ -1412,7 +1412,7 @@ transient skipInit global unit graphics
 		                        Vector2 position = {0,0}            // The position all polygon points are relative to
 		                        Color color = null                  // The color of the area within the polygon
 		                        Color outlineColor = null           // The color of the outline around the polygon
-		                        outlineWidth = 0                    // The width of the outline around the polygon in pixels
+		                        outlineWidth = 0.0                    // The width of the outline around the polygon in pixels
 		                        smooth = false                      // Smooth the corners of the polygon
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
 		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
@@ -1442,7 +1442,7 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawVideo me, size:200
 	// Image: drawVideo.png
-	global importance:4 drawVideo: Player player                       // Draw the video showing this player
+	global importance:4 drawVideo: Player player          // Draw the video showing this player
 		              Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		              implicit Vector2 size = {440}       // A float scales the image to that width keeping the aspect ratio, a vector stretches the video
 		              VideoShape shape = Rectangle        // Choose whether the video should be drawn as a rectangle, a square or a circle
