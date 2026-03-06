@@ -1478,7 +1478,6 @@ transient skipInit global unit graphics
 		or (player.id != input.localUser.id and mode == Remote)
 			if not color then color = player.playerColor
 			for player.touches
-				System.log "% drawPointer isDown:{.isDown} position:{.position}"
 				if mode != WhenDown or .isDown
 					drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0, layer:int.maxValue
 					if color
@@ -2077,12 +2076,13 @@ internal skipInit transient unit gizmo
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
 	private IntVector2 overHandleDirection
-	private Vector2 touchDownPos = {float.infinity, float.infinity}
+	private Vector2 touchDownPos = Vector2.None
 	private bool touchDownInsideGizmo
 	private int locationIndex
 	private int waitingForCodeId
 	private float aspectRatio
 	private bool isManipulating
+	private float lastSendTime
 	
 	clear
 		overHandleDirection = IntVector2.None
@@ -2094,28 +2094,19 @@ internal skipInit transient unit gizmo
 		items.clear
 		min = Vector2.None
 		max = Vector2.None
+		lastSendTime = 0
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 		if Platform.playMode != Manipulator then return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if inputType == TouchUp	then touchDownPos = Vector2.None; isManipulating = false
+		if inputType == TouchUp	then touchDownPos = Vector2.None
 			
 		// Which handle are we currently hovering over?
-		if items and not touchDownPos
+		if items and touchDownPos == Vector2.None
 			let center = (min + max)/2
 
-			// if referencePos manhattanDistanceTo max < handleSize	then overHandleDirection = IntVector2.DownRight; else
-			// if referencePos manhattanDistanceTo min < handleSize	then overHandleDirection = IntVector2.UpLeft; else
-			// if referencePos manhattanDistanceTo {max.x, min.y} < handleSize	then overHandleDirection = IntVector2.UpRight; else
-			// if referencePos manhattanDistanceTo {min.x, max.y} < handleSize	then overHandleDirection = IntVector2.DownLeft; else
-			// if referencePos manhattanDistanceTo {max.x, center.y} < handleSize	then overHandleDirection = IntVector2.Right; else
-			// if referencePos manhattanDistanceTo {min.x, center.y} < handleSize	then overHandleDirection = IntVector2.Left; else
-			// if referencePos manhattanDistanceTo {center.x, min.y} < handleSize	then overHandleDirection = IntVector2.Up; else
-			// if referencePos manhattanDistanceTo {center.x, max.y} < handleSize	then overHandleDirection = IntVector2.Down; else
-			// 	     overHandleDirection = IntVector2.None
-			
 			switch referencePos
 				.manhattanDistanceTo(max) < handleSize	then overHandleDirection = IntVector2.DownRight
 				.manhattanDistanceTo(min) < handleSize	then overHandleDirection = IntVector2.UpLeft
@@ -2129,7 +2120,7 @@ internal skipInit transient unit gizmo
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
-		if !overHandleDirection and codeId >= waitingForCodeId
+		if overHandleDirection == IntVector2.None and codeId >= waitingForCodeId
 			if (inputType == TouchDown and !insideGizmo) 
 			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
@@ -2148,16 +2139,16 @@ internal skipInit transient unit gizmo
 					let selectedStackItem = overItems[locationIndex++ mod overItems.length]
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
-					Platform.sendSelectToEditor cursorLocation.file, cursorLocation.start
+					Platform.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
 				else
 					// Deselect
 					locationIndex = 0
 					cursorLocation = null
-					Platform.sendDeselectToEditor
+					Platform.sendToEditor({type:"deselect"})
 		
 		if cursorLocation
 			GizomInfluence[] influences
-			if overHandleDirection
+			if overHandleDirection != IntVector2.None
 				// Resize the item (we are over a handle)
 				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0
@@ -2201,17 +2192,24 @@ internal skipInit transient unit gizmo
 					// Add new position
 					influences.add {cursorLocation.file, cursorLocation.end, cursorLocation.end, deltas:[referencePos.x - touchDownPos.x, referencePos.y - touchDownPos.y], initialValues:[0,0], label:"position"}
 				
-			// Send manipulation to editor	
-			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId
+			// Send manipulation to editor
+			let now = PlainDate.realTime
+			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and now > lastSendTime + 100
+				now = lastSendTime
 				if not isManipulating and movedSinceTouchDown
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
 					aspectRatio = (max.y - min.y) / (max.x - min.x)
-					Platform.sendStartManipulationToEditor influences
+					Platform.sendToEditor {type:"startManipulation", influences}
 					
 				if isManipulating
 					// Move manipulation
-					Platform.sendMoveManipulationToEditor influences, ++waitingForCodeId
+					Platform.sendToEditor {type:"moveManipulation", influences, codeId:++waitingForCodeId}
+
+			if inputType == TouchUp && isManipulating
+				// End manipulation
+				isManipulating = false
+				Platform.sendToEditor {type:"endManipulation",  influences}
 			
 	private js void setCursor: string cursor
 		document.body.style.cursor = cursor

@@ -204,8 +204,8 @@ transient skipInit unit Platform
 			core.animationFrame
 				
 	private startManipulator:PlayMode playMode
-		print "startManipulatior", playMode
 		this.playMode = playMode
+		gizmo.clear
 		updatePageIconAndTitle
 		sendFrameAndPlayMode
 	
@@ -245,26 +245,14 @@ transient skipInit unit Platform
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
 		if playMode == Pause or playMode == Stop then core.step fastForward:false draw:true
-	
-	internal js void sendSelectToEditor: string cursorFile, int cursorPos
-		_sendToEditor({type:"select", cursorFile, cursorPos})
-	
-	internal js void sendDeselectToEditor
-		_sendToEditor({type:"deselect"})
-	
-	internal js void sendStartManipulationToEditor: GizomInfluence[] influences
-		_sendToEditor({type:"startManipulation", influences})
-	
-	internal js void sendMoveManipulationToEditor: GizomInfluence[] influences, int codeId
-		_sendToEditor({type:"moveManipulation", influences, codeId})
-	
+		
 	internal js void sendWatch: int frame, string text, int location, string file
 		_sendToEditor({type:"watch", frame, text, location, file})
 	
 	internal js void sendClearTimeline:
 		_sendToEditor({type:"clearTimeline"})
 	
-	internal inline js void sendToEditor: dynamic message
+	inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)
 		
 	internal inline js void sendStringToEditor: string message
@@ -329,7 +317,7 @@ transient skipInit unit Platform
 		let playerName = input.localPlayer?.toString or ""
 
 		if showPlayModeInPageIcon
-			setPageTitle "{appName} | {playerName}"
+			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
 			switch
 				not isConnectedToEditor	then setPageIcon "/_dev/NotConnected.png"
 				playMode == Stop	then setPageIcon "/_dev/Stop.png"
