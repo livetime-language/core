@@ -87,7 +87,7 @@ struct Vector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	bool !() return (this.x == 0 && this.y == 0)
+	bool !() return (this.x == float.infinity && this.y == float.infinity)
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
@@ -464,7 +464,7 @@ struct IntVector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	bool !() return (this.x == 0 && this.y == 0)
+	bool !() return (this.x == int.minValue && this.y == int.minValue)
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
