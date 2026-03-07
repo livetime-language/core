@@ -155,7 +155,7 @@ transient skipInit unit Platform
 		core.runTest testFunction, id
 			
 	// This is called after every code change to replay all inputs with the new code
-	private async replay: bool updateMedia
+	internal async replay: bool updateMedia
 		if runningTestFunction
 			core.runTest runningTestFunction, targetFrame:core.frame-1, interrruptAtOutputIndex:core.interrruptAtOutputIndex
 		else
@@ -207,7 +207,7 @@ transient skipInit unit Platform
 		this.playMode = playMode
 		gizmo.clear
 		updatePageIconAndTitle
-		sendFrameAndPlayMode
+		replay updateMedia:false
 	
 	internal stop
 		playMode = Stop

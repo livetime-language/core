@@ -2065,7 +2065,7 @@ internal skipInit transient unit gizmo
 		if Platform.playMode != Manipulator then return
 		findInfluencedItems
 		
-		if items
+		if items and showSelection
 			// Draw handles
 			let size = max - min
 			let center = (max + min)/2 
@@ -2083,6 +2083,7 @@ internal skipInit transient unit gizmo
 	private float aspectRatio
 	private bool isManipulating
 	private float lastSendTime
+	private bool showSelection = false
 	
 	clear
 		overHandleDirection = IntVector2.None
@@ -2132,7 +2133,7 @@ internal skipInit transient unit gizmo
 						else
 						if item.location != null
 							overItems.add {item, item.location}
-									
+
 				if overItems.length
 					// Select next item cycling through all items the mouse pointer is over
 					if inputType == TouchDown then locationIndex = 0
@@ -2140,11 +2141,12 @@ internal skipInit transient unit gizmo
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
 					Platform.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
+					showSelection = true
+					Platform.replay updateMedia:false
 				else
 					// Deselect
-					locationIndex = 0
-					cursorLocation = null
-					Platform.sendToEditor({type:"deselect"})
+					showSelection = false
+					Platform.replay updateMedia:false
 		
 		if cursorLocation
 			GizomInfluence[] influences
@@ -2201,6 +2203,7 @@ internal skipInit transient unit gizmo
 					isManipulating = true
 					aspectRatio = (max.y - min.y) / (max.x - min.x)
 					Platform.sendToEditor {type:"startManipulation", influences}
+					showSelection = true
 					
 				if isManipulating
 					// Move manipulation
