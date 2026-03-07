@@ -2126,7 +2126,8 @@ internal skipInit transient unit gizmo
 			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
 				GizmoOverItem[] overItems
-				for graphics.items as item
+				let graphicsItems = graphics.drawingOrder == LastDrawnWillBeInFront ? graphics.items : graphics.items.clone.reverse
+				for graphicsItems as item backwards
 					if pixelPos.insidePolygon item.poly
 						if item.positionLocation
 							flattenLocations overItems, item, item.positionLocation
@@ -2145,6 +2146,8 @@ internal skipInit transient unit gizmo
 					Platform.replay updateMedia:false
 				else
 					// Deselect
+					cursorLocation = null
+					locationIndex = 0
 					showSelection = false
 					Platform.replay updateMedia:false
 		
