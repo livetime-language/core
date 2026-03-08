@@ -1238,7 +1238,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
-				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${alignmentDescription(align, valign)}`,
+				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${graphics.alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
