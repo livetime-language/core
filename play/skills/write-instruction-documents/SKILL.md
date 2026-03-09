@@ -16,8 +16,8 @@ The AI agent that implements a step is given the existing code from previous ste
 
 Start each document with a brief overview of what has already been build in previous steps. The AI agent should take the existing code and add to it.
 
-Include these instructions in each document: "The dev server is running at http://localhost:8080. When you are done writing code, open this url in the integrated browser and take a screenshot. Check that everything looks right. Check if all images have the right size and nothing overlaps that shouldn't overlap."
-
 The instructions of each document should result in a working version of the game that can be tested. At the end of each document, write instructions to write a list of unit tests that verify that the functionality added in this step is correct. Each test case should be a simple, concrete scenario that can be easily implemented as a unit test.
+
+After the unit tests, instruct the AT agent to open "http://localhost:8080" in the integrated browser and take a screenshot. The agent should verify that everything looks right and check if all images have the right size and nothing overlaps that shouldn't overlap.
 
 The instructions should be as simple and concise as possible. They should be clear and easy to understand for an AI agent.
