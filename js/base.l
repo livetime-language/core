@@ -2268,6 +2268,9 @@ global transient priority unit System
 	inline js void log: dynamic value, dynamic value2, dynamic value3
 		console.log(value, value2, value3)
 	
+	inline js void logError: dynamic value
+		console.error(value)
+	
 	// Display a message in the timeline
 	global js void watch: logstring text // The text, variables or expressions to watch
 		                  SourceCodeLocation sourceCodeLocation
