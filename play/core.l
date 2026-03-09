@@ -864,6 +864,7 @@ internal transient skipInit unit core
 		} else {
 			core.log errorMessage
 		}
+		System.logError error
 		
 internal transient unit Snapshot
 	int autoSaveCount
