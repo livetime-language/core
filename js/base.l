@@ -461,6 +461,38 @@ immutable class string
 	
 	// Parse the string as yaml
 	importance:5 inline js dynamic parseYaml() yaml.parse(this)
+
+	dynamic parseTsv
+		let lines = this.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		dynamic[] result
+		for 1 to lines.length
+			let values = lines[i].split("\t")
+			dynamic obj = {}
+			for names
+				obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+			result.add(obj)
+		return result
+
+	dynamic parseTypedTsv
+		let lines = this.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		let types = lines[1].split("\t")
+		dynamic[] result
+		for 2 to lines.length
+			let values = lines[i].split("\t")
+			dynamic obj = {}
+			for names
+				let value = values[i]
+				switch types[i]
+					"object"	obj[.] = value.parseJson
+					"number"	obj[.] = value.toFloat
+					"boolean"	obj[.] = value == "true"
+					default	obj[.] = value.replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+			result.add(obj)
+		return result
 		
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
 	
@@ -2707,16 +2739,14 @@ class File
 	
 	inline js string objectUrl() URL.createObjectURL(this)
 
-enum Language: English, German, Spanish, French, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
+enum Language: English, German, Spanish, French, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant
 
 unit Loca
 	private const string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
-	private const string[] languageNames = ["English", "German", "Spanish", "French", "Italian", "Portuguese", "Japanese", "Chinese", "Korean", "Dutch", "Turkish", "Polish", "Russian", "Hindi", "Arabic", "Bengali", "Urdu", "Indonesian", "Invariant"]
 	
 	visible Language[] supportedLanguages = [English, German]
 	visible Language language = English
 	visible string locale = defaultLocaleForLanguage[language]
-	string languageName => languageNames[language]
 	
 	internal init
 		setLanguage English
