@@ -21,6 +21,10 @@ skipInit global unit Platform
 	float debugScale = 1
 	ReferenceSize[] referenceSizes
 	
+	// Info
+	public inline js string appName	=> _appName
+	public inline js int buildVersion	=> _buildVersion
+
 	// Environment
 	bool isDebug
 	global bool isMobile
@@ -35,7 +39,6 @@ skipInit global unit Platform
 	public inline js string protocolAndHost() (location.host && !Platform.isDebug ? location.origin : "http://localhost")
 	public inline js dynamic networkInformation() navigator.connection
 	public inline js void reload() location.reload(/*forceReload=*/true)
-	public inline js int buildVersion() _buildVersion
 
 	// Encode
 	public inline js string encodeURIComponent(string value) encodeURIComponent(value)
@@ -61,8 +64,6 @@ skipInit global unit Platform
 		try
 			print Time.preciseTime - startTime
 			Time.startTimer
-			this.nextHeartbeatTime = 0
-			heartbeat "start"
 			
 			this.isDebug = isDebug
 			this.referenceSizes = [
@@ -89,9 +90,11 @@ skipInit global unit Platform
 					sendErrorToEditor .
 				finally
 					sendFinished
+					updatePageIconAndTitle
 		catch 
 			sendErrorToEditor .
 			sendFinished
+			updatePageIconAndTitle
 		
 	js void openMedia: void() success
 		let font = new FontFace('OpenSans', `url(${_basePath}OpenSans.woff2)`);
@@ -105,10 +108,10 @@ skipInit global unit Platform
 		
 	async replay
 		try
-			heartbeat "replay"
 			if resetWhenCodeChanged then html.reset
 			initMedia
 			initBackend
+			sendToEditor {type:"clearOutput"}
 			initAll
 			html.resize
 			startApp
@@ -129,7 +132,6 @@ skipInit global unit Platform
 		if(app.start) app.start()
 		
 	private js void tick
-		Platform.heartbeat("tick")
 		if(app.tick) app.tick()
 		Time.ticks++
 		
@@ -148,7 +150,10 @@ skipInit global unit Platform
 				window.tick();
 			}
 		}
-		
+		if(Platform.isDebug && !window._heartbeatInterval) {
+			window._heartbeatInterval = setInterval(() => _sendStringToEditor("~"), 3000)
+		}
+
 	internal inline js void sendErrorToEditor: Error error
 		if(window._sendErrorToEditor) _sendErrorToEditor(error)
 		else                          console.error(error)
@@ -162,16 +167,6 @@ skipInit global unit Platform
 	private inline js void sendFinished
 		console.log("[app] ----- Finished -----")
 		if(Platform.isDebug) _sendToEditor({type:"finished"})
-			
-	float nextHeartbeatTime = 0
-	
-	private js void heartbeat: string context
-		if(!Platform.isDebug) return
-		let now = Date.now();
-		if(now > Platform.nextHeartbeatTime) {
-			Platform.nextHeartbeatTime = now + 3000;
-			_sendStringToEditor("~");
-		}
 		
 	js string generateObjectId
 		const timestamp = Math.floor(new Date().getTime() / 1000).toString(16);
@@ -330,6 +325,24 @@ skipInit global unit Platform
 		
 	inline js void openPrintDialog
 		window.print()
+
+	internal updatePageIconAndTitle
+		System.log("Updating page title and icon")
+		if not isDebug then return
+		setPageTitle appName
+		
+	js void setPageTitle: string title
+		document.title = title;
+
+	js void setPageIcon: string iconUrl
+		console.log("Setting page icon to " + iconUrl)
+		var link = document.querySelector("link[rel~='icon']");
+		if (!link) {
+			link = document.createElement('link');
+			link.rel = 'icon';
+			document.head.appendChild(link);
+		}
+		link.href = iconUrl;
 		
 enum lowercase string DataTransferItemKind: String, File
 		
@@ -356,28 +369,28 @@ MenuItem
 	MenuItem[] submenu = null
 	bool checked
 	
-global transient unit System
-	// Prints a message to the console
-	global js void print: logstring text // The text, variables or expressions to print
-		                  SourceCodeLocation location
-		console.log(text)
-		if(Platform.isDebug) {
-			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
-			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location?.start, file:location?.file});
-		}
+enum lowercase string PrintType
+	Action	// Use for actions performed by a user
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action.
+	NoAction	// Use when no action was performed. For example, if user input is invalid.
+	Headline	// When a major action is performed, for example navigating to a new page.
 
-enum lowercase string PrintIcon: Action, Reaction, Headline, Debug, Info, Error, Warning, Touch, Key, GameController
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
+
 	
 global transient unit System
 	// Prints a message to the console
 	global js void print: logstring text	// The text, variables or expressions to print
-	                      PrintIcon type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
 						  Color color = null	// The color to use when showing the message in the console or the event stream panel
 		                  SourceCodeLocation location
-		if(color) console.log(`%c${text}`, `color: ${color.hex}`)
+		if(color) console.log(`%c${text}`, `color: ${color.colorString}`)
 		else      console.log(text)
 		if(Platform.isDebug && location) {
-			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
 		}
 	
 global skipInit unit math

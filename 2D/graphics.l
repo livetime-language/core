@@ -334,8 +334,8 @@ transient skipInit global unit graphics
 		graphics.debugInfoItems.clear
 
 	internal add: DisplayItem item
-		if isDrawingDebugInfo	-> debugInfoItems.add item
-		else	-> items.add item
+		if isDrawingDebugInfo then	debugInfoItems.add item
+		else	items.add item
 			
 	internal reset
 		totalMatrix = baseMatrix
@@ -349,9 +349,13 @@ transient skipInit global unit graphics
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
-		if core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback; else
-		if Platform.isDebug	then showPointersMode = input.showPointersModeInEditor; else
-															 showPointersMode = input.showPointersMode
+		// if core.frame < core.frames or core.runningTest then	showPointersMode = input.showPointersDuringPlayback
+		// else if Platform.isDebug then	showPointersMode = input.showPointersModeInEditor
+		// else	showPointersMode = input.showPointersMode
+		switch
+			core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback
+			Platform.isDebug	then showPointersMode = input.showPointersModeInEditor
+			default	then showPointersMode = input.showPointersMode
 		if showPointersMode != None then players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
@@ -389,6 +393,7 @@ transient skipInit global unit graphics
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
 		
 	private Player[] getClickableBy: Player[] visibleFor, Player[] clickableBy
+		if not Platform.isOnlineMultiplayer return players
 		Player[] effectiveVisibleBy = visibleFor or currentlyVisibleFor
 		return effectiveVisibleBy and clickableBy
 		     ? effectiveVisibleBy intersectWith clickableBy 
@@ -405,8 +410,7 @@ transient skipInit global unit graphics
 				graphics.context.fillRect(0,0,graphics.pixelSize.x, margin)
 				graphics.context.fillRect(0,graphics.pixelSize.y-margin,graphics.pixelSize.x, margin)
 			}
-		} else 
-		if(graphics.effectiveScaleMode == 2) {
+		} else if(graphics.effectiveScaleMode == 2) {
 			if(graphics.leftAndRightMarginColor) {
 				// Left and Right Letterbox
 				graphics.resetTransform()
@@ -426,8 +430,6 @@ transient skipInit global unit graphics
 			Right	result = " align:Right"
 			default	result = " align:Center"
 
-		if valign == Top then    result = " valign:Top"; else
-		if valign == Bottom then result = " valign:Bottom";
 		switch valign
 			Top	result += " valign:Top"
 			Bottom	result += " valign:Bottom"
@@ -653,8 +655,8 @@ transient skipInit global unit graphics
 		                         implicit layer = int.minValue
 		                         alpha = 1.0
 		                         Color color = White
-								 float leftSlice = 0
-								 float rightSlice = 0
+								 float leftSlice = 0.0
+								 float rightSlice = 0.0
 		                         HorizontalAlignment align = Center  // The horizontal alignment of the image
 		                         VerticalAlignment valign = Middle   // The vertical alignment of the image
 		                         SourceCodeLocation location
@@ -728,7 +730,7 @@ transient skipInit global unit graphics
 		             FontStyle style = Normal             // Whether the text should be bold or normal style
 		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		             Color outlineColor = null            // The color of the outline around the text
-		             outlineWidth = 0                     // The width of the outline around the text in pixels
+		             outlineWidth = 0.0                     // The width of the outline around the text in pixels
 		             implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -853,8 +855,8 @@ transient skipInit global unit graphics
 		if isVisible
 			Matrix2D matrix
 			float x, y
-			if not angle then matrix = totalMatrix; x = position.x; y = position.y
-			else          matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
+			if not angle then	matrix = totalMatrix; x = position.x; y = position.y
+			else	matrix = totalMatrix.clone().move(position).rotate(angle); x = 0; y = 0
 			let halfSizeX = math.round(sizeX*.5)
 			let halfSizeY = math.round(sizeY*.5)
 			let effectiveColor = color || currentColor
@@ -904,7 +906,7 @@ transient skipInit global unit graphics
 		                                FontStyle style = Normal             // Whether the text should be bold or normal style
 		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		                                Color outlineColor = null            // The color of the outline around the text
-		                                outlineWidth = 0                     // The width of the outline around the text in pixels
+		                                outlineWidth = 0.0                     // The width of the outline around the text in pixels
 		                                implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
 		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -1121,7 +1123,7 @@ transient skipInit global unit graphics
 		                    implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                    frame = -1                           // The frame from a sequence of images (for example "Button0.png", "Button1.png", ...)
 		                    Color textColor = null               // The color of the text
-		                    textSize = 24                        // The font size in pixels   
+		                    textSize = 24.0                      // The font size in pixels   
 		                    textOffset = Vector2(0,0)            // Draw the text at this offset to the image
 		                    clickableMargin = Vector2(16,16)     // The margin around the button within which it is clickable
 		                    showClickableArea = false            // Highlight the clickable area for debugging
@@ -1164,8 +1166,8 @@ transient skipInit global unit graphics
 			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
 			if accentImage
 				if not accentColor
-					if effectiveClickableBy and effectiveClickableBy[0] then accentColor = effectiveClickableBy[0].playerColor
-					else                                                 accentColor = input.localPlayer.playerColor
+					if effectiveClickableBy and effectiveClickableBy[0] then	accentColor = effectiveClickableBy[0].playerColor
+					else	accentColor = input.localPlayer.playerColor
 				drawImage accentImage, position, frame, effectiveSize, visibleFor, layer:effectiveLayer+1, effectiveAlpha, location, color:accentColor
 			if image then drawImage image, position, frame, effectiveSize, visibleFor, layer:effectiveLayer, effectiveAlpha, location
 			
@@ -1183,7 +1185,7 @@ transient skipInit global unit graphics
 		                          implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                          Color color = null                  // The color of the area within the rectangle
 		                          Color outlineColor = null           // The color of the outline around the rectangle
-		                          outlineWidth = 0                    // The width of the outline around the rectangle in pixels
+		                          outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                          implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
 		                          implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
@@ -1216,12 +1218,12 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawRoundedRectangle size:{500,100}, outlineColor:Black, outlineWidth:8, radius:20
 	// Image: drawRoundedRectangle.png
-	global importance:4 js void drawRoundedRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                                 implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
-		                                 radius = 32                         // The radius of the rounded corners
-		                                 Color color = null                  // The color of the area within the rectangle
+	global importance:4 js void drawRoundedRectangle: position = Vector2()	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                                 implicit size = Vector2(256,256)	// The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
+		                                 radius = 32.0	// The radius of the rounded corners
+		                                 Color color = null	// The color of the area within the rectangle
 		                                 Color outlineColor = null           // The color of the outline around the rectangle
-		                                 outlineWidth = 0                    // The width of the outline around the rectangle in pixels
+		                                 outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                                 implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
 		                                 implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
@@ -1236,7 +1238,7 @@ transient skipInit global unit graphics
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
 				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
-				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${alignmentDescription(align, valign)}`,
+				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${graphics.alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1270,7 +1272,7 @@ transient skipInit global unit graphics
 		                       implicit Vector2 size = {256,256}       // The size of the circle, use a float to draw a circle, use a vector draw an ellipse
 		                       Color color = null                      // The color of the area within the circle
 		                       Color outlineColor = null               // The color of the outline around the circle
-		                       outlineWidth = 0                        // The width of the outline around the circle in pixels
+		                       outlineWidth = 0.0                        // The width of the outline around the circle in pixels
 		                       startAngle = 0.0                        // Draw an arc with this start angle in radians, measured from the positive x-axis
 		                       angle = math.twoPi                 // Draw an arc with this angle in radians (one full rotation is 2*pi)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
@@ -1306,10 +1308,10 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawLine {-100,0} to {100,0} color:Blue
 	// Image: drawLine.png
-	global importance:4 js void drawLine: Vector2 from                        // The point to start the line from
-		                     nocolon Vector2 to                  // The point to draw the line to
-		                     Color color = null                  // The color of the line
-		                     width = 0                           // The width of the line in pixels
+	global importance:4 js void drawLine: Vector2 from	// The point to start the line from
+		                     nocolon Vector2 to	// The point to draw the line to
+		                     Color color = null	// The color of the line
+		                     width = 0.0	// The width of the line in pixels
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                     implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
@@ -1363,12 +1365,12 @@ transient skipInit global unit graphics
 	// Draw an arrow on the screen.
 	global importance:4 drawArrow: Vector2 from	// The point to start the arrow from
 	                               nocolon Vector2 to	// The point to draw the arrow to
-								   float width = 18	// The width of the arrow line
-								   float arrowHeadWidth = 0	// The width of the arrow head
-								   float arrowHeadLength = 0	// The length of the arrow head
+								   float width = 18.0	// The width of the arrow line
+								   float arrowHeadWidth = 0.0	// The width of the arrow head
+								   float arrowHeadLength = 0.0	// The length of the arrow head
 		                           Color color = null	// The color of the arrow
 		                           Color outlineColor = null	// The color of the outline around the arrow
-		                           outlineWidth = 0	// The width of the outline around the arrow
+		                           outlineWidth = 0.0	// The width of the outline around the arrow
 		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
 		                           implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
 		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
@@ -1411,7 +1413,7 @@ transient skipInit global unit graphics
 		                        Vector2 position = {0,0}            // The position all polygon points are relative to
 		                        Color color = null                  // The color of the area within the polygon
 		                        Color outlineColor = null           // The color of the outline around the polygon
-		                        outlineWidth = 0                    // The width of the outline around the polygon in pixels
+		                        outlineWidth = 0.0                    // The width of the outline around the polygon in pixels
 		                        smooth = false                      // Smooth the corners of the polygon
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
 		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
@@ -1441,7 +1443,7 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawVideo me, size:200
 	// Image: drawVideo.png
-	global importance:4 drawVideo: Player player                       // Draw the video showing this player
+	global importance:4 drawVideo: Player player          // Draw the video showing this player
 		              Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		              implicit Vector2 size = {440}       // A float scales the image to that width keeping the aspect ratio, a vector stretches the video
 		              VideoShape shape = Rectangle        // Choose whether the video should be drawn as a rectangle, a square or a circle
@@ -1477,7 +1479,6 @@ transient skipInit global unit graphics
 		or (player.id != input.localUser.id and mode == Remote)
 			if not color then color = player.playerColor
 			for player.touches
-				System.log "% drawPointer isDown:{.isDown} position:{.position}"
 				if mode != WhenDown or .isDown
 					drawImage finger, .smoothPosition+{11,32}, frame:.isDown ? 1 : 0, layer:int.maxValue
 					if color
@@ -2065,7 +2066,7 @@ internal skipInit transient unit gizmo
 		if Platform.playMode != Manipulator then return
 		findInfluencedItems
 		
-		if items
+		if items and showSelection
 			// Draw handles
 			let size = max - min
 			let center = (max + min)/2 
@@ -2076,12 +2077,14 @@ internal skipInit transient unit gizmo
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
 	private IntVector2 overHandleDirection
-	private Vector2 touchDownPos = {float.infinity, float.infinity}
+	private Vector2 touchDownPos = Vector2.None
 	private bool touchDownInsideGizmo
 	private int locationIndex
 	private int waitingForCodeId
 	private float aspectRatio
 	private bool isManipulating
+	private float lastSendTime
+	private bool showSelection = false
 	
 	clear
 		overHandleDirection = IntVector2.None
@@ -2093,58 +2096,65 @@ internal skipInit transient unit gizmo
 		items.clear
 		min = Vector2.None
 		max = Vector2.None
+		lastSendTime = 0
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 		if Platform.playMode != Manipulator then return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if inputType == TouchUp	then touchDownPos = Vector2.None; isManipulating = false
+		if inputType == TouchUp	then touchDownPos = Vector2.None
 			
 		// Which handle are we currently hovering over?
-		if items and not touchDownPos
+		if items and touchDownPos == Vector2.None
 			let center = (min + max)/2
-			if referencePos manhattanDistanceTo max < handleSize	then overHandleDirection = IntVector2.DownRight; else
-			if referencePos manhattanDistanceTo min < handleSize	then overHandleDirection = IntVector2.UpLeft; else
-			if referencePos manhattanDistanceTo {max.x, min.y} < handleSize	then overHandleDirection = IntVector2.UpRight; else
-			if referencePos manhattanDistanceTo {min.x, max.y} < handleSize	then overHandleDirection = IntVector2.DownLeft; else
-			if referencePos manhattanDistanceTo {max.x, center.y} < handleSize	then overHandleDirection = IntVector2.Right; else
-			if referencePos manhattanDistanceTo {min.x, center.y} < handleSize	then overHandleDirection = IntVector2.Left; else
-			if referencePos manhattanDistanceTo {center.x, min.y} < handleSize	then overHandleDirection = IntVector2.Up; else
-			if referencePos manhattanDistanceTo {center.x, max.y} < handleSize	then overHandleDirection = IntVector2.Down; else
-				                                                                     overHandleDirection = IntVector2.None
+
+			switch referencePos
+				.manhattanDistanceTo(max) < handleSize	then overHandleDirection = IntVector2.DownRight
+				.manhattanDistanceTo(min) < handleSize	then overHandleDirection = IntVector2.UpLeft
+				.manhattanDistanceTo({max.x, min.y}) < handleSize	then overHandleDirection = IntVector2.UpRight
+				.manhattanDistanceTo({min.x, max.y}) < handleSize	then overHandleDirection = IntVector2.DownLeft
+				.manhattanDistanceTo({max.x, center.y}) < handleSize	then overHandleDirection = IntVector2.Right
+				.manhattanDistanceTo({min.x, center.y}) < handleSize	then overHandleDirection = IntVector2.Left
+				.manhattanDistanceTo({center.x, min.y}) < handleSize	then overHandleDirection = IntVector2.Up
+				.manhattanDistanceTo({center.x, max.y}) < handleSize	then overHandleDirection = IntVector2.Down
+				default 	then overHandleDirection = IntVector2.None
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
-		if !overHandleDirection and codeId >= waitingForCodeId
+		if overHandleDirection == IntVector2.None and codeId >= waitingForCodeId
 			if (inputType == TouchDown and !insideGizmo) 
 			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
 				GizmoOverItem[] overItems
-				for graphics.items as item
+				let graphicsItems = graphics.drawingOrder == LastDrawnWillBeInFront ? graphics.items : graphics.items.clone.reverse
+				for graphicsItems as item backwards
 					if pixelPos.insidePolygon item.poly
 						if item.positionLocation
 							flattenLocations overItems, item, item.positionLocation
 						else
 						if item.location != null
 							overItems.add {item, item.location}
-									
+
 				if overItems.length
 					// Select next item cycling through all items the mouse pointer is over
 					if inputType == TouchDown then locationIndex = 0
 					let selectedStackItem = overItems[locationIndex++ mod overItems.length]
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
-					Platform.sendSelectToEditor cursorLocation.file, cursorLocation.start
+					Platform.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
+					showSelection = true
+					Platform.replay updateMedia:false
 				else
 					// Deselect
-					locationIndex = 0
 					cursorLocation = null
-					Platform.sendDeselectToEditor
+					locationIndex = 0
+					showSelection = false
+					Platform.replay updateMedia:false
 		
 		if cursorLocation
 			GizomInfluence[] influences
-			if overHandleDirection
+			if overHandleDirection != IntVector2.None
 				// Resize the item (we are over a handle)
 				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0
@@ -2188,17 +2198,25 @@ internal skipInit transient unit gizmo
 					// Add new position
 					influences.add {cursorLocation.file, cursorLocation.end, cursorLocation.end, deltas:[referencePos.x - touchDownPos.x, referencePos.y - touchDownPos.y], initialValues:[0,0], label:"position"}
 				
-			// Send manipulation to editor	
-			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId
+			// Send manipulation to editor
+			let now = PlainDate.realTime
+			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and now > lastSendTime + 100
+				now = lastSendTime
 				if not isManipulating and movedSinceTouchDown
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
 					aspectRatio = (max.y - min.y) / (max.x - min.x)
-					Platform.sendStartManipulationToEditor influences
+					Platform.sendToEditor {type:"startManipulation", influences}
+					showSelection = true
 					
 				if isManipulating
 					// Move manipulation
-					Platform.sendMoveManipulationToEditor influences, ++waitingForCodeId
+					Platform.sendToEditor {type:"moveManipulation", influences, codeId:++waitingForCodeId}
+
+			if inputType == TouchUp && isManipulating
+				// End manipulation
+				isManipulating = false
+				Platform.sendToEditor {type:"endManipulation",  influences}
 			
 	private js void setCursor: string cursor
 		document.body.style.cursor = cursor

@@ -376,7 +376,6 @@ internal transient skipInit unit core
 		
 		let str = new Date().toString() + " " + text
 		statistics.systemLogs.push(str)
-		debug.logs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
 		
@@ -453,7 +452,7 @@ internal transient skipInit unit core
 		input.localUser = input.internalUsers.find . and .id == player.id
 		for prevPlayer.touches
 			input.handleUpdateTouchAfterSwitchingUser .id, .referencePosition
-		Platform.updateTitle
+		Platform.updatePageIconAndTitle
 			
 	switchSendInterval: int sendInterval
 		this.sendInterval = sendInterval
@@ -865,6 +864,7 @@ internal transient skipInit unit core
 		} else {
 			core.log errorMessage
 		}
+		System.logError error
 		
 internal transient unit Snapshot
 	int autoSaveCount

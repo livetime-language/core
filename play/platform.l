@@ -11,6 +11,7 @@ transient skipInit unit Platform
 	public supportedUserCount = Range 2..4
 	public bool showDebugInfo = false
 	public bool isLocal = false
+	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
 	
 	// Info
@@ -137,11 +138,11 @@ transient skipInit unit Platform
 					core.onError .
 				finally 
 					sendFinished
-					updateTitle
+					updatePageIconAndTitle
 		catch
 			core.onError .
 			sendFinished
-			updateTitle
+			updatePageIconAndTitle
 	
 	private async js void preload
 		if(app.preload) await app.preload();
@@ -154,7 +155,7 @@ transient skipInit unit Platform
 		core.runTest testFunction, id
 			
 	// This is called after every code change to replay all inputs with the new code
-	private async replay: bool updateMedia
+	internal async replay: bool updateMedia
 		if runningTestFunction
 			core.runTest runningTestFunction, targetFrame:core.frame-1, interrruptAtOutputIndex:core.interrruptAtOutputIndex
 		else
@@ -172,7 +173,7 @@ transient skipInit unit Platform
 	goToFrame: int targetFrame, int interrruptAtOutputIndex, bool saveHome = false
 		if playMode != Pause
 			playMode = Pause
-			updateTitle
+			updatePageIconAndTitle
 		if saveHome
 			homeFrame = targetFrame
 			homeInterrruptAtOutputIndex = interrruptAtOutputIndex
@@ -202,16 +203,17 @@ transient skipInit unit Platform
 		if playMode == Play or playMode == Record or waitingForInitialData
 			core.animationFrame
 				
-	private enterSlideMode:PlayMode playMode
+	private startManipulator:PlayMode playMode
 		this.playMode = playMode
-		updateTitle
-		sendFrameAndPlayMode
+		gizmo.clear
+		updatePageIconAndTitle
+		replay updateMedia:false
 	
 	internal stop
 		playMode = Stop
 		gizmo.clear
 		runningTestFunction = null
-		updateTitle
+		updatePageIconAndTitle
 		try
 			core.stop
 		catch
@@ -222,7 +224,7 @@ transient skipInit unit Platform
 	internal pause
 		playMode = Pause
 		gizmo.clear
-		updateTitle
+		updatePageIconAndTitle
 		sendFrameAndPlayMode frame:core.frame-1
 		audio.stop
 
@@ -230,7 +232,7 @@ transient skipInit unit Platform
 		core.adjustStartTimeIfNeeded
 		playMode = Record
 		gizmo.clear
-		updateTitle
+		updatePageIconAndTitle
 		core.record
 
 	internal play
@@ -238,31 +240,19 @@ transient skipInit unit Platform
 		goToFrame core.frame-1, interrruptAtOutputIndex:-1, saveHome:false
 		core.adjustStartTimeIfNeeded
 		playMode = Play
-		updateTitle
+		updatePageIconAndTitle
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
 		if playMode == Pause or playMode == Stop then core.step fastForward:false draw:true
-	
-	internal js void sendSelectToEditor: string cursorFile, int cursorPos
-		_sendToEditor({type:"select", cursorFile, cursorPos})
-	
-	internal js void sendDeselectToEditor
-		_sendToEditor({type:"deselect"})
-	
-	internal js void sendStartManipulationToEditor: GizomInfluence[] influences
-		_sendToEditor({type:"startManipulation", influences})
-	
-	internal js void sendMoveManipulationToEditor: GizomInfluence[] influences, int codeId
-		_sendToEditor({type:"moveManipulation", influences, codeId})
-	
+		
 	internal js void sendWatch: int frame, string text, int location, string file
 		_sendToEditor({type:"watch", frame, text, location, file})
 	
 	internal js void sendClearTimeline:
 		_sendToEditor({type:"clearTimeline"})
 	
-	internal inline js void sendToEditor: dynamic message
+	inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)
 		
 	internal inline js void sendStringToEditor: string message
@@ -322,18 +312,28 @@ transient skipInit unit Platform
 		Slide:	"⏭"
 	}
 
-	internal updateTitle
+	internal updatePageIconAndTitle
 		if not isDebug then return
-		if not isConnectedToEditor
-			setPageTitle "✗"
-		else
-			let playerName = input.localPlayer?.toString or ""
-			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+		let playerName = input.localPlayer?.toString or ""
 
+		if showPlayModeInPageIcon
+			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+			switch
+				not isConnectedToEditor	then setPageIcon "/_dev/NotConnected.png"
+				playMode == Stop	then setPageIcon "/_dev/Stop.png"
+				playMode == Pause	then setPageIcon "/_dev/Pause.png"
+				playMode == Play	then setPageIcon "/_dev/Play.png"
+				playMode == Record 	then setPageIcon "/_dev/Record.png"
+				playMode == Manipulator	then setPageIcon "/_dev/Manipulator.png"
+				playMode == Slide	then setPageIcon "/_dev/Slide.png";
+		else
+			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+	
 	js void setPageTitle: string title
 		document.title = title;
 
 	js void setPageIcon: string iconUrl
+		console.log("Setting page icon to " + iconUrl)
 		var link = document.querySelector("link[rel~='icon']");
 		if (!link) {
 			link = document.createElement('link');

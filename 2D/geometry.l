@@ -19,9 +19,6 @@ struct Vector2
 	// A string representation of the vector
 	importance:4 string toString => "\{{x.format(maxFractionDigits:1)}, {y.format(maxFractionDigits:1)}\}"
 	
-	// Returns true if the vector is not equal to Vector2.None
-	bool toBool => (x != float.infinity || y != float.infinity)
-	
 	// Creates a copy of the vector with the same values
 	importance:4 Vector2 clone => {x, y, location}
 		
@@ -87,7 +84,10 @@ struct Vector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	bool !() return (this.x == 0 && this.y == 0)
+	// Returns true if the vector is not equal to Vector2.None
+	inline js bool toBool() (this != null && (this.x != float.infinity || this.y != float.infinity))
+	inline js bool !() (this == null || (this.x == float.infinity && this.y == float.infinity))
+
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
@@ -191,10 +191,10 @@ struct Vector2
 		let delta = targetPosition - this
 		if delta.x != 0 || delta.y != 0
 			delta = delta.normalize * speed
-			if delta.x > 0 then x = math.min(x + delta.x, targetPosition.x)
-			else            x = math.max(x + delta.x, targetPosition.x)
-			if delta.y > 0 then y = math.min(y + delta.y, targetPosition.y)
-			else            y = math.max(y + delta.y, targetPosition.y)
+			if delta.x > 0 then	x = math.min(x + delta.x, targetPosition.x)
+			else	x = math.max(x + delta.x, targetPosition.x)
+			if delta.y > 0 then	y = math.min(y + delta.y, targetPosition.y)
+			else	y = math.max(y + delta.y, targetPosition.y)
 		else
 		if onReachedTarget != null
 			onReachedTarget
@@ -418,9 +418,6 @@ struct IntVector2
 	// A string representation of the vector
 	importance:4 string toString => "\{{x}, {y}\}"
 	
-	// Returns true if the vector is not equal to IntVector2.none
-	bool toBool => (x != int.minValue || y != int.minValue)
-	
 	implicit Vector2 toVector2 => {x, y, location}
 	
 	IntVector2 assign IntVector2 other: x = other.x; y = other.y; location = other.location; return this
@@ -464,7 +461,10 @@ struct IntVector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	bool !() return (this.x == 0 && this.y == 0)
+	// Returns true if the vector is not equal to IntVector2.None
+	inline js bool toBool() (this != null && (this.x != float.minValue || this.y != float.minValue))
+	inline js bool !() (this == null || (this.x == float.minValue && this.y == float.minValue))
+
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
