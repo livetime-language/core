@@ -132,12 +132,15 @@ transient skipInit unit Platform
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
 					if !isDebug then record
-					core.addOutput "finished"
+					
+					// Tell the editor that we can call "replay" when the code changes
+					// If we didn't reach this point, we call "start" again when the code changes
+					sendToEditor {type:"startupComplete"}
 						
 				catch
 					core.onError .
 				finally 
-					core.sendOutputToEditor
+					core.sendOutputToEditor frame:core.frame-1
 					updatePageIconAndTitle
 		catch
 			core.onError .
