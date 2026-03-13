@@ -83,6 +83,7 @@ internal transient skipInit unit core
 	void stop
 		output.clear
 		outputIndex = 0
+		outputSentUpTo = 0
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
@@ -203,6 +204,7 @@ internal transient skipInit unit core
 			try
 				if codeChanged
 					frameWithNewWatches = 0
+					outputSentUpTo = 0
 					reset
 				else
 				if targetFrame < frame or previouylyInterrupted
@@ -249,6 +251,7 @@ internal transient skipInit unit core
 		Platform.fastForward = false
 		try
 			try
+				outputSentUpTo = 0
 				reset
 				testFunction()
 			catch
@@ -275,15 +278,21 @@ internal transient skipInit unit core
 	int outputIndex = -1
 	int interrruptAtOutputIndex = -1
 	int targetFrame = -1
+	int outputSentUpTo = 0
 
 	addOutput: string value
 		value += "|{outputIndex}|{frame}"
 		output[outputIndex] = value
-		if Platform.playMode == Record then Platform.sendStringToEditor value
 		
 		// Throw an exception when we reach interrruptAtOutputIndex
 		if outputIndex++ == interrruptAtOutputIndex
 			throw {"interrrupt"}
+
+	sendOutputToEditor: int frame = core.frame
+		string result = "#{frame}|{frames}|{(int)Platform.playMode}"
+		for outputSentUpTo to output.length
+			result += "\n{output[.].replaceAll("\n", "\\n")}"
+		Platform.sendStringToEditor result
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -477,7 +486,7 @@ internal transient skipInit unit core
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
-		if Platform.isDebug and !fastForward then Platform.sendFrameAndPlayMode
+		if Platform.isDebug and !fastForward then sendOutputToEditor
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
 		checkSaveState
@@ -861,6 +870,7 @@ internal transient skipInit unit core
 		hasErrors = true
 		if(core.runningTest || Platform.isDebug) {
 			addOutput "exception|{errorMessage}||0"
+			sendOutputToEditor
 		} else {
 			core.log errorMessage
 		}

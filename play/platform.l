@@ -222,7 +222,7 @@ transient skipInit unit Platform
 		playMode = Pause
 		gizmo.clear
 		updatePageIconAndTitle
-		sendFrameAndPlayMode frame:core.frame-1
+		core.sendOutputToEditor frame:core.frame-1
 		audio.stop
 
 	internal record
