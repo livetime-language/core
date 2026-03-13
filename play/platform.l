@@ -81,6 +81,7 @@ transient skipInit unit Platform
 	// This is called when the application starts for the first time	
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
 		try
+			System.log "Platform.start"
 			let now = PlainDate.preciseTime
 			
 			initMedia
@@ -131,15 +132,15 @@ transient skipInit unit Platform
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
 					if !isDebug then record
+					core.addOutput "finished"
 						
 				catch
 					core.onError .
 				finally 
-					sendFinished
+					core.sendOutputToEditor
 					updatePageIconAndTitle
 		catch
 			core.onError .
-			sendFinished
 			updatePageIconAndTitle
 	
 	private async js void preload
@@ -154,6 +155,7 @@ transient skipInit unit Platform
 			
 	// This is called after every code change to replay all inputs with the new code
 	internal async replay: bool updateMedia
+		System.log "Platform.replay"
 		if runningTestFunction
 			core.runTest runningTestFunction, targetFrame:core.frame-1, interrruptAtOutputIndex:core.interrruptAtOutputIndex
 		else
@@ -216,7 +218,7 @@ transient skipInit unit Platform
 		catch
 			core.onError .
 		finally
-			sendFinished
+			core.sendOutputToEditor
 
 	internal pause
 		playMode = Pause
@@ -254,12 +256,10 @@ transient skipInit unit Platform
 		
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
-
-		
-	sendFinished
-		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
 	
-		
+	// sendFinished
+	// 	if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
+			
 	private void toggleDebugInfo
 		showDebugInfo = !showDebugInfo;
 		setLocalStorageObject("showDebugInfo", showDebugInfo ? "true" : "false")
