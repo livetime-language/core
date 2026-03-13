@@ -84,7 +84,6 @@ internal transient skipInit unit core
 		output.clear
 		outputIndex = 0
 		outputSentUpTo = 0
-		addOutput "start"
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
@@ -115,6 +114,7 @@ internal transient skipInit unit core
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
 		outputIndex = 0
+		addOutput "start"
 		// if targetFrame == frame-1 and interrruptAtOutputIndex == -1
 		// 	output.clear
 		players.clear
