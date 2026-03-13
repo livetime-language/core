@@ -150,9 +150,6 @@ skipInit global unit Platform
 				window.tick();
 			}
 		}
-		if(Platform.isDebug && !window._heartbeatInterval) {
-			window._heartbeatInterval = setInterval(() => _sendStringToEditor("~"), 3000)
-		}
 
 	internal inline js void sendErrorToEditor: Error error
 		if(window._sendErrorToEditor) _sendErrorToEditor(error)

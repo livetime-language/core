@@ -82,8 +82,6 @@ transient skipInit unit Platform
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
 		try
 			let now = PlainDate.preciseTime
-			this.nextHeartbeatTime = 0
-			heartbeat "start"
 			
 			initMedia
 			initPlatform
@@ -199,7 +197,6 @@ transient skipInit unit Platform
 	
 	// This is called every animation frame
 	private tick
-		heartbeat "tick"
 		if playMode == Play or playMode == Record or waitingForInitialData
 			core.animationFrame
 				
@@ -258,21 +255,10 @@ transient skipInit unit Platform
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
 
-	sendFrameAndPlayMode: int frame = core.frame, int frames = core.frames, PlayMode playMode = Platform.playMode
-		if Platform.isDebug then sendStringToEditor("#{frame}|{frames}|{(int)playMode}")
 		
 	sendFinished
 		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
 	
-	private float nextHeartbeatTime
-	
-	private js void heartbeat: string context
-		if(!Platform.isDebug) return
-		let now = Date.now();
-		if(now > Platform.nextHeartbeatTime) {
-			Platform.nextHeartbeatTime = now + 3000;
-			_sendStringToEditor("~");
-		}
 		
 	private void toggleDebugInfo
 		showDebugInfo = !showDebugInfo;
