@@ -114,9 +114,9 @@ internal transient skipInit unit core
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
 		outputIndex = 0
+		if targetFrame == frame-1 and interrruptAtOutputIndex == -1
+			output.clear
 		addOutput "start"
-		// if targetFrame == frame-1 and interrruptAtOutputIndex == -1
-		// 	output.clear
 		players.clear
 		input.playersById.clear
 		input.host = null
@@ -238,7 +238,7 @@ internal transient skipInit unit core
 			adjustStartTime
 			isPremiere = true
 			let output = codeChanged ? core.output : null
-			Platform.sendToEditor {type:"finished", frame:core.frame-1, frames:core.frames, playMode:Platform.playMode, output}
+			sendOutputToEditor frame:core.frame-1
 
 	runTest: string testFunctionName, int id = -1, int targetFrame = -1, int interrruptAtOutputIndex = -1
 		let parts = testFunctionName.split(".")
@@ -290,9 +290,12 @@ internal transient skipInit unit core
 			throw {"interrrupt"}
 
 	sendOutputToEditor: int frame = core.frame
-		string result = "#{frame}|{frames}|{(int)Platform.playMode}"
+		string result
 		for outputSentUpTo to output.length
-			result += "\n{output[.].replaceAll("\n", "\\n")}"
+			if(result) result += "\n"
+			result += "{output[.].replaceAll("\n", "\\n")}"
+		if result then result += "\n"
+		result += "#{frame}|{frames}|{(int)Platform.playMode}"
 		outputSentUpTo = output.length
 		Platform.sendStringToEditor result
 
@@ -488,7 +491,7 @@ internal transient skipInit unit core
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
-		if Platform.isDebug and !fastForward then sendOutputToEditor
+		if Platform.isDebug and (Platform.playMode == Play or Platform.playMode == Record) then sendOutputToEditor
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
 		checkSaveState
