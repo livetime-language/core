@@ -85,8 +85,8 @@ struct Vector2
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
 	// Returns true if the vector is not equal to Vector2.None
-	inline js bool toBool() (this != null && (this.x != float.infinity || this.y != float.infinity))
-	inline js bool !() (this == null || (this.x == float.infinity && this.y == float.infinity))
+	inline js bool toBool() (this != null && (this.x != Number.POSITIVE_INFINITY || this.y != Number.POSITIVE_INFINITY))
+	inline js bool !() (this == null || (this.x == Number.POSITIVE_INFINITY && this.y == Number.POSITIVE_INFINITY))
 
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
@@ -363,7 +363,7 @@ struct IntVector2
 	SourceCodeLocation location
 	
 	// Used to specify that the vector is not set or invalid
-	static importance:4 inline IntVector2 None() IntVector2(int.minValue, int.minValue, null)
+	static importance:4 inline IntVector2 None() IntVector2(-9007199254740991, -9007199254740991, null)
 		
 	// {0,0}
 	static importance:4 inline IntVector2 Zero() IntVector2(0, 0, null)
@@ -462,8 +462,8 @@ struct IntVector2
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
 	// Returns true if the vector is not equal to IntVector2.None
-	inline js bool toBool() (this != null && (this.x != float.minValue || this.y != float.minValue))
-	inline js bool !() (this == null || (this.x == float.minValue && this.y == float.minValue))
+	inline js bool toBool() (this != null && (this.x != -9007199254740991 || this.y != -9007199254740991))
+	inline js bool !() (this == null || (this.x == -9007199254740991 && this.y == -9007199254740991))
 
 	Vector2 -() return {-this.x, -this.y, this.location}
 	
