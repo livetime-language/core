@@ -711,6 +711,41 @@ transient skipInit global unit graphics
 			))
 		}
 		
+	global js void drawPartialImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                      Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                      implicit Vector2 sourcePosition = {}	// The position of the source image to draw
+							  implicit Vector2 sourceSize = {}	// The size of the source image to draw
+							  implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                      Color color = White	// Tint the image with this color
+		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
+		                      VerticalAlignment valign = Middle	// The vertical alignment of the image
+		                      SourceCodeLocation location
+		if(!image?.texture?.ensureIsAvailable()) return
+		if(graphics.isVisibleFor(visibleFor)) {
+			let f = image.frames[frame % image.frames.length]
+			let sizeX = size.x || f.w
+			let sizeY = size.y || (sizeX/f.w)*f.h
+			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
+			if(factor > 1) { sizeX *= factor; sizeY *= factor }
+			let halfSizeX = Math.round(sizeX*.5)
+			let halfSizeY = Math.round(sizeY*.5)
+			graphics.add(new DisplayImage(
+				graphics.totalMatrix,
+				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
+				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
+				sizeX, sizeY,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				`PartialImage ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
+				location, position.location, size.location,
+				image.texture.imageOrCanvas,
+				f.x1 + sourcePosition.x, f.y1+sourcePosition.y, sourceSize.x || size.x || f.w, sourceSize.y || size.y || f.h,
+				color
+			))
+		}
 	// ------------------------------------------------------- Text -------------------------------------------------------
 	
 	// Draw text on the screen.
