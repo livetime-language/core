@@ -250,7 +250,7 @@ internal TextHighlight
 // - the size in the screen size in pixels of the target platform
 // - the origin in the top left corner
 transient skipInit global unit graphics
-	private object canvas
+	private dynamic canvas
 	internal dynamic context
 	internal Matrix2D baseMatrix, totalMatrix, localMatrix
 	internal DisplayItem[] items		
@@ -287,7 +287,6 @@ transient skipInit global unit graphics
 		graphics.canvas.style.height = window.innerHeight + "px";
 		graphics.canvas.width = graphics.pixelSize.x;
 		graphics.canvas.height = graphics.pixelSize.y;
-		graphics.canvas.imageSmoothingEnabled = true;
 		graphics.canvas.imageSmoothingQuality = "high";
 		
 		graphics.context = graphics.canvas.getContext("2d");
@@ -2330,6 +2329,7 @@ internal transient immutable DisplayItem DisplayImage
 		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
+		graphics.context.imageSmoothingEnabled = false;
 			
 		if(this.color.hex == "#ffffff" || this.color.hex == "#ffffffff" || this.color == null) {
 			try{ graphics.context.drawImage(this.htmlImage, this.sx, this.sy, this.sw, this.sh, this.x, this.y, this.w, this.h) }
