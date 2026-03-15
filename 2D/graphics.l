@@ -261,8 +261,8 @@ transient skipInit global unit graphics
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
-	public Color topAndBottomMarginColor = #000000 // If the screen is higher than the reference, show a letterbox in this color
-	public Color leftAndRightMarginColor = #000000 // If the screen is wider than the reference, show a letterbox in this color
+	public Color topAndBottomMarginColor // If the screen is higher than the reference, show a letterbox in this color
+	public Color leftAndRightMarginColor // If the screen is wider than the reference, show a letterbox in this color
 	
 	private Vector2 pixelSize
 	internal Vector2 size
@@ -273,6 +273,7 @@ transient skipInit global unit graphics
 	
 	async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
+		if Platform.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
