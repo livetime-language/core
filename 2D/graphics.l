@@ -917,7 +917,7 @@ transient skipInit global unit graphics
 			// Handle click (only visible buttons are clickable)
 			let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
 				Vector2 effectiveSize = {sizeX + clickableMargin.x, sizeY + clickableMargin.y}
-				input.onTouchDown position, size:effectiveSize, by:effectiveClickableBy, showClickableArea, do:onClick
+				input.onTouchDown {position.x + offsetX, position.y + offsetY}, size:effectiveSize, by:effectiveClickableBy, showClickableArea, align:Left, valign:Top, do:onClick
 				if hotkey
 					input.onKeyDown hotkey, by:effectiveClickableBy
 						onClick null
