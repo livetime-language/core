@@ -447,23 +447,22 @@ class Player
 		for IntVector2.primaryDirections as dir
 			IntVector2 neighborPos = originPos + dir
 			Cell neighborCell = app.grid[neighborPos]
-			Player opponent = neighborCell.player
-			
-			if neighborCell and opponent and opponent != this
-				Cell[] surroundedCells = collectsurroundedCells neighborPos
-					surroundedCells.each.player = null
-					print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.joinToString.gridPos.toString}", type:Reaction
-					
-					// Animate the captured pieces to the player's video feed
-					animate duration:500 milliseconds
-						// Called on every tick of the animation, passing in the progress ranging from 0 to 1
-						for surroundedCells as cell
-							let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
-							drawCircle pos, size:60, color:opponent.playerColor
-					then
-						// Called when the animation finished
-						capturedPiecesCount += surroundedCells.length
-						print "Finished animation", type:Reaction
+				Player opponent = neighborCell.player			
+				if neighborCell and opponent and opponent != this
+					Cell[] surroundedCells = collectsurroundedCells neighborPos
+						surroundedCells.each.player = null
+						print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.joinToString.gridPos.toString}", type:Reaction
+						
+						// Animate the captured pieces to the player's video feed
+						animate duration:500 milliseconds
+							// Called on every tick of the animation, passing in the progress ranging from 0 to 1
+							for surroundedCells as cell
+								let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
+								drawCircle pos, size:60, color:opponent.playerColor
+						then
+							// Called when the animation finished
+							capturedPiecesCount += surroundedCells.length
+							print "Finished animation", type:Reaction
 	
 	// We can specify the return type in front of the name of a function
 	Cell[] collectsurroundedCells: IntVector2 originPos
