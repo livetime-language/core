@@ -206,6 +206,7 @@ internal transient skipInit unit core
 				if codeChanged
 					frameWithNewWatches = 0
 					outputSentUpTo = 0
+					output.clear
 					reset
 				else
 				if targetFrame < frame or previouylyInterrupted
