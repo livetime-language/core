@@ -306,7 +306,7 @@ transient skipInit unit Platform
 		let playerName = input.localPlayer?.toString or ""
 
 		if showPlayModeInPageIcon
-			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+			setPageTitle "{playerName}"
 			switch
 				not isConnectedToEditor	then setPageIcon "/_dev/NotConnected.png"
 				playMode == Stop	then setPageIcon "/_dev/Stop.png"
@@ -316,7 +316,7 @@ transient skipInit unit Platform
 				playMode == Manipulator	then setPageIcon "/_dev/Manipulator.png"
 				playMode == Slide	then setPageIcon "/_dev/Slide.png";
 		else
-			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+			setPageTitle "{iconForPlayMode[playMode]} | {playerName}"
 	
 	js void setPageTitle: string title
 		document.title = title;
