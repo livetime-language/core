@@ -261,8 +261,8 @@ transient skipInit global unit graphics
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
-	public Color topAndBottomMarginColor = null // If the screen is higher than the reference, show a letterbox in this color
-	public Color leftAndRightMarginColor = null // If the screen is wider than the reference, show a letterbox in this color
+	public Color topAndBottomMarginColor = #000000 // If the screen is higher than the reference, show a letterbox in this color
+	public Color leftAndRightMarginColor = #000000 // If the screen is wider than the reference, show a letterbox in this color
 	
 	private Vector2 pixelSize
 	internal Vector2 size
