@@ -489,6 +489,3 @@ class Player
 						queue.add neighborPos
 						
 		return surroundedCells
-
-# Verify that images have the right size and do not overlap
-The dev server is running at http://localhost:8080. When you are done writing code, open this url in the integrated browser and take a screenshot. Check that everything looks right. Check if all images have the right size and nothing overlaps that shouldn't overlap.
