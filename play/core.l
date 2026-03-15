@@ -162,7 +162,8 @@ internal transient skipInit unit core
 			
 		if !startInLobby and not testLobby
 			graphics.startFrame
-			startApp
+			lobby.inLobby = false
+			app.start??()
 		if simulateRollback then checkSaveState
 		
 	// Keep event stream running, recreate players, call init function and start app
@@ -186,7 +187,8 @@ internal transient skipInit unit core
 		input.localPlayer = input.playersById[localUserId]
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
 		input.updatePlayers
-		startApp
+		lobby.inLobby = false
+		app.start??()
 	
 	// Steps forward when going to a frame in the future
 	// or replays from the beginning when going to a frame in the past
@@ -649,10 +651,6 @@ internal transient skipInit unit core
 			lastChecksumFrame = frame
 				
 	inline js int currentTime => Date.now()
-	
-	js void startApp
-		lobby.inLobby = false
-		if(app.start) app.start()
 		
 	private adjustStartTime
 		startTime = math.round(currentTime - frame*frameTime - (frameTime*.5))
