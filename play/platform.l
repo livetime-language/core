@@ -243,6 +243,10 @@ transient skipInit unit Platform
 		core.adjustStartTimeIfNeeded
 		playMode = Play
 		updatePageIconAndTitle
+
+	internal togglePlay
+		if playMode == Play or playMode == Record then	pause
+		else	play
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);

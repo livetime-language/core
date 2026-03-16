@@ -568,6 +568,9 @@ skipInit global unit input
 			if(key == "F5" && Platform.isDebug) {
 				Platform.stop();
 				e.preventDefault();
+			} else if(key == "F7" && Platform.isDebug) {
+				Platform.togglePlay();
+				e.preventDefault();
 			} else if(key == "F9") {
 				if(e.shiftKey) { core.saveLogs(); }
 				else           { Platform.toggleDebugInfo(); }
