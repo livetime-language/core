@@ -1129,32 +1129,32 @@ skipInit global unit input
 			if players.length >= 1
 				GameController c = players[0].gameController
 				if c.type == Keyboard
-					c.up.assign    "↑"     Up
-					c.right.assign "→"     Right
-					c.down.assign  "↓"     Down
-					c.left.assign  "←"     Left
-					c.A.assign     "SPACE" Space
-					c.B.assign     "X"     X
+					c.up.assign    "↑"	Up
+					c.right.assign "→"	Right
+					c.down.assign  "↓"	Down
+					c.left.assign  "←"	Left
+					c.A.assign     "Shift"	Shift
+					c.B.assign     "Control"	Ctrl
 			
 			if players.length >= 2
 				GameController c = players[1].gameController
 				if c.type == Keyboard
-					c.up.assign    "W"     W
-					c.right.assign "D"     D
-					c.down.assign  "S"     S
-					c.left.assign  "A"     A
-					c.A.assign     "F"     F
-					c.B.assign     "G"     G
+					c.up.assign    "W"	W
+					c.right.assign "D"	D
+					c.down.assign  "S"	S
+					c.left.assign  "A"	A
+					c.A.assign     "F"	F
+					c.B.assign     "G"	G
 			
 			if players.length >= 3
 				GameController c = players[2].gameController
 				if c.type == Keyboard
-					c.up.assign    "I"     I
-					c.right.assign "L"     L
-					c.down.assign  "K"     K
-					c.left.assign  "J"     J
-					c.A.assign     "O"     O
-					c.B.assign     "P"     P
+					c.up.assign    "I"	I
+					c.right.assign "L"	L
+					c.down.assign  "K"	K
+					c.left.assign  "J"	J
+					c.A.assign     "O"	O
+					c.B.assign     "P"	P
 			
 			controllerButtonMap.clear
 			for players as player
@@ -1167,12 +1167,12 @@ skipInit global unit input
 			for players
 				GameController c = .gameController
 				if c.type == Keyboard
-					c.up.assign    "↑"     Up
-					c.right.assign "→"     Right
-					c.down.assign  "↓"     Down
-					c.left.assign  "←"     Left
-					c.A.assign     "SPACE" Space
-					c.B.assign     "X"     X
+					c.up.assign    "↑"	Up
+					c.right.assign "→"	Right
+					c.down.assign  "↓"	Down
+					c.left.assign  "←"	Left
+					c.A.assign     "Shift"	Shift
+					c.B.assign     "Control"	Ctrl
 			
 			controllerButtonMap.clear
 			// TODO: Research why this is sometimes called before we have a local player
