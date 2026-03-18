@@ -22,7 +22,7 @@ internal transient skipInit unit core
 	bool enableAudioForStaging = false
 		
 	SendInputsMode sendInputsMode = Peer
-	internal const ticksPerSecond = 30
+	const ticksPerSecond = 30
 	const frameTime = 1000/ticksPerSecond
 	
 	NetworkMode mode                // Whether we are in local or connected mode
