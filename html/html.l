@@ -528,7 +528,7 @@ global priority low skipInit static class html
 			// Check if style has changed using a shadow copy (fastest)
 			let shadowStyle = element.shadowStyle || (element.shadowStyle = new Map)
 			for(let key in html.expandStyle(style)) {
-				let value = style[key].toString();
+				let value = style[key]?.toString();
 				if(shadowStyle.get(key) != value) {
 					element.style[key] = value;
 					shadowStyle.set(key, value);
