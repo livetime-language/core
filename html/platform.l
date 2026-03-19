@@ -86,6 +86,7 @@ skipInit global unit Platform
 					html.resize
 					Time.printTimer "resize"
 					startTickInterval
+					sendToEditor {type:"startupComplete"}
 				finally
 					sendFinished
 					updatePageIconAndTitle
@@ -105,6 +106,7 @@ skipInit global unit Platform
 		
 	async replay
 		try
+			sendStringToEditor "start"
 			if resetWhenCodeChanged then html.reset
 			initMedia
 			initBackend
