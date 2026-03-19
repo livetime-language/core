@@ -62,10 +62,10 @@ skipInit global unit Platform
 			
 	async start: bool isDebug
 		try
-			print Time.preciseTime - startTime
+			this.isDebug = isDebug
+			// print Time.preciseTime - startTime
 			Time.startTimer
 			
-			this.isDebug = isDebug
 			this.referenceSizes = [
 				// {1920}
 				// {960 forWidthBelow:600 isMobile:true}
@@ -86,13 +86,10 @@ skipInit global unit Platform
 					html.resize
 					Time.printTimer "resize"
 					startTickInterval
-				catch 
-					sendErrorToEditor .
 				finally
 					sendFinished
 					updatePageIconAndTitle
-		catch 
-			sendErrorToEditor .
+		finally 
 			sendFinished
 			updatePageIconAndTitle
 		
@@ -117,7 +114,7 @@ skipInit global unit Platform
 			startApp
 			refresh
 		catch
-			sendErrorToEditor .
+			onError .
 		finally
 			sendFinished
 
@@ -150,13 +147,10 @@ skipInit global unit Platform
 				window.tick();
 			}
 		}
-		if(Platform.isDebug && !window._heartbeatInterval) {
-			window._heartbeatInterval = setInterval(() => _sendStringToEditor("~"), 3000)
-		}
 
-	internal inline js void sendErrorToEditor: Error error
-		if(window._sendErrorToEditor) _sendErrorToEditor(error)
-		else                          console.error(error)
+	onError: Error error
+		System.logError error
+		sendStringToEditor("exception|{error.stack}||0")
 
 	internal inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)
