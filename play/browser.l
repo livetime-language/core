@@ -121,6 +121,7 @@ transient skipInit unit Platform
 	
 unit file
 	js void saveText: string filename, string text
+		if(!core.isPremiere) return
 		var element = document.createElement("a");
 		element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
 		element.setAttribute("download", filename);
@@ -130,6 +131,7 @@ unit file
 		document.body.removeChild(element);
 		
 	js void saveBinary: string filename, Buffer buffer
+		if(!core.isPremiere) return
 		var binary = "";
 		var bytes = new Uint8Array(buffer.buffer);
 		var len = bytes.byteLength;

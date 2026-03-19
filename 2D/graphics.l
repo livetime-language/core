@@ -250,7 +250,7 @@ internal TextHighlight
 // - the size in the screen size in pixels of the target platform
 // - the origin in the top left corner
 transient skipInit global unit graphics
-	private object canvas
+	private dynamic canvas
 	internal dynamic context
 	internal Matrix2D baseMatrix, totalMatrix, localMatrix
 	internal DisplayItem[] items		
@@ -261,8 +261,8 @@ transient skipInit global unit graphics
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
-	public Color topAndBottomMarginColor = null // If the screen is higher than the reference, show a letterbox in this color
-	public Color leftAndRightMarginColor = null // If the screen is wider than the reference, show a letterbox in this color
+	public Color topAndBottomMarginColor // If the screen is higher than the reference, show a letterbox in this color
+	public Color leftAndRightMarginColor // If the screen is wider than the reference, show a letterbox in this color
 	
 	private Vector2 pixelSize
 	internal Vector2 size
@@ -273,6 +273,7 @@ transient skipInit global unit graphics
 	
 	async setup: Vector2 referenceSize
 		this.referenceSize = referenceSize
+		if Platform.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
@@ -287,7 +288,6 @@ transient skipInit global unit graphics
 		graphics.canvas.style.height = window.innerHeight + "px";
 		graphics.canvas.width = graphics.pixelSize.x;
 		graphics.canvas.height = graphics.pixelSize.y;
-		graphics.canvas.imageSmoothingEnabled = true;
 		graphics.canvas.imageSmoothingQuality = "high";
 		
 		graphics.context = graphics.canvas.getContext("2d");
@@ -459,11 +459,12 @@ transient skipInit global unit graphics
 		
 	global js void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
 		                      Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                      scale = 1.0	// Scale the image by this factor
 		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
 		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
-		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+							  alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White	// Tint the image with this color
 		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
 		                      VerticalAlignment valign = Middle	// The vertical alignment of the image
@@ -471,8 +472,8 @@ transient skipInit global unit graphics
 		if(!image?.texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
 			let f = image.frames[frame % image.frames.length]
-			let sizeX = size.x || f.w
-			let sizeY = size.y || (sizeX/f.w)*f.h
+			let sizeX = (size.x || f.w) * scale
+			let sizeY = size.y ? size.y * scale : (sizeX/f.w)*f.h
 			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 			if(factor > 1) { sizeX *= factor; sizeY *= factor }
 			let halfSizeX = Math.round(sizeX*.5)
@@ -498,26 +499,27 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawImage Idle, position:{0,0}, angle:45°
 	// Image: drawImage1.png
-	global js void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
-		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                      implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                      implicit Player[] visibleFor = null // Only this player or list of players will see the image
-		                      implicit frame = 0                  // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
-		                      alpha = 1.0                         // The opacity of the image (0: fully transparent, 1: fully visible)
-		                      Color color = White                 // Tint the image with this color
-		                      angle = 0.0                         // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		                      flipX = false                        // Mirror the image horizontally
-		                      flipY = false                        // Mirror the image vertically
+	global js void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                      Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                      scale = 1.0	// Scale the image by this factor
+		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                      Color color = White	// Tint the image with this color
+		                      angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                      flipX = false	// Mirror the image horizontally
+		                      flipY = false	// Mirror the image vertically
 		                      SourceCodeLocation location
 		if(angle == 0 && !flipX && !flipY) {
-			graphics.drawImage(image, position, size, visibleFor, frame, layer, alpha, color, 1, 1, location)
+			graphics.drawImage(image, position, scale, size, visibleFor, frame, layer, alpha, color, 1, 1, location)
 		} else {
 			if(!image.texture?.ensureIsAvailable()) return
 			if(graphics.isVisibleFor(visibleFor)) {
 				let f = image.frames[frame % image.frames.length]
-				let sizeX = size.x || f.w
-				let sizeY = size.y || (sizeX/f.w)*f.h
+				let sizeX = (size.x || f.w) * scale
+				let sizeY = size.y ? size.y * scale : (sizeX/f.w)*f.h
 				let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
 				if(factor > 1) { sizeX *= factor; sizeY *= factor }
 				let matrix = graphics.totalMatrix.clone()
@@ -550,6 +552,7 @@ transient skipInit global unit graphics
 	// Image: drawImage2.gif
 	global void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
 		                   Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                   scale = 1.0	// Scale the image by this factor
 		                   implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", "Walk2.png", ...)
@@ -560,7 +563,7 @@ transient skipInit global unit graphics
 		                   Color color = White	// Tint the image with this color
 		                   SourceCodeLocation location
 		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond + frameOffset) mod (frameCount or image.frames.length);
-		drawImage image, position, frame, size, visibleFor, layer, alpha, color, location
+		drawImage image, position, scale, frame, size, visibleFor, layer, alpha, color, location
 	
 	// Draw an image, animate it and flip it horizontally or vertically.
 	//
@@ -569,38 +572,40 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawImage Walk, position:{0,0}, framesPerSecond:10, flipX:true
 	// Image: drawImage3.gif
-	global void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
-		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
-		                   framesPerSecond = 0                  // Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit int layer = int.minValue    // Higher layers are drawn in front of lower layers
-		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
-		                   Color color = White                  // Tint the image with this color
-		                   angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		                   flipX = false                         // Mirror the image horizontally
-		                   flipY = false                         // Mirror the image vertically
+	global void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                   Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                   scale = 1.0	// Scale the image by this factor
+		                   implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                   implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                   implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                   Color color = White	// Tint the image with this color
+		                   angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                   flipX = false	// Mirror the image horizontally
+		                   flipY = false	// Mirror the image vertically
 		                   SourceCodeLocation location
 		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond) mod image.frames.length;
-		drawImage image, position, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
+		drawImage image, position, scale, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
 	
-	global importance:4 void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
-		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
-		                   implicit Player[] clickableBy = null // Only this player or list of players can touch or click the image
-		                   implicit frame = 0                   // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
-		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
-		                   Color color = White                  // Tint the image with this color
-	                       HorizontalAlignment align = Center   // The horizontal alignment of the image
-		                   VerticalAlignment valign = Middle    // The vertical alignment of the image
-			               clickableMargin = Vector2(16,16)     // The margin around the image within which it is clickable
-		                   showClickableArea = false            // Highlight the clickable area for debugging
-		                   hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		                   void(Touch touch) onClick            // Execute this code when the user touches or clicks the image or presses the hotkey
-		                   SourceCodeLocation location
-		drawImage image, position, frame, size, visibleFor, layer, alpha, color, align, valign, location
+	global importance:4 void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                                Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                                scale = 1.0	// Scale the image by this factor
+		                                implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the image
+		                                implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                                implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                                alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                                Color color = White	// Tint the image with this color
+	                                    HorizontalAlignment align = Center	// The horizontal alignment of the image
+		                                VerticalAlignment valign = Middle	// The vertical alignment of the image
+			                            clickableMargin = Vector2(16,16)	// The margin around the image within which it is clickable
+		                                showClickableArea = false	// Highlight the clickable area for debugging
+		                                hotkey = Key.None	// This keyboard shortcut will execute the onClick handler
+		                                void(Touch touch) onClick	// Execute this code when the user touches or clicks the image or presses the hotkey
+		                                SourceCodeLocation location
+		drawImage image, position, scale, frame, size, visibleFor, layer, alpha, color, align, valign, location
 			
 		// Handle click (only visible buttons are clickable)
 		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
@@ -619,24 +624,25 @@ transient skipInit global unit graphics
 	//             drawImage Idle, position:{0,0}, clickableMargin:{16,16}, clickableBy:me
 	//                 print "The image was clicked at {touch.position}"
 	// Image: drawImage0.png
-	global importance:4 void drawImage: Image image                          // The image to draw. PNG images in the "media" folder will automatically show up here
-		                   Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                   implicit Vector2 size = {}           // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
-		                   implicit Player[] visibleFor = null  // Only this player or list of players will see the image
-		                   implicit Player[] clickableBy = null // Only this player or list of players can touch or click the image
-		                   implicit frame = 0                   // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                   implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
-		                   alpha = 1.0                          // The opacity of the image (0: fully transparent, 1: fully visible)
-		                   Color color = White                  // Tint the image with this color
-		                   angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		                   flipX = false                         // Mirror the image horizontally
-		                   flipY = false                         // Mirror the image vertically
-		                   clickableMargin = Vector2(16,16)     // The margin around the image within which it is clickable
-		                   showClickableArea = false            // Highlight the clickable area for debugging
-		                   hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		                   void(Touch touch) onClick            // Execute this code when the user touches or clicks the image or presses the hotkey
-		                   SourceCodeLocation location
-		drawImage image, position, frame, size, visibleFor, layer, alpha, color, angle, flipX, flipY, location
+	global importance:4 void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                                Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                                scale = 1.0	// Scale the image by this factor
+						                implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the image
+		                                implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                                implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                                alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                                Color color = White	// Tint the image with this color
+		                                angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                                flipX = false	// Mirror the image horizontally
+		                                flipY = false	// Mirror the image vertically
+		                                clickableMargin = Vector2(16,16)	// The margin around the image within which it is clickable
+		                                showClickableArea = false	// Highlight the clickable area for debugging
+		                                hotkey = Key.None	// This keyboard shortcut will execute the onClick handler
+		                                void(Touch touch) onClick	// Execute this code when the user touches or clicks the image or presses the hotkey
+		                                SourceCodeLocation location
+		drawImage image, position, scale, frame, size, visibleFor, layer, alpha, color, angle, flipX, flipY, location
 			
 		// Handle click (only visible buttons are clickable)
 		let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
@@ -648,18 +654,18 @@ transient skipInit global unit graphics
 					onClick null
 
 	global js void drawSlicedImage: Image image
-		                         Vector2 position = {}
-		                         implicit Vector2 size = {}
-		                         implicit Player[] visibleFor = null
-								 implicit frame = 0
-		                         implicit layer = int.minValue
-		                         alpha = 1.0
-		                         Color color = White
-								 float leftSlice = 0.0
-								 float rightSlice = 0.0
-		                         HorizontalAlignment align = Center  // The horizontal alignment of the image
-		                         VerticalAlignment valign = Middle   // The vertical alignment of the image
-		                         SourceCodeLocation location
+		                            Vector2 position = {}
+		                            implicit Vector2 size = {}
+		                            implicit Player[] visibleFor = null
+								    implicit frame = 0
+		                            implicit layer = int.minValue
+		                            alpha = 1.0
+		                            Color color = White
+								    float leftSlice = 0.0
+								    float rightSlice = 0.0
+		                            HorizontalAlignment align = Center  // The horizontal alignment of the image
+		                            VerticalAlignment valign = Middle   // The vertical alignment of the image
+		                            SourceCodeLocation location
 		if(!image?.texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
 			let f = image.frames[frame % image.frames.length]
@@ -711,6 +717,42 @@ transient skipInit global unit graphics
 			))
 		}
 		
+	global js void drawPartialImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here
+		                             Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                             scale = 1.0	// Scale the image by this factor
+		                             implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
+		                             implicit Vector2 sourcePosition = {}	// The position of the source image to draw
+							         implicit Vector2 sourceSize = {}	// The size of the source image to draw
+							         implicit Player[] visibleFor = null	// Only this player or list of players will see the image
+		                             implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+		                             implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                             alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
+		                             Color color = White	// Tint the image with this color
+		                             HorizontalAlignment align = Center	// The horizontal alignment of the image
+		                             VerticalAlignment valign = Middle	// The vertical alignment of the image
+		                             SourceCodeLocation location
+		if(!image?.texture?.ensureIsAvailable()) return
+		if(graphics.isVisibleFor(visibleFor)) {
+			let f = image.frames[frame % image.frames.length]
+			let sizeX = (size.x || f.w) * scale
+			let sizeY = size.y ? size.y * scale : (sizeX/f.w)*f.h
+			let factor = graphics.getScaleImagesAsPointerGetsCloserFactor(position)
+			if(factor > 1) { sizeX *= factor; sizeY *= factor }
+			let halfSizeX = Math.round(sizeX*.5)
+			let halfSizeY = Math.round(sizeY*.5)
+			graphics.add(new DisplayImage(
+				graphics.totalMatrix,
+				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
+				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
+				sizeX, sizeY,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				`PartialImage ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
+				location, position.location, size.location,
+				image.texture.imageOrCanvas,
+				f.x1 + sourcePosition.x, f.y1+sourcePosition.y, sourceSize.x || size.x || f.w, sourceSize.y || size.y || f.h,
+				color
+			))
+		}
 	// ------------------------------------------------------- Text -------------------------------------------------------
 	
 	// Draw text on the screen.
@@ -882,7 +924,7 @@ transient skipInit global unit graphics
 			// Handle click (only visible buttons are clickable)
 			let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
 				Vector2 effectiveSize = {sizeX + clickableMargin.x, sizeY + clickableMargin.y}
-				input.onTouchDown position, size:effectiveSize, by:effectiveClickableBy, showClickableArea, do:onClick
+				input.onTouchDown {position.x + offsetX, position.y + offsetY}, size:effectiveSize, by:effectiveClickableBy, showClickableArea, align:Left, valign:Top, do:onClick
 				if hotkey
 					input.onKeyDown hotkey, by:effectiveClickableBy
 						onClick null
@@ -2295,6 +2337,7 @@ internal transient immutable DisplayItem DisplayImage
 		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
+		graphics.context.imageSmoothingEnabled = false;
 			
 		if(this.color.hex == "#ffffff" || this.color.hex == "#ffffffff" || this.color == null) {
 			try{ graphics.context.drawImage(this.htmlImage, this.sx, this.sy, this.sw, this.sh, this.x, this.y, this.w, this.h) }

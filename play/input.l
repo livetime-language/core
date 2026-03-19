@@ -568,6 +568,9 @@ skipInit global unit input
 			if(key == "F5" && Platform.isDebug) {
 				Platform.stop();
 				e.preventDefault();
+			} else if(key == "F7" && Platform.isDebug) {
+				Platform.togglePlay();
+				e.preventDefault();
 			} else if(key == "F9") {
 				if(e.shiftKey) { core.saveLogs(); }
 				else           { Platform.toggleDebugInfo(); }
@@ -851,7 +854,7 @@ skipInit global unit input
 					if inputType == Scroll
 						Vector2 delta = {inputs.readInt16, inputs.readInt16}
 						bool isPinch = (value shiftRight 5) == 1
-						internalUser.wheelEvents.add {player.id, delta, isPinch, referencePosition:referencePos}
+						scroll internalUser:internalUser, player:player, delta:delta, isPinch:isPinch, referencePosition:referencePos
 				else
 				if inputType == TextInput
 					let textInput = inputs.readString
@@ -980,8 +983,8 @@ skipInit global unit input
 				if p.controllerKeyDownFrame[i]
 					.state = true
 
-			appOnGameControllerIfFunctionExists(p, p.gameController)
-
+			app.onGameController??(p.gameController)
+			p.onGameController??(p.gameController)
 					
 		if Platform.receivedInitialData
 			Platform.waitingForInitialData -= Platform.receivedInitialData
@@ -1020,8 +1023,10 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}"
-		appOnTouchHoverIfFunctionExists player, touch
-		appOnTouchDownIfFunctionExists player, touch
+		app.onTouchHover??(touch);
+		player.onTouchHover??(touch);
+		app.onTouchDown??(touch)
+		player.onTouchDown??(touch)
 
 	internal touchMove: InternalUser internalUser
 	                    Player player
@@ -1043,7 +1048,12 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.movingTouches.add touch
 		cursor = Auto
-		appOnTouchMoveIfFunctionExists player, touch
+		if not touch.isDown
+			app.onTouchHover??(touch);
+			player.onTouchHover??(touch);
+		else
+			app.onTouchDrag??(touch);
+			player.onTouchDrag??(touch);
 
 	internal touchUp: InternalUser internalUser
 	                  Player player
@@ -1065,7 +1075,8 @@ skipInit global unit input
 		
 		player.pointerPosition = referencePos
 		internalUser.upTouches.add touch
-		appOnTouchUpIfFunctionExists player, touch
+		app.onTouchUp??(touch)
+		player.onTouchUp??(touch)
 
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.referenceStartPosition
@@ -1074,6 +1085,15 @@ skipInit global unit input
 				core.addOutput "code|click {touch.referenceStartPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
 			else
 				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
+
+	internal scroll: InternalUser internalUser
+	                 Player player
+					 Vector2 delta
+					 bool isPinch
+					 Vector2 referencePosition
+		internalUser.wheelEvents.add {player.id, delta, isPinch, referencePosition}
+		app.onScroll??(delta, isPinch, referencePosition)
+		player.onScroll??(delta, isPinch, referencePosition)
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
@@ -1086,14 +1106,16 @@ skipInit global unit input
 			print type:Key "Press key {character} by {player}"
 		else
 			print type:Key "Press key {key} by {player}"
-		appOnKeyDownIfFunctionExists player, key, character
+		app.onKeyDown??(key, character)
+		player.onKeyDown??(key, character)
 
 	internal keyUp: InternalUser internalUser
 	                Player player
 					Key key
 		internalUser.upKeys.add key
 		player.keysCurrentlyDown.remove key
-		appOnKeyUpIfFunctionExists player, key
+		app.onKeyUp??(key)
+		player.onKeyUp??(key)
 						
 	internal updatePlayers
 		players.orderBy.id
@@ -1107,32 +1129,32 @@ skipInit global unit input
 			if players.length >= 1
 				GameController c = players[0].gameController
 				if c.type == Keyboard
-					c.up.assign    "↑"     Up
-					c.right.assign "→"     Right
-					c.down.assign  "↓"     Down
-					c.left.assign  "←"     Left
-					c.A.assign     "SPACE" Space
-					c.B.assign     "X"     X
+					c.up.assign    "↑"	Up
+					c.right.assign "→"	Right
+					c.down.assign  "↓"	Down
+					c.left.assign  "←"	Left
+					c.A.assign     "Shift"	Shift
+					c.B.assign     "Control"	Ctrl
 			
 			if players.length >= 2
 				GameController c = players[1].gameController
 				if c.type == Keyboard
-					c.up.assign    "W"     W
-					c.right.assign "D"     D
-					c.down.assign  "S"     S
-					c.left.assign  "A"     A
-					c.A.assign     "F"     F
-					c.B.assign     "G"     G
+					c.up.assign    "W"	W
+					c.right.assign "D"	D
+					c.down.assign  "S"	S
+					c.left.assign  "A"	A
+					c.A.assign     "F"	F
+					c.B.assign     "G"	G
 			
 			if players.length >= 3
 				GameController c = players[2].gameController
 				if c.type == Keyboard
-					c.up.assign    "I"     I
-					c.right.assign "L"     L
-					c.down.assign  "K"     K
-					c.left.assign  "J"     J
-					c.A.assign     "O"     O
-					c.B.assign     "P"     P
+					c.up.assign    "I"	I
+					c.right.assign "L"	L
+					c.down.assign  "K"	K
+					c.left.assign  "J"	J
+					c.A.assign     "O"	O
+					c.B.assign     "P"	P
 			
 			controllerButtonMap.clear
 			for players as player
@@ -1145,12 +1167,12 @@ skipInit global unit input
 			for players
 				GameController c = .gameController
 				if c.type == Keyboard
-					c.up.assign    "↑"     Up
-					c.right.assign "→"     Right
-					c.down.assign  "↓"     Down
-					c.left.assign  "←"     Left
-					c.A.assign     "SPACE" Space
-					c.B.assign     "X"     X
+					c.up.assign    "↑"	Up
+					c.right.assign "→"	Right
+					c.down.assign  "↓"	Down
+					c.left.assign  "←"	Left
+					c.A.assign     "Shift"	Shift
+					c.B.assign     "Control"	Ctrl
 			
 			controllerButtonMap.clear
 			// TODO: Research why this is sometimes called before we have a local player
@@ -1181,40 +1203,7 @@ skipInit global unit input
 			InternalUser user = internalUsers[.id]
 				PeerNetwork.disconnect user
 		playersToRemove.clear
-
-	inline js void appOnTouchDownIfFunctionExists: Player player, Touch touch
-		if(app.onTouchDown) app.onTouchDown(touch);
-		if(player?.onTouchDown) player.onTouchDown(touch);
-
-	inline js void appOnTouchHoverIfFunctionExists: Player player, Touch touch
-		if(app.onTouchHover) app.onTouchHover(touch);
-		if(player?.onTouchHover) player.onTouchHover(touch);
-			
-	inline js void appOnTouchMoveIfFunctionExists: Player player, Touch touch
-		if(!touch.isDown) {
-			if(app.onTouchHover) app.onTouchHover(touch);
-			if(player?.onTouchHover) player.onTouchHover(touch);
-		} else {
-			if(app.onTouchDrag) app.onTouchDrag(touch);
-			if(player?.onTouchDrag) player.onTouchDrag(touch);
-		}
-			
-	inline js void appOnTouchUpIfFunctionExists: Player player, Touch touch
-		if(app.onTouchUp) app.onTouchUp(touch);
-		if(player?.onTouchUp) player.onTouchUp(touch);
-
-	inline js void appOnKeyDownIfFunctionExists: Player player, Key key, string character
-		if(app.onKeyDown) app.onKeyDown(key, character);
-		if(player?.onKeyDown) player.onKeyDown(key, character);
-
-	inline js void appOnKeyUpIfFunctionExists: Player player, Key key
-		if(app.onKeyUp) app.onKeyUp(key);
-		if(player?.onKeyUp) player.onKeyUp(key);
-		
-	inline js void appOnGameControllerIfFunctionExists: Player player, GameController controller
-		if(app.onGameController) app.onGameController(controller);
-		if(player?.onGameController) player.onGameController(controller);
-		
+					
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
 	// Do something when the player touches or clicks within a given area.

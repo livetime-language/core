@@ -447,23 +447,22 @@ class Player
 		for IntVector2.primaryDirections as dir
 			IntVector2 neighborPos = originPos + dir
 			Cell neighborCell = app.grid[neighborPos]
-			Player opponent = neighborCell.player
-			
-			if neighborCell and opponent and opponent != this
-				Cell[] surroundedCells = collectsurroundedCells neighborPos
-					surroundedCells.each.player = null
-					print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.joinToString.gridPos.toString}", type:Reaction
-					
-					// Animate the captured pieces to the player's video feed
-					animate duration:500 milliseconds
-						// Called on every tick of the animation, passing in the progress ranging from 0 to 1
-						for surroundedCells as cell
-							let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
-							drawCircle pos, size:60, color:opponent.playerColor
-					then
-						// Called when the animation finished
-						capturedPiecesCount += surroundedCells.length
-						print "Finished animation", type:Reaction
+				Player opponent = neighborCell.player			
+				if neighborCell and opponent and opponent != this
+					Cell[] surroundedCells = collectsurroundedCells neighborPos
+						surroundedCells.each.player = null
+						print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.joinToString.gridPos.toString}", type:Reaction
+						
+						// Animate the captured pieces to the player's video feed
+						animate duration:500 milliseconds
+							// Called on every tick of the animation, passing in the progress ranging from 0 to 1
+							for surroundedCells as cell
+								let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
+								drawCircle pos, size:60, color:opponent.playerColor
+						then
+							// Called when the animation finished
+							capturedPiecesCount += surroundedCells.length
+							print "Finished animation", type:Reaction
 	
 	// We can specify the return type in front of the name of a function
 	Cell[] collectsurroundedCells: IntVector2 originPos
@@ -490,6 +489,3 @@ class Player
 						queue.add neighborPos
 						
 		return surroundedCells
-
-# Verify that images have the right size and do not overlap
-The dev server is running at http://localhost:8080. When you are done writing code, open this url in the integrated browser and take a screenshot. Check that everything looks right. Check if all images have the right size and nothing overlaps that shouldn't overlap.

@@ -108,7 +108,6 @@ skipInit global unit Platform
 			if resetWhenCodeChanged then html.reset
 			initMedia
 			initBackend
-			sendToEditor {type:"clearOutput"}
 			initAll
 			html.resize
 			startApp

@@ -81,9 +81,8 @@ transient skipInit unit Platform
 	// This is called when the application starts for the first time	
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
 		try
+			System.log "Platform.start"
 			let now = PlainDate.preciseTime
-			this.nextHeartbeatTime = 0
-			heartbeat "start"
 			
 			initMedia
 			initPlatform
@@ -133,15 +132,18 @@ transient skipInit unit Platform
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
 					if !isDebug then record
+					
+					// Tell the editor that we can call "replay" when the code changes
+					// If we didn't reach this point, we call "start" again when the code changes
+					sendToEditor {type:"startupComplete"}
 						
 				catch
 					core.onError .
 				finally 
-					sendFinished
+					core.sendOutputToEditor frame:core.frame-1
 					updatePageIconAndTitle
 		catch
 			core.onError .
-			sendFinished
 			updatePageIconAndTitle
 	
 	private async js void preload
@@ -156,6 +158,7 @@ transient skipInit unit Platform
 			
 	// This is called after every code change to replay all inputs with the new code
 	internal async replay: bool updateMedia
+		System.log "Platform.replay"
 		if runningTestFunction
 			core.runTest runningTestFunction, targetFrame:core.frame-1, interrruptAtOutputIndex:core.interrruptAtOutputIndex
 		else
@@ -199,7 +202,6 @@ transient skipInit unit Platform
 	
 	// This is called every animation frame
 	private tick
-		heartbeat "tick"
 		if playMode == Play or playMode == Record or waitingForInitialData
 			core.animationFrame
 				
@@ -219,13 +221,13 @@ transient skipInit unit Platform
 		catch
 			core.onError .
 		finally
-			sendFinished
+			core.sendOutputToEditor
 
 	internal pause
 		playMode = Pause
 		gizmo.clear
 		updatePageIconAndTitle
-		sendFrameAndPlayMode frame:core.frame-1
+		core.sendOutputToEditor frame:core.frame-1
 		audio.stop
 
 	internal record
@@ -241,6 +243,10 @@ transient skipInit unit Platform
 		core.adjustStartTimeIfNeeded
 		playMode = Play
 		updatePageIconAndTitle
+
+	internal togglePlay
+		if playMode == Play or playMode == Record then	pause
+		else	play
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
@@ -257,23 +263,10 @@ transient skipInit unit Platform
 		
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
-
-	sendFrameAndPlayMode: int frame = core.frame, int frames = core.frames, PlayMode playMode = Platform.playMode
-		if Platform.isDebug then sendStringToEditor("#{frame}|{frames}|{(int)playMode}")
-		
-	sendFinished
-		if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
 	
-	private float nextHeartbeatTime
-	
-	private js void heartbeat: string context
-		if(!Platform.isDebug) return
-		let now = Date.now();
-		if(now > Platform.nextHeartbeatTime) {
-			Platform.nextHeartbeatTime = now + 3000;
-			_sendStringToEditor("~");
-		}
-		
+	// sendFinished
+	// 	if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
+			
 	private void toggleDebugInfo
 		showDebugInfo = !showDebugInfo;
 		setLocalStorageObject("showDebugInfo", showDebugInfo ? "true" : "false")
@@ -317,7 +310,7 @@ transient skipInit unit Platform
 		let playerName = input.localPlayer?.toString or ""
 
 		if showPlayModeInPageIcon
-			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+			setPageTitle "{playerName}"
 			switch
 				not isConnectedToEditor	then setPageIcon "/_dev/NotConnected.png"
 				playMode == Stop	then setPageIcon "/_dev/Stop.png"
@@ -327,7 +320,7 @@ transient skipInit unit Platform
 				playMode == Manipulator	then setPageIcon "/_dev/Manipulator.png"
 				playMode == Slide	then setPageIcon "/_dev/Slide.png";
 		else
-			setPageTitle "{appName} | {iconForPlayMode[playMode]} | {playerName}"
+			setPageTitle "{iconForPlayMode[playMode]} | {playerName}"
 	
 	js void setPageTitle: string title
 		document.title = title;
