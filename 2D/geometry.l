@@ -420,6 +420,10 @@ struct IntVector2
 	
 	implicit Vector2 toVector2 => {x, y, location}
 	
+	// Create a new instance. Useful for data imported from json where the vector might be undefined
+	inline js IntVector2 create: int x, int y // Create a new instance with the coordinated of this vector
+		(this = new IntVector2(x, y))
+
 	IntVector2 assign IntVector2 other: x = other.x; y = other.y; location = other.location; return this
 		
 	IntVector2 + IntVector2 other:   return {x + other.x, y + other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
