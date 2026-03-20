@@ -1934,11 +1934,11 @@ interface object
 	
 	inline js bool toBool() (this != null)
 	inline js string toJson() JSON.stringify(this)
-	// inline js string toString() object.stringify(this, 3)
+	// inline js string toString() object.stringify(this, 5)
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
 		
-	static internal js string stringify: object subject, int depth = 3 
+	static internal js string stringify: object subject, int depth = 5
 		switch(typeof subject)
 		{
 			case "object":

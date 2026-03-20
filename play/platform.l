@@ -45,7 +45,7 @@ transient skipInit unit Platform
 		media.init();
 		
 	private js void initPlatform
-		Object.prototype.toString = function() { return object.stringify(this, 3) }
+		Object.prototype.toString = function() { return object.stringify(this, 5) }
 		statistics.init();
 		IndexedDB?.init();
 		PlainDate.init();
