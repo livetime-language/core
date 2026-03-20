@@ -2047,13 +2047,18 @@ interface object
 		return ser(subject, counts, new Map(), [0])
 
 	static js dynamic fromYaml: string yaml
+		function isIgnorableWs(c) {
+			if(c === 9 || c === 10 || c === 13 || c === 32) return true
+			if(c === 133 || c === 160 || c === 5760) return true
+			if(c >= 8192 && c <= 8202) return true
+			if(c === 8232 || c === 8233) return true
+			if(c === 8239 || c === 8287 || c === 12288) return true
+			if(c === 65279) return true
+			return false
+		}
 		function skipWs(s, i) {
 			let n = s.length
-			while(i < n) {
-				let c = s.charCodeAt(i)
-				if(c !== 32 && c !== 9 && c !== 10 && c !== 13) break
-				++i
-			}
+			while(i < n && isIgnorableWs(s.charCodeAt(i))) ++i
 			return i
 		}
 		function isIdentStart(c) {
@@ -2207,7 +2212,7 @@ interface object
 				++ctx.i
 				let [al, ni] = readIdent(s, ctx.i)
 				if(!al) throw new Error("fromYaml: bad alias")
-				ctx.i = ni
+				ctx.i = skipWs(s, ni)
 				if(anchor) throw new Error("fromYaml: anchor with alias")
 				let ref = ctx.anchors.get(al)
 				if(ref === undefined) throw new Error("fromYaml: unknown alias " + al)
