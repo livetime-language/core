@@ -1970,6 +1970,9 @@ interface object
 		}
 
 	static js string toYaml: dynamic subject
+		function shouldIgnoreChild(v) {
+			return v && typeof v === "object" && v.constructor && v.constructor.name === "SourceCodeLocation"
+		}
 		function refWalk(v, counts, path) {
 			if(v === null || v === undefined) return
 			let t = typeof v
@@ -1982,8 +1985,11 @@ interface object
 					refWalk(v[i], counts, path)
 			} else {
 				for(let k in v)
-					if(Object.prototype.hasOwnProperty.call(v, k))
-						refWalk(v[k], counts, path)
+					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						let child = v[k]
+						if(shouldIgnoreChild(child)) continue
+						refWalk(child, counts, path)
+					}
 			}
 			path.delete(v)
 		}
@@ -2026,6 +2032,7 @@ interface object
 				let p = []
 				for(let k in v)
 					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						if(shouldIgnoreChild(v[k])) continue
 						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
 						p.push(kk + ": " + ser(v[k], counts, anchors, nextId))
 					}
