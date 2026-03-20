@@ -1989,7 +1989,7 @@ interface object
 		}
 		function typeTag(v) {
 			if(v === null) return ""
-			if(Array.isArray(v)) return "!!Array "
+			if(Array.isArray(v)) return ""
 			let n = v.constructor && v.constructor.name
 			return "!!" + (n && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : "Object") + " "
 		}
@@ -2208,6 +2208,13 @@ interface object
 			}
 			if(ctx.i + 1 < s.length && s.charCodeAt(ctx.i) === 33 && s.charCodeAt(ctx.i + 1) === 33)
 				return parseTagged(s, ctx, anchor)
+			if(s.charCodeAt(ctx.i) === 91) {
+				let arr = []
+				if(anchor) ctx.anchors.set(anchor, arr)
+				++ctx.i
+				parseFlowArrayInto(arr, s, ctx)
+				return arr
+			}
 			if(anchor) throw new Error("fromYaml: anchor without tagged value")
 			return parseScalar(s, ctx)
 		}
