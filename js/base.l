@@ -1969,6 +1969,256 @@ interface object
 				return subject.toString()
 		}
 
+	static js string toYaml: dynamic subject
+		function refWalk(v, counts, path) {
+			if(v === null || v === undefined) return
+			let t = typeof v
+			if(t !== "object") return
+			counts.set(v, (counts.get(v) || 0) + 1)
+			if(path.has(v)) return
+			path.add(v)
+			if(Array.isArray(v)) {
+				for(let i = 0, n = v.length; i < n; ++i)
+					refWalk(v[i], counts, path)
+			} else {
+				for(let k in v)
+					if(Object.prototype.hasOwnProperty.call(v, k))
+						refWalk(v[k], counts, path)
+			}
+			path.delete(v)
+		}
+		function typeTag(v) {
+			if(v === null) return ""
+			if(Array.isArray(v)) return "!!Array "
+			let n = v.constructor && v.constructor.name
+			return "!!" + (n && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : "Object") + " "
+		}
+		function escStr(s) {
+			return "\"" + s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "\""
+		}
+		function ser(v, counts, anchors, nextId) {
+			if(v === null) return "null"
+			if(v === undefined) return "null"
+			let t = typeof v
+			if(t === "string") return escStr(v)
+			if(t === "number") {
+				if(v !== v) return ".nan"
+				if(v === Infinity) return ".inf"
+				if(v === -Infinity) return "-.inf"
+				return String(v)
+			}
+			if(t === "boolean") return v ? "true" : "false"
+			if(t === "bigint") return "\"" + v + "\""
+			if(t === "function") return "\"\""
+			let multi = (counts.get(v) || 0) > 1
+			if(multi) {
+				if(anchors.has(v)) return "*" + anchors.get(v)
+				let id = "id" + nextId[0]++
+				anchors.set(v, id)
+			}
+			let tag = typeTag(v), body
+			if(Array.isArray(v)) {
+				let p = [], n = v.length
+				for(let i = 0; i < n; ++i)
+					p.push(ser(v[i], counts, anchors, nextId))
+				body = "[" + p.join(", ") + "]"
+			} else {
+				let p = []
+				for(let k in v)
+					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
+						p.push(kk + ": " + ser(v[k], counts, anchors, nextId))
+					}
+				body = "{" + p.join(", ") + "}"
+			}
+			let out = tag + body
+			if(multi) out = "&" + anchors.get(v) + " " + out
+			return out
+		}
+		let counts = new Map()
+		refWalk(subject, counts, new Set())
+		return ser(subject, counts, new Map(), [0])
+
+	static js dynamic fromYaml: string yaml
+		function skipWs(s, i) {
+			let n = s.length
+			while(i < n) {
+				let c = s.charCodeAt(i)
+				if(c !== 32 && c !== 9 && c !== 10 && c !== 13) break
+				++i
+			}
+			return i
+		}
+		function isIdentStart(c) {
+			return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+		}
+		function isIdentChar(c) {
+			return isIdentStart(c) || (c >= 48 && c <= 57)
+		}
+		function readIdent(s, i) {
+			let j = i
+			while(j < s.length && isIdentChar(s.charCodeAt(j))) ++j
+			return [s.slice(i, j), j]
+		}
+		function construct(tag) {
+			let C = globalThis["_" + tag]
+			if(typeof C === "function") return new C()
+			if(tag === "Array") return []
+			if(tag === "Object") return {}
+			return {}
+		}
+		function parseString(s, ctx) {
+			let n = s.length, i = ctx.i
+			if(s.charCodeAt(i) !== 34) throw new Error("fromYaml: expected \"")
+			++i
+			let out = ""
+			while(i < n) {
+				let c = s.charCodeAt(i)
+				if(c === 34) {
+					ctx.i = i + 1
+					return out
+				}
+				if(c === 92 && i + 1 < n) {
+					let nxt = s.charCodeAt(i + 1)
+					if(nxt === 92) { out += "\\"; i += 2; continue }
+					if(nxt === 34) { out += "\""; i += 2; continue }
+					if(nxt === 110) { out += "\n"; i += 2; continue }
+					if(nxt === 114) { out += "\r"; i += 2; continue }
+					if(nxt === 116) { out += "\t"; i += 2; continue }
+				}
+				out += s[i++]
+			}
+			throw new Error("fromYaml: unterminated string")
+		}
+		function parseScalar(s, ctx) {
+			let i = ctx.i, n = s.length, cc = s.charCodeAt(i)
+			if(cc === 34) return parseString(s, ctx)
+			function kw(t, len) {
+				if(i + len > n) return false
+				if(s.slice(i, i + len) !== t) return false
+				let nx = i + len
+				return nx >= n || !isIdentChar(s.charCodeAt(nx))
+			}
+			if(kw("null", 4)) { ctx.i = i + 4; return null }
+			if(kw("true", 4)) { ctx.i = i + 4; return true }
+			if(kw("false", 5)) { ctx.i = i + 5; return false }
+			if(kw(".nan", 4)) { ctx.i = i + 4; return NaN }
+			if(kw(".inf", 4)) { ctx.i = i + 4; return Infinity }
+			if(kw("-.inf", 5)) { ctx.i = i + 5; return -Infinity }
+			let j = i
+			if(cc === 45) ++j
+			let has = false
+			if(j < n && s.charCodeAt(j) === 46) {
+				++j
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+			} else {
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+				if(j < n && s.charCodeAt(j) === 46) {
+					++j
+					while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+				}
+			}
+			if(j < n && (s.charCodeAt(j) === 101 || s.charCodeAt(j) === 69)) {
+				++j
+				if(j < n && (s.charCodeAt(j) === 45 || s.charCodeAt(j) === 43)) ++j
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+			}
+			if(has) {
+				let start = ctx.i
+				ctx.i = j
+				return parseFloat(s.slice(start, j))
+			}
+			throw new Error("fromYaml: bad scalar at " + i)
+		}
+		function parseFlowArrayInto(arr, s, ctx) {
+			while(true) {
+				ctx.i = skipWs(s, ctx.i)
+				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated [")
+				if(s.charCodeAt(ctx.i) === 93) { ++ctx.i; break }
+				arr.push(parseValue(s, ctx))
+				ctx.i = skipWs(s, ctx.i)
+				let c = s.charCodeAt(ctx.i)
+				if(c === 93) { ++ctx.i; break }
+				if(c !== 44) throw new Error("fromYaml: expected , or ]")
+				++ctx.i
+			}
+		}
+		function parseFlowMapInto(obj, s, ctx) {
+			while(true) {
+				ctx.i = skipWs(s, ctx.i)
+				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated {")
+				if(s.charCodeAt(ctx.i) === 125) { ++ctx.i; break }
+				let key
+				if(s.charCodeAt(ctx.i) === 34)
+					key = parseString(s, ctx)
+				else {
+					let [id, ni] = readIdent(s, ctx.i)
+					if(!id) throw new Error("fromYaml: expected key")
+					key = id
+					ctx.i = ni
+				}
+				ctx.i = skipWs(s, ctx.i)
+				if(s.charCodeAt(ctx.i) !== 58) throw new Error("fromYaml: expected :")
+				++ctx.i
+				obj[key] = parseValue(s, ctx)
+				ctx.i = skipWs(s, ctx.i)
+				let c = s.charCodeAt(ctx.i)
+				if(c === 125) { ++ctx.i; break }
+				if(c !== 44) throw new Error("fromYaml: expected , or }")
+				++ctx.i
+			}
+		}
+		function parseTagged(s, ctx, anchor) {
+			ctx.i += 2
+			let [tag, ni] = readIdent(s, ctx.i)
+			ctx.i = skipWs(s, ni)
+			if(!tag) throw new Error("fromYaml: missing tag")
+			let c = s.charCodeAt(ctx.i)
+			let inst = construct(tag)
+			if(c === 91 && typeof inst.push !== "function") inst = []
+			if(anchor) ctx.anchors.set(anchor, inst)
+			if(c === 91) {
+				++ctx.i
+				parseFlowArrayInto(inst, s, ctx)
+			} else if(c === 123) {
+				++ctx.i
+				parseFlowMapInto(inst, s, ctx)
+			} else throw new Error("fromYaml: expected [ or { after tag")
+			return inst
+		}
+		function parseValue(s, ctx) {
+			ctx.i = skipWs(s, ctx.i)
+			let anchor = null
+			if(s.charCodeAt(ctx.i) === 38) {
+				++ctx.i
+				let [an, ni] = readIdent(s, ctx.i)
+				if(!an) throw new Error("fromYaml: bad anchor")
+				anchor = an
+				ctx.i = skipWs(s, ni)
+			}
+			if(s.charCodeAt(ctx.i) === 42) {
+				++ctx.i
+				let [al, ni] = readIdent(s, ctx.i)
+				if(!al) throw new Error("fromYaml: bad alias")
+				ctx.i = ni
+				if(anchor) throw new Error("fromYaml: anchor with alias")
+				let ref = ctx.anchors.get(al)
+				if(ref === undefined) throw new Error("fromYaml: unknown alias " + al)
+				return ref
+			}
+			if(ctx.i + 1 < s.length && s.charCodeAt(ctx.i) === 33 && s.charCodeAt(ctx.i + 1) === 33)
+				return parseTagged(s, ctx, anchor)
+			if(anchor) throw new Error("fromYaml: anchor without tagged value")
+			return parseScalar(s, ctx)
+		}
+		let ctx = { i: 0, anchors: new Map() }
+		ctx.i = skipWs(yaml, 0)
+		if(ctx.i >= yaml.length) return null
+		let root = parseValue(yaml, ctx)
+		ctx.i = skipWs(yaml, ctx.i)
+		if(ctx.i < yaml.length) throw new Error("fromYaml: trailing input")
+		return root
+
 skipInit global unit Platform
 	string libUrl
 	global inline js async dynamic import: string file
@@ -1979,13 +2229,6 @@ json
 		JSON.parse(value)
 	importance:5 inline js string stringify: dynamic value
 		JSON.stringify(value)
-
-yaml
-	dynamic lib
-	setup
-		if yaml.lib == null then yaml.lib = await Platform.import("lib/js-yaml.js")
-	dynamic parse: string value
-		return yaml.lib.load(value)
 
 class Reference<T>
 	dynamic container
