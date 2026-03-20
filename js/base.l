@@ -1934,17 +1934,17 @@ interface object
 	
 	inline js bool toBool() (this != null)
 	inline js string toJson() JSON.stringify(this)
-	// inline js string toString() object_stringify(this, 3)
+	// inline js string toString() object.stringify(this, 3)
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
 		
-	static internal js string stringify: object subject, int depth = 0 
+	static internal js string stringify: object subject, int depth = 3 
 		switch(typeof subject)
 		{
 			case "object":
 				if(subject === null) return "null"
 				let result = ""
-				if(subject.constructor) result += "_type: " + subject.constructor.name
+				// if(subject.constructor) result += "_type: " + subject.constructor.name
 				if(depth > 0) {
 					for(let name in subject) {
 						let item = object.stringify(subject[name], depth-1)
