@@ -786,7 +786,7 @@ transient skipInit global unit graphics
 		             lineHeight = 0.0                     // The height of each line when overflow is set to 'Wrap'
 		             void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
 		             SourceCodeLocation location
-		
+		if not text then return
 		bool isVisible = isVisibleFor(visibleFor)
 		Font effectiveFont = font || currentFont
 		int fontSize = math.floor(size.y || size.x || currentFontSize)
