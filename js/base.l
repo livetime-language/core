@@ -1970,9 +1970,6 @@ interface object
 		}
 
 	static js string toYaml: dynamic subject
-		function shouldIgnoreChild(v) {
-			return v && typeof v === "object" && v.constructor && v.constructor.name === "SourceCodeLocation"
-		}
 		function refWalk(v, counts, path) {
 			if(v === null || v === undefined) return
 			let t = typeof v
@@ -1984,10 +1981,11 @@ interface object
 				for(let i = 0, n = v.length; i < n; ++i)
 					refWalk(v[i], counts, path)
 			} else {
+				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
 				for(let k in v)
 					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						if(tset && tset.has(k)) continue
 						let child = v[k]
-						if(shouldIgnoreChild(child)) continue
 						refWalk(child, counts, path)
 					}
 			}
@@ -2029,12 +2027,14 @@ interface object
 					p.push(ser(v[i], counts, anchors, nextId))
 				body = "[" + p.join(", ") + "]"
 			} else {
+				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
 				let p = []
 				for(let k in v)
 					if(Object.prototype.hasOwnProperty.call(v, k)) {
-						if(shouldIgnoreChild(v[k])) continue
+						if(tset && tset.has(k)) continue
+						let child = v[k]
 						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
-						p.push(kk + ": " + ser(v[k], counts, anchors, nextId))
+						p.push(kk + ": " + ser(child, counts, anchors, nextId))
 					}
 				body = "{" + p.join(", ") + "}"
 			}
