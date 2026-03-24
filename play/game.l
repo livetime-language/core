@@ -118,7 +118,7 @@ internal class BinaryHeap
 				// Otherwise, we are done.
 				break
 				
-immutable BoxCollider
+BoxCollider
 	Vector2 position, size
 	Line rightLine, bottomLine, leftLine, topLine
 	bottomRight = true

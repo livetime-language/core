@@ -914,7 +914,7 @@ enum RotationDirection: Clockwise, CounterClockwise
 	
 enum LineType: Line, Ray, Segment
 	
-immutable Line
+Line
 	Vector2 start, end
 	LineType type
 	
