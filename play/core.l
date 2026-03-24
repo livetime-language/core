@@ -877,6 +877,13 @@ internal transient skipInit unit core
 			core.log errorMessage
 		}
 		System.logError error
+		if Platform.isDebug
+			// Advance frame on error to ensure the current frame is replayed
+			frame++
+			if frames < frame	then frames = frame
+			if frame > frameWithNewWatches	then frameWithNewWatches = frame
+
+			Platform.pause()
 		
 internal transient unit Snapshot
 	int autoSaveCount
