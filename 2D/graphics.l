@@ -2267,6 +2267,9 @@ internal skipInit transient unit gizmo
 		if location.file	then stack.add {item, location}
 		if location.right	then flattenLocations stack, item, location.right
 		if location.left	then flattenLocations stack, item, location.left
+
+media
+	inline js dynamic get: string name => media[name]
 			
 // --------------------------------------------- Award Screen ---------------------------------------------
 
