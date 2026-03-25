@@ -469,7 +469,7 @@ struct IntVector2
 	inline js bool toBool() (this != null && (this.x != -9007199254740991 || this.y != -9007199254740991))
 	inline js bool !() (this == null || (this.x == -9007199254740991 && this.y == -9007199254740991))
 
-	Vector2 -() return {-this.x, -this.y, this.location}
+	IntVector2 -() return {-this.x, -this.y, this.location}
 	
 	// The length of the vector
 	importance:4 length => math.sqrt(x * x + y * y)
