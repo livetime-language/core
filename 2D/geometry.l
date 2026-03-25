@@ -946,7 +946,7 @@ Line
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	toString => "{start.x.format(maxFractionDigits:2)} {start.y.format(maxFractionDigits:2)} -> {end.x.format(maxFractionDigits:2)} {end.y.format(maxFractionDigits:2)}"
+	toString => "\{{start.x.format(maxFractionDigits:2)}, {start.y.format(maxFractionDigits:2)\} -> \{{end.x.format(maxFractionDigits:2)}, {end.y.format(maxFractionDigits:2)}\}"
 
 immutable Rect
 	importance:4 Vector2 position, size
