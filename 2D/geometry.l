@@ -977,7 +977,7 @@ class Grid<T>
 	
 	get: int x // The column to get the value from
 		 int y // The row to get the value from
-		return items[y*size.x + x]
+		return 0 <= x < size.x and 0 <= y < size.y ? items[y*size.x + x] : null
 	
 	set: IntVector2 position // The grid position of the value to set
 		 T value             // The value to set
