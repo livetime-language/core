@@ -2664,7 +2664,7 @@ global skipInit unit math
 		Math.abs(value)
 		
 	// Returns -1, 0, or 1 depending on the sign of the value
-	importance:5 inline js float sign: float value
+	importance:5 inline js int sign: float value
 		Math.sign(value)
 		
 	// Returns the positive square root of the given value
