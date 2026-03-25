@@ -100,7 +100,7 @@ struct Vector2
 	importance:4 lengthSquared => x * x + y * y
 		
 	// The sign of each coordinate
-	importance:4 sign => Vector2(math.sign(x), math.sign(y))
+	importance:4 sign => IntVector2(math.sign(x), math.sign(y))
 		
 	// Make the vector orthogonal to the existing vector
 	importance:4 orthogonal => {-y, x}
