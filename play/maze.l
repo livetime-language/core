@@ -6,7 +6,7 @@ priority:high class Wall
 	int stepsToOtherSide
 
 unit maze
-	IntVector2 size = {12,8}	
+	IntVector2 size
 	Wall[][] horizontalWalls
 	Wall[][] verticalWalls	
 	Wall[] walls
