@@ -11,9 +11,9 @@ unit maze
 	Wall[][] verticalWalls	
 	Wall[] walls
 	
-	create
+	create: IntVector2 size, int numberOfOpenings = 3
+		this.size = size
 		walls.clear
-		colliders.clear
 		
 		// Init walls
 		for size.x + 1 as x
@@ -25,9 +25,6 @@ unit maze
 			for size.y + 1 as y
 				horizontalWalls[x][y] = null
 				
-		createMaze
-				
-	createMaze: int openingsCount = 3
 		// Create outside walls
 		for size.y as y
 			walls.add verticalWalls[0][y] = {x:0, y, dir:Vertical}
@@ -59,7 +56,7 @@ unit maze
 				walls.add p
 		
 		// Remove walls with longest path other side
-		for openingsCount
+		for numberOfOpenings
 			for walls as w
 				AStarNode[] result
 				if w.dir == Horizontal and w.y > 0 and w.y < size.y-1
