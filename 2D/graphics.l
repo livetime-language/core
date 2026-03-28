@@ -578,6 +578,8 @@ transient skipInit global unit graphics
 		                   implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                   implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
+						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
+		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
 		                   implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
 		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White	// Tint the image with this color
@@ -585,7 +587,7 @@ transient skipInit global unit graphics
 		                   flipX = false	// Mirror the image horizontally
 		                   flipY = false	// Mirror the image vertically
 		                   SourceCodeLocation location
-		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond) mod image.frames.length;
+		var frame = math.floor(core.frame * math.max(framesPerSecond, 0) / core.ticksPerSecond + frameOffset) mod (frameCount or image.frames.length);
 		drawImage image, position, scale, frame, size, angle, flipX, flipY, visibleFor, layer, alpha, color, location
 	
 	global importance:4 void drawImage: Image image	// The image to draw. PNG images in the "media" folder will automatically show up here

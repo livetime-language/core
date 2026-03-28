@@ -3,7 +3,7 @@ enum WallDirection: Horizontal, Vertical
 priority:high class Wall
 	int x, y
 	WallDirection dir
-	int doorId
+	int doorId = -1
 	int stepsToOtherSide
 	int cellsOnBothSidesDifference
 	bool[,] areaOnSideA, areaOnSideB
