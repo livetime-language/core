@@ -981,14 +981,14 @@ class Grid<T>
 		 int y // The row to get the value from
 		return 0 <= x < size.x and 0 <= y < size.y ? items[y*size.x + x] : null
 	
-	set: IntVector2 position // The grid position of the value to set
+	T set: IntVector2 position // The grid position of the value to set
 		 T value             // The value to set
-		items[position.y*size.x + position.x] = value
+		return items[position.y*size.x + position.x] = value
 
-	set: int x   // The column of the value to set
+	T set: int x   // The column of the value to set
 		 int y   // The row of the value to set
 		 T value // The value to set
-		items[y*size.x + x] = value
+		return items[y*size.x + x] = value
 	
 	map: string character
 		 stored void(T item, IntVector2 pos) to
