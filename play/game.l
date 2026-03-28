@@ -163,18 +163,15 @@ unit algorithms
 	AStarNode[] findPath: IntVector2 startPos
 		                  IntVector2 endPos
 		                  IntVector2 size
-		                  AStarNode[](AStarNode[][] grid, int x, int y) getNeighbors
+		                  AStarNode[](AStarNode[, ] grid, int x, int y) getNeighbors
 		                  int(IntVector2 a, IntVector2 b) heuristic
 		
-		AStarNode[][] grid
-		for size.x as x
-			grid[x] = []
-			for size.y as y
-				grid[x][y] = {pos:{x,y}}
+		AStarNode[,] grid = {size}
+		for size grid[.] = {pos}
 				
 		let diagonal = false
-		let start = grid[startPos.x][startPos.y]
-		let end = grid[endPos.x][endPos.y]
+		let start = grid[startPos]
+		let end = grid[endPos]
 		
 		BinaryHeap openHeap = {}
 		openHeap.push(start)
