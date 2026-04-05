@@ -1067,7 +1067,22 @@ class Grid<T>
 				resultValue = value
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
-		
+
+	insertRows: int count = 1, int y = -1
+		if y == -1 then y = size.y
+		size.y += count
+		let baseIndex = y * size.x
+		for size.x * count
+			items.insert null index:baseIndex + .
+	
+	insertColumns: int count = 1, int x = -1
+		if x == -1 then x = size.x
+		size.x += count
+		for size.y as y
+			let rowIndex = y * size.x
+			for count
+				items.insert null index:rowIndex + x + .
+	
 global transient unit System
 	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
 		                       -> inline void(
