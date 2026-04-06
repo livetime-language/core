@@ -981,7 +981,7 @@ class List<T>
 	// Exmaple: Remove the first player with a health below 10
 	//     let firstActivePlayer = players.popWhere.health < 10
 	importance:2 T popWhere: bool(T it) condition // The condition for the item to meet
-		for length()
+		for length
 			let item = get(i)
 			if condition(item)
 				removeAt i
@@ -1002,7 +1002,7 @@ class List<T>
 	// ------------------------------------------- Length -------------------------------------------
 
 	// Gets the number of items in the list
-	importance:5 inline js int length() this.length
+	importance:5 int length
 
 	// Truncated or expands the list the given number of items
 	importance:5 js int setLength: int length // The new length of the list
