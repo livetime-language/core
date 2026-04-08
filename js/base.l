@@ -1853,11 +1853,18 @@ class Dictionary<TKey, TValue>
 		(this.get(key) || this.setAndReturn(key, value))
 		
 	// Add a value to an item of the list
-	js T addToItem: TKey key // The key of the item to add to the dictionary
-		            TValue value   // The item to add to the dictionary
+	js T addToItem: TKey key	// The key of the item to change
+		            TValue value	// The value to add to the item
 		let item = this.get(key)
 		if(item) this.set(key, item + value)
 		else     this.set(key, value)
+		
+	// Subtract a value from an item of the list
+	js T subtractFromItem: TKey key	// The key of the item to change
+		                   TValue value	// The value to subtract from the item
+		let item = this.get(key)
+		if(item) this.set(key, item - value)
+		else     this.set(key, -value)
 		
 	// Add 1 to item of the dictionary
 	inline js T incrementItem: TKey key
@@ -1887,6 +1894,9 @@ class Dictionary<TKey, TValue>
 				this.delete(pair[0]);
 			}
 		}
+
+	importance:4 inline js TKey[] keys() [...this.keys()]
+	importance:4 inline js TValue[] values() [...this.values()]
 
 // A data container that stores unique values of a given type
 js Set
