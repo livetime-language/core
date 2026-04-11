@@ -24,15 +24,10 @@ transient skipInit static class backend
 	dynamic pb
 	DatabaseTable<User> users
 	void() onDataChange = null
-	
-	// Called automatically in Platform.start
-	internal async void connect: string url
-		backend.url = backend.libUrl = url + "/"
-		await connect
 		
-	// Called automatically in Platform.start
-	internal async js void connect
-		if(!backend.url) backend.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
+	async js void connect: string url = ""
+		if(url)	backend.url = backend.libUrl = url + "/"
+		else	backend.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
 		const PocketBase = (await import((backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
 		if(backend.pb) backend.pb.realtime.unsubscribe();
 		backend.pb = new PocketBase(backend.url);
