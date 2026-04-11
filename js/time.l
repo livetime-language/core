@@ -107,16 +107,18 @@ js(Intl.DateTimeFormat) class DateTimeFormat
 
 static skipInit class Time
 	string timerLogs
-	js static void startTimer()
-		Time.timerLogs = ""
-		window._timerStart = performance.now()
+	float timerStart
 
-	js static void printTimer(string text) 
-		let now = performance.now()
-		let message = text+": "+(now-window._timerStart)
-		console.log(message)
+	static void startTimer()
+		Time.timerLogs = ""
+		Time.timerStart = preciseTime
+
+	static void printTimer(string text) 
+		let now = preciseTime
+		let message = text+": "+(now-Time.timerStart)
+		print message
 		Time.timerLogs += message + "\n"
-		window._timerStart = now
+		Time.timerStart = now
 
 	static inline js float preciseTime => performance.now()
 	
