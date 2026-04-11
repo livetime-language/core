@@ -62,8 +62,7 @@ skipInit global unit Platform
 			Time.startTimer
 			
 			this.referenceSizes = [
-				// {1920}
-				// {960 forWidthBelow:600 isMobile:true}
+				{500 forWidthBelow:1000 isMobile:true}
 			]
 			this.ticksPerSecond = 0
 			this.tickMode = Interval
