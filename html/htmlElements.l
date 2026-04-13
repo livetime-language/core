@@ -329,6 +329,17 @@ global static class html
 		style.gridTemplateColumns = gridTemplateColumnsString
 		return div attributes, style, children, location
 
+	// Render a html div element with a grid layout
+	importance:4
+	global grid: expand Attributes attributes = null // The attributes of the HTML element
+		         expand Style style = {}             // The css style of the HTML element
+		         string gridTemplate
+		         void() children = null              // The children of the HTML element
+		         SourceCodeLocation location
+		style.display = grid
+		style.gridTemplate = gridTemplate
+		return div attributes, style, children, location
+
 	// Render a html anchor element to link to a url
 	importance:5
 	global link: string text = null

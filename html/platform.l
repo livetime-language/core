@@ -52,11 +52,6 @@ skipInit global unit Platform
 		html.init();
 		app.init?.()
 		
-	private async inline js void initBackend
-		if(typeof(backend) != "undefined") {
-			await backend.connect2()
-			backend.onDataChange = () => html.refresh()
-		}
 
 	inline js float startTime => _startTime
 			
@@ -67,38 +62,48 @@ skipInit global unit Platform
 			Time.startTimer
 			
 			this.referenceSizes = [
-				// {1920}
-				// {960 forWidthBelow:600 isMobile:true}
+				{500 forWidthBelow:1000 isMobile:true}
 			]
 			this.ticksPerSecond = 0
 			this.tickMode = Interval
 			this.resetWhenCodeChanged = true
 			
 			initMedia
-			Time.printTimer "initMedia"
-			initBackend
-			Time.printTimer "initBackend"
-			openMedia
-				Time.printTimer "openMedia"
-				try
-					stop
-					// We need to call resize again after the first refresh to prevent unwanted scrolling
-					html.resize
-					Time.printTimer "resize"
-					startTickInterval
-					sendToEditor {type:"startupComplete"}
-				finally
-					sendFinished
-					updatePageIconAndTitle
+			Time.printTimer "Platform.start: initMedia"
+
+			await loadFont "OpenSans.woff2"
+			Time.printTimer "Platform.start: loadFont"
+			try
+				html.reset
+				initAll
+				Time.printTimer "Platform.start: initAll"
+
+				html.resize
+				Time.printTimer "Platform.start: html.resize"
+
+				app.start??()
+				Time.printTimer "Platform.start: startApp"
+
+				refresh
+				Time.printTimer "Platform.start: refresh"
+
+				// We need to call resize again after the first refresh to prevent unwanted scrolling
+				html.resize
+				Time.printTimer "Platform.start: resize"
+
+				startTickInterval
+				sendToEditor {type:"startupComplete"}
+			finally
+				sendFinished
+				updatePageIconAndTitle
 		finally 
 			sendFinished
 			updatePageIconAndTitle
 		
-	js void openMedia: void() success
-		let font = new FontFace('OpenSans', `url(${_basePath}OpenSans.woff2)`);
+	js async void loadFont: string name
+		let font = new FontFace('OpenSans', `url(${_basePath}${name})`);
 		await font.load();
 		document.fonts.add(font);
-		success()
 		
 	js void initAll
 		if(window.reset_state != undefined) reset_state()
@@ -109,7 +114,6 @@ skipInit global unit Platform
 			sendStringToEditor "start"
 			if resetWhenCodeChanged then html.reset
 			initMedia
-			initBackend
 			initAll
 			html.resize
 			startApp

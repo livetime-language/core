@@ -24,15 +24,10 @@ transient skipInit static class backend
 	dynamic pb
 	DatabaseTable<User> users
 	void() onDataChange = null
-	
-	// Called automatically in Platform.start
-	internal async void connect: string url
-		backend.url = backend.libUrl = url + "/"
-		await connect
 		
-	// Called automatically in Platform.start
-	internal async js void connect
-		if(!backend.url) backend.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
+	async js void connect: string url = ""
+		if(url)	backend.url = backend.libUrl = url + "/"
+		else	backend.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
 		const PocketBase = (await import((backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
 		if(backend.pb) backend.pb.realtime.unsubscribe();
 		backend.pb = new PocketBase(backend.url);
@@ -128,6 +123,9 @@ transient skipInit static class backend
 		
 	inline js string token
 		backend.pb.authStore.token
+
+	async dynamic[] fetchAll: string collectionName, string sort = null
+		return await backend.pb.collection(collectionName).getFullList({sort})
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "where" and "length" to access the local items.

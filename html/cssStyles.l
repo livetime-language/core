@@ -748,4 +748,6 @@ importance:5 dynamic Style
 	
 	Vector2 size
 	bool overlay
+	
+	string gridArea
 		
