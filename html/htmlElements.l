@@ -317,27 +317,24 @@ global static class html
 
 	// Render a html div element with a grid layout
 	importance:4
-	global grid: expand Attributes attributes = null // The attributes of the HTML element
-		         expand Style style = {}             // The css style of the HTML element
-		         float[] gridTemplateColumns         // The sizes of the columns
-		         void() children = null              // The children of the HTML element
+	global grid: expand Attributes attributes = null	// The attributes of the HTML element
+				 string mobileGridTemplateColumns = null	// The sizes of the columns to use on mobile, for example: "1fr"
+		         expand Style style = {}	// The css style of the HTML element
+		         void() children = null	// The children of the HTML element
 		         SourceCodeLocation location
 		style.display = grid
-		string gridTemplateColumnsString
-		for gridTemplateColumns
-			gridTemplateColumnsString += "{.}fr "
-		style.gridTemplateColumns = gridTemplateColumnsString
+		if isMobile and mobileGridTemplateColumns then style.gridTemplateColumns = mobileGridTemplateColumns
 		return div attributes, style, children, location
 
 	// Render a html div element with a grid layout
 	importance:4
-	global grid: expand Attributes attributes = null // The attributes of the HTML element
-		         expand Style style = {}             // The css style of the HTML element
-		         string gridTemplate
-		         void() children = null              // The children of the HTML element
+	global grid: expand Attributes attributes = null	// The attributes of the HTML element
+				 string mobileGridTemplate = null	// The grid template to use on mobile, for example: "'header' 'main' 'sidebar' 'footer'"
+		         expand Style style = {}	// The css style of the HTML element
+		         void() children = null	// The children of the HTML element
 		         SourceCodeLocation location
 		style.display = grid
-		style.gridTemplate = gridTemplate
+		if isMobile and mobileGridTemplate then style.gridTemplate = mobileGridTemplate
 		return div attributes, style, children, location
 
 	// Render a html anchor element to link to a url

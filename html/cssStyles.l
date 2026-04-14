@@ -740,7 +740,9 @@ importance:5 dynamic Style
 	string wordWrap // Allows long, unbreakable words to be broken and wrap to the next line
 	string widows // The minimum number of lines for an element that must be visible at the top of a page
 	int zIndex // The stack order of a positioned element
-	string gridTemplateColumns // The line names and track sizing functions of the grid columns
+	string gridTemplateColumns // The sizes of the columns, for example: "1fr 300px auto"
+	string gridTemplateRows // The sizes of the rows, for example: "1fr 300px auto"
+	string gridTemplate // The grid template, for example: "'header header' 'sidebar main' 'footer footer'"
 	PointerEvents pointerEvents
 	
 	Vector2 translate // Move the element by this vector
