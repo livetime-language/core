@@ -323,13 +323,13 @@ DatabaseTable<T>
 				this.items.removeWhere(i => i.id == e.record.id);
 			}
 			onChange?.();
-			backend.onDataChange?.();
+			backend.onDataChange?.invoke();
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		let result = await backend.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
 		this.items = result.items
 		if(this.items.length > 0) {
 			onChange?.();
-			backend.onDataChange?.();
+			backend.onDataChange?.invoke();
 		}
 		return this.items
 
@@ -347,7 +347,7 @@ DatabaseTable<T>
 				Object.assign(model, e.record);
 				onChange?.();
 			}
-			backend.onDataChange?.();
+			backend.onDataChange?.invoke();
 		}, {@fields:fields, @expand:expand})
 		var model = await backend.pb.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
 		return model;
@@ -375,7 +375,7 @@ DatabaseTable<T>
 					localFiles.push(dataUrl);
 					addedDateUrls.push(dataUrl);
 				}
-				backend.onDataChange?.();
+				backend.onDataChange?.invoke();
 			}
 
 			for(let i=0; i<files.length; i++) {
@@ -383,7 +383,7 @@ DatabaseTable<T>
 				try {
 					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
 					model.container[model.key] = result[model.key];
-					if(i < files.length-1) backend.onDataChange?.();
+					if(i < files.length-1) backend.onDataChange?.invoke();
 				} catch(e) {
 					alert(e.message)
 					failedFiles.push(file)
@@ -397,7 +397,7 @@ DatabaseTable<T>
 				}
 			}
 			this.busy = prevBusy;
-			backend.onDataChange?.();
+			backend.onDataChange?.invoke();
 			if(failedFiles.length > 0 && onError != null) {
 				onError(failedFiles)
 			}
@@ -436,7 +436,7 @@ DatabaseTable<T>
 		                      string file
 		let listOfFiles = model.container[model.key];
 		listOfFiles.remove(file);
-		backend.onDataChange?.();
+		backend.onDataChange?.invoke();
 		await backend.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
 
 	static js Promise<string> getDataUrlForFile: File file
