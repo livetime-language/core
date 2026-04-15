@@ -91,8 +91,8 @@ global static class html
 		
 		if styleWhenFocused != null
 			Style styleWhenNotFocused = getStyleToRevert originalStyle:style, styleWhenFocused
-			element.onfocus = print "#div onfocus"; setStyle(element, styleWhenFocused); if attributes?.onFocus != null then attributes.onFocus(.)
-			element.onblur  = print "#div onblur"; setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null then attributes.onBlur(.)
+			element.onfocus = setStyle(element, styleWhenFocused); if attributes?.onFocus != null then attributes.onFocus(.)
+			element.onblur  = setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null then attributes.onBlur(.)
 			if html.activeElement == element then setStyle(element, styleWhenFocused)
 
 		if text != null
