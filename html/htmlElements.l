@@ -340,12 +340,12 @@ global static class html
 	// Render a html anchor element to link to a url
 	importance:5
 	global link: string text = null
-		         string to = "#"
+		         string href = "#"
 		         expand Attributes attributes = {} // The attributes of the HTML element
 		         expand Style style = null         // The css style of the HTML element
 		         SourceCodeLocation location
 		let element = div text, tag:"a", attributes, style, location
-		element.href = to
+		element.href = href
 		return element
 
 	// Render a html span element to display text
@@ -685,7 +685,7 @@ global static class html
 				parseInline text.substring(0, linkStart)
 				let url = text.substring(textEnd + 2, urlEnd)
 				let label = text.substring(linkStart + 1, textEnd)
-				link label, to:url, textDecoration:underline
+				link label, href:url, textDecoration:underline
 				parseInline text.substring(urlEnd + 1)
 				return
 
