@@ -127,6 +127,12 @@ transient skipInit static class backend
 	async dynamic[] fetchAll: string collectionName, string sort = null
 		return await backend.pb.collection(collectionName).getFullList({sort})
 
+	requestVerification: string email
+		return pb.collection('users').requestVerification(email);
+
+	confirmVerification: string token
+		return pb.collection('users').confirmVerification(token);
+
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "where" and "length" to access the local items.
 // You can also subscribe to changes in the remote PocketBase collection to automatically keep the local items up to date in realtime.
