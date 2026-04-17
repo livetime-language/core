@@ -371,13 +371,13 @@ internal transient immutable struct ControllerButtonPlayerAndIndex
 	int userId
 	int buttonIndex
 	
-internal transient immutable InternalGamePadButton
+internal transient immutable InternalGamepadButton
 	bool pressed, touched
 	float value
 	
-internal transient immutable InternalGamePad
+internal transient immutable InternalGamepad
 	ImmutableList<float> axes
-	ImmutableList<InternalGamePadButton> buttons
+	ImmutableList<InternalGamepadButton> buttons
 	string id
 	
 enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Select, Start, Menu
@@ -771,7 +771,7 @@ skipInit global unit input
 	internal updateGamepads
 		let gamepads = getGamepads
 		if gamepads == null then return
-		InternalGamePad gp = gamepads[0]
+		InternalGamepad gp = gamepads[0]
 		if !gp or gp.axes.length < 2 then return
 			
 		let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")
