@@ -91,7 +91,8 @@ file
 			if results.length
 				results.add value.trim
 				processLine(results)
-		if then != null: then()
+		if then != null
+			then()
 	
 	async string[] readTsv: string filename, void(string[] values) processLine
 		let content = await read(filename)
@@ -101,7 +102,7 @@ file
 					processLine(values)
 	
 interface ArrayBuffer
-immutable struct FileFilter
+struct FileFilter
 	string name
 	string[] extensions
 	
