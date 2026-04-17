@@ -2248,6 +2248,187 @@ interface object
 		if(ctx.i < yaml.length) throw new Error("fromYaml: trailing input")
 		return root
 
+	static js dynamic fromXml: string xml
+		let length = xml.length
+		let i = 0
+		function isWs(c) {
+			return c === 9 || c === 10 || c === 13 || c === 32
+		}
+		function skipWs() {
+			while(i < length && isWs(xml.charCodeAt(i))) ++i
+		}
+		function hasNonWs(value) {
+			for(let j = 0, n = value.length; j < n; ++j) {
+				let c = value.charCodeAt(j)
+				if(c !== 9 && c !== 10 && c !== 13 && c !== 32) return true
+			}
+			return false
+		}
+		function decode(value) {
+			let amp = value.indexOf("&")
+			if(amp === -1) return value
+			let result = value.slice(0, amp)
+			let start = amp
+			for(;;) {
+				let end = value.indexOf(";", start + 1)
+				if(end === -1) return result + value.slice(start)
+				let entity = value.slice(start + 1, end)
+				if(entity === "lt") result += "<"
+				else if(entity === "gt") result += ">"
+				else if(entity === "amp") result += "&"
+				else if(entity === "quot") result += '"'
+				else if(entity === "apos") result += "'"
+				else if(entity.charCodeAt(0) === 35) {
+					let code = entity.charCodeAt(1) === 120 || entity.charCodeAt(1) === 88 ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10)
+					result += isNaN(code) ? "&" + entity + ";" : String.fromCodePoint(code)
+				} else result += "&" + entity + ";"
+				let next = value.indexOf("&", end + 1)
+				if(next === -1) return result + value.slice(end + 1)
+				result += value.slice(end + 1, next)
+				start = next
+			}
+		}
+		function addValue(target, name, value) {
+			let existing = target[name]
+			if(existing === undefined) target[name] = value
+			else if(Array.isArray(existing)) existing.push(value)
+			else target[name] = [existing, value]
+		}
+		function addText(node, value) {
+			if(!hasNonWs(value)) return
+			value = decode(value).trim()
+			if(!value) return
+			node.value._text = node.value._text ? node.value._text + value : value
+		}
+		function finish(node, target) {
+			let value = node.value
+			if(!node.hasAttributes && !node.hasChildren) value = value._text === undefined ? "" : value._text
+			else if(value._text === undefined) delete value._text
+			addValue(target, node.name, value)
+		}
+		let root = {}
+		let stack = []
+		while(i < length) {
+			let open = xml.indexOf("<", i)
+			if(open === -1) {
+				if(stack.length) addText(stack[stack.length - 1], xml.slice(i))
+				break
+			}
+			if(open > i && stack.length) addText(stack[stack.length - 1], xml.slice(i, open))
+			i = open + 1
+			if(i >= length) break
+			let marker = xml.charCodeAt(i)
+			if(marker === 63) {
+				let end = xml.indexOf("?>", i + 1)
+				if(end === -1) throw new Error("fromXml: unterminated declaration")
+				i = end + 2
+				continue
+			}
+			if(marker === 33) {
+				if(xml.slice(i + 1, i + 3) === "--") {
+					let end = xml.indexOf("-->", i + 3)
+					if(end === -1) throw new Error("fromXml: unterminated comment")
+					i = end + 3
+					continue
+				}
+				if(xml.slice(i + 1, i + 8) === "[CDATA[") {
+					let end = xml.indexOf("]]>", i + 8)
+					if(end === -1) throw new Error("fromXml: unterminated cdata")
+					if(stack.length) addText(stack[stack.length - 1], xml.slice(i + 8, end))
+					i = end + 3
+					continue
+				}
+				let depth = 0
+				let quote = 0
+				++i
+				while(i < length) {
+					let c = xml.charCodeAt(i++)
+					if(quote) {
+						if(c === quote) quote = 0
+						continue
+					}
+					if(c === 34 || c === 39) quote = c
+					else if(c === 91) ++depth
+					else if(c === 93 && depth) --depth
+					else if(c === 62 && !depth) break
+				}
+				continue
+			}
+			if(marker === 47) {
+				++i
+				let start = i
+				while(i < length) {
+					let c = xml.charCodeAt(i)
+					if(isWs(c) || c === 62) break
+					++i
+				}
+				let name = xml.slice(start, i)
+				while(i < length && xml.charCodeAt(i) !== 62) ++i
+				if(i < length) ++i
+				let node = stack.pop()
+				if(!node || node.name !== name) throw new Error("fromXml: mismatched closing tag")
+				finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
+				continue
+			}
+			let nameStart = i
+			while(i < length) {
+				let c = xml.charCodeAt(i)
+				if(isWs(c) || c === 47 || c === 62) break
+				++i
+			}
+			let node = { name: xml.slice(nameStart, i), value: {}, hasAttributes: false, hasChildren: false }
+			while(i < length) {
+				skipWs()
+				let c = xml.charCodeAt(i)
+				if(c === 47) {
+					++i
+					if(xml.charCodeAt(i) !== 62) throw new Error("fromXml: expected >")
+					++i
+					finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
+					break
+				}
+				if(c === 62) {
+					++i
+					stack.push(node)
+					break
+				}
+				let attrStart = i
+				while(i < length) {
+					c = xml.charCodeAt(i)
+					if(isWs(c) || c === 61 || c === 47 || c === 62) break
+					++i
+				}
+				let attrName = xml.slice(attrStart, i)
+				skipWs()
+				let attrValue = ""
+				if(xml.charCodeAt(i) === 61) {
+					++i
+					skipWs()
+					let quote = xml.charCodeAt(i)
+					if(quote === 34 || quote === 39) {
+						let valueStart = ++i
+						while(i < length && xml.charCodeAt(i) !== quote) ++i
+						attrValue = decode(xml.slice(valueStart, i))
+						if(i < length) ++i
+					} else {
+						let valueStart = i
+						while(i < length) {
+							quote = xml.charCodeAt(i)
+							if(isWs(quote) || quote === 47 || quote === 62) break
+							++i
+						}
+						attrValue = decode(xml.slice(valueStart, i))
+					}
+				}
+				(node.value._attributes || (node.value._attributes = {}))[attrName] = attrValue
+				node.hasAttributes = true
+			}
+		}
+		if(stack.length) throw new Error("fromXml: unterminated tag")
+		for(let name in root)
+			return root
+		return null
+
 skipInit global unit Platform
 	string libUrl
 	global inline js async dynamic import: string file
