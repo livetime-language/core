@@ -728,15 +728,16 @@ global static class html
 		
 		
 	// Render a html video element to display a video
-	video: string src                        // The file of the video to display 
-		   expand Attributes attributes = {} // The attributes of the HTML element 
-		   expand Style style = {}           // The css style of the HTML element 
+	video: string src	// The file of the video to display 
+		   bool muted = false	// Whether the audio should be muted
+		   expand Attributes attributes = {}	// The attributes of the HTML element 
+		   expand Style style = {}	// The css style of the HTML element 
 		   SourceCodeLocation location
-		style.position = absolute
-		style.zIndex = -1000
+		src = src.startsWith("http") || src.startsWith("data:") || src.startsWith("blob:") ? src : Platform.basePath + src
 		let element = div tag:"video", attributes, style, location, data:{src}
-		element.muted = true
+		element.muted = muted
 		element.autoplay = true
+		return element
 		
 	// Render a html iframe element to display a web page
 	iframe: string src                        // The url of the content to display
