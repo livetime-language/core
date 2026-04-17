@@ -387,14 +387,14 @@ importance:5 class Padding
 	Padding: implicit Dimension all // Padding on the top, right, bottom and left of the element
 		paddingString = "{all}"
 
-	Padding: implicit Dimension topAndBottom // Padding on the top and bottom of the element
-		     implicit Dimension leftAndRight // Padding on the left and right of the element
+	Padding: implicit Dimension topAndBottom = 0px // Padding on the top and bottom of the element
+		     implicit Dimension leftAndRight = 0px // Padding on the left and right of the element
 		paddingString = "{topAndBottom} {leftAndRight}"
 
-	Padding: implicit Dimension top = 0 px    // Padding on the top of the element
-		     implicit Dimension right = 0 px  // Padding on the right of the element
-		     implicit Dimension bottom = 0 px // Padding on the bottom of the element
-		     implicit Dimension left = 0 px   // Padding on the left of the element
+	Padding: implicit Dimension top = 0px    // Padding on the top of the element
+		     implicit Dimension right = 0px  // Padding on the right of the element
+		     implicit Dimension bottom = 0px // Padding on the bottom of the element
+		     implicit Dimension left = 0px   // Padding on the left of the element
 		paddingString = "{top} {right} {bottom} {left}"
 
 	Padding: string paddingString
