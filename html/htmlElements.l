@@ -329,6 +329,14 @@ global static class html
 		if isMobile and mobileGridTemplate then style.gridTemplate = mobileGridTemplate
 		return div attributes, style, children, location
 
+	global gridArea: string gridArea
+	                 expand Attributes attributes = null	// The attributes of the HTML element
+		             expand Style style = {}	// The css style of the HTML element
+		             void() children = null	// The children of the HTML element
+		             SourceCodeLocation location
+		style.gridArea = gridArea
+		return div attributes, style, children, location
+
 	// Render a html anchor element to link to a url
 	importance:5
 	global link: string text = null
