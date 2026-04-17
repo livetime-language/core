@@ -35,7 +35,7 @@ class CoreUser
 	bool enableTouch = true
 	
 	// Controller
-	visible GameController gameController = {}
+	visible Gamepad gamepad = {}
 	Key[] mapKeyToController = [Right, Down, Left, Up, Space, X, Alt, Ctrl]
 	int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
@@ -44,10 +44,10 @@ class CoreUser
 	int lostAtFrame
 	
 	CoreUser
-		gameController.a.name = "SPACE"
-		gameController.b.name = "X"
-		gameController.x.name = "ALT"
-		gameController.y.name = "CTRL"
+		gamepad.a.name = "SPACE"
+		gamepad.b.name = "X"
+		gamepad.x.name = "ALT"
+		gamepad.y.name = "CTRL"
 
 	internal clearEvents
 		bool hasToch = touches.any.type == Touch
@@ -55,7 +55,7 @@ class CoreUser
 			if (.phase == Up and .type >= Touch) or (hasToch and .type != Touch)
 				touches.remove .
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Wheel, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, GameController, String, Json, Object
+enum InputType: None, TouchDown, TouchMove, TouchUp, Wheel, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -210,9 +210,9 @@ class DigitalButton
 		prevState = state
 		state = false
 	
-enum GameControllerType: Keyboard, Xbox, PlayStation
+enum GamepadType: Keyboard, Xbox, PlayStation
 	
-class GameController
+class Gamepad
 	static deadZone = .1
 	
 	Vector2 leftStick
@@ -222,7 +222,7 @@ class GameController
 	DigitalButton x = {}
 	DigitalButton y = {}
 	bool inMotion
-	GameControllerType type
+	GamepadType type
 	
 	internal startFrame
 		leftStick.x = 0
@@ -301,7 +301,7 @@ skipInit unit Input
 			let userId = internalUser.id
 			let user = usersById[userId]
 			// if Core.logging: Core.parseLog += " <{userId}>"
-			user?.gameController.startFrame
+			user?.gamepad.startFrame
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
@@ -415,8 +415,8 @@ skipInit unit Input
 		// 		if inputType == Navigate
 		// 			internalUser.navigations.add inputs.readString
 		// 		else
-		// 		if inputType == GameController
-		// 			GameController c = user.gameController
+		// 		if inputType == Gamepad
+		// 			Gamepad c = user.gamepad
 					
 		// 			// Controller axix
 		// 			c.leftStick.x = inputs.readFloat32
@@ -512,14 +512,14 @@ skipInit unit Input
 		// 		let down  = .controllerKeyDownFrame[1]
 		// 		let left  = .controllerKeyDownFrame[2]
 		// 		let up    = .controllerKeyDownFrame[3]
-		// 		if right or left: .gameController.leftStick.x = right >= left ? 1 : -1
-		// 		if down  or up:   .gameController.leftStick.y = down  >= up   ? 1 : -1
-		// 		if .controllerKeyDownFrame[4]: .gameController.a.state = true
-		// 		if .controllerKeyDownFrame[5]: .gameController.b.state = true
-		// 		if .controllerKeyDownFrame[6]: .gameController.x.state = true
-		// 		if .controllerKeyDownFrame[7]: .gameController.y.state = true
-		// 		.gameController.inMotion = Math.abs(.gameController.leftStick.x) >= GameController.deadZone
-		// 		                    or Math.abs(.gameController.leftStick.y) >= GameController.deadZone
+		// 		if right or left: .gamepad.leftStick.x = right >= left ? 1 : -1
+		// 		if down  or up:   .gamepad.leftStick.y = down  >= up   ? 1 : -1
+		// 		if .controllerKeyDownFrame[4]: .gamepad.a.state = true
+		// 		if .controllerKeyDownFrame[5]: .gamepad.b.state = true
+		// 		if .controllerKeyDownFrame[6]: .gamepad.x.state = true
+		// 		if .controllerKeyDownFrame[7]: .gamepad.y.state = true
+		// 		.gamepad.inMotion = Math.abs(.gamepad.leftStick.x) >= Gamepad.deadZone
+		// 		                    or Math.abs(.gamepad.leftStick.y) >= Gamepad.deadZone
 						
 	updateUserIndices
 	// 	users.orderBy.id

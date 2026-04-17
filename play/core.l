@@ -498,7 +498,7 @@ internal transient skipInit unit core
 		checkSaveState
 		
 		// Update game controllers
-		input.updateGameControllers
+		input.updateGamepads
 		
 		// Parse inputs
 		input.parseInputs(frame)
@@ -940,7 +940,7 @@ enum lowercase string PrintType
 	
 	Touch
 	Key
-	GameController
+	Gamepad
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app

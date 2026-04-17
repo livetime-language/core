@@ -250,7 +250,7 @@ class Player
 		print "{key} released by {this}", type:Action
 
 	// Called on every frame (30 times per second) if a game controller is connected
-	onGameController: GameController controller
+	onGamepad: Gamepad controller
 		pos += controller.leftStick * speed
 
 		if controller.A.wasJustPressed
