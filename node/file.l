@@ -100,6 +100,9 @@ file
 			if line
 				let values = line.split("\t")
 					processLine(values)
+
+	getFileUrl: string filename
+		return "file://{filename}"
 	
 interface ArrayBuffer
 struct FileFilter

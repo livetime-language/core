@@ -29,6 +29,7 @@ skipInit global unit Platform
 	bool isDebug
 	global bool isMobile
 	bool electron
+	string os
 	
 	// Location
 	public inline js string url	=> location.href
@@ -46,6 +47,15 @@ skipInit global unit Platform
 
 	private inline js void initMedia
 		this.electron = window?.process?.versions?.electron
+		const ua = navigator.userAgent;
+		switch (true) {
+			case /Android/i.test(ua):             this.os = "Android"; break;
+			case /iPhone|iPad|iPod/i.test(ua):    this.os = "iOS";     break;
+			case /Windows/i.test(ua):             this.os = "Windows"; break;
+			case /Mac OS X|Macintosh/i.test(ua):  this.os = "macOS";   break;
+			case /Linux/i.test(ua):               this.os = "Linux";   break;
+			default:                              this.os = "Unknown";
+		}
 		audio.init();
 		media.init();
 		PlainDate.init();
