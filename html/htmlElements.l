@@ -234,7 +234,8 @@ global static class html
 		        expand Style style = null         // The css style of the HTML element
 		        dynamic data = null               // The data attributes of the element
 		        SourceCodeLocation location
-		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") ? src : Platform.basePath + src
+		if data == null then data = {}
+		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") or src.startsWith("file:") ? src : Platform.basePath + src
 		return div tag:"img", attributes, style, data, location
 
 	// Render a html button element within the draw function.

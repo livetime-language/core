@@ -618,7 +618,7 @@ immutable class string
 		
 	js string getUntilLast: string value
 		                    int start = 0
-		let index = this.lastIndexOf(value, start)
+		let index = this.lastIndexOf(value)
 		if(index != -1) return this.substring(start, index);
 		if(start > 0)   return this.substring(start);
 		                return this
