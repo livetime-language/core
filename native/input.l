@@ -499,13 +499,13 @@ enum ShowPointersMode
 	Remote         // Show the mouse pointer only for remote players
 	LocalAndRemote // Show the mouse pointers of all players
 	
-immutable class InternetGamePadButton
+immutable class InternalGamePadButton
 	bool pressed, touched
 	float value
 	
-immutable class InternetGamePad
+immutable class InternalGamePad
 	float[] axes
-	InternetGamePadButton[] buttons
+	InternalGamePadButton[] buttons
 	string id
 	
 // Collect user input
@@ -836,7 +836,7 @@ skipInit global unit input
 	// internal updateGameControllers
 	// 	let gamepads = getGamepads
 	// 	if gamepads == null: return
-	// 	InternetGamePad gp = gamepads[0]
+	// 	InternalGamePad gp = gamepads[0]
 	// 	if !gp or gp.axes.length < 2: return
 			
 	// 	let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")

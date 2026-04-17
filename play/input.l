@@ -371,6 +371,15 @@ internal transient immutable struct ControllerButtonPlayerAndIndex
 	int userId
 	int buttonIndex
 	
+internal transient immutable InternalGamePadButton
+	bool pressed, touched
+	float value
+	
+internal transient immutable InternalGamePad
+	ImmutableList<float> axes
+	ImmutableList<InternalGamePadButton> buttons
+	string id
+	
 enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Select, Start, Menu
 	
 enum GameControllerType: Keyboard, Xbox, PlayStation
@@ -414,15 +423,6 @@ enum ShowPointersMode
 	Remote	// Show the mouse pointer only for remote players
 	LocalAndRemote	// Show the mouse pointers of all players
 	WhenDown	// Show the mouse pointers of all players, but only when they are down (clicking or touching)
-	
-internal immutable InternetGamePadButton
-	bool pressed, touched
-	float value
-	
-internal transient immutable InternetGamePad
-	ImmutableList<float> axes
-	ImmutableList<InternetGamePadButton> buttons
-	string id
 	
 // Collect user input
 skipInit global unit input
@@ -771,7 +771,7 @@ skipInit global unit input
 	internal updateGameControllers
 		let gamepads = getGamepads
 		if gamepads == null then return
-		InternetGamePad gp = gamepads[0]
+		InternalGamePad gp = gamepads[0]
 		if !gp or gp.axes.length < 2 then return
 			
 		let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")

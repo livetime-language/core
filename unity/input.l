@@ -234,13 +234,13 @@ class GameController
 		x.startFrame
 		y.startFrame
 	
-class InternetGamePadButton
+class InternalGamePadButton
 	bool pressed, touched
 	float value
 	
-class InternetGamePad
+class InternalGamePad
 	float[] axes
-	InternetGamePadButton[] buttons
+	InternalGamePadButton[] buttons
 	string id
 	
 // A collection of methods to receive user input
