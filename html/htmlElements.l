@@ -228,20 +228,12 @@ global static class html
 	//     app
 	//         User user
 	//         draw
-	//             user.drawProfile
-	importance:5
+	//             user.drawProfile		
 	global img: string src                        // The file of the image to display
 		        expand Attributes attributes = {} // The attributes of the HTML element
 		        expand Style style = null         // The css style of the HTML element
+		        dynamic data = null               // The data attributes of the element
 		        SourceCodeLocation location
-		return div tag:"img", attributes, style, data:{src:src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") ? src : Platform.basePath + src}, location
-		
-	global img: string src                        // The file of the image to display
-		        expand Attributes attributes = {} // The attributes of the HTML element
-		        expand Style style = null         // The css style of the HTML element
-		        dynamic data                      // The data attributes of the element
-		        SourceCodeLocation location
-		if data == null then data = {}
 		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") ? src : Platform.basePath + src
 		return div tag:"img", attributes, style, data, location
 
