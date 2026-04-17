@@ -427,9 +427,11 @@ global priority low skipInit static class html
 		let body = document.body
 		body.style = "background-color: white; color: black; font:16px/1.7 OpenSans; overflow: "+html.overflow
 		let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : window.innerWidth
-		Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
+		Platform.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
+
 		let referenceWidth = 0
 		if(Platform.referenceSizes) {
+			Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
 			for(let entry of Platform.referenceSizes) {
 				if(screenWidth < entry.forWidthBelow) {
 					referenceWidth = entry.referenceWidth
@@ -438,9 +440,9 @@ global priority low skipInit static class html
 				}
 			}
 		}
+		
 		if(referenceWidth) {
 			Platform.scale = window.innerWidth / referenceWidth
-			Platform.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
 			Platform.size = new Vector2(referenceWidth, referenceWidth * window.innerHeight/window.innerWidth)
 			body.style.transform = 'none !important'
 			body.style.marginRight = '0 !important'
@@ -455,8 +457,8 @@ global priority low skipInit static class html
 			body.style.marginBottom = `${-pullUp}px`
 			body.style.marginRight = `${-pullLeft}px`
 		} else {
+			Platform.scale = 1
 			Platform.isMobile = localStorage.getItem("isMobile") == "true"
-			Platform.scale = Platform.isDebug ? Platform.debugScale : 1
 			body.style.zoom = Platform.scale
 		}
 		body.className = Platform.isMobile ? "mobile" : ""
