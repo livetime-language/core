@@ -1916,6 +1916,7 @@ interface object
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
 	static inline js string typeof(dynamic value) typeof(value)
+	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
 
 	static internal js string stringify: object subject, int depth = 5
 		switch(typeof subject)
@@ -1957,6 +1958,7 @@ interface object
 		// Get all field names and types
 		for objects
 			forDynamic . as value, key
+				if typeof(value) == "function" then continue
 				if(!fieldNames.contains(key)) {
 					fieldNames.add(key)
 					fieldTypes.add(object.typeof(value))
@@ -1980,16 +1982,17 @@ interface object
 			for fieldNames
 				if i > 0 then result += "\t"
 				let value = object[.]
-				if value == undefined
-					result += "undefined"
-				else if value == null
-					result += "null"
+				if value == undefined or value == null
+					switch fieldTypes[i]
+						"number"	result += "0"
+						"boolean"	result += "false"
+						"string"	result += ""
+						default	result += "null"
 				else
 					switch fieldTypes[i]
 						"object"	result += json.stringify(value)
-						"number"	result += value.toString
+						"number"	result += value.toString()
 						"boolean"	result += value ? "true" : "false"
-						"string"	result += string(value).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
 						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
 			result += "\n"
 
@@ -2001,11 +2004,12 @@ interface object
 		let names = lines[0].split("\t")
 		dynamic[] result
 		for 1 to lines.length
-			let values = lines[i].split("\t")
-			dynamic obj = {}
-			for names
-				obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
-			result.add(obj)
+			let line = lines[i]
+				let values = line.split("\t")
+				dynamic obj = {}
+				for names
+					obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+				result.add(obj)
 		return result
 
 	static dynamic fromTypedTsv: string tsv
@@ -2015,18 +2019,19 @@ interface object
 		let types = lines[1].split("\t")
 		dynamic[] result
 		for 2 to lines.length
-			let values = lines[i].split("\t")
-			dynamic obj = {}
-			for names
-				let value = values[i]
-				switch types[i]
-					"object"	obj[.] = value.parseJson
-					"number"	obj[.] = value.toFloat
-					"boolean"	obj[.] = value == "true"
-					"undefined"	
-					"null"	obj[.] = null
-					default	obj[.] = value.replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
-			result.add(obj)
+			let line = lines[i]
+				let values = line.split("\t")
+				dynamic obj = {}
+				for names
+					let value = values[i]
+					switch types[i]
+						"object"	obj[.] = value.parseJson
+						"number"	obj[.] = value.toFloat
+						"boolean"	obj[.] = value == "true"
+						"undefined"	
+						"null"	obj[.] = null
+						default	obj[.] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
+				result.add(obj)
 		return result
 
 	static js string toYaml: dynamic subject
@@ -2350,8 +2355,20 @@ interface object
 					return JSON.parse(value)
 				} catch(error) {}
 			}
-			let number = parseFloat(value)
-			if(!isNaN(number)) return number
+			if((first >= 48 && first <= 57) || first === 45 || first === 43 || first === 46) {
+				let numeric = true
+				for(let i = 1, len = value.length; i < len; i++) {
+					let code = value.charCodeAt(i)
+					if((code < 48 || code > 57) && code !== 46 && code !== 43 && code !== 45) {
+						numeric = false
+						break
+					}
+				}
+				if(numeric) {
+					let number = parseFloat(value)
+					if(!isNaN(number)) return number
+				}
+			}
 			return value
 		}
 		function addValue(target, name, value) {
