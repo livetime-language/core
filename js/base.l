@@ -1915,7 +1915,8 @@ interface object
 	// inline js string toString() object.stringify(this, 5)
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
-		
+	static inline js string typeof(dynamic value) typeof(value)
+
 	static internal js string stringify: object subject, int depth = 5
 		switch(typeof subject)
 		{
@@ -2337,6 +2338,22 @@ interface object
 				start = next
 			}
 		}
+		function toTypedValue(value) {
+			if(value === "true") return true
+			if(value === "false") return false
+			if(value === "null") return null
+			if(value === "undefined") return undefined
+				
+			let first = value.charCodeAt(0)
+			if(first === 123 || first === 91) {
+				try {
+					return JSON.parse(value)
+				} catch(error) {}
+			}
+			let number = parseFloat(value)
+			if(!isNaN(number)) return number
+			return value
+		}
 		function addValue(target, name, value) {
 			let existing = target[name]
 			if(existing === undefined) target[name] = value
@@ -2347,7 +2364,7 @@ interface object
 			if(!hasNonWs(value)) return
 			value = decode(value).trim()
 			if(!value) return
-			node.value._text = node.value._text ? node.value._text + value : value
+			node.value._text = node.value._text ? string(node.value._text) + value : toTypedValue(value)
 		}
 		function finish(node, target) {
 			let value = node.value
@@ -2457,7 +2474,7 @@ interface object
 					if(quote === 34 || quote === 39) {
 						let valueStart = ++i
 						while(i < length && xml.charCodeAt(i) !== quote) ++i
-						attrValue = decode(xml.slice(valueStart, i))
+						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
 						if(i < length) ++i
 					} else {
 						let valueStart = i
@@ -2466,7 +2483,7 @@ interface object
 							if(isWs(quote) || quote === 47 || quote === 62) break
 							++i
 						}
-						attrValue = decode(xml.slice(valueStart, i))
+						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
 					}
 				}
 				(node.value._attributes || (node.value._attributes = {}))[attrName] = attrValue
