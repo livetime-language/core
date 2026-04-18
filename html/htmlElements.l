@@ -731,13 +731,14 @@ global static class html
 	// Render a html video element to display a video
 	video: string src	// The file of the video to display 
 		   bool muted = false	// Whether the audio should be muted
+		   bool autoplay = false	// Whether the video should start playing automatically
 		   expand Attributes attributes = {}	// The attributes of the HTML element 
 		   expand Style style = {}	// The css style of the HTML element 
 		   SourceCodeLocation location
 		src = src.startsWith("http") || src.startsWith("data:") || src.startsWith("blob:") ? src : Platform.basePath + src
 		let element = div tag:"video", attributes, style, location, data:{src}
 		element.muted = muted
-		element.autoplay = true
+		element.autoplay = autoplay
 		return element
 		
 	// Render a html iframe element to display a web page
