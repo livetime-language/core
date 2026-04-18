@@ -75,8 +75,8 @@ file
 	inline js async string read: string filename
 		require("fs").promises.readFile(filename, "utf8")
 				
-	inline js async string write: string filename, string data
-		require("fs").promises.writeFile(filename, data, "utf8")
+	inline js async string write: string data, string to
+		require("fs").promises.writeFile(to, data, "utf8")
 		
 	inline js void createDirectory: string path
 		require("fs").mkdirSync(path)

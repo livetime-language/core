@@ -21,8 +21,8 @@ file
 	async FileInfo getInfo: string path
 		return await Capacitor.Plugins.Filesystem.stat({path:path})
 
-	async void save: string text
-		             string to
+	async void write: string text
+		              string to
 		await Capacitor.Plugins.Filesystem.writeFile({path:to, data:text, encoding:"utf8"})
 
 unit Platform
