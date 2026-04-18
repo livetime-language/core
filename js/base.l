@@ -462,38 +462,6 @@ immutable class string
 	// Parse the string as yaml
 	importance:5 inline js dynamic parseYaml() yaml.parse(this)
 
-	dynamic parseTsv
-		let lines = this.split("\n")
-		if(lines.length < 2) return []
-		let names = lines[0].split("\t")
-		dynamic[] result
-		for 1 to lines.length
-			let values = lines[i].split("\t")
-			dynamic obj = {}
-			for names
-				obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
-			result.add(obj)
-		return result
-
-	dynamic parseTypedTsv
-		let lines = this.split("\n")
-		if(lines.length < 2) return []
-		let names = lines[0].split("\t")
-		let types = lines[1].split("\t")
-		dynamic[] result
-		for 2 to lines.length
-			let values = lines[i].split("\t")
-			dynamic obj = {}
-			for names
-				let value = values[i]
-				switch types[i]
-					"object"	obj[.] = value.parseJson
-					"number"	obj[.] = value.toFloat
-					"boolean"	obj[.] = value == "true"
-					default	obj[.] = value.replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
-			result.add(obj)
-		return result
-		
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
 	
 	// Variable values that indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
@@ -1978,6 +1946,87 @@ interface object
 			default:
 				return subject.toString()
 		}
+
+	static string toTypedTsv: dynamic[] objects
+		if(objects.length == 0) return ""
+		string[] fieldNames
+		string[] fieldTypes
+		let result = ""
+
+		// Get all field names and types
+		for objects
+			forDynamic . as value, key
+				if(!fieldNames.contains(key)) {
+					fieldNames.add(key)
+					fieldTypes.add(object.typeof(value))
+				}
+		
+		// Output field names
+		for fieldNames
+			if i > 0 then result += "\t"
+			result += .
+		result += "\n"
+
+		// Output field types
+		for fieldTypes
+			if i > 0 then result += "\t"
+			result += .
+		result += "\n"
+			
+		// Output values
+		for objects
+			dynamic object = .
+			for fieldNames
+				if i > 0 then result += "\t"
+				let value = object[.]
+				if value == undefined
+					result += "undefined"
+				else if value == null
+					result += "null"
+				else
+					switch fieldTypes[i]
+						"object"	result += json.stringify(value)
+						"number"	result += value.toString
+						"boolean"	result += value ? "true" : "false"
+						"string"	result += string(value).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
+						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
+			result += "\n"
+
+		return result
+
+	static dynamic fromTsv: string tsv
+		let lines = tsv.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		dynamic[] result
+		for 1 to lines.length
+			let values = lines[i].split("\t")
+			dynamic obj = {}
+			for names
+				obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+			result.add(obj)
+		return result
+
+	static dynamic fromTypedTsv: string tsv
+		let lines = tsv.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		let types = lines[1].split("\t")
+		dynamic[] result
+		for 2 to lines.length
+			let values = lines[i].split("\t")
+			dynamic obj = {}
+			for names
+				let value = values[i]
+				switch types[i]
+					"object"	obj[.] = value.parseJson
+					"number"	obj[.] = value.toFloat
+					"boolean"	obj[.] = value == "true"
+					"undefined"	
+					"null"	obj[.] = null
+					default	obj[.] = value.replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+			result.add(obj)
+		return result
 
 	static js string toYaml: dynamic subject
 		function refWalk(v, counts, path) {
