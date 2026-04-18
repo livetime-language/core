@@ -15,7 +15,37 @@ file
 		catch
 			return false
 
+	async ReadDirectoryResult[] readDirectory: string path
+		return await Capacitor.Plugins.Filesystem.readdir({path:path})
+
+	async FileInfo getInfo: string path
+		return await Capacitor.Plugins.Filesystem.stat({path:path})
+
+	async void save: string text
+		             string to
+		await Capacitor.Plugins.Filesystem.writeFile({path:to, data:text, encoding:"utf8"})
+
 unit Platform
 	//inline js string os() Capacitor.getPlatform()
 	openDevTools
 		print "Opening dev tools"
+
+enum lowercase string FileType: File, Directory
+
+interface ReadDirectoryResult
+	string name	// The name of the file or directory.
+	FileType type	// "file" or "directory"
+
+	int size	// Capacitor only: The size of the file in bytes.
+	int ctime	// Capacitor only: The time the file was last changed in milliseconds
+	int mtime	// Capacitor only: The time the file was last modified in milliseconds
+	string uri	// Capacitor only: The URI of the file.
+
+interface FileInfo
+	int size	// The size of the file in bytes.
+
+	string name	// Capacitor only: The name of the file or directory.
+	FileType type	// Capacitor only: "file" or "directory"
+	int ctime	// Capacitor only: The time the file was last changed in milliseconds
+	int mtime	// Capacitor only: The time the file was last modified in milliseconds
+	string uri	// Capacitor only: The URI of the file.
