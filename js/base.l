@@ -1917,6 +1917,7 @@ interface object
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
 	static inline js string typeof(dynamic value) typeof(value)
 	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
+	static inline js void deleteField(dynamic object, string field) delete object[field]
 
 	static internal js string stringify: object subject, int depth = 5
 		switch(typeof subject)
