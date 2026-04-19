@@ -2620,7 +2620,7 @@ global transient priority unit System
 		@do do() 
 		@while(while)
 		
-	global inline js Promise<T> promise: void(void(T it) resolve) resolve
+	global inline js Promise<T> promise: void(void(T it) resolve, void(Error error) reject) resolve
 		new Promise(resolve)
 		
 	inline js void doNotSerialize: dynamic object

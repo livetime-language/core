@@ -56,6 +56,7 @@ skipInit global unit Platform
 			case /Linux/i.test(ua):               this.os = "Linux";   break;
 			default:                              this.os = "Unknown";
 		}
+		IndexedDB.stores = []
 		audio.init();
 		media.init();
 		PlainDate.init();
