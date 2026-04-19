@@ -2877,7 +2877,7 @@ global transient priority unit System
 	global inline js void debugger() debugger
 	global inline js void throw(Error error) throw error
 
-	global inline js dynamic Capacitor => Capacitor
+	global inline js dynamic Capacitor => window.Capacitor
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string

@@ -28,7 +28,13 @@ file
 unit Platform
 	//inline js string os() Capacitor.getPlatform()
 	openDevTools
-		print "Opening dev tools"
+		print "Dev Tools"
+
+	inline js void onResume: void() do
+		Capacitor?.Plugins?.App?.addListener("resume",	do)	
+
+	// inline js void onResume: inline void() code
+	// 	Capacitor?.Plugins?.App?.addListener("resume", () => code())
 
 enum lowercase string FileType: File, Directory
 
