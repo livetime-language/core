@@ -403,4 +403,18 @@ js(Date) internal transient class Date
 		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(this)
 	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
 
+	// (20260412T121357)
+	// js string compactTimeString()
+	// 	let parts = (Date.compactTimeStringFormat ??= new Intl.DateTimeFormat('en-US', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23'})).formatToParts(this)
+	// 	let get = type => parts.find(p => p.type === type).value
+	// 	return get('year') + get('month') + get('day') + 'T' + get('hour') + get('minute') + get('second')
+	// private static DateTimeFormat compactTimeStringFormat
+
+	// (20260412T121357)
+	string compactTimeString()
+		return "{year}{twoDigitMonth}{twoDigitDay}T{twoDigitHour}{twoDigitMinute}{twoDigitSecond}"
+
+	// Parses a string like "20260412T121357" produced by compactTimeString into a Date (in local time).
+	static js Date fromCompactTimeString(string compactTimeString)
+		new Date(+compactTimeString.slice(0,4), +compactTimeString.slice(4,6)-1, +compactTimeString.slice(6,8), +compactTimeString.slice(9,11), +compactTimeString.slice(11,13), +compactTimeString.slice(13,15))
 	
