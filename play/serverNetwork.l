@@ -1,15 +1,15 @@
 enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, RequestState, State, Checksum
 
-transient skipInit unit ServerNetwork
+internal transient skipInit unit ServerNetwork
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
 	bool connected
-	Time startToConnectTime = Time.maxValue
+	float startToConnectTime = float.maxValue
 	int retries
 	
 	tick
-		let now = Time.realTime
+		let now = PlainDate.realTime
 		// Reconnect to server: Try to connect again if we aren't connected 5 seconds after starting to connect
 		// We use a central place to reconnect and no intervals, timeouts or reloads to make it easier to reason about
 		if not connected and now > startToConnectTime + 5000
@@ -84,13 +84,14 @@ transient skipInit unit ServerNetwork
 		
 	private onMessageFromServer: Buffer buffer
 		NetworkMessageType type = cast buffer.readInt8
-		if type == JoinResponse: onJoinResponse buffer; else
-		if type == Pong:         onPong buffer; else
-		if type == Signal:       onSignal buffer; else
-		if type == Ice:          onIce buffer; else
-		if type == Tick:         onTick buffer; else
-		if type == Switch:       onSwitch buffer; else
-		if type == Reload:       onReload buffer;
+		switch type
+			NetworkMessageType.JoinResponse	onJoinResponse buffer; break
+			NetworkMessageType.Pong	onPong buffer; break
+			NetworkMessageType.Signal	onSignal buffer; break
+			NetworkMessageType.Ice	onIce buffer; break
+			NetworkMessageType.Tick	onTick buffer; break
+			NetworkMessageType.Switch	onSwitch buffer; break
+			NetworkMessageType.Reload	onReload buffer; break
 		
 	private void sendJoinMessage: string roomId, int userId, int version
 		sendBuffer.reset
@@ -104,7 +105,7 @@ transient skipInit unit ServerNetwork
 	bool alreadyJoinedBefore
 		
 	private onJoinResponse: Buffer buffer
-		if alreadyJoinedBefore: return
+		if alreadyJoinedBefore then return
 		alreadyJoinedBefore = true
 		
 		try
@@ -119,14 +120,14 @@ transient skipInit unit ServerNetwork
 			for userCount
 				let id = buffer.readInt32
 				InternalUser user
-				if id == userId: user = input.internalUsers[id] ?= input.localUser
+				if id == userId then user = input.internalUsers[id] ?= input.localUser
 				else             user = input.internalUsers[id] ?= {offerByMe:true, connectionId:nextConnectionId++}
 				user.id = id
 				
 				// We don't send inputs from server any more
 				// buffer.readBuffer user.inputs
 				
-				core.log "#onJoinResponse", id, user.local, user.inputs
+				core.log "#onJoinResponse", userCount, id, user.local, input.internalUsers.joinToString(. ? .id.toString : "null"), user.inputs
 				
 			// TEMP
 			// for input.internalUsers
@@ -303,5 +304,5 @@ transient skipInit unit ServerNetwork
 		let keepMaster = buffer.readBool
 		let newUserId = buffer.readBool
 		let url = buffer.readString
-		if !newUserId: url += "u{input.localUser.id}"
+		if !newUserId then url += "u{input.localUser.id}"
 		Platform.setLocation url

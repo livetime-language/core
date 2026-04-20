@@ -9,7 +9,7 @@ unit Framework
 	
 	clear: bool includingLockedObjects = false
 		for objects <-
-			if not .locked or includingLockedObjects: objects.removeAt i
+			if not .locked or includingLockedObjects then objects.removeAt i
 				
 	clearAtEndOfFrame
 		for objects
@@ -18,7 +18,7 @@ unit Framework
 				toBeRemoved.add .
 		
 	removeWhere: bool(Object value) condition
-		for objects -> obj
+		for objects as obj
 			if condition obj
 				obj.hide
 				toBeRemoved.add obj
@@ -26,7 +26,8 @@ unit Framework
 	tick
 		fx.tick
 		objects.eachChangable.tick
-		onTouchUp: deselect touch.by
+		onTouchUp
+			deselect touch.by
 		
 		if toBeRemoved
 			toBeRemoved.each.siblings.remove .
@@ -37,7 +38,8 @@ unit Framework
 		
 	debugString
 		let result = ""
-		for objects: result +=  .debugString
+		for objects
+			result +=  .debugString
 		return result
 		
 // Draw on the screen
@@ -56,7 +58,7 @@ transient global unit graphics
 		let videoObject = getVideoObject player
 			
 		// if !videoObject or Framework.toBeRemoved.contains(videoObject): videoObject = VideoObject(userId)
-		if !videoObject: videoObject = VideoObject(player)
+		if not videoObject then videoObject = VideoObject(player)
 		videoObject.position = pos
 		videoObject.size = size
 		videoObject.shape = shape
@@ -70,21 +72,21 @@ transient global unit graphics
 					return v
 		return null
 		
-enum Side: Front, Back
+enum PieceSide: Front, Back
 		
 // Bug: Place the cursor in the following lines to get a "can't be a constructor parameter" error
 class Object
 	Vector2 position
 	implicit Vector2 size
-	Angle angle
+	float angle
 	float alpha = 1
 	implicit Player[] visibleFor = null
 	int layer = 0
 	bool locked
 	SourceCodeLocation location
 	
-	visible siblings := Framework.objects
-	internal debugString := "(Object pos:{position.x} {position.y})"
+	visible siblings => Framework.objects
+	internal debugString => "(Object pos:{position.x} {position.y})"
 	internal tick
 	
 	Object
@@ -102,58 +104,70 @@ class Object
 	moveToFront() siblings.moveToFront this
 	moveToBack()  siblings.moveToBack this
 		
-	// moveTo: Vector2 pos
-	// 	    Time duration = 1000
-	// 	    Time delay = 0
-	// 	Vector2 startPosition = position
+	moveTo: Vector2 pos
+		    float duration = 1000 // After the this time in milliseconds, the object should reach the target position
+		    float delay = 0       // After this time in milliseconds, the object should start moving
+		Vector2 startPosition = position
 		
-	// 	// When chaining serveral move animations together, continue where the last one left off
-	// 	MoveAnimation moveAnimation = cast fx.animations.find backwards .type == MoveAnimation and .object == this
-	// 		startPosition = moveAnimation.startValue + moveAnimation.delta
+		// When chaining serveral move animations together, continue where the last one left off
+		MoveAnimation moveAnimation = cast runningAnimations.find backwards .type == MoveAnimation and .object == this
+			startPosition = moveAnimation.startValue + moveAnimation.delta
 
-	// 	let delta = pos - startPosition
-	// 	fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startPosition, delta
-	// 	return this
+		let delta = pos - startPosition
+		fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startPosition, delta
+		return this
 		
-	// moveAndScaleTo: Vector2 position
-	// 	            implicit Vector2 size
-	// 	            Time duration = 1000
-	// 	            Time delay = 0
-	// 	Vector2 startPosition = this.position
-	// 	Vector2 startSize = this.size
-	// 	Vector2 endSize = size.y ? size : {size.x, size.x * startSize.y/startSize.x}
+	moveAndScaleTo: Vector2 position
+		            implicit Vector2 size
+		            float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
+		            float delay = 0       // After this time in milliseconds, the object should start moving
+		Vector2 startPosition = this.position
+		Vector2 startSize = this.size
+		Vector2 endSize = size.y ? size : {size.x, size.x * startSize.y/startSize.x}
 		
-	// 	// When chaining serveral move animations together, continue where the last one left off
-	// 	MoveAnimation moveAnimation = cast fx.animations.find backwards .type == MoveAnimation and .object == this
-	// 		startPosition = moveAnimation.startValue + moveAnimation.delta
+		// When chaining serveral move animations together, continue where the last one left off
+		MoveAnimation moveAnimation = cast runningAnimations.find backwards .type == MoveAnimation and .object == this
+			startPosition = moveAnimation.startValue + moveAnimation.delta
 
-	// 	let startTime = fx.endOfPrevAnimation(this)+delay
-	// 	fx.add MoveAnimation startTime, duration, this, startPosition, delta:position - startPosition
-	// 	fx.add ScaleAnimation startTime, duration, this, startSize, delta:endSize - startSize
-	// 	return this
+		let startTime = fx.endOfPrevAnimation(this)+delay
+		fx.add MoveAnimation startTime, duration, this, startPosition, delta:position - startPosition
+		fx.add ScaleAnimation startTime, duration, this, startSize, delta:endSize - startSize
+		return this
 		
-	// moveTo: Vector2 pos
-	// 	    float speed = 1
-	// 	    Time delay = 0
-	// 	let delta = pos - position
-	// 	let duration = math.floor(delta.length / speed)
-	// 	fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:position, delta
-	// 	return this
+	moveTo: Vector2 pos
+		    float speed = 1 // The speed in pixels per millisecond
+		    float delay = 0 // After this time in milliseconds, the object should start moving
+		let delta = pos - position
+		let duration = math.floor(delta.length / speed)
+		fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:position, delta
+		return this
 		
-	fadeIn: Time duration = 100
-		    Time delay = 0
+	moveAlongCurveTo: Vector2 targetPosition
+		              float curvature = 1.0
+					  float smoothness = 1.0
+					  implicit Vector2 targetSize = Vector2.None
+					  float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
+		              float delay = 0       // After this time in milliseconds, the object should start moving
+					  bool removeWhenDone = false
+		Vector2 startPosition = this.position
+		Vector2 startSize = this.size
+		Vector2 middlePoint = (targetPosition + startPosition) * .5
+		Vector2 orthogonal = (targetPosition - startPosition).orthogonal
+		Vector2 curvePoint = middlePoint + orthogonal * curvature
+		float startTime = fx.endOfPrevAnimation(this)+delay
+		fx.add BezierAnimation startTime, duration, this, points:[startPosition, curvePoint, targetPosition], smoothness, removeWhenDone
+		if targetSize then fx.add ScaleAnimation startTime, duration, this, startValue:size, delta:targetSize-size
+		return this
+		
+	fadeIn: float duration = 100 // After the this time in milliseconds, the object should be fully visible
+		    float delay = 0      // After this time in milliseconds, the object should start fading in
 		alpha = 0
 		fx.add FadeAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:0, delta:1
 		return this
 		
-	// fadeOut: Time duration = 100
-	// 	     Time delay = -100
-	// 	     bool removeWhenDone = true
-	// 	float startValue = alpha
-		
 	// 	// When chaining serveral fade animations together, continue where the last one left off
 	// 	// If the last fade animation is already a fade out, don't do anything
-	// 	FadeAnimation lastFadeAnimation = cast fx.animations.find backwards .type == FadeAnimation and .object == this
+	// 	FadeAnimation lastFadeAnimation = cast runningAnimations.find backwards .type == FadeAnimation and .object == this
 	// 		if lastFadeAnimation.startValue + lastFadeAnimation.delta <= 0: 
 	// 			return
 	// 		startValue = lastFadeAnimation.startValue + lastFadeAnimation.delta
@@ -162,22 +176,22 @@ class Object
 	// 	return this
 		
 	scaleTo: implicit Vector2 size
-		     Time duration = 1000
-		     Time delay = 0
+		     float duration = 1000 // After the this time in milliseconds, the object should reach the target size
+		     float delay = 0       // After this time in milliseconds, the object should start scaling
 		fx.add ScaleAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:this.size, delta:size-this.size
 		return this
 		
-	do:   stored void() do
-		  Time delay = 0
+	do:   stored void(Object object) do
+		  float delay = 0 // Execute the given code after this time in milliseconds
 		fx.add DelayAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration:0, this, do
 		
 	playSound: Sound sound
-		       Time delay = 0
+		       float delay = 0 // Play a spound after this time in milliseconds
 		fx.add PlaySoundAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration:0, this, sound
 
 	fadeAndScaleIn: float startScale = 3
-		            Time duration = 200
-		            Time delay = 0
+		            float duration = 200 // After the this time in milliseconds, the object should reach the target size and be fully visible
+		            float delay = 0      // After this time in milliseconds, the object should start scaling and fading in
 		alpha = 0
 		let startTime = fx.endOfPrevAnimation(this)+delay
 		fx.add ScaleAnimation startTime, duration, this, startValue:startScale*size, delta:(1-startScale)*size
@@ -185,11 +199,10 @@ class Object
 		return this
 		
 	fadeScaleAndRotateIn: float startScale = 3
-		                  Angle startAngle = -.0625
-		                  //Angle startAngle = -.08
-		                  Angle endAngle = 0
-		                  Time duration = 200
-		                  Time delay = 0
+		                  float startAngle = -.0625
+		                  float endAngle = 0.0
+		                  float duration = 200 // After the this time in milliseconds, the object should reach the target size and be fully visible
+		                  float delay = 0      // After this time in milliseconds, the object should start scaling and fading in
 		alpha = 0
 		let startTime = fx.endOfPrevAnimation(this)+delay
 		fx.add RotateAnimation startTime, duration, this, startValue:startAngle, delta:endAngle-startAngle
@@ -202,13 +215,13 @@ class Object
 		
 Object RectangleObject
 	Color color = White
-	override tick
-		if alpha: drawRectangle position, size, color, visibleFor, layer, alpha
+	internal override tick
+		if alpha then drawRectangle position, size, color, visibleFor, layer, alpha
 
 Object CircleObject
 	Color color = White
-	override tick
-		if alpha: drawCircle position, size, color:color, visibleFor, layer
+	internal override tick
+		if alpha then drawCircle position, size, color:color, visibleFor, layer
 
 global transient unit System
 	global visualize: Vector2 position = {}
@@ -225,7 +238,7 @@ Object VisualizeObject
 	int index
 	string text
 	
-	override tick
+	internal override tick
 		drawText index, position, color:Black, layer:int.maxValue, size:30
 		drawText text, position+{0,32}, color, layer:int.maxValue, size:14
 		drawCircle position, size, color, layer:int.maxValue
@@ -238,8 +251,8 @@ Object TextObject
 	VerticalAlignment valign = Middle  // The vertical alignment of the text
 	float maxWidth
 	
-	override tick
-		if alpha: drawText text, position, size, angle, color, align, valign, font, visibleFor, alpha, layer, maxWidth
+	internal override tick
+		if alpha then drawText text, position, size, angle, color, align, valign, font, visibleFor, alpha, layer, maxWidth
 		
 // Draw text around a circle
 Object CircularTextObject
@@ -247,31 +260,32 @@ Object CircularTextObject
 	Font font            // The font of the text
 	Color color = White  // The color of the text
 	float radius = 100   // The radius of the circle to draw the text around
-	Angle angle = 0      // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
+	float angle = 0.0    // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
 	float spacing = .2   // The spacing between the letters of the text
 	
-	override tick
-		if alpha: drawCircularText text, position, size.x, color, font, layer, radius, angle, spacing, visibleFor
+	internal override tick
+		if alpha then drawCircularText text, position, size.x, color, font, layer, radius, angle, spacing, visibleFor
 		
 Object ImageObject
 	Image image
+	int frame
 	
 	ImageObject
-		if size.x == 0 and size.y == 0: size = image.size
+		if size.x == 0 and size.y == 0 then size = image.size
 	
-	override tick
-		if alpha: drawImage image, position, size, angle, alpha, visibleFor, layer
+	internal override tick
+		if alpha then drawImage image, position, size, frame, angle, alpha, visibleFor, layer
 		
 Object Effect
 	Image image
 	int framesPerSecond = 15
-	private startFrame = Time.frame
+	private startFrame = Time.ticks
 	
 	Effect
-		if size.x == 0 and size.y == 0: size = image.size
+		if size.x == 0 and size.y == 0 then size = image.size
 	
-	override tick
-		var frame = math.floor((Time.frame - startFrame) * math.max(framesPerSecond, 0) / core.targetFps)
+	internal override tick
+		var frame = math.floor((Time.ticks - startFrame) * math.max(framesPerSecond, 0) / core.ticksPerSecond)
 		if alpha and frame < image.frames.length
 			drawImage image, position, size, alpha, visibleFor, layer, frame, location
 		else
@@ -280,8 +294,9 @@ Object Effect
 Object VideoObject
 	Player player
 	VideoShape shape
-	override tick
-		if alpha and player: drawVideo player, position, size, shape
+
+	internal override tick
+		if alpha and player then drawVideo player, position, size, shape
 			
 Object Button
 	Image image                  // The image of the button
@@ -301,11 +316,11 @@ Object Button
     void(Touch touch) onClick    // Execute this code when the user clicks the button
 	bool removeOnClick = false   // Remove the button after the user clicks it
 	
-	override tick
+	internal override tick
 		if alpha
 			drawButton image, text, position, textColor, frame, size, fontSize, clickableMargin, textOffset, scaleOnHover, frameOnHover, showClickableArea, visibleFor, clickableBy, hotkey, layer, alpha, enabled, alphaWhenDisabled
 			onClick:
-				if removeOnClick: this.removeAtEndOfFrame
+				if removeOnClick then this.removeAtEndOfFrame
 				onClick(touch)
 				
 			
@@ -317,16 +332,16 @@ Object StandardButton
     void(Touch touch) onClick    // Execute this code when the user clicks the button
 	bool removeOnClick = false   // Remove the button after the user clicks it
 	
-	override tick
+	internal override tick
 		if alpha
 			drawStandardButton text, position, visibleFor, clickableBy, hotkey, layer, enabled
 			onClick:
-				if removeOnClick: this.removeAtEndOfFrame
+				if removeOnClick then this.removeAtEndOfFrame
 				onClick(touch)
 
 struct Particle
 	Vector2 pos, speed
-	Angle angle, rotationSpeed
+	float angle, rotationSpeed
 	int frame
 
 enum ParticleMode: Burst, OneParticlePerImageFrame
@@ -338,17 +353,18 @@ Object ParticleSystem
 	maxSpeed = 25.0
 	particlesPerBurst = 30
 	burstInterval = 500
-	Time nextBurst = -1
+	float nextBurst = -1
 	bursts = 10
 	gravity = 1.0
 	maxRotationSpeed  = .05
 	mode = ParticleMode.Burst
-	angleSpread = 1.0
+	angleSpread = math.twoPi
+	layer = int.maxValue
 	
 	private int burst
-	debugString := "(ParticleSystem {position.x} {position.y} {particles.length})"
+	internal debugString => "(ParticleSystem {position.x} {position.y} {particles.length})"
 	
-	override tick
+	internal override tick
 		if Time.now > nextBurst
 			if mode == OneParticlePerImageFrame
 				for image.frames.length
@@ -360,10 +376,10 @@ Object ParticleSystem
 						angle: 0
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
 						frame: .
-				nextBurst = Time.maxValue
+				nextBurst = float.maxValue
 			else
 				for particlesPerBurst
-					let angle = -math.randomFloat angleSpread
+					let angle = math.randomFloat angleSpread
 					let speedFactor = math.randomFloat(minSpeed to maxSpeed)
 					particles.add Particle
 						pos: position
@@ -371,12 +387,10 @@ Object ParticleSystem
 						angle
 						frame: math.randomInteger(image.frames.length)
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
-				nextBurst = ++burst < bursts ? Time.now + burstInterval : Time.maxValue
+				nextBurst = ++burst < bursts ? Time.now + burstInterval : float.maxValue
 
 		for particles <-
-			graphics.move .pos
-				graphics.rotate .angle
-					drawImage image, frame:.frame, visibleFor
+			drawImage image, position:.pos, angle:.angle, frame:.frame, visibleFor, layer: layer
 			.pos += .speed
 			.speed.y += gravity
 			.angle += .rotationSpeed
@@ -396,6 +410,7 @@ Object Menu
 	includeDefaultItems = true
 	overlayColor = #000000b0
 	locked = true
+	layer = 1
 	
 	visible bool active
 		
@@ -406,13 +421,13 @@ Object Menu
 			items.add    {image:Back, "Back to Lobby",   onClick:lobby.show}
 			items.add    {image:Quit, "Exit Fullscreen", onClick:Platform.setFullscreen false, forPlayer:touch.by}
 		
-	override tick
+	internal override tick
 		bool doNotClose
 		if active
-			forPositions items, center:popupPosition, delta:{0,60} -> item
+			forPositions items, center:popupPosition, delta:{0,60} as item
 				drawText .label, pos+{-60}, size:30, align:Left, layer:int.maxValue
 				if item.type == Button
-					if .image: drawImage .image, pos+{-120}, layer:int.maxValue
+					if .image then drawImage .image, pos+{-120}, layer:int.maxValue
 					onTouchDown pos, size:{500,60}, do:item.onClick(true, touch)
 				else
 				if item.type == Check
@@ -422,8 +437,8 @@ Object Menu
 						item.onClick(item.value, touch)
 						doNotClose = true
 					
-			drawRectangle popupPosition, outlineColor:White, color:Black, size:{500,60+items.length*60}, outlineWidth:3, layer:int.maxValue
-			drawRectangle size:{1920,1080}, color:overlayColor, layer:int.maxValue
+			drawRectangle popupPosition, outlineColor:White, color:Black, size:{500,60+items.length*60}, outlineWidth:3, layer:int.maxValue-1
+			drawRectangle size:{1920,1080}, color:overlayColor, layer:int.maxValue-2
 			
 			if not doNotClose
 				onTouchDownAny
@@ -435,7 +450,7 @@ Object Menu
 		
 enum MenuItemType: Button, Check, Radio
 		
-class MenuItem
+internal class MenuItem
 	immutable Image image
 	immutable string label
 	immutable MenuItemType type = Button

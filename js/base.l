@@ -1,5 +1,57 @@
 // A number stored as a 32-bit integer
 immutable struct int
+	// Returns the absolute value of the integer
+	// Example:
+	//     int value = -10
+	//     print value.abs 
+	// Output:
+	//     10
+	importance:3 inline js
+	int abs
+		Math.abs(this)
+
+	// Clamp the value to a specific range
+	// Example: Ensure the player's health is between 0 and 100
+	//     Player
+	//         int health
+	//         changeHealth: int delta
+	//             health = (health + delta) clamp 0 to 100
+	importance:4 inline js 
+	int clamp: int from // The inclusive minimum value
+		       int to   // The inclusive maximum value
+		(this < from ? from : this > to ? to : this)
+		
+	// Make sure the value never falls below a minimum value
+	// Example: Make sure the score is at least 0
+	//     score = score atLeast 0
+	importance:4 inline js 
+	int atLeast: int value
+		(this < value ? value : this)
+	
+	inline js 
+	float atLeast: float value
+		(this < value ? value : this)
+	
+	// Make sure the value never exceets a maximum value
+	// Example: Make sure the percentage is at most 100
+	//     percentage = percentage atMost 100
+	importance:4 inline js 
+	int atMost: int value
+		(this > value ? value : this)
+
+	// Format the integer as a string
+	// Example: Format the integer as a string with the given minimum number of digits
+	//     int number = 7
+	//     print number.format(minIntegerDigits:3)
+	// Output:
+	//     007
+	importance:4 inline js 
+	string format: int minIntegerDigits = 1 // A value with a smaller number of integer digits than this number will be left-padded with zeros to the specified length
+	               bool grouping = false    // Whether to use grouping separators, such as thousands separators
+		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+			
+	// ------------------------------------------- Operators -------------------------------------------
+
 	inline int + int value
 	inline float + float value
 	
@@ -8,7 +60,6 @@ immutable struct int
 	
 	inline int * int value
 	inline float * float value
-	inline Angle * Angle value
 	
 	inline float / int value
 	inline float / float value
@@ -16,58 +67,68 @@ immutable struct int
 	inline int += int value
 	inline int -= int value
 	inline int *= int value
+
+	inline bool !
+	inline int -
+	inline int +
+
+	inline int ++
+	inline int --
 	
 	inline js int ** int value
 		Math.pow(this, value)
 		
-	inline js int % ensureSingleExecution int value
-		(((this % value) + value) % value)
-		
 	// The largest possible integer value
-	const maxValue = 2147483647
+	const importance:5 maxValue = 9007199254740991
 	
 	// The smallest possible integer value
-	const minValue = -2147483648
+	const importance:5 minValue = -9007199254740991
 	
-	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
-	
-	// The remainer after a division by the given value. The sign stays the same.
-	inline js int remainder: int value // The value to divide by
-		(this % value)
+	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
+	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
+	// In other words: A negative value mod a positive value will always be positive. 
+	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
+	// Example:
+	//     int a = 107 mod 100	// a = 7
+	//     int b =  -1 mod 100	// b = 99
+	//     int c =  -1 remainder 100	// c = -1
+	importance:5 inline js 
+	int mod: ensureSingleExecution int divisor // Returns the remainder of a floored division by this value
+		(((this % divisor) + divisor) % divisor)
+		
+	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
+	// Example:
+	//     int a = 107 remainder 100	// a =  7
+	//     int b =  -1 remainder 100	// b = -1
+	//     int c =  -1 mod 100	// c = 99
+	importance:5 inline js 
+	int remainder: int divisor // Returns the remainder of a truncated division by this value
+		(this % divisor)
 		
 	// Returns true if the integer is not zero
-	inline js bool toBool := this
+	inline js bool toBool => this
 	
-	inline js string toString := this?.toString()
-		
-	implicit inline js Time toTime() this
+	importance:4 inline js string toString => this?.toString()
 		
 	inline js int fromHex(string value) parseInt(value, 16)
 		
-	inline js string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-		
-	inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	// Returns the absolute value of the integer
-	inline js int abs
-		Math.abs(this)
+	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 		
 	// Shift the bits of the int to the left. Excess bits shifted off to the left are discarded
-	inline js int shiftLeft: int count // The amount of bits to shift 
+	importance:3  inline js int shiftLeft: int count // The amount of bits to shift 
 		(this << count)
 	
 	// Shift the bits of the int to the right. Excess bits shifted off to the right are discarded
-	inline js int shiftRight: int count // The amount of bits to shift 
+	importance:3  inline js int shiftRight: int count // The amount of bits to shift 
 		(this >> count)
 		
 	// Perform a bitwise "or" operation
-	inline js int bitwiseOr: implicit int value // The value to perform the bitwise "or" with
+	importance:3  inline js int bitwiseOr: implicit int value // The value to perform the bitwise "or" with
 		(this | value)
 	
 	// Perform a bitwise "and" operation
-	inline js int bitwiseAnd: implicit int value // The value to perform the bitwise "and" with
+	importance:3  inline js int bitwiseAnd: implicit int value // The value to perform the bitwise "and" with
 		(this & value)
 	
 	// Check if a certain bit it set
@@ -85,41 +146,7 @@ immutable struct int
 	// Clear a specific bit of the integer
 	inline js int clearFlag: implicit int bitIndex // The index of the bit to clear
 		(this &= ~(1 << bitIndex))
-	
-	// Limit the value to a specific range
-	// Example: Limit the player's to be between 0 and 100
-	//     Player
-	//         int health
-	//         changeHealth: int delta
-	//             health = (health + delta) limit 0..100
-	inline js int limit: int from // The inclusive minimum value
-		                 int to   // The inclusive maximum value
-		(this < from ? from : this > to ? to : this)
 		
-	// Make sure the value never exceets a maximum value
-	// Example: Make sure the card count never exceets a maximum value of 5
-	//     cardCount = cardCount limit ..5
-	inline js int limit: int to
-		(this > to ? to : this)
-	
-	// Make sure the value never falls below a minimum value
-	// Example: Make sure the score never fall below 0
-	//     score = score limit 0..
-	inline js int limit: int from
-		(this < from ? from : this)
-	
-	// Make sure the value never exceets a maximum value
-	// Example: Make sure the card count never exceets a maximum value of 5
-	//     cardCount = cardCount max 5
-	inline js int max: int value
-		(this > value ? value : this)
-	
-	// Make sure the value never falls below a minimum value
-	// Example: Make sure the score never fall below 0
-	//     score = score min 0
-	inline js int min: int value
-		(this < value ? value : this)
-	
 	inline js int setIfLarger: int newValue
 		(this = Math.max(newValue, this))
 		
@@ -154,13 +181,13 @@ immutable struct int
 	inline js int assignIfGreater: int value
 		(value > this ? this = value : this)
 		
-	static js TResult[] enumerate: int from, int to, TResult(int i) selector
+	static internal js TResult[] enumerate: int from, int to, TResult(int i) selector
 		let result = []
 		for(let i=from; i < to; ++i)
 			result.push(selector(i))
 		return result
 		
-	static js TResult[] enumerate: int from, int to, int step, TResult(int i) selector
+	static internal js TResult[] enumerate: int from, int to, int step, TResult(int i) selector
 		let result = []
 		if(to > from && step > 0) {
 			for(let i=from; i < to; i += step)
@@ -173,9 +200,139 @@ immutable struct int
 		
 	inline js TResult[] times: TResult(int i) selector
 		int.enumerate(0, this, selector)
+
+	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	const inline js int undefined => undefined
 	
 // A number stored as a double precision 64-bit floating point value
 immutable struct float
+	importance:3 inline js
+	bool isNaN() isNaN(this)
+
+	// Checks if the float is not NaN (Not a Number). If you convert a string to a float, it will be NaN if the string is not a valid number. 
+	// Dividing by 0, or taking the square root of a negative number will also result in NaN.
+	// Example:
+	//     convertToFloat: string stringValue, float defaultValue = 0
+	//         float floatValue = stringValue.toFloat
+	//         return floatValue.isValidNumber ? floatValue : defaultValue
+	importance:5 inline js
+	bool isValidNumber() (!isNaN(this))
+
+	// Returns the absolute value of the float
+	// Example:
+	//     float value = -3.14
+	//     print value.abs 
+	// Output:
+	//     3.14
+	importance:3 inline js int abs
+		Math.abs(this)
+
+	// Clamp the value to a specific range
+	// Example: Ensure the player's health is between 0 and 100
+	//     Player
+	//         float health
+	//         changeHealth: float delta
+	//             health = (health + delta) clamp 0 to 100
+	importance:4 inline js float clamp: float from // The inclusive minimum value
+		                           float to   // The inclusive maximum value
+		(this < from ? from : this > to ? to : this)
+		
+	// Make sure the value never falls below a minimum value
+	// Example: Make sure the score is at least 0
+	//     score = score atLeast 0
+	importance:4 inline js float atLeast: float value
+		(this < value ? value : this)
+	
+	// Make sure the value never exceets a maximum value
+	// Example: Make sure the percentage is at most 100
+	//     percentage = percentage atMost 100
+	importance:4 inline js float atMost: float value
+		(this > value ? value : this)
+
+	inline js string format: int minFractionDigits = 0, int maxFractionDigits = 2, int minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString("en-US", {@minimumFractionDigits:minFractionDigits, @maximumFractionDigits:maxFractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+						
+	// Returns -1, 0, or 1 depending on the sign of the value
+	importance:4 inline js float sign
+		Math.sign(this)
+		
+	// Returns the smallest integer greater than or equal to the given value 
+	importance:4 inline js int ceil
+		Math.ceil(this)
+		
+	// Returns the largest integer less than or equal to the given value
+	importance:4 inline js int floor
+		Math.floor(this)
+		
+	// Returns the given value rounded to the nearest integer
+	importance:4 inline js int round
+		Math.round(this)
+	
+	importance:4 inline js bool isApproximately: float value
+		                            float epsilon = 0.00001
+		(Math.abs(this - value) < epsilon)
+		
+	// ------------------------------------------- Time -------------------------------------------
+		
+	// Take a time in milliseconds (does not change the value since all time values in LiveTime should be stored in milliseconds).
+	// Example:
+	//     float time = 500 milliseconds
+	importance:3 inline js 
+	float milliseconds => this
+	
+	// Take a time in seconds and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 7 seconds
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 7000
+	importance:3 inline js
+	float seconds => (this*1000)
+		
+	// Take a time in minutes and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 minutes
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 120000
+	importance:3 inline js
+	float minutes => (this*60000)
+		
+	// Take a time in hours and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 hours
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 7200000
+	importance:3 inline js
+	float hours => (this*3600000)
+	
+	// Take a time in days and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 days
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 172800000
+	importance:3 inline js
+	float days => (this*86400000)
+	
+	// Take a time in weeks and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 weeks
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 1209600000
+	importance:3 inline js
+	float weeks => (this*604800000)
+	
+	// Take a time in ticks (30 ticks are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 10 ticks
+	importance:3 inline js 
+	float ticks => this * 1000 / core.ticksPerSecond
+	
+	// ------------------------------------------- Operators -------------------------------------------
+
 	inline float + float value
 	inline float - float value
 	inline float / float value
@@ -190,6 +347,10 @@ immutable struct float
 	inline bool <= float value
 	inline bool > float value
 	inline bool >= float value
+
+	inline bool !
+	inline float -
+	inline float +
 	
 	inline js float ** float value
 		Math.pow(this, value)
@@ -197,94 +358,57 @@ immutable struct float
 	inline js bool isNumber
 		!isNaN(this)
 		
-	inline js float % ensureSingleExecution float value
-		(((this % value) + value) % value)
 		
 	// The largest possible floating point value
-	const inline js float maxValue := Number.MAX_VALUE
+	const importance:5 inline js
+	float maxValue => Number.MAX_VALUE
 	
 	// The smallest possible floating point value
-	const inline js float minValue := -Number.MAX_VALUE
-	
-	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
+	const importance:5 inline js
+	float minValue => -Number.MAX_VALUE
 	
 	// Positiv infinity
-	const inline js float infinity := Number.POSITIVE_INFINITY
+	const importance:4 inline js
+	float infinity => Number.POSITIVE_INFINITY
+
+	const inline js float notANumber => Number.NaN 
 	
-	const inline js float epsilon := Number.EPSILON
+	const inline js float epsilon => Number.EPSILON
 	
-	inline js float operator ** (float a, float b) 
+	inline js float ** (float a, float b) 
 		Math.pow(a,b)
 		
-	js float operator % (float a, float b)
-		return ((a % b) + b) % b
+	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
+	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
+	// In other words: A negative value mod a positive value will always be positive. 
+	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
+	// Example:
+	//     float a = 107 mod 100	// a = 7
+	//     float b =  -1 mod 100	// b = 99
+	//     float c =  -1 remainder 100	// c = -1
+	importance:5 inline js 
+	float mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
+		(((this % divisor) + divisor) % divisor)
 		
-	// Can result from failed conversion or operations with undefined or complex result
-	const inline js float notANumber := Number.NaN
-	
-	// The remainer after a division by the given value. The sign stays the same.
-	inline js float remainder: float value
-		(this % value)
+	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
+	// Example:
+	//     float a = 107 remainder 100	// a =  7
+	//     float b =  -1 remainder 100	// b = -1
+	//     float c =  -1 mod 100	// c = 99
+	importance:5 inline js 
+	float remainder: float divisor // Returns the remainder of a truncated division by this value
+		(this % divisor)
 		
-	inline js int toInt := Math.floor(this)
+	inline js int toInt => Math.floor(this)
 		
 	// Returns true if the floot is not zero
-	inline js bool toBool := this
+	inline js bool toBool => this
 	
-	inline js string toString := this.toString()
+	importance:4 inline js string toString => this.toString()
 		
-	inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	inline js string format: int fractionDigits, bool grouping = false
-		this.toLocaleString("en-US", {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
-		
-	inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString("en-US", {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	// Returns the absolute value
-	inline js float abs
-		Math.abs(this)
-		
-	// Returns -1, 0, or 1 depending on the sign of the value
-	inline js float sign
-		Math.sign(this)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline js int ceil
-		Math.ceil(this)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline js int floor
-		Math.floor(this)
-		
-	// Returns the given value rounded to the nearest integer
-	inline js int round
-		Math.round(this)
-		
-	inline js float limit: float from
-		                   float to
-		(this < from ? from : this < to ? this : to)
-		
-	inline js float limit: float to
-		(this < to ? this : to)
-	
-	inline js float limit: float from
-		(this < from ? from : this)
-	
-	inline js float max: float value
-		(this > value ? value : this)
-	
-	inline js float min: float value
-		(this < value ? value : this)
-	
-	inline js bool isApproximately: float value
-		                            float epsilon = 0.00001
-		(Math.abs(this - value) < epsilon)
-		
-	inline js float moveTowards: float value
-		                         float speed
+	importance:3 inline js float moveTowards: float value
+		                                      float speed = 1
 		(this < value ? (this + speed < value ? (this += speed) : (this = value)) : (this - speed > value ? (this -= speed) : (this = value)))
 		
 	inline js float moveTowardsAndEaseOut: float value
@@ -294,66 +418,64 @@ immutable struct float
 	inline js float incrementBy: float value
 		                         nocolon float to
 		(this+value < to ? (this += value) : to)
+
+	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
 		
-	// ------------------------------------------- Time -------------------------------------------
+	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	const inline js int undefined => undefined
+	const inline js int null => null
 	
-	implicit inline js Time toTime() this
-	
-	// Milliseconds
-	inline js Time milliseconds := this
-	
-	// Seconds
-	inline js Time seconds := (this*1000)
-		
-	// Minutes
-	inline js Time minutes := (this*60000)
-		
-	// Hours
-	inline js Time hours := (this*3600000)
-	
-	// Days
-	inline js Time days := (this*86400000)
-	
-	// Weeks	
-	inline js Time weeks := (this*604800000)
-		
-	implicit inline js Angle toAngle() this
 	
 // A sequence of characters
 js String
 immutable class string
-	inline string + string value
-	inline string += string value
-	
-	inline string < string value
-	inline string <= string value
-	inline string > string value
-	inline string >= string value
-	
 	// Returns the number of characters in the string
-	inline js int length := this.length
+	importance:5 inline js int length => this.length
 	
 	// Returns a string with each character converted to uppercase
-	inline js string toUpperCase := this.toUpperCase()
+	importance:5 inline js string toUpperCase => this.toUpperCase()
 		
 	// Returns a string with each character converted to lowercase
-	inline js string toLowerCase := this.toLowerCase()
+	importance:5 inline js string toLowerCase => this.toLowerCase()
 	
 	// Returns true if the string is not null and not empty	
-	inline js bool toBool := this
+	inline js bool toBool => this
 	inline js string toString() this
-	inline js int toInt := parseInt(this)
-	inline js int toFloat := parseFloat(this)
-	inline js dynamic toJson() JSON.parse(this)
-	inline Time toTime() Time.fromTimeString(this)
-		
-	inline js int parseInt(int radix) parseInt(this, radix)
+
+	// Returns the string converted to an integer. Use int.isValidNumber to check if the conversion was successful.
+	// Example:
+	//     app
+	//         convertStringToNumber: string str
+	//             int number = str.toInt
+	//             if number.isValidNumber: print "The string is a number: {number}"
+	//             else                     print "The string is not a number"
+	importance:5 inline js int toInt => parseInt(this)
+
+	// Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
+	// Example:
+	//     app
+	//         convertStringToNumber: string str
+	//             float number = str.toFloat
+	//             if number.isValidNumber: print "The string is a number: {number}"
+	//             else                     print "The string is not a number"
+	importance:5 inline js float toFloat => parseFloat(this)
 	
-	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js string undefined := undefined
+	// Parse the string as json
+	importance:5 inline js dynamic parseJson() JSON.parse(this)
 	
-	// Splits the string at the given character into a list of substrings
-	inline js string[] split: string seperator = "," // Separate the string at this character
+	// Parse the string as yaml
+	importance:5 inline js dynamic parseYaml() yaml.parse(this)
+
+	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
+	
+	// Variable values that indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	// Example:
+	//     if user.name == string.undefined: user.name = "Guest"
+	const inline js string undefined => undefined
+	
+	// Splits the string at the given character into a list of substrings#
+	importance:5 inline js
+	string[] split: string seperator = "," // Separate the string at this character
 		this.split(seperator)
 		
 	string[] splitByLine: string seperator = "\n" // Separate the string at this character
@@ -361,8 +483,8 @@ immutable class string
 		int start
 		while start < this.length
 			int end = this.indexOf(seperator, start)
-			if end == -1: break
-			if end > start+1: result.add this[start to end]
+			if end == -1	then break
+			if end > start+1	then result.add this[start to end]
 			start = end+1
 		return result
 		
@@ -376,29 +498,99 @@ immutable class string
 		                     string seperator = ","       // Separate the string at this character
 		return selector(this.split(seperator))
 		
-	inline js bool startsWith(string str) this.startsWith(str)
-	inline js bool endsWith(string str) this.endsWith(str)
+	importance:5 inline js bool startsWith(string str) this.startsWith(str)
+	importance:5 inline js bool endsWith(string str) this.endsWith(str)
 		
-	inline js int indexOf(string str) this.indexOf(str)
-	inline js int lastIndexOf(string str) this.lastIndexOf(str)
-	inline js int indexOf(string str, int startPos) this.indexOf(str, startPos)
+	importance:5 inline js int indexOf(string str) this.indexOf(str)
+	importance:5 inline js int indexOf(string str, int startPos) this.indexOf(str, startPos)
 		
-	inline js bool contains(string str) this.includes(str)
+	importance:5 inline js int lastIndexOf(string str) this.lastIndexOf(str)
+	importance:5 inline js int lastIndexOf(string str, int startPos) this.lastIndexOf(str, startPos)
+		
+	importance:5 inline js bool contains(string str) this.includes(str)
+
+	// Return true if the string is a valid email address
+	importance:5 js bool isEmail() 
+		// RFC 5322 compliant email validation
+		// Check basic structure first
+		if (!this || this.length > 254) return false;
+		
+		// Split into local and domain parts
+		const atIndex = this.lastIndexOf('@');
+		if (atIndex === -1 || atIndex === 0 || atIndex === this.length - 1) return false;
+		
+		const local = this.substring(0, atIndex);
+		const domain = this.substring(atIndex + 1);
+		
+		// Validate local part (before @)
+		// - Length: 1-64 characters
+		// - Cannot start or end with a dot
+		// - No consecutive dots
+		// - Allowed characters: a-z, A-Z, 0-9, and .!#$%&'*+-/=?^_`{|}~
+		if (local.length === 0 || local.length > 64) return false;
+		if (local[0] === '.' || local[local.length - 1] === '.') return false;
+		if (local.includes('..')) return false;
+		if (!/^[a-zA-Z0-9.!#$%&'*+\-/=?^_`{|}~]+$/.test(local)) return false;
+		
+		// Validate domain part (after @)
+		// - Length: 1-253 characters
+		// - Must contain at least one dot
+		// - Cannot start or end with a dot or hyphen
+		// - No consecutive dots
+		// - Each label (part between dots) must be 1-63 characters
+		// - Labels can only contain a-z, A-Z, 0-9, and hyphens (not at start/end)
+		if (domain.length === 0 || domain.length > 253) return false;
+		if (!domain.includes('.')) return false;
+		if (domain[0] === '.' || domain[domain.length - 1] === '.') return false;
+		if (domain[0] === '-' || domain[domain.length - 1] === '-') return false;
+		if (domain.includes('..')) return false;
+		
+		const labels = domain.split('.');
+		for (let i = 0; i < labels.length; i++) {
+			const label = labels[i];
+			if (label.length === 0 || label.length > 63) return false;
+			if (label[0] === '-' || label[label.length - 1] === '-') return false;
+			if (!/^[a-zA-Z0-9-]+$/.test(label)) return false;
+		}
+		
+		// Check that TLD is at least 2 characters and alphabetic
+		const tld = labels[labels.length - 1];
+		if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+		
+		return true;
 		
 	inline js int getCharCodeAt(int index) this.charCodeAt(index)
 		
 	static inline js string fromCharCode(int charCode) String.fromCharCode(charCode)
 		
-	inline js string substring: int from
+	importance:5 inline js string substring: int from
 		this.substring(from)
 		
-	inline js string substring: int from = 0
-		                        int to
+	importance:5 inline js 
+	string substring: int from = 0
+		              int to
 		this.substring(from, to)
 		
 	js string getUntil: string value
 		                int start = 0
 		let index = this.indexOf(value, start)
+		if(index != -1) return this.substring(start, index);
+		if(start > 0)   return this.substring(start);
+		                return this
+		
+	js string getUntilUnescaped: string character
+		                         int start = 0
+								 string escapeCharacter = "\\"
+		for(let i=start; i<this.length; i++) {
+			if(this[i] == character && (i==0 || this[i-1] != escapeCharacter)) {
+				return this.substring(start, i); 
+			}
+		}
+		return start > 0 ? this.substring(start) : this
+		
+	js string getUntilLast: string value
+		                    int start = 0
+		let index = this.lastIndexOf(value)
 		if(index != -1) return this.substring(start, index);
 		if(start > 0)   return this.substring(start);
 		                return this
@@ -431,8 +623,14 @@ immutable class string
 	inline js int compareTo: string value // The string to compare to
 		this.localeCompare(value)
 		
-	inline js string trim
+	importance:5 inline js string trim
 		this.trim()
+		
+	importance:5 inline js string trimStart
+		this.trimStart()
+		
+	importance:5 inline js string trimEnd
+		this.trimEnd()
 		
 	js string trimQuotes
 		return this.substring(this[0] == '"' ? 1 : 0, this[this.length-1] == '"' ? this.length-1 : this.length)
@@ -460,13 +658,15 @@ immutable class string
 	inline js string interleaveWith: int charCode
 		this.split("").join(String.fromCharCode(charCode))
 		
-	inline js string replace: string value
-		                      nocolon implicit string with
-		(this = this.replace(new RegExp(value, "g"), with))
+	// Replace all occurrences of a string with another string
+	importance:5 inline js
+	string replaceAll: string occurrencesOf // Search for all occurrences of this string
+		               nocolon string with  // Replace them with this string
+		this.replace(new RegExp(occurrencesOf, "g"), with)
 		
-	js string replaced: string value
-		                nocolon string with
-		return this.replace(new RegExp(value, "g"), $with)
+	inline js string padStart: int targetLength
+		                       string padString = " "
+		this.padStart(targetLength, padString)
 		
 	inline js string padEnd: int targetLength
 		                     string padString = " "
@@ -477,7 +677,7 @@ immutable class string
 	
 	inline js string get: int from = 0
 		                  int to
-		this.substring(from, to)
+		this.substring(from, to >= 0 ? to : to + this.length)
 		
 	inline js string get: int from = 0
 		this.substring(from)
@@ -489,8 +689,8 @@ immutable class string
 		let result = ""
 		let prevChar = " "
 		for this
-			if prevChar == " " and ("a" <= . <= "z"): result += .toUpperCase
-			else                                      result += .
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z") then	result += .toUpperCase
+			else	result += .
 			prevChar = .
 		return result
 		
@@ -498,6 +698,13 @@ immutable class string
 		let result = ""
 		for this
 			if "a" <= . <= "z" or "A" <= . <= "Z"
+				result += .
+		return result
+		
+	string onlyLettersAndPunctuation
+		let result = ""
+		for this
+			if ("a" <= . <= "z") or ("A" <= . <= "Z") or . == " " or . == "-" or . == "," or . == "." or . == "!" or . == "?" or . == ";" or . == ":"
 				result += .
 		return result
 		
@@ -511,123 +718,107 @@ immutable class string
 	inline string backspace
 		(this.length ? this = this[0 to this.length-1] : this)
 		
+	bool isLetter
+		return this.toLowerCase != this.toUpperCase
+
+	// ------------------------------------------- Operators -------------------------------------------
+
+	inline string + string value
+	inline string += string value
+	
+	inline string < string value
+	inline string <= string value
+	inline string > string value
+	inline string >= string value
+
+	inline bool !
+	
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum SortingOrder: Ascending, Descending
 enum EachDistinctSortBy: DoNotSort = 0, SortByInteger = 1, SortByString = 2
 	
-// A data container that grows in size as needed
+// An array that grows and shrinks in size as needed
 js Array
 class List<T>
-	// Do something for each item in a list
-	inline js void each -> inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let i=0, _subject=this, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
-		
-	inline js void each <- inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let _subject=this, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
-		
-	// Do something for each item in a list. You can add or remove items inside the loop.
-	inline js void eachChangable -> inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let i=0, _subject=[...this], _len=_subject.length; i<_len; ++i) do(_subject[i], i)
-		
-	inline js void eachChangable <- inline void(
-		                       T it,      // The current item of the list we are iterating over
-		                       int i      // The index of the current item of the list we are iterating over
-		                   ) do           // Do this for each item in a list
-		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
-			
-	js void eachDistinct: TKey(T it) selector
-		                  EachDistinctSortBy sortBy = SortByInteger
-		                  void(
-		                      TKey it,
-		                      T[] items,
-		                      int i
-		                  ) do
-		if(this.length > 0) {
-			let _subject = this
-			let defaultValue;
-			if(sortBy == 1) {defaultValue = 0; _subject = [...this].sort((a,b) => (selector(a) || 0) - (selector(b) || 0)); } else
-			if(sortBy == 2) {defaultValue = ""; _subject = [...this].sort((a,b) => (selector(a) || "").localeCompare(selector(b) || "")); }
-			let it = selector(_subject[0]) || defaultValue, i=0;
-			for(let _nextIndex=1; _nextIndex<_subject.length; ++_nextIndex) { 
-				let _nextIt = selector(_subject[_nextIndex]) || defaultValue;
-				if(_nextIt != it) {
-					let items = _subject.slice(i, _nextIndex);
-					do(it, items, i)
-					it = _nextIt;
-					i = _nextIndex;
-				}
-			}
-			let items = _subject.slice(i, _subject.length);
-			do(it, items, i)
-		}
-			
+	// ------------------------------------------- Add -------------------------------------------
+
 	// Add an item to the end of the list
-	inline js void add: T item // The item to add
+	// Example:
+	//     players.add {name: "Player1", score: 0}
+	importance:5 inline js 
+	void add: stored T item // The item to add
 		this.push(item)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
 		this.push(item, item2)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
-		                T item3 // The third item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
 		this.push(item, item2, item3)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
-		                T item3 // The third item to add
-		                T item4 // The fourth item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		                stored T item4 // The fourth item to add
 		this.push(item, item2, item3, item4)
 		
-	inline js void add: T item  // The item to add
-		                T item2 // The second item to add
-		                T item3 // The third item to add
-		                T item4 // The fourth item to add
-		                T item5 // The fifth item to add
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		                stored T item4 // The fourth item to add
+		                stored T item5 // The fifth item to add
 		this.push(item, item2, item3, item4, item5)
 		
 	// Add an item and remove a item from the beginning if the length exceeds a maximum value
-	inline js void add: T item        // The item to add
+	inline js void add: stored T item        // The item to add
 		                int maxLength // If the list gets longer than this maximum length, remove an item from the beginning
 		this.push(item)
 		if(this.length > maxLength) this.splice(0, 1)
 			
 	// Add an list of item to the end of the list
-	inline js void add: T[] items // The list of items to add
+	inline js void add: stored T[] items // The list of items to add
 		this.push(...items)
 			
-	// Add an list of item to the end of the list
-	inline js void addRange: T[] items // The list of items to add
+	// Add an list of items to the end of the list
+	importance:5 inline js
+	void addRange: stored T[] items // The list of items to add
 		this.push(...items)
 			
 	// Insert an item at a given index
-	inline js void insert: T item    // The item to insert
-		                   index = 0 // Insert the item at this index
+	importance:5 inline js
+	void insert: stored T item    // The item to insert
+		         index = 0 // Insert the item at this index
 		this.splice(index, 0, item)
 		
 	// Insert an item at a given index
-	inline js void insert: T item    // The item to insert
-		                   T after
+	importance:5 inline js 
+	void insert: stored T item    // The item to insert
+		         T after
 		this.splice(this.indexOf(after)+1, 0, item)
+
+	// Add an item to the list if it isn't already in there
+	importance:5 js void ensure: stored T item // The item to add
+		if(!this.includes(item))
+			this.push(item)
+		
+	// Add each item from a list if it isn't already in there
+	importance:5 ensure: T[] items // The list of items to add
+		for items
+			if not contains .
+				add .
+
+	// ------------------------------------------- Remove -------------------------------------------
 		
 	// Remove an item from the list
 	// Example: Remove the current player instrance from the list of playeres when they died
 	//     Player
     //         die
-    //             players.remove me
-	js void remove: T item // The item to remove
+    //             alivePlayers.remove this
+	importance:5 js 
+	void remove: T item // The item to remove
 		var index = this.indexOf(item);
 		if(index > -1) this.splice(index, 1);
 			
@@ -685,25 +876,25 @@ class List<T>
 		}
 		
 	// Remove the item at the given index from the list
-	inline js void removeAt: int index // The index of the item to remove
+	importance:5 inline js void removeAt: int index // The index of the item to remove
 		this.splice(index, 1)
 			
 	// Remove a range of items from the list
 	// Example: Remove the first 3 players from the list
 	//     players.removeRange 0 to 3
-	inline js void removeRange: int from = 0   // Remove items starting from this index
-		                        nocolon int to // Remove items up to (but not including) this index
+	importance:5 inline js
+	void removeRange: int from = 0   // Remove items starting from this index
+		              nocolon int to // Remove items up to (but not including) this index
 		this.splice(from, to-from)
 			
 	// Remove all item the meet a specific condition
 	// Example: Remove all players that have died.
 	//     Player
     //         bool hasDied
-	//
 	//      app
     //          gameOver
     //              players.removeWhere.hasDied
-	removeWhere: bool(T a) condition // The condition to check
+	importance:5 removeWhere: bool(T it) condition // The condition to check
 		for this <-
 			if condition(.)
 				removeAt i
@@ -712,88 +903,48 @@ class List<T>
 	// Example: Remove the first player with a health smaller than 10.
 	//     Player
     //         int health
-	//
 	//     app
     //         gameOver
     //             players.removeFirstWhere.health < 10
-	T removeFirstWhere: bool(T a) condition // The condition to check
+	importance:5 T removeFirstWhere: bool(T it) condition // The condition to check
 		for this
 			if condition(.)
 				removeAt i
 				return .
 		return null
 	
-	// Add an item to the list if it isn't already in there
-	js void ensure: T item // The item to add
-		if(!this.includes(item))
-			this.push(item)
-		
-	// Add each item from a list if it isn't already in there
-	js void ensure: T[] items // The list of items to add
-		for(let it of items)
-			if(!this.includes(it))
-				this.push(it)
-		
-	js void toggle: T item // The item to add
-		let index = this.indexOf(item)
-		if(index != -1) this.splice(index, 1)
-		else            this.push(item)
-		
-	// Returns whether the list contains the given item
-	inline js bool contains: T item // Check if the list contains this item
-		this.includes(item)
-		
-	bool containsAny: T[] list
-		for list
-			if this contains .
-				return true
-		return false
-		
-	bool containsNone: T[] list
-		for list
-			if this contains .
-				return false
-		return true
-		
-	// The index of an item in the list
-	inline js int indexOf: T item // Get the index of this item
-		this.indexOf(item)
-		
-	inline js void setList: T[] list
-		this.splice(0, this.length, ...list)
-		
-	void setFilteredList: T[] list
-		                  bool(T a) condition
-		clear
-		for list: if condition(.): add .
-		
-	void setFilteredList: T[] list
-		                  bool(T a) condition
-		                  int maxCount
-		clear
-		int count = 0
-		for list
-			if condition .
-				add .
-				if ++count >= maxCount: break
+	// Removes all items from the list
+	importance:5 inline js void clear => this.length = 0
+	
+	// ------------------------------------------- Pop -------------------------------------------
 		
 	// Remove the last item from the list and return it
 	// Example: Print and remove "Orange" from the list
 	//     let fruits = ["Apple", "Lemon", "Orange"]
 	//     print fruits.pop
-	inline js T pop := this.pop()
+	//     print fruits
+	// Output:
+	//     Orange
+	//     [Apple, Lemon]
+	importance:4 inline js T pop => this.pop()
 		
 	// Remove an item at a specific index from the list and return it
 	// Example: Print and remove "Lemon" from the list
 	//     let fruits = ["Apple", "Lemon", "Orange"]
 	//     print fruits.popAt 1
-	inline js T popAt: int index
+	// Output:
+	//     Lemon
+	//     [Apple, Orange]
+	importance:4 inline js T popAt: int index
 		this.splice(index, 1)[0]
 		
 	// Remove a range of items from the list and return a new list containing the removed items
 	// Example: Remote "Lemon" and "Orange" from the list of fruits a create a new list with those fruits 
 	//     let fruits = ["Apple", "Pear", "Lemon", "Orange"]
 	//     let citrusFruit  = fruits.popRange 2 to 4
+	//     print citrusFruit
+	// Output:
+	//     [Apple, Pear]
 	inline js T[] popRange: int from
 		                    nocolon int to
 		this.splice(from, to-from)
@@ -801,8 +952,8 @@ class List<T>
 	// Remove the first item that meet a given condition and return it
 	// Exmaple: Remove the first player with a health below 10
 	//     let firstActivePlayer = players.popWhere.health < 10
-	T popWhere: bool(T a) condition // The condition for the item to meet
-		for length()
+	importance:2 T popWhere: bool(T it) condition // The condition for the item to meet
+		for length
 			let item = get(i)
 			if condition(item)
 				removeAt i
@@ -813,22 +964,118 @@ class List<T>
 	// Example: Print and remove "Apple" from the list
 	//     let fruits = ["Apple", "Lemon", "Orange"]
 	//     print fruits.popFirst
-	inline js T popFirst
+	//     print fruits
+	// Output:
+	//     Apple
+	//     [Lemon, Orange]
+	importance:5 inline js T popFirst
 		this.shift()
-	
+
+	// ------------------------------------------- Length -------------------------------------------
+
 	// Gets the number of items in the list
-	inline js int length() this.length
-	
+	importance:5 int length
+
 	// Truncated or expands the list the given number of items
-	js int setLength: int length // The new length of the list
+	importance:5 js int setLength: int length // The new length of the list
 		this.length = length
-	
-	// Removes all items from the list
-	inline js void clear := this.length = 0
-	
+
+	// -------------------------------------------- Iterate -------------------------------------------
+				
+	// Do something for each item in a list
+	inline js void each -> inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let i=0, _subject=this, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	inline js void each <- inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let _subject=this, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+		
+	// Do something for each item in a list. You can add or remove items inside the loop.
+	inline js void eachChangable -> inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let i=0, _subject=[...this], _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	inline js void eachChangable <- inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       int i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+			
+	js void eachDistinct: TKey(T it) selector
+		                  void(
+		                      TKey it,
+		                      T[] items,
+		                      int i
+		                  ) do
+		if(this.length > 0) {
+			let _subject = this
+			let keys = _subject.map(selector);
+			let distinctKeys = new Set(keys).values();
+			let index = 0
+			for(let key of distinctKeys) {
+				let items = []
+				for(let i=0; i<_subject.length; ++i) {
+					if(keys[i] == key) items.push(_subject[i])
+				}
+				do(key, items, index++)
+			}
+		}
+
+	// ------------------------------------------- Contains -------------------------------------------
+
+	// Returns whether the list contains the given item
+	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
+		(typeof(item) == "object" && item._equal ? this.some(a => item._equal(a)) : this.includes(item))
+		
+	importance:3 bool containsAny: T[] list
+		for list
+			if this contains .
+				return true
+		return false
+		
+	importance:3 bool containsNone: T[] list
+		for list
+			if this contains .
+				return false
+		return true
+
+	// ------------------------------------------- SetList -------------------------------------------
+					
+	inline js void setList: T[] list
+		this.splice(0, this.length, ...list)
+		
+	void setFilteredList: T[] list
+		                  bool(T it) condition
+		clear
+		for list
+			if condition(.)
+				add .
+		
+	void setFilteredList: T[] list
+		                  bool(T it) condition
+		                  int maxCount
+		clear
+		int count = 0
+		for list
+			if condition .
+				add .
+				if ++count >= maxCount then break
+			
+	// ------------------------------------------- Clone or Convert -------------------------------------------
+
 	// Create a shallow clone of the list
 	inline js T[] clone() [...this]
 	
+	// Returns true if the list is not null and not empty	
+	inline js bool toBool => (this != null && this.length != 0) 
+
 	// Create a string representation of the list
 	js string toString()
 		let result = "";
@@ -837,87 +1084,75 @@ class List<T>
 			result += item;
 		}
 		return "["+result+"]"
+
+	inline js implicit ImmutableList<T> toImmutableList() this
+
+	// ------------------------------------------- Random -------------------------------------------
 		
 	// Gets a random item from the list
-	T random()
+	importance:5 T random()
 		let randomInteger = math.randomInteger(length)
 		return get(randomInteger)
 		
-	T randomWhere: bool(T a) condition
+	importance:3 T randomWhere: bool(T it) condition
 		let filteredList = this.where(condition)
 		int index = math.randomInteger(filteredList.length)
 		T item = filteredList[index]
 		return item
 	
 	// Remove a random item from the list and return it
-	T popRandom()
-		if length == 0: return null
+	importance:3 T popRandom()
+		if length == 0 then return null
 		int index = math.randomInteger(length)
 		T item = get(index)
 		this.removeAt(index)
 		return item
 		
-	T popRandomWhere: bool(T a) condition
+	importance:3 T popRandomWhere: bool(T it) condition
 		let filteredList = this.where(condition)
 		int index = math.randomInteger(filteredList.length)
 		T item = filteredList[index]
 		this.remove(item)
 		return item
+
+	// ------------------------------------------- Next/Prev -------------------------------------------
 		
 	T next: T currentItem
 		int index = indexOf(currentItem)
-		return this.get((index+1)%length)
+		return this.get((index+1) mod length)
 		
 	T previous: T currentItem
 		int index = indexOf(currentItem)
-		return this.get((index-1)%length)
+		return this.get((index-1) mod length)
 		
 	T next: T currentItem
 		    label bool(T item) where
 		int baseIndex = indexOf(currentItem)
 		for this.length
-			let item = this.get((baseIndex+i+1)%length)
+			let item = this.get((baseIndex+i+1) mod length)
 			if(where(item)) return item
 		return null
 		
 	T prev: T currentItem
 		int index = indexOf(currentItem)
-		return index != -1 ? this.get((index-1)%length) : this.get(length-1)
-		
-	T pickWithinRangeOrClosest: float(T a) selector
-		                        float min = -float.infinity
-		                        float max = float.infinity
-		float closestDistance = float.infinity
-		int closestIndex = -1
-		T closestItem = null
-		for this
-			let value = selector(.)
-			float distance
-			if value > max: distance = value - max; else
-			if value < min: distance = min - value; else
-				            this.removeAt(i); return .
-				
-			if distance < closestDistance
-				closestDistance = distance
-				closestIndex = i
-				closestItem = .
-		
-		if(closestIndex != -1) this.removeAt(closestIndex)
-		return closestItem
+		return index != -1 ? this.get((index-1) mod length) : this.get(length-1)
+
+	// ------------------------------------------- Transform -------------------------------------------
 			
-	// Returns true if the list is not null and not empty	
-	inline js bool toBool := (this != null && this.length != 0) 
-	
 	// Reverses the order of the items of the list in place
-	inline js T[] reverse() this.reverse()
-		
-	inline js T[] reversed() [...this].reverse()
-		
+	importance:4 inline js T[] reverse() this.reverse()
+				
 	// Return a list with all unique items of the original list
-	inline js T[] distinct() [...new Set(this)]
+	importance:4 inline js T[] distinct() [...new Set(this)]
+
+	// Get the selected field or expression for each item and flattens the result
+	inline js TValue[] flatten: TValue[](T it) selector
+		this.flatMap(selector)
+
+	// -------------------------------------------- Move items -------------------------------------------
 	
 	// Moves an item to the end of the list
-	js void moveToBack: T item // The item to move to the end of the list
+	importance:3 js void moveToBack: T item // The item to move to the end of the list
 		var index = this.indexOf(item);
 		if(index != -1) {
 			let endIndex = this.length-1;
@@ -928,7 +1163,7 @@ class List<T>
 		}
 		
 	// Moves an item to the end of the list
-	js void moveToFront: T item // The item to move to the end of the list
+	importance:3 js void moveToFront: T item // The item to move to the end of the list
 		var index = this.indexOf(item);
 		if(index != -1) {
 			for(let i=index; i>0; --i) {
@@ -936,6 +1171,8 @@ class List<T>
 			}
 			this[0] = item
 		}
+
+	// ------------------------------------------- Sort -------------------------------------------
 		
 	// Sort the list
 	inline js T[] sort
@@ -944,64 +1181,98 @@ class List<T>
 	inline js T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		this.sort(comparer)
 	
-	inline js T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-		this.sort(comparer)
-	
 	// Sort the list by a given expression
-	T[] orderBy: float(T a) expression // First order by this expression
+	// Example:
+	//    let healthyPlayers = (players.where.health > 0).orderBy.health
+	importance:5
+	T[] orderBy: float(T it) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
+
+	// Sort the list by a given expression in descending order
+	// Example:
+	//    let bestPlayers = (players.where.isAlive).orderByDescending.playerScore
+	importance:5
+	T[] orderByDescending: float(T it) expression // First order by this expression
+		return this.sort(expression(b) - expression(a))
+
+	// Sort by string
+	T[] orderBy: string(T it) expression // First order by this expression
+		return this.sort(expression(a) compareTo expression(b))
 		
+	// Sort by string in descending order
+	T[] orderByDescending: string(T it) expression // First order by this expression
+		return this.sort(expression(b) compareTo expression(a))
+		
+	// Order by TimeString
+	T[] orderBy: TimeString(T it) expression // First order by this expression
+		return this.sort(string(expression(a)) compareTo string(expression(b)))
+		
+	// Order by TimeString in descending order
+	T[] orderByDescending: TimeString(T it) expression // First order by this expression
+		return this.sort(string(expression(b)) compareTo string(expression(a)))
+		
+	// Sort by float then by float
 	T[] orderBy: float(T it) expression           // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
+	// Sort by float then by string
 	T[] orderBy: float(T it) expression            // First order by this expression
 		         label nocolon string(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) - expression(b) || thenBy(a) compareTo thenBy(b))
 		
-	T[] orderBy: string(T it) expression           // First order by this expression
+	// Sort by string then by float
+	T[] orderBy: string(T it) expression          // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) compareTo expression(b) || thenBy(a) - thenBy(b))
-		
-	T[] orderBy: string(T a) expression // First order by this expression
-		return this.sort(expression(a) compareTo expression(b))
-		
-	// Sort the list by a given expression
-	T[] orderBy: float(T a) expression // First order by this expression
-		         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-		if order == Ascending: return this.sort(expression(a) - expression(b))
-		else                   return this.sort(expression(b) - expression(a))
-		
-	T[] orderBy: Time(T a) expression // First order by this expression
-		return this.sort(expression(a) - expression(b))
-		
-	// Sort the list by a given expression
-	T[] orderBy: Time(T a) expression // First order by this expression
-		         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-		if order == Ascending: return this.sort(expression(a) - expression(b))
-		else                   return this.sort(expression(b) - expression(a))
-		
+
+	// ------------------------------------------- Query -------------------------------------------
+				
 	// Returns true if the given condition is true for any item in the list
-	inline js bool any: bool(T a) predicate // The condition to check
+	// Example: Check if there are any active enemies
+	//     if enemies.any.isActive
+	importance:4 inline js 
+	bool any: bool(T it) predicate // The condition to check
 		this.some(predicate)
 		
-	inline js bool none: bool(T a) predicate // The condition to check
-		!this.some(predicate)
-		
 	// Returns true if the given condition is true for all items in the list
-	inline js bool all: bool(T a) predicate // The condition to check
+	// Example: Check if all players are ready
+	//     if players.all.isReady
+	importance:4 inline js 
+	bool all: bool(T it) predicate // The condition to check
 		this.every(predicate)
 		
-	// Return a list that contains the selected field or expression for each item
-	inline js TValue[] select: TValue(
-		                           T it,  // The current item of the list
-		                           int i  // The index of the current item of the list
-		                       ) selector // Selects a field or expression for each item
-		this.map(selector)
+	// Returns true if the given condition is false for all items in the list
+	// Example: Check if no player has a health of 0
+	//     if players.none.health == 0
+	importance:3 inline js 
+	bool none: bool(T it) predicate // The condition to check
+		!this.some(predicate)
 		
-	// Get the selected field or expression for each item and flattens the result
-	inline js TValue[] flatten: TValue[](T it) selector
-		this.flatMap(selector)
+	// Return a list that contains the selected field or expression for each item
+	// Example: Get a list of all player names
+	//     let playerNames = players.select.playerName
+	importance:4 inline js 
+	TValue[] select: TValue(
+		                 T it,  // The current item of the list
+		                 int i  // The index of the current item of the list
+		             ) selector // Selects a field or expression for each item
+		this.map(selector)
+
+	// Return a list of all items that meet a specific condition
+	// Example: Get all players with more than 0 health, ordered by their score
+	//     let healthyPlayers = (players.where.health > 0).orderByDescending.playerScore
+	// Example: Get all active enemies in a random order
+	//    let activeEnemies = (enemies.where.isActive).shuffle
+	importance:4 inline js 
+	T[] where: bool(T it) condition // The condition to check
+		this.filter(condition)
+
+	// Return a list containing the first N items from the list
+	// Example: Get the top 3 players by score
+	//     let youngestPlayers = (players.orderBy.age).take 3
+	importance:4 inline js T[] take: int count
+		this.slice(0, count)
 		
 	js TValue[][] groupBy: TKey(T it) selector
 		                   EachDistinctSortBy sortBy = SortByInteger
@@ -1027,27 +1298,36 @@ class List<T>
 		return listOfLists;
 			
 		
-	// Find an item the meets the given condition
-	// Example: Find a player with a specific id
+	// ------------------------------------------- Find -------------------------------------------
+		
+	// Find the first item thats meets a condition
+	// Example: Find the name of the player with a specific id
 	//     app
-	//         getPlayerById: int id
-	//             return players.find.id == id
-	inline js T find: bool(T a) condition // The condition to check
+	//         string getName: int id
+	//             return (players.find.id == id)?.playerName
+	importance:5 inline js T find: bool(T it) condition // The condition to check
 		this.find(condition)
 		
-	inline js T find: backwards bool(T a) condition // The condition to check
+	inline js T find: backwards bool(T it) condition // The condition to check
 		this.findLast(condition)
 		
-	inline js T find: bool(T a) condition // The condition to check
+	inline js T findLast: bool(T it) condition // The condition to check
+		this.findLast(condition)
+		
+	inline js T find: bool(T it) condition // The condition to check
 		              int startIndex      // Start searching at this index
 		Array.findStartingAtIndex(this, condition, startIndex)
 		
-	inline js T find: backwards bool(T a) condition // The condition to check
+	inline js T find: backwards bool(T it) condition // The condition to check
 		              int startIndex                // Start searching at this index
 		Array.findLastStartingAtIndex(this, condition, startIndex)
 		
+	inline js T findLast: bool(T it) condition // The condition to check
+		                  int startIndex                // Start searching at this index
+		Array.findLastStartingAtIndex(this, condition, startIndex)
+		
 	private static T findStartingAtIndex: T[] list            // The list to search
-		                                  bool(T a) condition // The condition to check
+		                                  bool(T it) condition // The condition to check
 		                                  int startIndex = 0  // Start searching at this index
 		for startIndex to list.length
 			let it = list[.]
@@ -1056,7 +1336,7 @@ class List<T>
 		return null
 	
 	private static T findLastStartingAtIndex: T[] list            // The list to search
-		                                      bool(T a) condition // The condition to check
+		                                      bool(T it) condition // The condition to check
 		                                      int startIndex = 0  // Start searching at this index
 		for startIndex+1 backwards
 			let it = list[.]
@@ -1070,27 +1350,53 @@ class List<T>
 	TValue findIn: TValue(T it) selector
 		for this
 			let value = selector(it)
-			if value != null: return value
+			if value != null then return value
 		return null
+
+	T findWithinRangeOrClosest: float(T it) selector
+		                        float from = -float.infinity
+		                        float to = float.infinity
+		float closestDistance = float.infinity
+		int closestIndex = -1
+		T closestItem = null
+		for this as item
+			let value = selector(.)
+			float distance
+			// if value > to then distance = value - to; else
+			// if value < from then distance = from - value; else
+			// 	            this.removeAt(i); return .
+
+			switch value
+				> to	then distance = value - to
+				< from	then distance = from - value
+				default	then this.removeAt(i); return item
+				
+			if distance < closestDistance
+				closestDistance = distance
+				closestIndex = i
+				closestItem = .
 		
-	// Does the list have an item that meets the given condition?
-	bool has: bool(T a) condition // The condition to check
-		      int startIndex = 0  // Start searching at this index
-		for startIndex to length
-			if condition(this[.])
-				return true
-		return false
+		if(closestIndex != -1) this.removeAt(closestIndex)
+		return closestItem
+
+	// ------------------------------------------- Index Of -------------------------------------------
+		
+	// The index of an item in the list
+	importance:5 inline js
+	int indexOf: ensureSingleExecution T item // Get the index of this item
+		(typeof(item) == "object" && item?._equal ? this.findIndex(a => item._equal(a)) : this.indexOf(item))
 		
 	// Find the index of the item the meets the given condition
-	int indexWhere: bool(T a) condition // The condition to check
-		            int startIndex = 0  // Start searching at this index
+	importance:3 int indexWhere: bool(T it) condition	// The condition to check
+		                         int startIndex = 0 	// Start searching at this index
+								 int ifNotFound = -1	// The value to return if no item is found
 		for startIndex to length
 			if condition(this[.])
 				return i
-		return -1
+		return ifNotFound
 		
 	// Find the index of the item the meets the given condition
-	int indexWhere: <- bool(T a) condition // The condition to check
+	int indexWhere: <- bool(T it) condition // The condition to check
 		            int startIndex = 0     // Start searching at this index
 		for length - startIndex <-
 			if condition(this[.])
@@ -1098,15 +1404,12 @@ class List<T>
 		return -1
 		
 	// Seaching backwards, find the last index of the item the meets the given condition
-	int lastIndexWhere: bool(T a) condition // The condition to check
+	int lastIndexWhere: bool(T it) condition // The condition to check
 		                int startIndex = 0  // Start searching at this index
 		for length - startIndex <-
 			if condition(this[.])
 				return i
 		return -1
-		
-	inline js T[] where: bool(T a) condition // The condition to check
-		this.filter(condition)
 		
 	T[] except: T item 
 		T[] result
@@ -1114,24 +1417,24 @@ class List<T>
 			if . != item
 				result.add .
 		return result
-		
-	inline js T[] take: int count
-		this.slice(0, count)
-		
-	int total: int(T it) selector
+					
+	importance:2 int total: int(T it) selector
 		let sum = 0
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum
 		
 	int total: int(T it) selector
-		       label bool(T a) where
+		       label bool(T it) where
 		let sum = 0
-		for this: if where(.): sum += selector(.)
+		for this
+			if where(.) then sum += selector(.)
 		return sum
 		
 	float total: float(T it) selector
 		let sum = 0.0
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum
 		
 	js int sum
@@ -1143,23 +1446,23 @@ class List<T>
 	js float average
 		return this.length > 0 ? this.sum() / this.length : 0
 		
-	string joinToString: string(T a) selector
+	string joinToString: string(T it) selector
 		                 string separator = ", "
 		let result = ""
 		for this
-			if result: result += separator
+			if result then result += separator
 			result += selector(.)
 		return result
 		
-	shuffle
-		for 1 to length <- i
+	importance:5 shuffle
+		for 1 to length backwards
 			var j = math.floor(math.randomFloat * (i + 1))
 			var temp = this.get(i)
 			this.set(i, this.get(j))
 			this.set(j, temp)
 		return this
 		
-	shuffled := this.clone.shuffle
+	shuffled => this.clone.shuffle
 		
 	private static transient T[] temporaryCopy = null
 		
@@ -1172,126 +1475,97 @@ class List<T>
 		Array.temporaryCopy.sort((a,b) => a - b)
 		return Array.temporaryCopy[Math.round((Array.temporaryCopy.length-1) * value / 100)]
 		
-	min: int(T a) selector 
+	min: int(T it) selector 
 		 int threshold = int.maxValue
 		 int default = 0
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value < resultValue: resultValue = value
+			if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	min: float(T a) selector 
+	min: float(T it) selector 
 		 float threshold = float.maxValue
 		 float default = 0
 		float resultValue = threshold
 		for this
 			let value = selector(.)
-			if value < resultValue: resultValue = value
+			if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	min: int(T a) selector 
+	min: int(T it) selector 
 		 int threshold = int.maxValue
 		 int default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		int resultValue = threshold
 		for this
 			if where(.)
 				let value = selector(.)
-				if value < resultValue: resultValue = value
+				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	min: float(T a) selector 
+	min: float(T it) selector 
 		 float threshold = float.maxValue
 		 float default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		float resultValue = threshold
 		for this
 			if where(.)
 				let value = selector(.)
-				if value < resultValue: resultValue = value
+				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	Time min: Time(T a) selector 
-		      Time threshold = Time.maxValue
-		      Time default = 0
-		Time resultValue = threshold
-		for this
-			let value = selector(.)
-			if value < resultValue: resultValue = value
-		return resultValue != threshold ? resultValue : default
-		
-	max: int(T a) selector
+	max: int(T it) selector
 		 int threshold = int.minValue
 		 int default = 0
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue: resultValue = value
+			if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: float(T a) selector
+	max: float(T it) selector
 		 float threshold = float.minValue
 		 float default = 0
 		float resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue: resultValue = value
+			if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: int(T a) selector
+	max: int(T it) selector
 		 int threshold = int.minValue
 		 int default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		int resultValue = threshold
 		for this 
 			if where(.)
 				let value = selector(.)
-				if value > resultValue: resultValue = value
+				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	max: float(T a) selector
+	max: float(T it) selector
 		 float threshold = float.minValue
 		 float default = 0
-		 label bool(T a) where
+		 label bool(T it) where
 		float resultValue = threshold
 		for this
 			if where(.)
 				let value = selector(.)
-				if value > resultValue: resultValue = value
+				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
-	Time max: Time(T a) selector
-		      Time threshold = float.minValue
-		      Time default = 0
-		Time resultValue = threshold
-		for this
-			let value = selector(.)
-			if value > resultValue: resultValue = value
-		return resultValue != threshold ? resultValue : default
-		
-	Time max: Time(T a) selector
-		      Time threshold = float.minValue
-		      Time default = 0
-		 label bool(T a) where
-		Time resultValue = threshold
-		for this
-			if where(.)
-				let value = selector(.)
-				if value > resultValue: resultValue = value
-		return resultValue != threshold ? resultValue : default
-		
-	maxUnique: int(T a) selector
+	maxUnique: int(T it) selector
 		       int threshold = int.minValue
 		       int default = 0
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue:  resultValue = value; else
-			if value == resultValue: resultValue = threshold
+			if value > resultValue then  resultValue = value; else
+			if value == resultValue then resultValue = threshold
 		return resultValue != threshold ? resultValue : default
 		
-	minIndex: float(T a) selector
+	minIndex: float(T it) selector
 		      int startIndex = 0
 		      float threshold = float.maxValue
 		float resultValue = threshold
@@ -1303,7 +1577,7 @@ class List<T>
 				index = i
 		return index
 		
-	maxIndex: float(T a) selector
+	maxIndex: float(T it) selector
 		      int startIndex = 0
 		      float threshold = float.minValue
 		float resultValue = threshold
@@ -1315,7 +1589,7 @@ class List<T>
 				index = i
 		return index
 		
-	withMin: int(T a) selector
+	withMin: int(T it) selector
 		     int threshold = int.maxValue
 		int resultValue = threshold
 		T resultItem
@@ -1326,7 +1600,7 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMin: float(T a) selector
+	withMin: float(T it) selector
 		     float threshold = float.maxValue
 		float resultValue = threshold
 		T resultItem
@@ -1337,9 +1611,9 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMin: int(T a) selector
+	withMin: int(T it) selector
 		     int threshold = int.maxValue
-		     label bool(T a) where
+		     label bool(T it) where
 		int resultValue = threshold
 		T resultItem
 		for this
@@ -1350,9 +1624,9 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMin: float(T a) selector
+	withMin: float(T it) selector
 		     float threshold = float.maxValue
-		     label bool(T a) where
+		     label bool(T it) where
 		float resultValue = threshold
 		T resultItem
 		for this
@@ -1362,32 +1636,8 @@ class List<T>
 					resultValue = value
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
-		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	     label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value < resultValue
-	// 				resultValue = value
-	// 				resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	withMax: int(T a) selector
+				
+	withMax: int(T it) selector
 		     int threshold = int.minValue
 		int resultValue = threshold
 		T resultItem
@@ -1398,7 +1648,7 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMax: float(T a) selector
+	withMax: float(T it) selector
 		     float threshold = float.minValue
 		float resultValue = threshold
 		T resultItem
@@ -1409,18 +1659,7 @@ class List<T>
 				resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	// withMax: Time(T a) selector
-	// 	     Time threshold = float.minValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	popMax: int(T a) selector
+	popMax: int(T it) selector
 		    int threshold = int.minValue
 		int resultValue = threshold
 		T resultItem = null
@@ -1432,10 +1671,10 @@ class List<T>
 				resultItem = .
 				resultIndex = i
 				
-		if resultIndex != -1: removeAt resultIndex
+		if resultIndex != -1 then removeAt resultIndex
 		return resultItem
 		
-	popMax: int(T a) selector
+	popMax: int(T it) selector
 		    float threshold = float.minValue
 		float resultValue = threshold
 		T resultItem = null
@@ -1447,12 +1686,12 @@ class List<T>
 				resultItem = .
 				resultIndex = i
 				
-		if resultIndex != -1: removeAt resultIndex
+		if resultIndex != -1 then removeAt resultIndex
 		return resultItem
 		
-	withMax: int(T a) selector
+	withMax: int(T it) selector
 		     int threshold = int.minValue
-		     label bool(T a) where
+		     label bool(T it) where
 		int resultValue = threshold
 		T resultItem
 		for this
@@ -1463,9 +1702,9 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	withMax: float(T a) selector
+	withMax: float(T it) selector
 		     float threshold = float.minValue
-		     label bool(T a) where
+		     label bool(T it) where
 		float resultValue = threshold
 		T resultItem
 		for this
@@ -1476,14 +1715,14 @@ class List<T>
 					resultItem = .
 		return resultValue != threshold ? resultItem : null
 		
-	count: bool(T a) predicate
+	count: bool(T it) predicate
 		int count = 0
 		for this
 			if predicate(.)
 				count++
 		return count
 		
-	countNot: bool(T a) predicate
+	countNot: bool(T it) predicate
 		int count = 0
 		for this
 			if !predicate(.)
@@ -1494,18 +1733,19 @@ class List<T>
 		insert pop
 		
 	rotate: int count
-		for count: insert pop
+		for count
+			insert pop
 		
 	js T[] intersectWith: T[] other
 		const a = this || []
 		const b = other || []
 		const result = [];
-		const map = {};
+		const dictionary = {};
 		for (let i = 0, length = b.length; i < length; ++i) {
-			map[b[i]] = true;
+			dictionary[b[i]] = true;
 		}
 		for (let i = 0, length = a.length; i < length; ++i) {
-			if (a[i] in map) result.push(a[i]);
+			if (a[i] in dictionary) result.push(a[i]);
 		}
 		return result;
 		
@@ -1569,27 +1809,38 @@ class List<T>
 	// Subtract 1 from an item of the list
 	inline js T decrementItem: int index // The index of the item to change
 		this[index]--
+
+	// Adds the item if it is not in the list, otherwise removes it
+	js void toggle: T item // The item to add
+		let index = this.indexOf(item)
+		if(index != -1) this.splice(index, 1)
+		else            this.push(item)
 		
+js Array
 immutable ImmutableList<T>
-	T[] list
+	inline js T get: implicit int index // The index of the item to get
+		this[index]
+
+	// Gets the number of items in the list
+	importance:5 inline js int length() this.length
+
+	inline js List<T> toList() [...this]
 	
-	inline T get: implicit int index // The index of the item to get
-		list[index]
 		
-// A data container that stores key-value pairs
+// A hashtable that maps keys to values
 js Map
-class Map<TKey, TValue>
+class Dictionary<TKey, TValue>
 	// Get the item assosiated with the given key
-	inline js TValue get: TKey key  // The key of the item to get from the map
+	inline js TValue get: TKey key  // The key of the item to get from the dictionary
 		this.get(key)
 	
 	// Set the item for the given key
-	inline js void set: TKey key     // The key of the item to add to the map
-		                TValue value // The item to add to the map
+	inline js void set: TKey key     // The key of the item to add to the dictionary
+		                TValue value // The item to add to the dictionary
 		this.set(key, value)
 		
-	private js TValue setAndReturn: TKey key     // The key of the item to add to the map
-		                            TValue value // The item to add to the map
+	private js TValue setAndReturn: TKey key     // The key of the item to add to the dictionary
+		                            TValue value // The item to add to the dictionary
 		this.set(key, value);
 		return value;
 		
@@ -1597,52 +1848,81 @@ class Map<TKey, TValue>
 		                       TValue value
 		(this.get(key) || this.setAndReturn(key, value))
 		
-	// Add 1 to item of the map
+	// Add a value to an item of the list
+	js T addToItem: TKey key	// The key of the item to change
+		            TValue value	// The value to add to the item
+		let item = this.get(key)
+		if(item) this.set(key, item + value)
+		else     this.set(key, value)
+		
+	// Subtract a value from an item of the list
+	js T subtractFromItem: TKey key	// The key of the item to change
+		                   TValue value	// The value to subtract from the item
+		let item = this.get(key)
+		if(item) this.set(key, item - value)
+		else     this.set(key, -value)
+		
+	// Add 1 to item of the dictionary
 	inline js T incrementItem: TKey key
 		this.set(key, this.get(key)+1)
 		
-	// Subtract 1 to item of the map
+	// Subtract 1 to item of the dictionary
 	inline js T decrementItem: TKey key
 		this.set(key, this.get(key)-1)
 		
 	// Remove the item assosiated with the given key
-	inline js void remove: TKey key  // The key of the item to remove from the map
+	importance:5 inline js void remove: TKey key  // The key of the item to remove from the dictionary
 		this.delete(key)
 		
-	// Remove all items from the map
-	inline js void clear
+	// Does the dictionary have an item with a specific key?
+	importance:5 inline js bool has: TKey key // The key of the item to check
+		this.has(key)
+		
+	// Remove all items from the dictionary
+	importance:5 inline js void clear
 		this.clear()
 		
-	inline js int length() this.size
+	importance:5 inline js int length() this.size
 		
-	js void removeWhere: bool(TValue it) condition // The condition to check
+	importance:3 js void removeWhere: bool(TValue it) condition // The condition to check
 		for(var pair of this) {
 			if(condition(pair[1])) {
 				this.delete(pair[0]);
 			}
 		}
 
+	importance:4 inline js TKey[] keys() [...this.keys()]
+	importance:4 inline js TValue[] values() [...this.values()]
+
 // A data container that stores unique values of a given type
 js Set
 class Set<T>
+	inline js Set() new Set()
+	inline js Set(T[] list) new Set(list)
+	
 	// Return a boolean indicating whether an element with the specified value exists in this set
 	inline js bool get: T value // The value to check
 		this.has(value)
 	
 	// Add a new element to this set, if there isn't already an element with the same value
-	inline js void add: T value // The value to add
+	importance:5 inline js void add: T value // The value to add
 		this.add(value)
 
 	// Remove a value from the set
-	inline js void remove: T value // The value to remove
+	importance:5 inline js void remove: T value // The value to remove
 		this.delete(value)
 		
+	// Is a certain value in the set?
+	importance:5 inline js bool has: T value // The value to check
+		this.has(value)
+	inline js T[] toList() [...this]
+		
 	// Remove all items from the set
-	inline js void clear
+	importance:5 inline js void clear
 		this.clear()
 		
 	// Return the number of items in the set
-	inline js int length() this.size
+	importance:5 inline js int length() this.size
 
 // Specifies that a function doesn't return a value
 immutable struct void
@@ -1650,31 +1930,30 @@ immutable struct void
 // Denotes a type that can be null
 struct Nullable<T>
 	
-// A Hashtable with keys of type 'string' and values of type 'any'
+// A dynamic type. Useful for representing json and yaml data.
 interface dynamic
-
-// Any type
-interface any
 
 // The base class for all classes
 interface object
-	static inline js any undefined() undefined
+	static inline js dynamic undefined() undefined
+	inline bool !
 	
 	inline js bool toBool() (this != null)
-	// inline js string toString() object_stringify(this, 3)
-		
-	static inline js string toJson(any value) JSON.stringify(value)
-	static inline js string toFormattedJson(any value) JSON.stringify(value, null, "\t")
-	static inline js any fromJson(string json) JSON.parse(json)
-	static inline js bool isEqualAndSameType(any a, any b) (a === b)
-		
-	static internal js string stringify: object subject, int depth = 0 
+	inline js string toJson() JSON.stringify(this)
+	// inline js string toString() object.stringify(this, 5)
+	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
+	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
+	static inline js string typeof(dynamic value) typeof(value)
+	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
+	static inline js void deleteField(dynamic object, string field) delete object[field]
+
+	static internal js string stringify: object subject, int depth = 5
 		switch(typeof subject)
 		{
 			case "object":
 				if(subject === null) return "null"
 				let result = ""
-				if(subject.constructor) result += "_type: " + subject.constructor.name
+				// if(subject.constructor) result += "_type: " + subject.constructor.name
 				if(depth > 0) {
 					for(let name in subject) {
 						let item = object.stringify(subject[name], depth-1)
@@ -1699,16 +1978,599 @@ interface object
 				return subject.toString()
 		}
 
-struct Reference<T>
+	static string toTypedTsv: dynamic[] objects
+		if(objects.length == 0) return ""
+		string[] fieldNames
+		string[] fieldTypes
+		let result = ""
+
+		// Get all field names and types
+		for objects
+			forDynamic . as value, key
+				if typeof(value) == "function" then continue
+				if(!fieldNames.contains(key)) {
+					fieldNames.add(key)
+					fieldTypes.add(object.typeof(value))
+				}
+		
+		// Output field names
+		for fieldNames
+			if i > 0 then result += "\t"
+			result += .
+		result += "\n"
+
+		// Output field types
+		for fieldTypes
+			if i > 0 then result += "\t"
+			result += .
+		result += "\n"
+			
+		// Output values
+		for objects
+			dynamic object = .
+			for fieldNames
+				if i > 0 then result += "\t"
+				let value = object[.]
+				if value == undefined or value == null
+					switch fieldTypes[i]
+						"number"	result += "0"
+						"boolean"	result += "false"
+						"string"	result += ""
+						default	result += "null"
+				else
+					switch fieldTypes[i]
+						"object"	result += json.stringify(value)
+						"number"	result += value.toString()
+						"boolean"	result += value ? "true" : "false"
+						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
+			result += "\n"
+
+		return result
+
+	static dynamic fromTsv: string tsv
+		let lines = tsv.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		dynamic[] result
+		for 1 to lines.length
+			let line = lines[i]
+				let values = line.split("\t")
+				dynamic obj = {}
+				for names
+					obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+				result.add(obj)
+		return result
+
+	static dynamic fromTypedTsv: string tsv
+		let lines = tsv.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		let types = lines[1].split("\t")
+		dynamic[] result
+		for 2 to lines.length
+			let line = lines[i]
+				let values = line.split("\t")
+				dynamic obj = {}
+				for names
+					let value = values[i]
+					switch types[i]
+						"object"	obj[.] = value.parseJson
+						"number"	obj[.] = value.toFloat
+						"boolean"	obj[.] = value == "true"
+						"undefined"	
+						"null"	obj[.] = null
+						default	obj[.] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
+				result.add(obj)
+		return result
+
+	static js string toYaml: dynamic subject
+		function refWalk(v, counts, path) {
+			if(v === null || v === undefined) return
+			let t = typeof v
+			if(t !== "object") return
+			counts.set(v, (counts.get(v) || 0) + 1)
+			if(path.has(v)) return
+			path.add(v)
+			if(Array.isArray(v)) {
+				for(let i = 0, n = v.length; i < n; ++i)
+					refWalk(v[i], counts, path)
+			} else {
+				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
+				for(let k in v)
+					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						if(tset && tset.has(k)) continue
+						let child = v[k]
+						refWalk(child, counts, path)
+					}
+			}
+			path.delete(v)
+		}
+		function typeTag(v) {
+			if(v === null) return ""
+			if(Array.isArray(v)) return ""
+			let n = v.constructor && v.constructor.name
+			return "!!" + (n && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : "Object") + " "
+		}
+		function escStr(s) {
+			return "\"" + s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "\""
+		}
+		function ser(v, counts, anchors, nextId) {
+			if(v === null) return "null"
+			if(v === undefined) return "null"
+			let t = typeof v
+			if(t === "string") return escStr(v)
+			if(t === "number") {
+				if(v !== v) return ".nan"
+				if(v === Infinity) return ".inf"
+				if(v === -Infinity) return "-.inf"
+				return String(v)
+			}
+			if(t === "boolean") return v ? "true" : "false"
+			if(t === "bigint") return "\"" + v + "\""
+			if(t === "function") return "\"\""
+			let multi = (counts.get(v) || 0) > 1
+			if(multi) {
+				if(anchors.has(v)) return "*" + anchors.get(v)
+				let id = "id" + nextId[0]++
+				anchors.set(v, id)
+			}
+			let tag = typeTag(v), body
+			if(Array.isArray(v)) {
+				let p = [], n = v.length
+				for(let i = 0; i < n; ++i)
+					p.push(ser(v[i], counts, anchors, nextId))
+				body = "[" + p.join(", ") + "]"
+			} else {
+				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
+				let p = []
+				for(let k in v)
+					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						if(tset && tset.has(k)) continue
+						let child = v[k]
+						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
+						p.push(kk + ": " + ser(child, counts, anchors, nextId))
+					}
+				body = "{" + p.join(", ") + "}"
+			}
+			let out = tag + body
+			if(multi) out = "&" + anchors.get(v) + " " + out
+			return out
+		}
+		let counts = new Map()
+		refWalk(subject, counts, new Set())
+		return ser(subject, counts, new Map(), [0])
+
+	static js dynamic fromYaml: string yaml
+		function isIgnorableWs(c) {
+			if(c === 9 || c === 10 || c === 13 || c === 32) return true
+			if(c === 133 || c === 160 || c === 5760) return true
+			if(c >= 8192 && c <= 8202) return true
+			if(c === 8232 || c === 8233) return true
+			if(c === 8239 || c === 8287 || c === 12288) return true
+			if(c === 65279) return true
+			return false
+		}
+		function skipWs(s, i) {
+			let n = s.length
+			while(i < n && isIgnorableWs(s.charCodeAt(i))) ++i
+			return i
+		}
+		function isIdentStart(c) {
+			return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+		}
+		function isIdentChar(c) {
+			return isIdentStart(c) || (c >= 48 && c <= 57)
+		}
+		function readIdent(s, i) {
+			let j = i
+			while(j < s.length && isIdentChar(s.charCodeAt(j))) ++j
+			return [s.slice(i, j), j]
+		}
+		function construct(tag) {
+			let C = globalThis["_" + tag]
+			if(typeof C === "function") return new C()
+			if(tag === "Array") return []
+			if(tag === "Object") return {}
+			return {}
+		}
+		function parseString(s, ctx) {
+			let n = s.length, i = ctx.i
+			if(s.charCodeAt(i) !== 34) throw new Error("fromYaml: expected \"")
+			++i
+			let out = ""
+			while(i < n) {
+				let c = s.charCodeAt(i)
+				if(c === 34) {
+					ctx.i = i + 1
+					return out
+				}
+				if(c === 92 && i + 1 < n) {
+					let nxt = s.charCodeAt(i + 1)
+					if(nxt === 92) { out += "\\"; i += 2; continue }
+					if(nxt === 34) { out += "\""; i += 2; continue }
+					if(nxt === 110) { out += "\n"; i += 2; continue }
+					if(nxt === 114) { out += "\r"; i += 2; continue }
+					if(nxt === 116) { out += "\t"; i += 2; continue }
+				}
+				out += s[i++]
+			}
+			throw new Error("fromYaml: unterminated string")
+		}
+		function parseScalar(s, ctx) {
+			let i = ctx.i, n = s.length, cc = s.charCodeAt(i)
+			if(cc === 34) return parseString(s, ctx)
+			function kw(t, len) {
+				if(i + len > n) return false
+				if(s.slice(i, i + len) !== t) return false
+				let nx = i + len
+				return nx >= n || !isIdentChar(s.charCodeAt(nx))
+			}
+			if(kw("null", 4)) { ctx.i = i + 4; return null }
+			if(kw("true", 4)) { ctx.i = i + 4; return true }
+			if(kw("false", 5)) { ctx.i = i + 5; return false }
+			if(kw(".nan", 4)) { ctx.i = i + 4; return NaN }
+			if(kw(".inf", 4)) { ctx.i = i + 4; return Infinity }
+			if(kw("-.inf", 5)) { ctx.i = i + 5; return -Infinity }
+			let j = i
+			if(cc === 45) ++j
+			let has = false
+			if(j < n && s.charCodeAt(j) === 46) {
+				++j
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+			} else {
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+				if(j < n && s.charCodeAt(j) === 46) {
+					++j
+					while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+				}
+			}
+			if(j < n && (s.charCodeAt(j) === 101 || s.charCodeAt(j) === 69)) {
+				++j
+				if(j < n && (s.charCodeAt(j) === 45 || s.charCodeAt(j) === 43)) ++j
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+			}
+			if(has) {
+				let start = ctx.i
+				ctx.i = j
+				return parseFloat(s.slice(start, j))
+			}
+			throw new Error("fromYaml: bad scalar at " + i)
+		}
+		function parseFlowArrayInto(arr, s, ctx) {
+			while(true) {
+				ctx.i = skipWs(s, ctx.i)
+				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated [")
+				if(s.charCodeAt(ctx.i) === 93) { ++ctx.i; break }
+				arr.push(parseValue(s, ctx))
+				ctx.i = skipWs(s, ctx.i)
+				let c = s.charCodeAt(ctx.i)
+				if(c === 93) { ++ctx.i; break }
+				if(c !== 44) throw new Error("fromYaml: expected , or ]")
+				++ctx.i
+			}
+		}
+		function parseFlowMapInto(obj, s, ctx) {
+			while(true) {
+				ctx.i = skipWs(s, ctx.i)
+				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated {")
+				if(s.charCodeAt(ctx.i) === 125) { ++ctx.i; break }
+				let key
+				if(s.charCodeAt(ctx.i) === 34)
+					key = parseString(s, ctx)
+				else {
+					let [id, ni] = readIdent(s, ctx.i)
+					if(!id) throw new Error("fromYaml: expected key")
+					key = id
+					ctx.i = ni
+				}
+				ctx.i = skipWs(s, ctx.i)
+				if(s.charCodeAt(ctx.i) !== 58) throw new Error("fromYaml: expected :")
+				++ctx.i
+				obj[key] = parseValue(s, ctx)
+				ctx.i = skipWs(s, ctx.i)
+				let c = s.charCodeAt(ctx.i)
+				if(c === 125) { ++ctx.i; break }
+				if(c !== 44) throw new Error("fromYaml: expected , or }")
+				++ctx.i
+			}
+		}
+		function parseTagged(s, ctx, anchor) {
+			ctx.i += 2
+			let [tag, ni] = readIdent(s, ctx.i)
+			ctx.i = skipWs(s, ni)
+			if(!tag) throw new Error("fromYaml: missing tag")
+			let c = s.charCodeAt(ctx.i)
+			let inst = construct(tag)
+			if(c === 91 && typeof inst.push !== "function") inst = []
+			if(anchor) ctx.anchors.set(anchor, inst)
+			if(c === 91) {
+				++ctx.i
+				parseFlowArrayInto(inst, s, ctx)
+			} else if(c === 123) {
+				++ctx.i
+				parseFlowMapInto(inst, s, ctx)
+			} else throw new Error("fromYaml: expected [ or { after tag")
+			return inst
+		}
+		function parseValue(s, ctx) {
+			ctx.i = skipWs(s, ctx.i)
+			let anchor = null
+			if(s.charCodeAt(ctx.i) === 38) {
+				++ctx.i
+				let [an, ni] = readIdent(s, ctx.i)
+				if(!an) throw new Error("fromYaml: bad anchor")
+				anchor = an
+				ctx.i = skipWs(s, ni)
+			}
+			if(s.charCodeAt(ctx.i) === 42) {
+				++ctx.i
+				let [al, ni] = readIdent(s, ctx.i)
+				if(!al) throw new Error("fromYaml: bad alias")
+				ctx.i = skipWs(s, ni)
+				if(anchor) throw new Error("fromYaml: anchor with alias")
+				let ref = ctx.anchors.get(al)
+				if(ref === undefined) throw new Error("fromYaml: unknown alias " + al)
+				return ref
+			}
+			if(ctx.i + 1 < s.length && s.charCodeAt(ctx.i) === 33 && s.charCodeAt(ctx.i + 1) === 33)
+				return parseTagged(s, ctx, anchor)
+			if(s.charCodeAt(ctx.i) === 91) {
+				let arr = []
+				if(anchor) ctx.anchors.set(anchor, arr)
+				++ctx.i
+				parseFlowArrayInto(arr, s, ctx)
+				return arr
+			}
+			if(anchor) throw new Error("fromYaml: anchor without tagged value")
+			return parseScalar(s, ctx)
+		}
+		let ctx = { i: 0, anchors: new Map() }
+		ctx.i = skipWs(yaml, 0)
+		if(ctx.i >= yaml.length) return null
+		let root = parseValue(yaml, ctx)
+		ctx.i = skipWs(yaml, ctx.i)
+		if(ctx.i < yaml.length) throw new Error("fromYaml: trailing input")
+		return root
+
+	static js dynamic fromXml: string xml
+		let length = xml.length
+		let i = 0
+		function isWs(c) {
+			return c === 9 || c === 10 || c === 13 || c === 32
+		}
+		function skipWs() {
+			while(i < length && isWs(xml.charCodeAt(i))) ++i
+		}
+		function hasNonWs(value) {
+			for(let j = 0, n = value.length; j < n; ++j) {
+				let c = value.charCodeAt(j)
+				if(c !== 9 && c !== 10 && c !== 13 && c !== 32) return true
+			}
+			return false
+		}
+		function decode(value) {
+			let amp = value.indexOf("&")
+			if(amp === -1) return value
+			let result = value.slice(0, amp)
+			let start = amp
+			for(;;) {
+				let end = value.indexOf(";", start + 1)
+				if(end === -1) return result + value.slice(start)
+				let entity = value.slice(start + 1, end)
+				if(entity === "lt") result += "<"
+				else if(entity === "gt") result += ">"
+				else if(entity === "amp") result += "&"
+				else if(entity === "quot") result += '"'
+				else if(entity === "apos") result += "'"
+				else if(entity.charCodeAt(0) === 35) {
+					let code = entity.charCodeAt(1) === 120 || entity.charCodeAt(1) === 88 ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10)
+					result += isNaN(code) ? "&" + entity + ";" : String.fromCodePoint(code)
+				} else result += "&" + entity + ";"
+				let next = value.indexOf("&", end + 1)
+				if(next === -1) return result + value.slice(end + 1)
+				result += value.slice(end + 1, next)
+				start = next
+			}
+		}
+		function toTypedValue(value) {
+			if(value === "true") return true
+			if(value === "false") return false
+			if(value === "null") return null
+			if(value === "undefined") return undefined
+				
+			let first = value.charCodeAt(0)
+			if(first === 123 || first === 91) {
+				try {
+					return JSON.parse(value)
+				} catch(error) {}
+			}
+			if((first >= 48 && first <= 57) || first === 45 || first === 43 || first === 46) {
+				let numeric = true
+				for(let i = 1, len = value.length; i < len; i++) {
+					let code = value.charCodeAt(i)
+					if((code < 48 || code > 57) && code !== 46 && code !== 43 && code !== 45) {
+						numeric = false
+						break
+					}
+				}
+				if(numeric) {
+					let number = parseFloat(value)
+					if(!isNaN(number)) return number
+				}
+			}
+			return value
+		}
+		function addValue(target, name, value) {
+			let existing = target[name]
+			if(existing === undefined) target[name] = value
+			else if(Array.isArray(existing)) existing.push(value)
+			else target[name] = [existing, value]
+		}
+		function addText(node, value) {
+			if(!hasNonWs(value)) return
+			value = decode(value).trim()
+			if(!value) return
+			node.value._text = node.value._text ? string(node.value._text) + value : toTypedValue(value)
+		}
+		function finish(node, target) {
+			let value = node.value
+			if(!node.hasAttributes && !node.hasChildren) value = value._text === undefined ? "" : value._text
+			else if(value._text === undefined) delete value._text
+			addValue(target, node.name, value)
+		}
+		let root = {}
+		let stack = []
+		while(i < length) {
+			let open = xml.indexOf("<", i)
+			if(open === -1) {
+				if(stack.length) addText(stack[stack.length - 1], xml.slice(i))
+				break
+			}
+			if(open > i && stack.length) addText(stack[stack.length - 1], xml.slice(i, open))
+			i = open + 1
+			if(i >= length) break
+			let marker = xml.charCodeAt(i)
+			if(marker === 63) {
+				let end = xml.indexOf("?>", i + 1)
+				if(end === -1) throw new Error("fromXml: unterminated declaration")
+				i = end + 2
+				continue
+			}
+			if(marker === 33) {
+				if(xml.slice(i + 1, i + 3) === "--") {
+					let end = xml.indexOf("-->", i + 3)
+					if(end === -1) throw new Error("fromXml: unterminated comment")
+					i = end + 3
+					continue
+				}
+				if(xml.slice(i + 1, i + 8) === "[CDATA[") {
+					let end = xml.indexOf("]]>", i + 8)
+					if(end === -1) throw new Error("fromXml: unterminated cdata")
+					if(stack.length) addText(stack[stack.length - 1], xml.slice(i + 8, end))
+					i = end + 3
+					continue
+				}
+				let depth = 0
+				let quote = 0
+				++i
+				while(i < length) {
+					let c = xml.charCodeAt(i++)
+					if(quote) {
+						if(c === quote) quote = 0
+						continue
+					}
+					if(c === 34 || c === 39) quote = c
+					else if(c === 91) ++depth
+					else if(c === 93 && depth) --depth
+					else if(c === 62 && !depth) break
+				}
+				continue
+			}
+			if(marker === 47) {
+				++i
+				let start = i
+				while(i < length) {
+					let c = xml.charCodeAt(i)
+					if(isWs(c) || c === 62) break
+					++i
+				}
+				let name = xml.slice(start, i)
+				while(i < length && xml.charCodeAt(i) !== 62) ++i
+				if(i < length) ++i
+				let node = stack.pop()
+				if(!node || node.name !== name) throw new Error("fromXml: mismatched closing tag")
+				finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
+				continue
+			}
+			let nameStart = i
+			while(i < length) {
+				let c = xml.charCodeAt(i)
+				if(isWs(c) || c === 47 || c === 62) break
+				++i
+			}
+			let node = { name: xml.slice(nameStart, i), value: {}, hasAttributes: false, hasChildren: false }
+			while(i < length) {
+				skipWs()
+				let c = xml.charCodeAt(i)
+				if(c === 47) {
+					++i
+					if(xml.charCodeAt(i) !== 62) throw new Error("fromXml: expected >")
+					++i
+					finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
+					break
+				}
+				if(c === 62) {
+					++i
+					stack.push(node)
+					break
+				}
+				let attrStart = i
+				while(i < length) {
+					c = xml.charCodeAt(i)
+					if(isWs(c) || c === 61 || c === 47 || c === 62) break
+					++i
+				}
+				let attrName = xml.slice(attrStart, i)
+				skipWs()
+				let attrValue = ""
+				if(xml.charCodeAt(i) === 61) {
+					++i
+					skipWs()
+					let quote = xml.charCodeAt(i)
+					if(quote === 34 || quote === 39) {
+						let valueStart = ++i
+						while(i < length && xml.charCodeAt(i) !== quote) ++i
+						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
+						if(i < length) ++i
+					} else {
+						let valueStart = i
+						while(i < length) {
+							quote = xml.charCodeAt(i)
+							if(isWs(quote) || quote === 47 || quote === 62) break
+							++i
+						}
+						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
+					}
+				}
+				(node.value._attributes || (node.value._attributes = {}))[attrName] = attrValue
+				node.hasAttributes = true
+			}
+		}
+		if(stack.length) throw new Error("fromXml: unterminated tag")
+		for(let name in root)
+			return root
+		return null
+
+skipInit global unit Platform
+	string libUrl
+	global inline js async dynamic import: string file
+		import((Platform.libUrl || _basePath || location.origin+"/")+file)
+
+json
+	importance:5 inline js dynamic parse: string value
+		JSON.parse(value)
+	importance:5 inline js string stringify: dynamic value
+		JSON.stringify(value)
+
+class Reference<T>
 	dynamic container
 	string key
-	set: T value
+	assign: T value
 		container[key] = value
-	T get
+	implicit T toT
 		return container[key]
+	T value
+		return container[key]
+	inline bool toBool
+		(this != null and this.container and this.container[this.key])
+	inline bool ! 
+		(this == null or this.container == null or !this.container[this.key])
+
+struct Type<T>
+	inline js string toString() this
 		
 // This struct is automatically filled with the source code location
-transient immutable SourceCodeLocation
+internal transient immutable SourceCodeLocation
 	string file
 	int start
 	int end
@@ -1723,10 +2585,10 @@ transient immutable SourceCodeLocation
 			return this
 		if left != null
 			let result = left.find file, pos
-			if result != null: return result
+			if result != null then return result
 		if right != null
 			let result = right.find file, pos
-			if result != null: return result
+			if result != null then return result
 		return null
 			
 	SourceCodeLocation find: SourceCodeLocation location
@@ -1734,27 +2596,27 @@ transient immutable SourceCodeLocation
 			return this
 		if left != null
 			let result = left.find location
-			if result != null: return result
+			if result != null then return result
 		if right != null
 			let result = right.find location
-			if result != null: return result
+			if result != null then return result
 		return null
 		
 	SourceCodeLocation leaf
-		if file: return this
+		if file then return this
 		if right
 			let result = right.leaf
-			if result: return result
+			if result then return result
 		if left
 			let result = left.leaf
-			if result: return result
+			if result then return result
 		return null
 		
 js Error
 immutable Error
 	string message
 	string stack
-	implicit inline js string toString := this.stack
+	implicit inline js string toString => this.stack
 	
 // A collection of basic system functions
 global transient priority unit System
@@ -1787,7 +2649,10 @@ global transient priority unit System
 		@do do() 
 		@while(while)
 		
-	inline js void doNotSerialize: any object
+	global inline js Promise<T> promise: void(void(T it) resolve, void(Error error) reject) resolve
+		new Promise(resolve)
+		
+	inline js void doNotSerialize: dynamic object
 		_constCache.push(object)
 	
 	// Do something a given number of times or for each item in a list
@@ -1809,8 +2674,8 @@ global transient priority unit System
 	// Do something a given number of times or for each item in a list
 	global inline js void for: TValue[TKey] subject // The list to iterate over
 		                       -> inline void(
-		                           TValue it,       // The current item of the map we are iterating over with the for-loop
-		                           TKey key         // The current key of the map we are iterating over with the for-loop
+		                           TValue it,       // The current item of the dictionary we are iterating over with the for-loop
+		                           TKey key         // The current key of the dictionary we are iterating over with the for-loop
 		                       ) do                 // Do this for each item in a list
 		for(let _pair of subject) do(_pair[1], _pair[0])
 		
@@ -1988,11 +2853,20 @@ global transient priority unit System
 	// 	let time = now.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(now.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+now.getFullYear()+" "+now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3});
 	// 	(location ? log(time + " " +text, location.start, location.file) : log(time + " " +text))
 		
-	// js void log: any value
+	// js void log: dynamic value
 	// 	console.log(value)
 	
-	js void log: any value
+	inline js void log: dynamic value
 		console.log(value)
+	
+	inline js void log: dynamic value, dynamic value2
+		console.log(value, value2)
+
+	inline js void log: dynamic value, dynamic value2, dynamic value3
+		console.log(value, value2, value3)
+	
+	inline js void logError: dynamic value
+		console.error(value)
 	
 	// Display a message in the timeline
 	global js void watch: logstring text // The text, variables or expressions to watch
@@ -2004,6 +2878,10 @@ global transient priority unit System
 	// Shows a dialog box with a given message
 	global inline js void alert: implicit string message // The message to show
 		alert(message)
+
+	global inline js void alert: implicit string message // The message to show
+	                             float delay             // Show the message after this delay in milliseconds
+		setTimeout(() => alert(message), delay)
 		
 	global inline js void break() break
 	global inline js void continue() continue
@@ -2020,6 +2898,14 @@ global transient priority unit System
 	global inline js void try: inline void() code
 		                       inline nocolon void() finally
 		try code() @finally finally()
+
+	// Return an object that contains all global variables and functions
+	global inline js dynamic globals() window
+
+	global inline js void debugger() debugger
+	global inline js void throw(Error error) throw error
+
+	global inline js dynamic Capacitor => window.Capacitor
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string
@@ -2037,11 +2923,11 @@ global transient priority low unit System
 		for(let _subject=subject, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
 				
 	// Do something a given number of times or for each item in a list
-	global inline js void for: dynamic subject // The list to iterate over
-		                       -> inline void(
-		                           dynamic it, // The current item of the dynamic we are iterating over with the for-loop
-		                           string key  // The current key of the dynamic we are iterating over with the for-loop
-		                       ) do            // Do this for each item in a list
+	global inline js void forDynamic: dynamic subject // The list to iterate over
+		                              -> inline void(
+		                                  dynamic it, // The current item of the dynamic we are iterating over with the for-loop
+		                                  string key  // The current key of the dynamic we are iterating over with the for-loop
+		                              ) do            // Do this for each item in a list
 		{let _subject=subject; for(let key in _subject) do(_subject[key], key)}
 		
 	// Creates a new list populated with the results of calling a function on every element of the list
@@ -2079,54 +2965,41 @@ global skipInit unit math
 		Math.abs(value)
 		
 	// Returns the absolute value
-	inline js float abs: float value // The value to return the absolute value of
+	importance:5 inline js float abs: float value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns -1, 0, or 1 depending on the sign of the value
-	inline js float sign: float value
+	importance:5 inline js int sign: float value
 		Math.sign(value)
 		
 	// Returns the positive square root of the given value
-	inline js float sqrt: float value // The value to return the square root of
+	importance:5 inline js float sqrt: float value // The value to return the square root of
 		Math.sqrt(value)
 		
 	inline js float hypot: float a
 		                   float b
 		Math.hypot(a, b)
 		
-	moveTowards: float value
+	importance:3 moveTowards: float value
 		         float targetValue
 		         float speed = 1
-		if targetValue > value: return math.min(value + speed, targetValue) else
-		if targetValue < value: return math.max(value - speed, targetValue)
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
 		
 	// ------------------------------------------------------- floor, ceil, round -------------------------------------------------------
 		
 	// Returns the largest integer less than or equal to the given value
-	inline js int floor: float value // The value to round down
+	importance:5 inline js int floor: float value // The value to round down
 		Math.floor(value)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline js Time floor: Time value // The value to round down
-		Math.floor(value)
-		
-	
+				
 	// Returns the smallest integer greater than or equal to the given value 
-	inline js int ceil: float value // The value to round up
-		Math.ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline js Time ceil: Time value // The value to round up
+	importance:5 inline js int ceil: float value // The value to round up
 		Math.ceil(value)
 		
 	// Returns the given value rounded to the nearest integer
-	inline js int round: float value // The value to round
+	importance:5 inline js int round: float value // The value to round
 		Math.round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline js Time round: Time value // The angle to round
-		Math.round(value)
-		
+				
 	// ------------------------------------------------------- min, max -------------------------------------------------------
 	
 	inline js int min: int a // The first value
@@ -2134,8 +3007,8 @@ global skipInit unit math
 		Math.min(a, b)
 		
 	// Returns the smallest of the given values
-	inline js float min: float a // The first value
-		                 float b // The second value
+	importance:5 inline js float min: float a // The first value
+		                              float b // The second value
 		Math.min(a, b)
 		
 	// Returns the largest of the given values
@@ -2144,101 +3017,183 @@ global skipInit unit math
 		Math.max(a, b)
 		
 	// Returns the largest of the given values
-	inline js float max: float a // The first value
-		                 float b // The second value
+	importance:5 inline js float max: float a // The first value
+		                              float b // The second value
 		Math.max(a, b)
 		
-	// Returns the largest of the given values
-	inline js Time max: Time a // The first time
-		                Time b // The second time
-		Math.max(a, b)
-		
-	// ------------------------------------------------------- Trigonometry in radians -------------------------------------------------------
+	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
 	
-	// Returns the sine of an angle in radians
-	internal inline js float radianSin: float angle // The angle in radians
-		Math.sin(angle)
-		
-	// Returns the cosine of an angle in radians
-	internal inline js float radianCos: float angle // The angle in radians
-		Math.cos(angle)
-		
-	// Returns the tangent of an angle in radians
-	internal inline js float radianTan: float angle // The angle in radians
-		Math.tan(angle)
-		
-	// Returns the inverse sine in radians
-	internal inline js float radianAsin: float value
-		Math.asin(value)
-		
-	// Returns the inverse cosine in radians
-	internal inline js float radianAcos: float value
-		Math.acos(value)
-		
-	// Returns the inverse tangent in radians
-	internal inline js float radianAtan: float value
-		Math.atan(value)
-		
-	// Returns the inverse tangent in radians
-	internal inline js float radianAtan2: float y, float x
-		Math.atan2(y,x)
-		
-	// ------------------------------------------------------- Trigonometry in turns -------------------------------------------------------
-	
-	// Returns the sine of an angle in turns
-	sin: implicit Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .5 - math.floor(angle.toFloat()))
-	    result *= 16 * (math.abs(result) - .5)
-	    result += .225 * result * (math.abs(result) - 1)
-	    return result
+	// The angle of a half rotation (the ratio of a circle's circumference to its diameter)
+	global const float pi = 3.141592653589793
 
-	// Returns the cosine of an angle in turns
-	cos: implicit Angle angle // The angle in turns (one full rotation is 1)
-	    float result = cast(angle - .25 - math.floor(angle.toFloat() + .25))
-	    result *= 16 * (math.abs(result) - .5)
-	    result += .225 * result * (math.abs(result) - 1)
-	    return result
+	// The angle of a half rotation (pi)
+	const float halfCircle = 3.141592653589793
 	
-	// Returns the tangent of an angle in turns
-	tan: implicit Angle angle
-		return sin(angle) / cos(angle)
+	// The angle of a full rotation (the ratio of a circle's radius to its diameter)
+	const float twoPi = 6.283185307179586
+
+	// The angle of a full rotation (2*pi)
+	const float fullCircle = 6.283185307179586
+
+	// The angle of a quarter rotation
+	const float halfPi = 1.5707963267948966
+
+	// The angle of a quarter rotation (pi/2)
+	const float quarterCircle = 1.5707963267948966
+	
+	// The angle of a eighth rotation
+	const float quarterPi = 0.7853981633974483
+
+	moveTowardsAngle: float value
+		              float targetValue
+		              float speed = 10
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
+	
+	// Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
+	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
+		// Range reduction to [-pi, pi] using true modulo for stability
+		float x = angle mod math.twoPi
+		if x > math.pi then x -= math.twoPi
 		
-	// Returns the inverse tangent in turns
-	Angle atan2: float y, float x
-		float r
-		Angle angle
-		float abs_y = math.abs(y) + .00000000001
-		if x < 0.0
-			r = (x + abs_y) / (abs_y - x);
-			angle = .375;
-		else
-			r = (x - abs_y) / (x + abs_y);
-			angle = .125;
-		angle += (.03124211533 * r * r - .1562424076) * r;
-		if y < 0.0: return -angle
-		else        return angle
+		// Use symmetries to fold into [-pi/2, pi/2]
+		bool negate = false
+		if x < 0
+			negate = true
+			x = -x
+		if x > math.halfPi
+			x = math.pi - x
+		
+		// 7th-order Taylor-like polynomial on [-pi/2, pi/2] in Horner form
+		// sin(x) ≈ x * (1 + x^2*(-1/6 + x^2*(1/120 + x^2*(-1/5040))))
+		float x2 = x * x
+		float s = x * (1 + x2 * (-0.16666666666666666 + x2 * (0.008333333333333333 + x2 * (-0.0001984126984126984))))
+		return negate ? -s : s
+
+	// Platform-indepentant cosine of an angle in radians. Returns the exact same value on all platforms.
+	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
+		// Range reduction to [-pi, pi]
+		float x = angle mod math.twoPi
+		if x > math.pi then x -= math.twoPi
+		
+		// Use even symmetry and fold to [0, pi/2]
+		x = math.abs(x)
+		bool negate = false
+		if x > math.halfPi
+			x = math.pi - x
+			negate = true
+		
+		// 8th-order polynomial (Taylor-like) on [0, pi/2]
+		// cos(x) ≈ 1 + x^2*(-1/2 + x^2*(1/24 + x^2*(-1/720 + x^2*(1/40320))))
+		float x2 = x * x
+		float c = 1 + x2 * (-0.5 + x2 * (0.041666666666666664 + x2 * (-0.001388888888888889 + x2 * (0.000024801587301587304))))
+		return negate ? -c : c
+	
+	// Platform-indepentant tangent of an angle in radians. Returns the exact same value on all platforms.
+	importance:5 float tan: float angle // The angle in radians (one full rotation is 2*pi)
+		return sin(angle) / cos(angle)
+			
+	// Platform-indepentant inverse tangent of x in radians. Returns the exact same value on all platforms.
+	importance:5 float atan: float x
+		// Uses polynomial approximation in z = x/(x + pi/3) space
+		// Max error: 4.07e-9 on [0, 1] interval
+		// https://stackoverflow.com/questions/42537957/fast-accurate-atan-arctan-approximation-algorithm
+
+		// Handle negative values using atan(-x) = -atan(x)
+		if x < 0 then return -atan(-x)
+		
+		// Handle large values using atan(x) = pi/2 - atan(1/x)
+		if x > 1 then return math.halfPi - atan(1 / x)
+		
+		// Transform to z-space: z = x / (x + pi/3)
+		float z = x / (x + 1.0471975511965976) // pi/3
+		
+		// Evaluate polynomial using Horner's method for efficiency
+		// Coefficients for 11th degree approximation
+		float result = 14.183376881192657             // z11
+		result = result * z - 60.11210171537528       // z10
+		result = result * z + 82.10190353000648       // z9
+		result = result * z - 49.09950369422959       // z8
+		result = result * z + 17.33961311116544       // z7
+		result = result * z - 5.8773286456840355      // z6
+		result = result * z - 0.33989938855441837     // z5
+		result = result * z - 0.16312555173050677     // z4
+		result = result * z + 0.6678082665364844      // z3
+		result = result * z + 1.047102380719068       // z2
+		result = result * z + 1.0471985201240248      // z1
+		result = result * z + 0.0                     // z0
+		
+		return result
+		
+	// Platform-indepentant inverse tangent of y/x in radians. Returns the exact same value on all platforms.
+	float atan2: float y
+	             float x
+		if (x >= 0) { // -pi/2 .. pi/2
+			if (y >= 0) { // 0 .. pi/2
+				if (y < x) { // 0 .. pi/4
+					return atan(y / x);
+				} else { // pi/4 .. pi/2
+					return math.halfPi - atan(x / y);
+				}
+			} else {
+				if (-y < x) { // -pi/4 .. 0
+					return atan(y / x);
+				} else { // -pi/2 .. -pi/4
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		} else { // -pi..-pi/2, pi/2..pi
+			if (y >= 0) { // pi/2 .. pi
+				if (y < -x) { // pi*3/4 .. pi
+					return atan(y / x) + math.pi;
+				} else { // pi/2 .. pi*3/4
+					return math.halfPi - atan(x / y);
+				}
+			} else { // -pi .. -pi/2
+				if (-y < -x) { // -pi .. -pi*3/4
+					return atan(y / x) - math.pi;
+				} else { // -pi*3/4 .. -pi/2
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		}
+
+	// Platform-dependant sine of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeSin(float angleInRadians) Math.sin(angleInRadians)
+
+	// Platform-dependant cosine of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeCos(float angleInRadians) Math.cos(angleInRadians)
+
+	// Platform-dependant tangent of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeTan(float angleInRadians) Math.tan(angleInRadians)
+
+	// Platform-dependant invers tangent of value in radians. Returns slightly different values on different platforms.
+	inline js float nativeAtan(float value) Math.atan(value)
+
+	// Platform-dependant invers tangent of y/x in radians. Returns slightly different values on different platforms.
+	inline js float nativeAtan2(float y, float x) Math.atan2(y, x)
 		
 	// ------------------------------------------------------- log, pow, exp -------------------------------------------------------
 	
 	// e raised to which power resuls in the given value?
-	inline js float log: float value
+	importance:5 inline js float log: float value
 		Math.log(value)
 		
 	// 2 raised to which power resuls in the given value?
-	inline js float log2: float value
+	importance:5 inline js float log2: float value
 		Math.log2(value)
 		
 	// 10 raised to which power resuls in the given value?
-	inline js float log10: float value
+	importance:5 inline js float log10: float value
 		Math.log10(value)
 		
 	// Return the given base raised to the power of the given exponent
-	inline js float pow: float base
+	importance:5 inline js float pow: float base
 		                 float exponent
 		Math.pow(base, exponent)
 		
 	// Returns e raised to the power of a given number
-	inline js float exp: float exponent
+	importance:5 inline js float exp: float exponent
 		Math.exp(exponent)
 		
 	// ------------------------------------------------------- Bit shifts -------------------------------------------------------
@@ -2251,57 +3206,51 @@ global skipInit unit math
 		                      int count
 		(value >> count)
 			
-	// ------------------------------------------------------- Limit -------------------------------------------------------
+	// ------------------------------------------------------- Clamp -------------------------------------------------------
 	
-	limit: int value
+	clamp: int value
 		   int min
 		   int max
-		if value < min: return min
-		if value > max: return max
-			            return value
+		if value < min	then return min
+		if value > max	then return max
+			                 return value
 	
-	limit: int value
+	clamp: int value
 		   int max
-		if value > max: return max
-			            return value
+		if value > max then return max
+			                return value
 	
-	limit: int value
+	clamp: int value
 		   int min
-		if value < min: return min
-			            return value
+		if value < min then return min
+			                return value
 	
-	limit: float value
+	clamp: float value
 		   float min
 		   float max
-		if value < min: return min
-		if value > max: return max
-			            return value
+		if value < min then return min
+		if value > max then return max
+			                return value
 	
-	limit: float value
+	clamp: float value
 		   float max
-		if value > max: return max
-			            return value
+		if value > max then return max
+			                return value
 			
-	limit: float value
+	clamp: float value
 		   float min
-		if value < min: return min
-			            return value
+		if value < min then return min
+			                return value
 	
 	// ------------------------------------------------------- Random -------------------------------------------------------
 			
 	static randomString: int length = 16
 		string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		string token
-		for length: token += chars[math.randomInteger chars.length-1]
+		for length
+			token += chars[math.randomInteger chars.length-1]
 		return token
-
-struct Average
-	float total
-	int count
-	add: float value
-		total += value
-		count++
-	average := total / count		
+		
 
 struct RollingList
 	int length = 30
@@ -2311,29 +3260,32 @@ struct RollingList
 	private int index
 	
 	add: float value
-		values[index++ % length] = value
+		values[(index++ mod length)] = value
 		
 	measure: void() do
-		let startTime = Time.preciseTime
+		let startTime = PlainDate.preciseTime
 		do
-		values[index++ % length] = Time.preciseTime - startTime
+		values[index++ mod length] = PlainDate.preciseTime - startTime
 	
 	average
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float total
-		for values: total += .
-		return total / (values.length max length)
+		for values
+			total += .
+		return total / (values.length atMost length)
 	
 	max
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float max = float.minValue
-		for values: if . > max: max = .
+		for values
+			if . > max then max = .
 		return max
 	
 	min
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float min = float.maxValue
-		for values: if . < min: min = .
+		for values
+			if . < min then min = .
 		return min
 	
 	implicit string toString()
@@ -2351,8 +3303,18 @@ immutable Range
 	
 	inline js bool containsInclusively: int value
 		(value >= this.from && value <= this.from)
+		
+class File
+	float lastModified // The time the file was last modified in milliseconds
+	string lastModifiedDate
+	string name
+	string path
+	int size
+	string type
+	
+	inline js string objectUrl() URL.createObjectURL(this)
 
-enum Language: English, German, Spanish, Frensh, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
+enum Language: English, German, Spanish, French, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant
 
 unit Loca
 	private const string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
@@ -2361,7 +3323,7 @@ unit Loca
 	visible Language language = English
 	visible string locale = defaultLocaleForLanguage[language]
 	
-	init
+	internal init
 		setLanguage English
 	
 	js void setLanguage: Language language
@@ -2400,4 +3362,98 @@ unit Loca
 		}
 		return result
 	
-	
+enum lowercase string NumberFormatLocaleMatcher
+	lookup // The locale matching algorithm to use.
+	bestFit = "best fit" // The locale matching algorithm to use.
+
+enum lowercase string NumberFormatStyle
+	decimal // For plain number formatting (default)
+	currency // For currency formatting
+	percent // For percent formatting.
+	unit // For unit formatting.
+
+enum lowercase string NumberFormatCurrencyDisplay
+	code // Use the ISO currency code.
+	symbol // Use a localized currency symbol such as €. (default)
+	narrowSymbol // Use a narrow format symbol ("$100" rather than "US$100").
+	name // Use a localized currency name such as "dollar".
+
+enum lowercase string NumberFormatCurrencySign
+	standard // Use standard minus sign for negative numbers. (default)
+	accounting // Wrap the number with parentheses instead of appending a minus sign.
+
+enum lowercase string NumberFormatUnitDisplay
+	short // E.g., 16 l. (default)
+	narrow // E.g., 16l.
+	long // E.g., 16 litres.
+
+enum lowercase string NumberFormatRoundingPriority
+	auto // The result from the significant digits property is used. (default)
+	morePrecision // The result from the property that results in more precision is used.
+	lessPrecision // The result from the property that results in less precision is used.
+
+enum lowercase string NumberFormatRoundingMode
+	ceil // Round toward +∞. Positive values round up. Negative values round "more positive".
+	floor // Round toward -∞. Positive values round down. Negative values round "more negative".
+	expand // Round away from 0. The magnitude of the value is always increased by rounding.
+	trunc // Round toward 0. This magnitude of the value is always reduced by rounding.
+	halfCeil // Ties toward +∞. Values above the half-increment round like "ceil", and below like "floor".
+	halfFloor // Ties toward -∞. Values above the half-increment round like "ceil", and below like "floor".
+	halfExpand // Ties away from 0. Values above the half-increment round like "expand", and below like "trunc". (default)
+	halfTrunc // Ties toward 0. Values above the half-increment round like "expand", and below like "trunc".
+	halfEven // Ties towards the nearest even integer.
+
+enum lowercase string NumberFormatTrailingZeroDisplay
+	auto // Keep trailing zeros according to minimumFractionDigits and minimumSignificantDigits. (default)
+	stripIfInteger // Remove the fraction digits if they are all zero.
+
+enum lowercase string NumberFormatNotation
+	standard // Plain number formatting. (default)
+	scientific // Return the order-of-magnitude for formatted number.
+	engineering // Return the exponent of ten when divisible by three.
+	compact // String representing exponent; defaults to using the "short" form.
+
+enum lowercase string NumberFormatCompactDisplay
+	short // E.g., 1K. (default)
+	long // E.g., 1 thousand.
+
+enum lowercase string NumberFormatSignDisplay
+	auto // Sign display for negative numbers only, including negative zero. (default)
+	always // Always display sign.
+	exceptZero // Sign display for positive and negative numbers, but not zero.
+	negative // Sign display for negative numbers only, excluding negative zero.
+	never // Never display sign.
+
+enum lowercase string NumberFormatUseGrouping
+	always // Display grouping separators even if the locale prefers otherwise.
+	auto // Display grouping separators based on the locale preference.
+	min2 // Display grouping separators when there are at least 2 digits in a group.
+	false = "false" // Display no grouping separators.
+
+dynamic NumberFormatOptions
+	NumberFormatLocaleMatcher localeMatcher // The locale matching algorithm to use. Possible values are "lookup" and "best fit"; the default is "best fit".
+	string numberingSystem // The numbering system to use for number formatting, such as "arab", "hans", "mathsans", and so on.
+	NumberFormatStyle style // The formatting style to use.
+	string currency // The currency to use in currency formatting. Possible values are the ISO 4217 currency codes, such as "USD" for the US dollar, "EUR" for the euro, or "CNY" for the Chinese RMB.
+	NumberFormatCurrencyDisplay currencyDisplay // How to display the currency in currency formatting.
+	NumberFormatCurrencySign currencySign // In many locales, accounting format means to wrap the number with parentheses instead of appending a minus sign.
+	string unit // The unit to use in unit formatting. Possible values: "acre", "bit", "byte", "celsius", "centimeter", "day", "degree", "fahrenheit", "fluid-ounce", "foot", "gallon", "gigabit", "gigabyte", "gram", "hectare", "hour", "inch", "kilobit", "kilobyte", "kilogram", "kilometer", "liter", "megabit", "megabyte", "meter", "mile", "mile-scandinavian", "milliliter", "millimeter", "millisecond", "minute", "month", "ounce", "percent", "petabyte", "pound", "second", "stone", "terabit", "terabyte", "week", "yard", "year". Pairs of simple units can be concatenated with "-per-".
+	NumberFormatUnitDisplay unitDisplay // The unit formatting style to use in unit formatting.
+	int minimumIntegerDigits // The minimum number of integer digits to use. Possible values are from 1 to 21; the default is 1.
+	int minimumFractionDigits // The minimum number of fraction digits to use. Possible values are from 0 to 100.
+	int maximumFractionDigits // The maximum number of fraction digits to use. Possible values are from 0 to 100.
+	int minimumSignificantDigits // The minimum number of significant digits to use. Possible values are from 1 to 21; the default is 1.
+	int maximumSignificantDigits // The maximum number of significant digits to use. Possible values are from 1 to 21; the default is 21.
+	NumberFormatRoundingPriority roundingPriority // Specify how rounding conflicts will be resolved if both "FractionDigits" and "SignificantDigits" are specified.
+	int roundingIncrement // Indicates the increment at which rounding should take place relative to the calculated rounding magnitude. Possible values: 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000.
+	NumberFormatRoundingMode roundingMode // How decimals should be rounded.
+	NumberFormatTrailingZeroDisplay trailingZeroDisplay // The strategy for displaying trailing zeros on whole numbers.
+	NumberFormatNotation notation // The formatting that should be displayed for the number.
+	NumberFormatCompactDisplay compactDisplay // Only used when notation is "compact".
+	NumberFormatUseGrouping useGrouping // Whether to use grouping separators, such as thousands separators or thousand/lakh/crore separators.
+	NumberFormatSignDisplay signDisplay // When to display the sign for the number.
+
+js Intl.NumberFormat
+NumberFormat
+	inline js NumberFormat(string locale, NumberFormatOptions options) new Intl.NumberFormat(locale, options)
+	inline js string format(float value) this.format(value)

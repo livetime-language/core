@@ -18,9 +18,9 @@ immutable struct int
 		(this % value)
 		
 	// Returns true if the integer is not zero
-	inline cpp bool toBool := this
+	inline cpp bool toBool => this
 	
-	inline cpp(string) string toString := std::to_string(this)
+	inline cpp(string) string toString => std::to_string(this)
 
 	static cpp(sstream, string) int fromHex: string value
 	    int result;
@@ -75,26 +75,26 @@ immutable struct int
 	inline cpp int clearBit: implicit int bitIndex // The index of the bit to clear
 		(this &= ~(1 << bitIndex))
 	
-	// Limit the value to a specific range
-	// Example: Limit the player's to be between 0 and 100
+	// Clamp the value to a specific range
+	// Example: Clamp the player's to be between 0 and 100
 	//     Player
 	//         int health
 	//         changeHealth: int delta
-	//             health = (health + delta) limit 0..100
-	inline cpp int limit: int from // The inclusive minimum value
+	//             health = (health + delta) clamp 0..100
+	inline cpp int clamp: int from // The inclusive minimum value
 						int to   // The inclusive maximum value
 		(this < from ? from : this > to ? to : this)
 		
 	// Make sure the value never exceets a maximum value
 	// Example: Make sure the card count never exceets a maximum value of 5
-	//     cardCount = cardCount limit ..5
-	inline cpp int limit: int to
+	//     cardCount = cardCount clamp ..5
+	inline cpp int clamp: int to
 		(this > to ? to : this)
 	
 	// Make sure the value never falls below a minimum value
 	// Example: Make sure the score never fall below 0
-	//     score = score limit 0..
-	inline cpp int limit: int from
+	//     score = score clamp 0..
+	inline cpp int clamp: int from
 		(this < from ? from : this)
 	
 	// Make sure the value never exceets a maximum value
@@ -156,12 +156,12 @@ immutable struct int
 cpp(,double)
 immutable struct float
 	// The largest possible floating point value
-	const inline cpp(float.h) float maxValue := FLT_MAX
+	const inline cpp(float.h) float maxValue => FLT_MAX
 	
 	// The smallest possible floating point value
-	const inline cpp(float.h) float minValue := FLT_MIN
+	const inline cpp(float.h) float minValue => FLT_MIN
 	
-	const inline cpp(cmath) float infinity := INFINITY
+	const inline cpp(cmath) float infinity => INFINITY
 	
 	inline cpp(cmath) float ** float value
 		std::pow(this,value)
@@ -173,12 +173,12 @@ immutable struct float
 	inline cpp float remainder: float value
 		(this % value)
 		
-	inline cpp(cmath) int toInt := std::floor(this)
+	inline cpp(cmath) int toInt => std::floor(this)
 		
 	// Returns true if the floot is not zero
-	inline cpp bool toBool := this
+	inline cpp bool toBool => this
 	
-	inline cpp(string) string toString := std::to_string(this)
+	inline cpp(string) string toString => std::to_string(this)
 		
 	// Formats the float as a string with fraction digits, minimum integer digits, and grouping
 	cpp(string, iomanip, iostream) string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
@@ -230,14 +230,14 @@ immutable struct float
 	inline cpp(cmath) int round
 		std::round(this)
 		
-	inline cpp float limit: float from
+	inline cpp float clamp: float from
 						float to
 		(this < from ? from : this > to ? to : this)
 		
-	inline cpp float limit: float to
+	inline cpp float clamp: float to
 		(this > to ? to : this)
 	
-	inline cpp float limit: float from
+	inline cpp float clamp: float from
 		(this < from ? from : this)
 	
 	inline cpp float max: float value
@@ -273,25 +273,23 @@ immutable struct float
 		
 	// ------------------------------------------- Time -------------------------------------------
 	
-	implicit inline cpp Time toTime() this
-	
 	// Milliseconds
-	inline cpp Time milliseconds := this
+	inline cpp float milliseconds => this
 	
 	// Seconds
-	inline cpp Time seconds := (this*1000)
+	inline cpp float seconds => (this*1000)
 		
 	// Minutes
-	inline cpp Time minutes := (this*60000)
+	inline cpp float minutes => (this*60000)
 		
 	// Hours
-	inline cpp Time hours := (this*3600000)
+	inline cpp float hours => (this*3600000)
 	
 	// Days
-	inline cpp Time days := (this*86400000)
+	inline cpp float days => (this*86400000)
 	
 	// Weeks
-	inline cpp Time weeks := (this*604800000)
+	inline cpp float weeks => (this*604800000)
 		
 immutable EaseFunction
 	float(float value) function
@@ -431,8 +429,6 @@ immutable struct string
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum SortingOrder: Ascending, Descending
-	
 // A data container that grows in size as needed
 cpp vector, std::vector
 struct List<T>
@@ -754,7 +750,7 @@ struct List<T>
 	// 	return closestItem
 			
 	// // Returns true if the list is not null and not empty
-	// inline cpp bool toBool := (this != null && this.length != 0)
+	// inline cpp bool toBool => (this != null && this.length != 0)
 	
 	// // Reverses the order of the items of the list in place
 	// inline cpp T[] reverse() this.reverse()
@@ -790,29 +786,10 @@ struct List<T>
 	inline cpp(algorithm) T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 		std::stable_sort(this.begin(), this.end(), comparer)
 	
-	// inline cpp T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-	
 	// Sort the list by a given expression
 	inline cpp(algorithm) void orderBy: float(T a) expression // First order by this expression
 		std::stable_sort(this.begin(), this.end(), [=](auto a, auto b) { return expression(a) < expression(b); });
-		
-	// T[] orderBy: float(T it) expression           // First order by this expression
-	// 	         label nocolon float(T it) thenBy // Then order by this expression
-	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
-		
-	// T[] orderBy: Time(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
-		
-	// T[] orderBy: string(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) compareTo expression(b))
-		
-	// // Sort the list by a given expression
-	// T[] orderBy: float(T a) expression // First order by this expression
-	// 	         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-	// 	if order == Ascending: return this.sort(expression(a) - expression(b))
-	// 	else                   return this.sort(expression(b) - expression(a))
-		
+				
 	// Returns true if the given condition is true for any item in the list
 	inline cpp bool any: bool(T a) predicate // The condition to check
 		std::any_of(this.begin(), this.end(), predicate)
@@ -941,15 +918,6 @@ struct List<T>
 	// 		if value < resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
 		
-	// min: Time(T a) selector
-	// 	 Time threshold = Time.maxValue
-	// 	 Time default = 0
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
 	// min: int(T a) selector
 	// 	 int threshold = int.maxValue
 	// 	 int default = 0
@@ -990,15 +958,6 @@ struct List<T>
 	// 		if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
 		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
 	// max: int(T a) selector
 	// 	 int threshold = int.minValue
 	// 	 int default = 0
@@ -1020,18 +979,7 @@ struct List<T>
 	// 			let value = selector(.)
 	// 			if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
-		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	 label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
+
 	// minIndex: int(T a) selector
 	// 	      int threshold = int.maxValue
 	// 	int resultValue = threshold
@@ -1076,17 +1024,6 @@ struct List<T>
 	// 			resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
 		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
 	// withMin: int(T a) selector
 	// 	     int threshold = int.maxValue
 	// 	     label bool(T a) where
@@ -1112,20 +1049,7 @@ struct List<T>
 	// 				resultValue = value
 	// 				resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	     label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value < resultValue
-	// 				resultValue = value
-	// 				resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
+				
 	// withMax: int(T a) selector
 	// 	     int threshold = int.minValue
 	// 	int resultValue = threshold
@@ -1140,17 +1064,6 @@ struct List<T>
 	// withMax: float(T a) selector
 	// 	     float threshold = float.minValue
 	// 	float resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMax: Time(T a) selector
-	// 	     Time threshold = float.minValue
-	// 	Time resultValue = threshold
 	// 	T resultItem
 	// 	for this
 	// 		let value = selector(.)
@@ -1236,12 +1149,12 @@ struct List<T>
 	// 	const a = this || []
 	// 	const b = other || []
 	// 	const result = [];
-	// 	const map = {};
+	// 	const dictionary = {};
 	// 	for (let i = 0, length = b.length; i < length; ++i) {
-	// 		map[b[i]] = true;
+	// 		dictionary[b[i]] = true;
 	// 	}
 	// 	for (let i = 0, length = a.length; i < length; ++i) {
-	// 		if (a[i] in map) result.push(a[i]);
+	// 		if (a[i] in dictionary) result.push(a[i]);
 	// 	}
 	// 	return result;
 		
@@ -1307,9 +1220,9 @@ immutable ImmutableList<T>
 	// 	list.get(index)
 		
 // A data container that stores key-value pairs
-cpp(map, std::map) struct Map<TKey, TValue>
+cpp(map, std::map) struct Dictionary<TKey, TValue>
 	// Get the item assosiated with the given key
-	cpp TValue get: TKey key  // The key of the item to get from the map
+	cpp TValue get: TKey key  // The key of the item to get from the dictionary
 		auto search = this.find(key);
 		return search != this.end() ? search->second : TValue();
 		// if(search != this.end()) {
@@ -1321,12 +1234,12 @@ cpp(map, std::map) struct Map<TKey, TValue>
 		// }
 	
 	// Set the item for the given key
-	inline cpp void set: TKey key     // The key of the item to add to the map
-		                TValue value // The item to add to the map
+	inline cpp void set: TKey key     // The key of the item to add to the dictionary
+		                TValue value // The item to add to the dictionary
 		this[key] = value
 		
-	// private cpp TValue setAndReturn: TKey key     // The key of the item to add to the map
-	// 	                            TValue value // The item to add to the map
+	// private cpp TValue setAndReturn: TKey key     // The key of the item to add to the dictionary
+	// 	                            TValue value // The item to add to the dictionary
 	// 	this.set(key, value);
 	// 	return value;
 		
@@ -1335,10 +1248,10 @@ cpp(map, std::map) struct Map<TKey, TValue>
 	// 	(this.get(key) || (this.setAndReturn(key, value)))
 		
 	// // Remove the item assosiated with the given key
-	// inline cpp void delete: TKey key  // The key of the item to remove from the map
+	// inline cpp void delete: TKey key  // The key of the item to remove from the dictionary
 	// 	this.delete(key)
 		
-	// Remove all items from the map
+	// Remove all items from the dictionary
 	inline cpp void clear
 		this.clear()
 		
@@ -1349,12 +1262,9 @@ immutable struct void
 // Denotes a type that can be null
 struct Nullable<T>
 	
-// A Hashtable with keys of type 'string' and values of type 'any'
+// A dynamic type. Useful for representing json and yaml data.
 interface dynamic
-	
-// Any type
-interface any
-	
+
 // The base class for all classes
 interface object
 	inline cpp bool toBool() (this != nullptr)
@@ -1407,7 +1317,7 @@ cpp exception, std::exception
 immutable Error
 	string message
 	string stack
-	implicit inline cpp string toString := this.stack
+	implicit inline cpp string toString => this.stack
 	
 // A collection of basic system functions
 global transient priority unit system
@@ -1452,11 +1362,11 @@ global transient priority unit system
 							) do           // Do this for each item in a list
 		for(int _i=subject.size()-1; _i>=0; --_i) { auto _it = subject[_i]; do(_it, _i)}
 		
-	global inline cpp void for: TValue[TKey] subject    // The map to iterate over
+	global inline cpp void for: TValue[TKey] subject    // The dictionary to iterate over
 							-> void(
-								TValue it, // The current value of the map we are iterating over with the for-loop
-								TKey key   // The current key of the map we are iterating over with the for-loop
-							) do           // Do this for each item in a map
+								TValue it, // The current value of the dictionary we are iterating over with the for-loop
+								TKey key   // The current key of the dictionary we are iterating over with the for-loop
+							) do           // Do this for each item in a dictionary
 		foreach(auto _pair in subject) do(_pair.Value, _pair.Key)
 		
 	// Do something for each item in a list. You can add or remove items inside the loop.
@@ -1647,8 +1557,8 @@ global transient priority unit system
 	global log: logstring text 
 		logs += text + "\n"
 		
-	saveLogEvery: int frames = 60
-		if logs != "" and Time.frame % frames == 0
+	saveLogEvery: int ticks = 60
+		if logs != "" and Time.ticks % ticks == 0
 			print logs
 			logs = ""
 		
@@ -1727,25 +1637,13 @@ unit math
 	// Returns the smallest integer greater than or equal to the given value
 	inline cpp(cmath) int ceil: float value // The value to round up
 		std::ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value
-	inline cpp(cmath) Time ceil: Time value // The value to round up
-		std::ceil(value)
-		
+				
 	// Returns the largest integer less than or equal to the given value
 	inline cpp(cmath) int floor: float value // The value to round down
 		std::floor(value)
 		
-	// Returns the largest integer less than or equal to the given value
-	inline cpp(cmath) Time floor: Time value // The value to round down
-		std::floor(value)
-		
 	// Returns the given value rounded to the nearest integer
 	inline cpp(cmath) int round: float value // The value to round
-		std::round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cpp(cmath) Time round: Time value // The angle to round
 		std::round(value)
 		
 	inline cpp(algorithm) int min: int a // The first value
@@ -1767,11 +1665,6 @@ unit math
 		                         float b // The second value
 		std::max(a, b)
 		
-	// Returns the largest of the given values
-	inline cpp(cmath) Time max: Time a // The first time
-		                        Time b // The second time
-		std::max(a, b)
-		
 	// Returns the positive square root of the given value
 	inline cpp(cmath) float sqrt: float value // The value to return the square root of
 		std::sqrt(value)
@@ -1788,50 +1681,39 @@ unit math
 							int count
 		(value >> count)
 			
-	limit: int value
+	clamp: int value
 		   int min
 		   int max
 		if value < min: return min
 		if value > max: return max
 						return value
 	
-	limit: int value
+	clamp: int value
 		int max
 		if value > max: return max
 						return value
 	
-	limit: int value
+	clamp: int value
 		   int min
 		if value < min: return min
 						return value
 	
-	limit: float value
+	clamp: float value
 		   float min
 		   float max
 		if value < min: return min
 		if value > max: return max
 						return value
 	
-	limit: float value
+	clamp: float value
 		   float max
 		if value > max: return max
 						return value
 			
-	limit: float value
+	clamp: float value
 		   float min
 		if value < min: return min
 						return value
-			
-	// // Maps a value from an input range to an output range
-	map: Time value        // The input value
-		Time from = 0     // The beginning of the input range
-		Time to = 1       // The end of the input range
-		float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
-		float target = 1  // The highest possible output value, will be returned for values larger than "to".
-		if value <= from: return start
-		if value >= to:   return target
-		let factor = (value-from) / (to-from)
-		return start + (target-start) * factor
 			
 	// Maps a value from an input range to an output range
 	map: float value       // The input value
@@ -1862,7 +1744,7 @@ struct Average
 	// add: float value
 	// 	total += value
 	// 	count++
-	// average := total / count
+	// average => total / count
 
 immutable Range
 	int from // The start of the range
@@ -1879,7 +1761,7 @@ immutable Range
 
 unit Json
 	inline cpp dynamic parse(string str) JSON.parse(str)
-	inline cpp string stringify(any object) JSON.stringify(object)
+	inline cpp string stringify(dynamic object) JSON.stringify(object)
 		
 enum Language: English, German, Spanish, Frensh, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
 

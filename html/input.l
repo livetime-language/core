@@ -127,25 +127,27 @@ class Touch
 	TouchPhase phase  // Still, Down, Move, Up
 	TouchType type    // Left, Middle, Right, Touch, Pen
 	Vector2 position  // The position of the touch reletive to the page
-	string touchedId  // The id of the touched html node
+	string touchedId  // The id of the touched html element
 	bool shiftKey     // Is the shift key down?
 	bool altKey       // Is the alt key down?
 	bool ctrlKey      // Is the control key down?
 	bool metaKey      // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 	
-unit input
+unit html
 	KeyListener[] keyDownListeners
-	// void(Vector2 position, Vector2 delta, bool isPinch)[] scrollListeners
-	
-	init
-		initHandlers
+	void() defaultButtonToTriggerWithEnterKey = null
 		
-	js void initHandlers
+	js void initGlobalEventHandlers
 		document.onkeydown = ev => {
 			if(ev.key == "F10") { 
 				Platform.toggleSmallScreen();
+			} else if(ev.key == "Enter" && html.defaultButtonToTriggerWithEnterKey != null) {
+				html.defaultButtonToTriggerWithEnterKey.invoke(ev)
+				ev.preventDefault();
+				ev.stopPropagation();
+				return false;
 			}
-			for(let listener of input.keyDownListeners) {
+			for(let listener of html.keyDownListeners) {
 				if(ev.keyCode == listener.key) {
 					listener.do.invoke(ev.keyCode)
 					ev.preventDefault();
@@ -154,28 +156,126 @@ unit input
 				}
 			}
 		}
-		
-		// if(window._handlersInitialized) return
-		// window._handlersInitialized = true
-		// window.addEventListener('wheel', ev => {
-		// 	if(input.scrollListeners.length > 0) {
-		// 		ev.preventDefault();
-		// 		ev.stopPropagation();
-		// 		for(let listener of input.scrollListeners) {
-		// 			listener.invoke(new Vector2(ev.clientX/Platform.scale, ev.clientY/Platform.scale, "px"), new Vector2(-ev.deltaX, ev.deltaY, "px"), ev.ctrlKey);
-		// 		}
-		// 		return false;			
-		// 	}
-		// }, {passive: false})
 
-	clear
+	clearGlobalEventHandlers
+		if(!keyDownListeners) keyDownListeners = []
 		keyDownListeners.clear
-		// scrollListeners.clear
 	
 	onKeyDown: Key key
 		       stored void(Key key) do
 		keyDownListeners.add {key, do}
-		
-	// onScroll: stored void(Vector2 position, Vector2 delta, bool isPinch) do
-	// 	scrollListeners.add do
+
+	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
+
+	Gamepad[] gamepads
+
+	Gamepad[] queryGamepads
+		InternalGamepad[] internalGamepads = getGamepads
+		if internalGamepads == null or internalGamepads.length == 0 then return
+		for internalGamepads as internalGamepad
+			if internalGamepad
+				let gp = gamepads[i]
+				if not gp then gamepads[i] = gp = {}
+				gp.buttons.each.wasPreviouslyPressed = .isPressed
+
+				gp.leftStick = {x: internalGamepad.axes[0], y: internalGamepad.axes[1]}
+				gp.A.isPressed	= internalGamepad.buttons[0].pressed
+				gp.B.isPressed	= internalGamepad.buttons[1].pressed
+				gp.X.isPressed	= internalGamepad.buttons[2].pressed
+				gp.Y.isPressed	= internalGamepad.buttons[3].pressed
+				gp.L1.isPressed	= internalGamepad.buttons[4].pressed
+				gp.R1.isPressed	= internalGamepad.buttons[5].pressed
+				gp.L2.isPressed	= internalGamepad.buttons[6].pressed
+				gp.R2.isPressed	= internalGamepad.buttons[7].pressed
+				gp.select.isPressed	= internalGamepad.buttons[8].pressed
+				gp.start.isPressed	= internalGamepad.buttons[9].pressed
+				gp.leftStickButton.isPressed	= internalGamepad.buttons[10].pressed
+				gp.rightStickButton.isPressed	= internalGamepad.buttons[11].pressed
+				gp.up.isPressed	= internalGamepad.buttons[12].pressed
+				gp.down.isPressed	= internalGamepad.buttons[13].pressed
+				gp.left.isPressed	= internalGamepad.buttons[14].pressed
+				gp.right.isPressed	= internalGamepad.buttons[15].pressed
+				gp.type	= internalGamepad.id.contains("054c") or internalGamepad.id.contains("810") ? PlayStation : Xbox
+				gp.inMotion	= gp.leftStick.length > Gamepad.deadZone
+
+				// Controller button names
+				if gp.type == Xbox
+					gp.A.name = "A"
+					gp.B.name = "B"
+					gp.X.name = "X"
+					gp.Y.name = "Y"
+				else
+					gp.A.name = "X"
+					gp.B.name = "O"
+					gp.X.name = "SQUARE"
+					gp.Y.name = "TRIANGLE"
+		return gamepads
+	
+internal DigitalButton
+	string name
+	Key key
+	
+	bool isPressed
+	bool wasJustPressed	=> isPressed and not wasPreviouslyPressed
+	bool wasJustReleased	=> not isPressed and wasPreviouslyPressed
+	internal bool wasPreviouslyPressed
+	
+	toString => name
+	
+internal transient immutable struct ControllerButtonPlayerAndIndex
+	int userId
+	int buttonIndex
+	
+internal transient immutable InternalGamepadButton
+	bool pressed, touched
+	float value
+	
+internal transient immutable InternalGamepad
+	ImmutableList<float> axes
+	ImmutableList<InternalGamepadButton> buttons
+	string id, mapping
+	
+enum GamepadButton: A, B, X, Y, L1, R1, L2, R2, Select, Start, LeftStickButton, RightStickButton, Up, Down, Left, Right
+	
+enum GamepadType: Keyboard, Xbox, PlayStation
+internal Gamepad
+	const deadZone = .1
+	
+	// Sticks
+	Vector2 leftStick
+	Vector2 rightStick
+	
+	// Buttons
+	DigitalButton A = {}
+	DigitalButton B = {}
+	DigitalButton X = {}
+	DigitalButton Y = {}
+
+	DigitalButton L1 = {name:"L1"}
+	DigitalButton R1 = {name:"R1"}
+	DigitalButton L2 = {name:"L2"}
+	DigitalButton R2 = {name:"R2"}
+	
+	DigitalButton start	= {name:"Start"}
+	DigitalButton select	= {name:"Select"}
+
+	DigitalButton leftStickButton	= {name:"Left Stick"}
+	DigitalButton rightStickButton	= {name:"Right Stick"}
+	
+	// DPad
+	DigitalButton up	= {name:"Up"}
+	DigitalButton right	= {name:"Right"}
+	DigitalButton down	= {name:"Down"}
+	DigitalButton left	= {name:"Left"}
+	
+	DigitalButton[] buttons = [
+		A, B, X, Y,
+		L1, R1, L2, R2,
+		start, select,
+		leftStickButton, rightStickButton,
+		up, right, down, left
+	]
+	
+	bool inMotion
+	GamepadType type
 	

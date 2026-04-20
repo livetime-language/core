@@ -1,4 +1,4 @@
-transient class Buffer
+internal transient class Buffer
 	js void writeInt: int value
 		if(value <= -2147483647 || value >= 2147483647)
 			throw new Error("Value out of integer range: "+value)
@@ -269,7 +269,7 @@ transient class Buffer
 		this.writePos = writePos
 		
 	// Insert a raw array buffer at the writePos without writing its length
-	js void insertArrayBuffer: any sourceArrayBuffer
+	js void insertArrayBuffer: dynamic sourceArrayBuffer
 		let length = sourceArrayBuffer.byteLength
 		
 		// Expand if neccessary
@@ -280,9 +280,8 @@ transient class Buffer
 		let readPos = 0
 		let writePos = this.writePos
 		let sourceDataView = new DataView(sourceArrayBuffer)
-		while(readPos < readPosEnd)
+		while(readPos < length)
 			this.dataView.setUint8(writePos++, sourceDataView.getUint8(readPos++))
-			
 		this.writePos = writePos
 		
 	js void copyFromBuffer: Buffer source
@@ -317,9 +316,9 @@ transient class Buffer
 			
 		this.writePos = writePos
 		
-	inline js int peekInt8  := this.dataView.getInt8(this.readPos)
-	inline js int peekInt16 := this.dataView.getInt16(this.readPos)
-	inline js int peekInt32 := this.dataView.getInt32(this.readPos)
+	inline js int peekInt8  => this.dataView.getInt8(this.readPos)
+	inline js int peekInt16 => this.dataView.getInt16(this.readPos)
+	inline js int peekInt32 => this.dataView.getInt32(this.readPos)
 	
 	js int readInt8
 		return this.dataView.getInt8(this.readPos++)
@@ -408,7 +407,7 @@ transient class Buffer
 		Buffer.textEncoder = new TextEncoder
 		Buffer.textDecoder = new TextDecoder
 		
-	canRead := readPos < writePos
+	canRead => readPos < writePos
 	
 	js object toByteArray
 		return new Uint8Array(this.buffer, 0, this.writePos)

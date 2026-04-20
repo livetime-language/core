@@ -1,6 +1,7 @@
 // Draw on the screen
 transient skipInit global unit graphics
-	// Draw a button with the default style
+	// Draw a button with the default style.
+	//
 	// Example: If the current player instance touches or clicks the image or 16 pixels around it, we print the exact position that was touched. If other players will touch the image, nothing will happen.
 	//     Player
 	//         bool done
@@ -22,7 +23,8 @@ transient skipInit global unit graphics
 	                                SourceCodeLocation location
 		drawButton Button, accentImage:ButtonAccent, textColorOnHover:Black, textSize:24, text, position, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, onClick, location
 		
-	// Draw a large button with the default style
+	// Draw a large button with the default style.
+	//
 	// Example: If the current player instance touches or clicks the image or 16 pixels around it, we print the exact position that was touched. If other players will touch the image, nothing will happen.
 	//     Player
 	//         bool done

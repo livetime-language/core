@@ -35,7 +35,7 @@ class CoreUser
 	bool enableTouch = true
 	
 	// Controller
-	visible GameController controller = {}
+	visible Gamepad gamepad = {}
 	Key[] mapKeyToController = [Right, Down, Left, Up, Space, X, Alt, Ctrl]
 	int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
@@ -44,10 +44,10 @@ class CoreUser
 	int lostAtFrame
 	
 	CoreUser
-		controller.a.name = "SPACE"
-		controller.b.name = "X"
-		controller.x.name = "ALT"
-		controller.y.name = "CTRL"
+		gamepad.a.name = "SPACE"
+		gamepad.b.name = "X"
+		gamepad.x.name = "ALT"
+		gamepad.y.name = "CTRL"
 
 	internal clearEvents
 		bool hasToch = touches.any.type == Touch
@@ -55,7 +55,7 @@ class CoreUser
 			if (.phase == Up and .type >= Touch) or (hasToch and .type != Touch)
 				touches.remove .
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Wheel, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, GameController, String, Json, Object
+enum InputType: None, TouchDown, TouchMove, TouchUp, Wheel, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -79,10 +79,10 @@ class Touch
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a Input.onTouch method
 	
-	// Vector3 position := referencePosition.getRelativeTo(graphics.localMatrix)
-	// Vector3 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
+	// Vector3 position => referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector3 startPosition => referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
-	// Touch clone := {id, userId, phase, type, referencePosition, referenceStartPosition, smoothPosition, isDown}
+	// Touch clone => {id, userId, phase, type, referencePosition, referenceStartPosition, smoothPosition, isDown}
 	
 	markAsHandled() handled = true
 	
@@ -92,7 +92,7 @@ transient class WheelEvent
 	Vector3 referencePosition
 	bool handled
 	
-	// Vector3 position := referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector3 position => referencePosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -202,17 +202,17 @@ enum Key
 	
 class DigitalButton
 	bool state, prevState
-	bool down := state and not prevState
-	bool up   := not state and prevState
+	bool down => state and not prevState
+	bool up   => not state and prevState
 	string name
 	
 	internal startFrame
 		prevState = state
 		state = false
 	
-enum GameControllerType: Keyboard, Xbox, PlayStation
+enum GamepadType: Keyboard, Xbox, PlayStation
 	
-class GameController
+class Gamepad
 	static deadZone = .1
 	
 	Vector2 leftStick
@@ -222,7 +222,7 @@ class GameController
 	DigitalButton x = {}
 	DigitalButton y = {}
 	bool inMotion
-	GameControllerType type
+	GamepadType type
 	
 	internal startFrame
 		leftStick.x = 0
@@ -234,13 +234,13 @@ class GameController
 		x.startFrame
 		y.startFrame
 	
-class InternetGamePadButton
+class InternalGamepadButton
 	bool pressed, touched
 	float value
 	
-class InternetGamePad
+class InternalGamepad
 	float[] axes
-	InternetGamePadButton[] buttons
+	InternalGamepadButton[] buttons
 	string id
 	
 // A collection of methods to receive user input
@@ -260,19 +260,19 @@ skipInit unit Input
 		
 	cs void collectMouseEvents
 		var mousePosition = UnityEngine.Input.mousePosition;
-		if(UnityEngine.Input.GetMouseButtonDown(0)) handleTouchEvent(InputType.TouchDown, TouchType.Left, 0, mousePosition);
-		if(mousePosition != prevMousePosition)      handleTouchEvent(InputType.TouchMove, TouchType.Left, 0, mousePosition);
-		if(UnityEngine.Input.GetMouseButtonUp(0))   handleTouchEvent(InputType.TouchUp,   TouchType.Left, 0, mousePosition);
+		if(UnityEngine.Input.GetMouseButtonDown(0)) handleTouchEvent(InputType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
+		if(mousePosition != prevMousePosition)      handleTouchEvent(InputType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
+		if(UnityEngine.Input.GetMouseButtonUp(0))   handleTouchEvent(InputType.TouchUp,   TouchType.LeftMouseButton, 0, mousePosition);
 		prevMousePosition = mousePosition;
 		
 	cs void collectTiltFiveEvents
 		var mousePosition = TiltFive.Wand.GetPosition(controllerPosition: TiltFive.ControllerPosition.Aim, playerIndex: 0);
-		if(TiltFive.Input.GetButtonDown(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchDown, TouchType.Left, 0, mousePosition);
-		handleTouchEvent(InputType.TouchMove, TouchType.Left, 0, mousePosition);
-		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.Left, 0, mousePosition);
+		if(TiltFive.Input.GetButtonDown(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
+		handleTouchEvent(InputType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
+		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.LeftMouseButton, 0, mousePosition);
 			
 	private handleKeyEvent: InputType type, int keyCode, string key
-		// if Core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		// if Core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -281,7 +281,7 @@ skipInit unit Input
 		if type == KeyDown: inputs.writeString key
 		
 	internal handleTouchEvent: InputType inputType, TouchType touchType, int id, Vector2 screenPosition
-		// if Core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		// if Core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 		let worldPosition = graphics.toGroundPlane screenPosition
 		let inputs = localUser.inputs
 		int composite = cast(inputType)                   // inputType: 0 -  31 (5 bit)
@@ -301,7 +301,7 @@ skipInit unit Input
 			let userId = internalUser.id
 			let user = usersById[userId]
 			// if Core.logging: Core.parseLog += " <{userId}>"
-			user?.controller.startFrame
+			user?.gamepad.startFrame
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
@@ -415,8 +415,8 @@ skipInit unit Input
 		// 		if inputType == Navigate
 		// 			internalUser.navigations.add inputs.readString
 		// 		else
-		// 		if inputType == GameController
-		// 			GameController c = user.controller
+		// 		if inputType == Gamepad
+		// 			Gamepad c = user.gamepad
 					
 		// 			// Controller axix
 		// 			c.leftStick.x = inputs.readFloat32
@@ -462,7 +462,7 @@ skipInit unit Input
 							
 		// 				// If we are still connected to that user, we disagree to their removal
 		// 				// by posting the "StillConnected" message
-		// 				if lostInternalUser.dataChannel and Core.frame < lostInternalUser.inputFrame + Core.targetFps * 5
+		// 				if lostInternalUser.dataChannel and Core.frame < lostInternalUser.inputFrame + Core.ticksPerSecond * 5
 		// 					Core.log "Lost {lostUserId} by {userId} -> We are still connected, sending StillConnected", lostInternalUser.dataChannel, Core.frame, lostInternalUser.inputFrame, isCertain
 		// 					handleStillConnected lostUserId
 		// 				else
@@ -512,14 +512,14 @@ skipInit unit Input
 		// 		let down  = .controllerKeyDownFrame[1]
 		// 		let left  = .controllerKeyDownFrame[2]
 		// 		let up    = .controllerKeyDownFrame[3]
-		// 		if right or left: .controller.leftStick.x = right >= left ? 1 : -1
-		// 		if down  or up:   .controller.leftStick.y = down  >= up   ? 1 : -1
-		// 		if .controllerKeyDownFrame[4]: .controller.a.state = true
-		// 		if .controllerKeyDownFrame[5]: .controller.b.state = true
-		// 		if .controllerKeyDownFrame[6]: .controller.x.state = true
-		// 		if .controllerKeyDownFrame[7]: .controller.y.state = true
-		// 		.controller.inMotion = Math.abs(.controller.leftStick.x) >= GameController.deadZone
-		// 		                    or Math.abs(.controller.leftStick.y) >= GameController.deadZone
+		// 		if right or left: .gamepad.leftStick.x = right >= left ? 1 : -1
+		// 		if down  or up:   .gamepad.leftStick.y = down  >= up   ? 1 : -1
+		// 		if .controllerKeyDownFrame[4]: .gamepad.a.state = true
+		// 		if .controllerKeyDownFrame[5]: .gamepad.b.state = true
+		// 		if .controllerKeyDownFrame[6]: .gamepad.x.state = true
+		// 		if .controllerKeyDownFrame[7]: .gamepad.y.state = true
+		// 		.gamepad.inMotion = Math.abs(.gamepad.leftStick.x) >= Gamepad.deadZone
+		// 		                    or Math.abs(.gamepad.leftStick.y) >= Gamepad.deadZone
 						
 	updateUserIndices
 	// 	users.orderBy.id
@@ -597,7 +597,7 @@ skipInit unit Input
 	// // Do something when the user touches or clicks within a given area
 	// onTouchDown: Vector2 position           // The center of the touch area
 	// 	               Vector2 size               // The size of a rectangular touch area
-	// 	               Angle angle                // Rotate the touch area by this angle
+	// 	               float angle                 // Rotate the touch area by this angle
 	// 	               int userId = -1            // Only consider touches or clicks from this user  
 	// 	               string cursor = ""         // Change the mouse cursor image when hovering over this area
 	// 	               bool showClickableArea = false // Draw a red rectangle to visualize that area to touch
@@ -634,7 +634,7 @@ skipInit unit Input
 
 	// onTouchDown: Vector2 position           // The center of the touch area
 	// 	               Vector2 size               // The size of a rectangular touch area
-	// 	               Angle angle                // Rotate the touch area by this angle
+	// 	               float angle                 // Rotate the touch area by this angle
 	// 	               int[] userId               // Only consider touches or clicks from this user  
 	// 	               string cursor = ""         // Change the mouse cursor image when hovering over this area
 	// 	               bool showClickableArea = false // Draw a red rectangle to visualize that area to touch

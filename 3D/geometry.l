@@ -442,7 +442,7 @@ struct Vector3
 		const denominator = math.sqrt( this.lengthSq() * v.lengthSq() )
 		if denominator == 0: return math.PI / 2
 		const theta = this.dot( v ) / denominator
-		return math.nativeAcos( math.limit( theta, - 1, 1 ) )
+		return math.nativeAcos( math.clamp( theta, - 1, 1 ) )
 		
 	// distanceTo( v ) {
 
@@ -646,11 +646,11 @@ struct Quaternion
 	// void() _onChangeCallback
 	
 	
-	Quaternion(float x, float y, float z) {}.setFromEuler(new Euler(x*math.TwoPI, y*math.TwoPI, z*math.TwoPI))
+	Quaternion(float x, float y, float z) {}.setFromEuler(new Euler(x*math.twoPi, y*math.twoPi, z*math.twoPi))
 		
 	Quaternion
 
-	// static Quaternion fromEuler(float x, float y, float z) {}.setFromEuler(new Euler(x*math.TwoPI, y*math.TwoPI, z*math.TwoPI))
+	// static Quaternion fromEuler(float x, float y, float z) {}.setFromEuler(new Euler(x*math.twoPi, y*math.twoPi, z*math.twoPi))
 	
 	static Quaternion fromEuler(float x, float y, float z) 
 		return {}.setFromEuler(new Euler(x, y, z))
@@ -1020,7 +1020,7 @@ struct Quaternion
 	// }
 
 	angleTo: Quaternion q
-		return 2 * math.nativeAcos( math.abs( math.limit( this.dot( q ), - 1, 1 ) ) );
+		return 2 * math.nativeAcos( math.abs( math.clamp( this.dot( q ), - 1, 1 ) ) );
 
 	rotateTowards: Quaternion q
 		           float speed
@@ -1287,15 +1287,15 @@ struct Vector2
 	const Vector2 zero = {0, 0, null}
 		
 	// A string representation of the vector
-	string toString := "({x} {y})"
+	string toString => "({x} {y})"
 	
-	// Returns true if the vector is not equal to Vector2.none
-	bool toBool := (x != float.infinity || y != float.infinity)
+	// Returns true if the vector is not equal to Vector2.None
+	bool toBool => (x != float.infinity || y != float.infinity)
 		
-	implicit Vector3 toVector3 := {x, y, 0}
+	implicit Vector3 toVector3 => {x, y, 0}
 	
 	// Creates a copy of the vector with the same values
-	Vector2 clone() := {x, y, location}
+	Vector2 clone() => {x, y, location}
 		
 	Vector2 operator = (Vector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
 	
@@ -1307,7 +1307,6 @@ struct Vector2
 	
 	Vector2 operator * (Vector2 a, Vector2 b) return {a.x*b.x, a.y*b.y, a.location || b.location ? new SourceCodeLocation(null, 0, 0, a.location, b.location) : null}
 	Vector2 operator * (Vector2 a, float b)   return {a.x*b, a.y*b, a.location}
-	Vector2 operator * (Vector2 a, Time b)    return {cast a.x*b, cast a.y*b, a.location}
 	Vector2 operator * (float a, Vector2 b)   return {a*b.x, a*b.y, b.location}
 	Vector2 operator * (Vector2 vector, Matrix2D matrix)
 		return {
@@ -1361,25 +1360,25 @@ struct Vector2
 	bool operator <= (Vector2 a, float length) let x = a.x, y = a.y; return math.sqrt(x*x + y*y) <= length
 	
 	// The length of the vector
-	length := math.sqrt(x * x + y * y)
+	length => math.sqrt(x * x + y * y)
 		
 	// A vector that is orthogonal to the existing vector
-	orthogonal := Vector2(x:-y, y:x)
+	orthogonal => Vector2(x:-y, y:x)
 		
 	// A vector with the sign of each coordinate flipped
-	inverse := Vector2(-x, -y)
+	inverse => Vector2(-x, -y)
 		
 	// A vector with each coordinate rounded to the closest integer value
-	rounded := IntVector2(math.round(x), math.round(y))
+	rounded => IntVector2(math.round(x), math.round(y))
 	
 	// A vector with each coordinate rounded down to an integer value
-	floor := IntVector2(math.floor(x), math.floor(y))
+	floor => IntVector2(math.floor(x), math.floor(y))
 		
 	// A vector with each coordinate rounded up to an integer value
-	ceil := IntVector2(math.ceil(x), math.ceil(y))
+	ceil => IntVector2(math.ceil(x), math.ceil(y))
 		
 	// A vector with the absolute value of each coordinate
-	abs := Vector2(math.abs(x), math.abs(y))
+	abs => Vector2(math.abs(x), math.abs(y))
 		
 	within: Vector2 position
 		    Vector2 size
@@ -1393,10 +1392,10 @@ struct Vector2
 		return x >= -hx && x < hx && y >= -hy && y < hy
 		
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
 	// Move the vector
 	move: Vector2 delta // The vector to move by
@@ -1411,7 +1410,7 @@ struct Vector2
 		this.y += y
 		return this
 		
-	rotate: Angle angle // The angle in turns (one full rotation is 1)
+	rotate: float angle // The angle in radians (one full rotation is 2*pi)
 		let x = this.x, y = this.y
 		let sn = math.sin(angle)
 		let cs = math.cos(angle)
@@ -1429,7 +1428,7 @@ struct Vector2
 	manhattanDistanceTo: Vector2 value // The second vector
 		return math.abs(x - value.x) + math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: Vector2 value // The second vector
 		return math.getAngleForVector(value - this)
 
@@ -1560,15 +1559,15 @@ struct IntVector2
 	const IntVector2 zero = {0, 0, null}
 	
 	// Creates a copy of the vector with the same values
-	IntVector2 clone := {x, y, location}
+	IntVector2 clone => {x, y, location}
 		
 	// A string representation of the vector
-	string toString := "({x} {y})"
+	string toString => "({x} {y})"
 	
 	// Returns true if the vector is not equal to IntVector2.none
-	bool toBool := (x != int.minValue || y != int.minValue)
+	bool toBool => (x != int.minValue || y != int.minValue)
 	
-	implicit Vector2 toVector2 := {x, y, location}
+	implicit Vector2 toVector2 => {x, y, location}
 	
 	IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
 	
@@ -1598,40 +1597,40 @@ struct IntVector2
 	bool operator <= (IntVector2 a, IntVector2 b) return a.x <= b.x && a.y <= b.y
 	
 	// The length of the vector
-	length := math.sqrt(x * x + y * y)
+	length => math.sqrt(x * x + y * y)
 		
 	// A vector that is orthogonal to the existing vector
-	orthogonal := IntVector2(x:-y, y:x)
+	orthogonal => IntVector2(x:-y, y:x)
 		
 	// A vector with the sign of each coordinate flipped
-	inverse := IntVector2(-x, -y)
+	inverse => IntVector2(-x, -y)
 		
 	// A vector with the absolute value of each coordinate
-	abs := IntVector2(math.abs(x), math.abs(y))
+	abs => IntVector2(math.abs(x), math.abs(y))
 		
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		   IntVector2 max
 		return IntVector2(
-			math.limit x, min:min.x, max:max.x
-			math.limit y, min:min.y, max:max.y
+			math.clamp x, min:min.x, max:max.x
+			math.clamp y, min:min.y, max:max.y
 		)
 		
-	limit: IntVector2 max
+	clamp: IntVector2 max
 		return IntVector2(
-			math.limit x, max:max.x
-			math.limit y, max:max.y
+			math.clamp x, max:max.x
+			math.clamp y, max:max.y
 		)
 		
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		return IntVector2(
-			math.limit x, min:min.x
-			math.limit y, min:min.y
+			math.clamp x, min:min.x
+			math.clamp y, min:min.y
 		)
 		
 	// Interpolates linearly to another vector
@@ -1656,7 +1655,7 @@ struct IntVector2
 	manhattanDistanceTo: IntVector2 value // The second vector
 		return math.abs(x - value.x) + math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: IntVector2 value // The second vector
 		return math.getAngleForVector(value - this)
 		
@@ -1721,16 +1720,16 @@ struct Matrix2D
 	Matrix2D operator *= (Matrix2D a, Matrix2D b) return multiply(a, b, a)
 		
 	// Returns the translation component of the matrix
-	Vector2 translationVector := {m4, m5}
+	Vector2 translationVector => {m4, m5}
 	
 	// Return the scale component of the matrix
-	Vector2 scaleVector := {m0, m3}
+	Vector2 scaleVector => {m0, m3}
 
 	// Returns a string representation of the matrix
-	string toString := "("+m0.format(1)+" "+m1.format(1)+" "+m2.format(1)+" "+m3.format(1)+" "+m4.format(1)+" "+m5.format(1)+")" 
+	string toString => "("+m0.format(1)+" "+m1.format(1)+" "+m2.format(1)+" "+m3.format(1)+" "+m4.format(1)+" "+m5.format(1)+")" 
 	
 	// Returns true if the matrix isn't the identity matrix
-	bool toBool := (m0 != 1 || m1 != 0 || m2 != 0 || m3 != 1 || m4 != 0 || m5 != 0)
+	bool toBool => (m0 != 1 || m1 != 0 || m2 != 0 || m3 != 1 || m4 != 0 || m5 != 0)
 		
 	// Moves the matrix by a given vector
 	move: Vector2 vector // The matrix will be moved by this vector
@@ -1740,7 +1739,7 @@ struct Matrix2D
 		return this	
 		
 	// Rotates the matrix by a given angle
-	rotate: Angle angle // The angle in turns (one full rotation is 1)
+	rotate: float angle // The angle in radians (one full rotation is 2*pi)
 		let a0 = m0, a1 = m1, a2 = m2, a3 = m3
 		let sin = math.sin(angle), cos = math.cos(angle)
 		m0 = a0 *  cos + a2 * sin
@@ -1785,64 +1784,14 @@ class List<T>
 		Vector2 sum = {0,0}
 		for this: sum += selector(.)
 		return sum	
-		
-transient float Angle
-	inline js float toFloat() this
-	inline js string toString() this.toString()
-		
-	// Returns true if the angle is not zero
-	inline js bool toBool := this
-	
-	inline js Angle operator +  (Angle a, Angle b) a+b
-	inline js Angle operator +  (Angle a, int b) a+b
-	inline js Angle operator +  (Angle a, float b) a+b
-	
-	inline js Angle operator -  (Angle a, Angle b) a-b
-	inline js Angle operator -  (Angle a, int b) a-b
-	inline js Angle operator -  (Angle a, float b) a-b
-	inline js Angle operator -  (Angle a) -a
-	
-	inline js float operator /  (Angle a, Angle b) a/b
-	inline js Angle operator /  (Angle a, int b) a/b
-	inline js Angle operator /  (Angle a, float b) a/b
-	
-	inline js Angle operator *  (Angle a, int b) a*b
-	inline js Angle operator *  (Angle a, float b) a*b
-	inline js Angle operator *  (int a, Angle b) a*b
-	inline js Angle operator *  (float a, Angle b) a*b
-	
-	inline js Angle operator %  (Angle a, int b) a%b
-	inline js Angle operator %  (Angle a, Angle b) a%b
-	
-	inline js bool  operator <  (Angle a, Angle b) a<b
-	inline js bool  operator <= (Angle a, Angle b) a<=b
-	inline js bool  operator >  (Angle a, Angle b) a>b
-	inline js bool  operator >= (Angle a, Angle b) a>=b
-	
-	inline js bool  operator == (Angle a, Angle b) a==b
-	inline js bool  operator == (Angle a, int b) a==b
-	inline js bool  operator == (Angle a, float b) a==b
-	
-	inline js bool  operator != (Angle a, Angle b) a!=b
-	inline js bool  operator != (Angle a, int b) a!=b
-	inline js bool  operator != (Angle a, float b) a!=b
-	
-	inline js float in: AngleUnit unit
-		(unit==1 ? this*math.TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
-		
-enum AngleUnit
-	turns    // One full rotation is 1
-	radians  // One full rotation is 2π (about 6.2832)
-	degrees  // One full rotation is 360
-	gradians // One full rotation is 400
 
 unit math
 	// Returns the arctangent of the quotient of the given values
-	Angle getAngleForVector: Vector2 vector
+	float getAngleForVector: Vector2 vector
 		return math.atan2(vector.y, vector.x)
 		
-	Vector2 getVectorForAngle: Angle angle      // The angle in turns (one full rotation is 1)
-		                       float radius = 1
+	Vector2 getVectorForAngle: float angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
+		                       float radius = 1.0
 		return new Vector2(math.cos(angle)*radius, math.sin(angle)*radius)
 		
 	Vector2 intersectLines: Vector2 startA
@@ -1858,18 +1807,18 @@ unit math
 		let x4    = endB.x,   y4 = endB.y
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.none // lines are parallel
+		if (denominator == 0) return Vector2.None // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.none
+			return Vector2.None
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -1991,7 +1940,7 @@ class IsometicGrid
 		let x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		let y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-		else                                                                  return Vector2.none
+		else                                                                  return Vector2.None
 		
 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 	getGridPosition: Vector2 screenPos // The screen position
@@ -2007,8 +1956,8 @@ class IsometicGrid
 		
 	limitToInside: IntVector2 position
 		return IntVector2(
-			math.limit position.x, min:0, max:size.x-1
-			math.limit position.y, min:0, max:size.y-1
+			math.clamp position.x, min:0, max:size.x-1
+			math.clamp position.y, min:0, max:size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector
@@ -2045,10 +1994,10 @@ class Direction
 	string name       // The name of the direction (e.g. "Left", "Right", "Up", "Down", "UpLeft", "DownRight", ...)
 	int index         // The index starting with "Right" and going around clockwise (0: Right, 1: Down, 2: Left, 3: Up)
 	IntVector2 vector // The vector of the direction (Right: {1,0}, Down:{0,1}, Left:{-1,0}, Up:{0,-1})
-	Angle angle       // The angle in turns starting with "Right" and going around clockwise
-	Angle isoAngle    // The angle in turns within an isometric grid
+	float angle        // The angle in radians starting with "Right" and going around clockwise
+	float isoAngle     // The angle in radians within an isometric grid
 	
-	toString := name
+	toString => name
 	
 	rotated: RotationDirection direction = Clockwise
 		return primaryDirections[(index+(direction == Clockwise ? 1:3))%4]
@@ -2080,31 +2029,31 @@ class Line
 		let typeB = other.type
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.none // lines are parallel
+		if (denominator == 0) return Vector2.None // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.none
+			return Vector2.None
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	toString := "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
+	toString => "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
 
 class Rect
 	Vector2 position, size
 	
-	float left := position.x - size.x/2
-	float right := position.x + size.x/2
-	float top := position.y - size.y/2
-	float bottom := position.y + size.y/2
+	float left	=> position.x - size.x/2
+	float right	=> position.x + size.x/2
+	float top	=> position.y - size.y/2
+	float bottom	=> position.y + size.y/2
 	
 	bool contains: Vector2 position
 		return this.position - this.size/2 <=  position < this.position + this.size/2

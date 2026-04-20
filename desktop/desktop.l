@@ -1,5 +1,5 @@
 transient skipInit unit Platform
-	inline js string resourcesPath := process.resourcesPath
+	inline js string resourcesPath => process.resourcesPath
 	
 	js void showIcon
 		if(!Platform.isDebug && window.require) {

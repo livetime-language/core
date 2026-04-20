@@ -3,15 +3,15 @@ enum NetworkMode: None, Ping, Local, Connected
 skipInit unit core
 	NetworkMode mode = Local
 	int frame
-	Time startTime
-	internal const targetFps = 30
-	const frameTime = 1000/targetFps
+	float startTime // The time the application started in milliseconds
+	internal const ticksPerSecond = 30
+	const frameTime = 1000/ticksPerSecond
 	
 	startLocal
 		// mode = Local
 		// input.internalUsers.clear
 		// math.setRandomSeed math.generateRandomSeed 
-		// initDatabase
+		// initBackend
 		stop
 		
 	// Clear all inputs and reset the application to the first frame
@@ -19,7 +19,7 @@ skipInit unit core
 		// for input.internalUsers if .
 		// 	.inputs.reset
 		// 	.startInputFrame 0
-		startTime = Time.realTime
+		startTime = PlainDate.realTime
 		// startTime = serverStartTime = currentTime
 		// frames = 0
 		// frameWithNewWatches = 0
@@ -90,7 +90,7 @@ skipInit unit core
 		app::start();
 		
 	animationFrame
-		Time.now = Time.realTime
+		Time.now = PlainDate.realTime
 		let targetFrame = math.floor((Time.now - startTime)/frameTime)+1
 		// print "animation frame", Time.now, startTime, Time.now - startTime, frame, targetFrame
 		if frame < targetFrame
@@ -98,7 +98,7 @@ skipInit unit core
 			
 	step
 		// print "step", frame
-		input.parseInputs Time.frame
+		input.parseInputs Time.ticks
 		tick
 		frame++
 		

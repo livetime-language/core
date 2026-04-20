@@ -1,10 +1,11 @@
 enum NetworkMode: None, Ping, Local, Connected
-transient immutable RoomInfo: int time, userId
+internal transient immutable RoomInfo: int time, userId
 enum SendInputsMode: None, Peer, Server
 	
-transient skipInit unit core
+internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
+	bool enabledMilestones = false
 	int milestoneInterval = 1800
 	int smoothStrength = 90
 	bool smoothTouchPosition = true
@@ -13,7 +14,7 @@ transient skipInit unit core
 	bool simulateInputsForTesting = false
 	bool simulateRollback = false
 	bool drawPointsForTesting = false
-	Time sendStatisticsEvery = 2 minutes
+	float sendStatisticsEvery = 2 minutes
 	bool muteInvisibleUsers = false
 	bool testLobby = false                // Start in the lobby for testing
 	
@@ -21,14 +22,14 @@ transient skipInit unit core
 	bool enableAudioForStaging = false
 		
 	SendInputsMode sendInputsMode = Peer
-	internal const targetFps = 30
-	const frameTime = 1000/targetFps
+	const ticksPerSecond = 30
+	const frameTime = 1000/ticksPerSecond
 	
 	NetworkMode mode                // Whether we are in local or connected mode
 	visible string errorMessage     // The error message if we caught any exceptions in the main loop
 	public float startTime          // The time the room was created, syncroniced between all clients
-	public float serverStartTime    // Used to calculate the same Time.now from core.frame for all users in core.step
-	visible int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
+	public float serverStartTime     // Used to calculate the same Time.now from core.frame for all users in core.step
+	int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
 	internal int frames             // Total number of frames we have inputs for
 	internal int frameWithNewWatches// First frame with new watches, do not send watches for frames below this
 	int watchIndex
@@ -44,30 +45,26 @@ transient skipInit unit core
 	IndexedDBStore inputStore = {"input", indices:[{"roomId"}]}
 	IndexedDBStore roomStore  = {"room"}
 	
-	initDatabase
-		IndexedDB.start "up4playing", version:2
-
 	startConnected: int frame
-		if mode == Connected: return
-				
-		let user = input.localUser
-		user.startInputFrame 0
-		
+		if mode == Connected then return
+			
 		account = Platform.getLocalStorageObject("user") or {}
 		if not account._id
 			account._id = generateObjectId
 			Platform.setLocalStorageObject("user", account)
-			
-		input.handleJoin frame, account
-		user.collectInputs = true
-		log "startConnected", joinFrame
+				
+		log "startConnected", joinFrame, this.frame, this.frames
+		if this.frames == 0
+			log "handleJoin", frame
+			input.localUser.startInputFrame 0
+			input.handleJoin frame, account
 		
-		this.frame = 0
 		mode = Connected
+		input.localUser.collectInputs = true
 		snapshotFrame = -1
 		nextSnapshotFrame = 0
 		checkSaveState
-		log "Start", user.id, frame, startTime, serverStartTime
+		log "Start", input.localUser.id, frame, startTime, serverStartTime
 		
 	js string generateObjectId
 		const timestamp = Math.floor(new Date().getTime() / 1000).toString(16);
@@ -80,16 +77,20 @@ transient skipInit unit core
 		mode = Local
 		input.internalUsers.clear
 		math.setRandomSeed math.generateRandomSeed 
-		// initDatabase
 		stop
 		
 	// Clear all inputs and reset the application to the first frame
-	stop
+	void stop
+		output.clear
+		outputIndex = 0
+		outputSentUpTo = 0
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
 		startTime = serverStartTime = currentTime
 		frames = 0
+		targetFrame = -1
+		interrruptAtOutputIndex = -1
 		frameWithNewWatches = 0
 		watchIndex = 0
 		startInLobby = false
@@ -108,11 +109,12 @@ transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.writePos = .inputs.readPos
 			.startInputFrame frame
-		if Platform.isDebug: Platform.sendFrame frame, frames
 		
 	// Keep inputs, call init functions, create the local players, reset read positions and start app
 	// This is called on startup, after every code change and when going backwards in the timeline
 	reset
+		outputIndex = 0
+		addOutput "start"
 		players.clear
 		input.playersById.clear
 		input.host = null
@@ -129,6 +131,7 @@ transient skipInit unit core
 		checksums.clear
 		lastChecksumFrame = -1
 		audio.stop
+		graphics.clearDebugInfo
 		initAll
 		
 		if !startInLobby or testLobby
@@ -141,8 +144,8 @@ transient skipInit unit core
 			
 			// We always recreating players, because developers might have added fields to Player or Touch
 			// By the time we call startApp, all players need to exist
-			for input.internalUsers -> internalUser
-				Player user = {id:.id, index:i}
+			for input.internalUsers as internalUser
+				Player user = {id:.id, playerIndex:i}
 				input.playersById[.id] = user
 				players.add user
 				
@@ -157,13 +160,16 @@ transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.readPos = 0
 			
-		if !startInLobby and not testLobby: startApp
-		if simulateRollback: checkSaveState
+		if !startInLobby and not testLobby
+			graphics.startFrame
+			lobby.inLobby = false
+			app.start??()
+		if simulateRollback then checkSaveState
 		
 	// Keep event stream running, recreate players, call init function and start app
 	// Called manually with the global "restart" function	
 	restart
-		if not input.isCertain: return
+		if not input.isCertain then return
 		let hostPlayerId = input.host ? input.host.id : -1
 		Framework.clear includingLockedObjects:true
 		Platform.fastForward = false
@@ -181,7 +187,8 @@ transient skipInit unit core
 		input.localPlayer = input.playersById[localUserId]
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
 		input.updatePlayers
-		startApp
+		lobby.inLobby = false
+		app.start??()
 	
 	// Steps forward when going to a frame in the future
 	// or replays from the beginning when going to a frame in the past
@@ -189,33 +196,117 @@ transient skipInit unit core
 	// to replay all inputs with the new code from the beginning,
 	// and when stepping through the timeline with replayFromStart = false
 	// to only replay from the beginning when going to a frame in the past
-	goToFrame: int targetFrame, replayFromStart = false
+	goToFrame: int targetFrame, int interrruptAtOutputIndex = -1, codeChanged = false
+		let previouylyInterrupted = this.interrruptAtOutputIndex != -1
+		this.targetFrame = targetFrame
+		this.interrruptAtOutputIndex = interrruptAtOutputIndex
 		isPremiere = false
-		if replayFromStart
-			frameWithNewWatches = 0
-			reset
-		else
-		if targetFrame < frame
-			let milestoneIndex = math.floor(targetFrame/milestoneInterval) - 1
-			if 0 <= milestoneIndex < milestones.length
-				let milestone = milestones[milestoneIndex]
-				frame = (milestoneIndex+1) * milestoneInterval
-				rewind milestone
-			else
+		try
+			try
+				if codeChanged
+					frameWithNewWatches = 0
+					outputSentUpTo = 0
+					output.clear
+					reset
+				else
+				if targetFrame < frame or previouylyInterrupted
+					let milestoneIndex = enabledMilestones ? math.floor(targetFrame/milestoneInterval) - 1 : -1
+					if 0 <= milestoneIndex < milestones.length
+						let milestone = milestones[milestoneIndex]
+						frame = (milestoneIndex+1) * milestoneInterval
+						rewind milestone
+					else
+						reset
+					
+				while frame < targetFrame
+					step fastForward:true, draw:false
+				step fastForward:false, draw:true
+			catch
+				onError .
+
+			// If we interrupted in the middle of a tick, we draw the current state without events and animations
+			if frame <= targetFrame
+				Platform.fastForward = false
+				for input.internalUsers as user
+					user?.clearEvent
+				runningAnimations.clear
+				tick draw:true
+
+			graphics.finishDrawingDebugInfo
+		catch
+			onError .
+		finally
+			adjustStartTime
+			isPremiere = true
+			let output = codeChanged ? core.output : null
+			sendOutputToEditor frame:core.frame-1
+
+	runTest: string testFunctionName, int id = -1, int targetFrame = -1, int interrruptAtOutputIndex = -1
+		let parts = testFunctionName.split(".")
+		if parts.length < 2 then parts = ["tests", testFunctionName or "main"]
+		dynamic testFunction = globals[parts[0]][parts[1]]
+		if not testFunction then return
+		isPremiere = false
+		runningTest = true
+		this.targetFrame = targetFrame
+		this.interrruptAtOutputIndex = interrruptAtOutputIndex
+		Platform.fastForward = false
+		try
+			try
+				outputSentUpTo = 0
 				reset
-			
-		replay frame to targetFrame
-		adjustStartTime
-		animationFrame
-		isPremiere = true
+				testFunction()
+			catch
+				onError .
+
+			// We draw the current state without events and animations
+			// We don't draw in the test function since we don't know when we are on the final frame
+			Platform.fastForward = false
+			for input.internalUsers as user
+				user?.clearEvent
+			runningAnimations.clear
+			tick draw:true
+			graphics.finishDrawingDebugInfo
+		catch
+			core.onError .
+		finally		
+			isPremiere = true
+			runningTest = false
+			Platform.sendToEditor({type:"finishedTest", id, testFunction, output, frame, frames, playMode:Platform.playMode})
+			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
+
+	bool runningTest
+	string[] output
+	int outputIndex = -1
+	int interrruptAtOutputIndex = -1
+	int targetFrame = -1
+	int outputSentUpTo = 0
+
+	addOutput: string value
+		value += "|{outputIndex}|{frame}"
+		output[outputIndex] = value
+		
+		// Throw an exception when we reach interrruptAtOutputIndex
+		if outputIndex++ == interrruptAtOutputIndex
+			throw {"interrrupt"}
+
+	sendOutputToEditor: int frame = core.frame
+		string result
+		for outputSentUpTo to output.length
+			if(result) result += "\n"
+			result += "{output[.].replaceAll("\n", "\\n")}"
+		if result then result += "\n"
+		result += "#{frame}|{frames}|{(int)Platform.playMode}"
+		outputSentUpTo = output.length
+		Platform.sendStringToEditor result
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
 		    void() do
 		let user = input.internalUsers[player.id]
-		if user and (user.local or frame <= user.smoothFrame): do
+		if user and (user.local or frame <= user.smoothFrame) then do
 			
-	Time lastPingTime
+	float lastPingTime
 
 	// animationFrame --> step --> tick
 
@@ -228,17 +319,17 @@ transient skipInit unit core
 	// We ensure that step is called every frameTime milliseconds.
 	internal animationFrame
 		now = currentTime
-		if lastAnimationFrame: frameTimes.add now - lastAnimationFrame
+		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
 		ServerNetwork.tick
 		PeerNetwork.tick
 		statistics.tick
-		if mode == None or mode == Ping: return
+		if mode == None or mode == Ping then return
 			
 		let targetFrame = math.floor((now - startTime)/frameTime)+1
-		if verbose: core.log "----- #{frame} -> #{targetFrame} -----"
+		if verbose then core.log "----- #{frame} -> #{targetFrame} -----"
 		
-		if mode == Local && targetFrame > frame + targetFps*2
+		if mode == Local && targetFrame > frame + ticksPerSecond*2
 			// After a long pause in local mode, we do not want to process all missed frames, so we adjust the start time
 			let prevTargetFrame = targetFrame
 			targetFrame = frame
@@ -263,16 +354,25 @@ transient skipInit unit core
 				onError error
 					
 			// Ensure that step is called every frameTime milliseconds
-			while frame < targetFrame
-				if Platform.mode == Record
-					for input.internalUsers -> user
-						if user?.local: user.startInputFrame frame+1
-				step fastForward:false, draw:frame == targetFrame-1
-				collectStatistics
+			try
+				while frame < targetFrame
+					if Platform.playMode == Record
+						for input.internalUsers as user
+							if user?.local then user.startInputFrame frame+1
+					step fastForward:false, draw:frame == targetFrame-1
+					if not Platform.isDebug then collectStatistics
+			catch
+				onError .
+				
 				lastNetworkFrame = now
 				
+			// Store local inputs
+			if IndexedDB.isReady
+				core.storeInputsToDB input.localUser
+				core.storeRoomToDB
+				
 		lastAnimationFrame = now
-		if Platform.mode == Play and frame >= frames: Platform.record()
+		if Platform.playMode == Play and frame >= frames then Platform.record()
 			
 		// Ping
 		if currentTime - lastPingTime > 1000
@@ -282,14 +382,14 @@ transient skipInit unit core
 	private int animationStartFrame // The frame at the beginning of animationFrame, used to calculate iteration
 	private float now               // The time at the beginning of animationFrame
 	
-	private Time prevLogTime
+	private float prevLogTime
 	
 	// Logs
 	js void log: logstring text
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 		
-		let str = new Date().hourMinuteSecondMillisecondString() + " " + text
+		let str = new Date().toString() + " " + text
 		statistics.systemLogs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
@@ -304,6 +404,7 @@ transient skipInit unit core
 		// }
 			
 	internal string logs
+	internal bool hasErrors
 	private float lastNetworkFrame, lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
 	internal int displayItems
 	int tickMessageSize
@@ -319,11 +420,11 @@ transient skipInit unit core
 				let internalUser = input.internalUsers[.id]
 				if not internalUser.local
 					internalUser.collectStatistics frame
-					statistics.add "input", userIndex:.index, value:frame - internalUser.inputFrame, .color, set:0
-					statistics.add "smooth", userIndex:.index, value:frame - internalUser.smoothFrame, .color, set:1
-					statistics.add "delta", userIndex:.index, value:internalUser.certainFrame - internalUser.prevCertainFrame, .color, set:2
+					statistics.add "input", userIndex:.playerIndex, value:frame - internalUser.inputFrame, .playerColor, set:0
+					statistics.add "smooth", userIndex:.playerIndex, value:frame - internalUser.smoothFrame, .playerColor, set:1
+					statistics.add "delta", userIndex:.playerIndex, value:internalUser.certainFrame - internalUser.prevCertainFrame, .playerColor, set:2
 
-			if replayFrom != -1: statistics.add "replay", value:frame - replayFrom, color:Gray
+			if replayFrom != -1 then statistics.add "replay", value:frame - replayFrom, color:Gray
 		else
 		if mode == Local and simulateRollback
 			input.internalUsers.each.simulateRollback frame
@@ -344,27 +445,29 @@ transient skipInit unit core
 		string result
 		for input.internalUsers
 			if not .local
-				if result: result += ", "
+				if result then result += ", "
 				result += .connectionState
 		return result
 
 	private int lastSendFrame
 	
 	private sendInputs: int inputFrame
-		if mode != Connected: return
+		if mode != Connected then return
 		
 		if frame >= lastSendFrame + sendInterval
-			if sendInputsMode == Peer:   PeerNetwork.sendInputs inputFrame
-			if sendInputsMode == Server: ServerNetwork.sendInputs inputFrame
+			switch sendInputsMode
+				Peer	PeerNetwork.sendInputs inputFrame
+				Server	ServerNetwork.sendInputs inputFrame
 			lastSendFrame = frame
 	
 	internal switchToPlayer: Player player
-		if not player: return
+		if not player then return
 		let prevPlayer = input.localPlayer
 		input.localPlayer = player
 		input.localUser = input.internalUsers.find . and .id == player.id
 		for prevPlayer.touches
 			input.handleUpdateTouchAfterSwitchingUser .id, .referencePosition
+		Platform.updatePageIconAndTitle
 			
 	switchSendInterval: int sendInterval
 		this.sendInterval = sendInterval
@@ -381,81 +484,84 @@ transient skipInit unit core
 	// frame will point to the current frame. After processing, frame will point to the next frame.
 	internal step: bool fastForward // If we are replaying after a rollback or a code change
 		           bool draw        // We don't draw if we are stepping multiple frames in one animation frame
-		try
-			if verbose: core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
-				
-			// Set time
-			Time.now = serverStartTime + math.round(frame * frameTime)
-			
-			// Flags
-			Platform.fastForward = fastForward
-			int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) where . != null
-			input.isCertain = frame <= certainFrame
-			
-			// Send current frame to editor	
-			// if Platform.isDebug and !fastForward and (Platform.mode == Record or Platform.mode == Play or Platform.waitingForInitialData): Platform.sendFrame(frame, math.max(frame+1, frames))
-			if Platform.isDebug and !fastForward: Platform.sendFrame(frame, math.max(frame+1, frames))
-			
-			// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
-			checkSaveState
-			
-			// Update game controllers
-			input.updateGameControllers
-			
-			// Parse inputs
-			input.parseInputs(frame)
-			
-			// Physics
-			Physics.step
-			
-			// Tick
-			tick draw
-			
-			if HTMLElement.elements: HTMLElement.elements.each.tick
-			input.removePlayersIfNecessary
-			
-		catch
-			onError error
-			
-		// Cleanup
-		for input.internalUsers if .
-			.clearEvent
-		players.each.clearEvents
+		if verbose	then core.log "#{frame}{fastForward ? " fastForward":""}{draw ? " draw":""}"
+
+		// Flags
+		Platform.fastForward = fastForward
+		int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) where . != null
+		input.isCertain = frame <= certainFrame
 		
-		// Advance frame
-		frame++
-		if frames < frame: frames = frame
-		if frame > frameWithNewWatches: frameWithNewWatches = frame
+		// Send current frame to editor	
+		if Platform.isDebug and (Platform.playMode == Play or Platform.playMode == Record) then sendOutputToEditor
+		
+		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
+		checkSaveState
+		
+		// Update game controllers
+		input.updateGamepads
+		
+		// Parse inputs
+		input.parseInputs(frame)
+		
+		// Physics
+		Physics.step
+		
+		// Tick
+		tick draw
+		
+		if HTMLElement.elements then HTMLElement.elements.each.tick
+		input.removePlayersIfNecessary
 			
-	// Clear screen, process application tick, and draw all graphics
-	// This is called in step.
+						
+	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
+	// This is all the logic that is executed in a unit test for each frame.
+	// Called in step and in tests
 	internal tick: bool draw
+		// if targetFrame != -1 and frame > targetFrame	return
+
+		// Set time
+		Time.now = serverStartTime + math.round(frame * frameTime)
+			
+		// Start frame
 		Platform.isDrawing = draw
-		graphics.startFrame
-		if draw and not Platform.waitingForInitialData
-			if input.showPointers or Platform.mode == Play
-				players.each drawPointer ., Platform.mode == Play ? input.showPointersDuringPlaybackMode : input.showPointersMode
+		if frame > 0 then graphics.startFrame
 		audio.startFrame
-		
+
+		// Debug info
 		if Platform.showDebugInfo
-			if draw: statistics.tickGraph
+			if draw then statistics.tickGraph
 			networkVisualizer.tick
 			
 		try
 			Framework.tick
-			tickTimes.add tickTime = Time.measure
-				if lobby.inLobby:      lobby.tick; else
-				if awardScreen.active: awardScreen.tick; else
-				                       appTick
-		catch
-			onError error
-			
-		if draw and not Platform.waitingForInitialData
-			drawTimes.add drawTime = Time.measure
-				graphics.finishFrame
-			if Platform.mode != Manipulator: input.updateCursor
-		audio.finishFrame
-				
+			tickTimes.add tickTime = PlainDate.measure
+				if lobby.inLobby	then lobby.tick; else
+				if awardScreen.active	then awardScreen.tick; else
+				                             appTick
+
+			// Advance frame
+			frame++
+			if frames < frame	then frames = frame
+			if frame > frameWithNewWatches	then frameWithNewWatches = frame
+		finally			
+			// Finish frame
+			if draw and not Platform.waitingForInitialData
+				drawTimes.add drawTime = PlainDate.measure
+					graphics.finishFrame
+				if Platform.playMode != Manipulator then input.updateCursor
+			audio.finishFrame
+
+			// Cleanup
+			for input.internalUsers as user
+				user?.clearEvent
+
+			// Evaluate: Set isDown directly in input.touchDown instead of in player.postprocessEvents #easier-to-reason-about #evaluate
+			// players.each.postprocessEvents
+
+			// Currently, we use tests.printWhatIsOnScreen to print the screen contents
+			// instead of automatically sending it every time
+			// if frame == 0 and Platform.isDebug: debug.sendCurrentlyOnScreen
+							
 	js void appTick() if(app.tick) app.tick();
 	js string appDebugString() (app.debugString || "")
 		
@@ -468,10 +574,10 @@ transient skipInit unit core
 	
 	// This is called at the begining of animationFrame before we start stepping.
 	private checkRewindAndReplayState
-		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1: return
+		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
 			
-		if mode == Local and simulateRollback: nextSnapshotFrame = frame - 5
-		else                                   nextSnapshotFrame = (input.internalUsers.min math.min(.smoothFrame, .inputFrame) where . and not .local)+1
+		if mode == Local and simulateRollback then	nextSnapshotFrame = frame - 5
+		else	nextSnapshotFrame = (input.internalUsers.min math.min(.smoothFrame, .inputFrame) where . and not .local)+1
 		
 		if snapshotFrame != -1
 			if verbose
@@ -485,24 +591,25 @@ transient skipInit unit core
 			replay prevSnapshotFrame to frame
 
 	private rewind: Buffer snapshot
-		restoreTime = Time.measure
+		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
 			
 			let userCount = snapshot.readInt
 			for userCount
-				let user = input.internalUsers[.]
-				user.inputs.readPos = snapshot.readInt
+				let userId = snapshot.readInt
+				let user = input.internalUsers[userId]
+					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
-		replayTime = Time.measure
+		replayTime = PlainDate.measure
 			frame = replayFrom = from
 			while frame < to
 				step fastForward:true, draw:false			
 			
 	// This is called at the beginning of each step
 	private checkSaveState
-		if input.isCertain and frame > 0 and frame % milestoneInterval == 0
+		if enabledMilestones and input.isCertain and frame > 0 and frame mod milestoneInterval == 0
 			Buffer buffer = {}
 			saveState buffer
 			int milestoneIndex = math.floor(frame / milestoneInterval) - 1
@@ -517,10 +624,10 @@ transient skipInit unit core
 			
 	private saveState: Buffer snapshot
 		snapshot.reset
-		saveTime = Time.measure
+		saveTime = PlainDate.measure
 			Snapshot.serialize snapshot
 			if Platform.logSerialize
-				serializeLogs[frame % 100] = Snapshot.serializeLog
+				serializeLogs[frame mod 100] = Snapshot.serializeLog
 				
 		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
 		if simulateRollback
@@ -529,30 +636,28 @@ transient skipInit unit core
 			if(snapshot != secondSnapshotForTesting)
 				onError {"Inconsistent serialization"}
 												
-		snapshot.writeInt input.internalUsers.length
+		snapshot.writeInt input.internalUsers.count . != null
 		for input.internalUsers
-			snapshot.writeInt .inputs.readPos
+			if .
+				snapshot.writeInt .id
+				snapshot.writeInt .inputs.readPos
 				
 		// Checksum
 		if players.length >= 2 and input.isCertain
 			float myChecksum = snapshot.checksum
 			float theirChecksum = checksums[frame]
-			if verbose: core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
+			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
 			if !theirChecksum                             checksums[frame] = myChecksum; else
-			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine:myChecksum theirs:theirChecksum
+			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
 			lastChecksumFrame = frame
 				
-	inline js int currentTime := Date.now()
-	
-	js void startApp
-		lobby.inLobby = false
-		if(app.start) app.start()
+	inline js int currentTime => Date.now()
 		
 	private adjustStartTime
 		startTime = math.round(currentTime - frame*frameTime - (frameTime*.5))
 		
 	adjustStartTimeIfNeeded
-		if Platform.mode < Play: adjustStartTime
+		if Platform.playMode < Play then adjustStartTime
 			
 	Buffer snapshotBuffer = {}
 	Buffer eventStreamSnapshotBuffer = {}
@@ -565,7 +670,7 @@ transient skipInit unit core
 			
 	internal saveLogs
 		// Ensure that current eventLog is added to the table even if we haven't processed a single frame
-		file.saveText "{input.localUser.id} {Platform.appName} {Date.now.invariantDayMonthYearHourMinuteSecondString} v{Platform.buildVersion}.csv", logs
+		file.saveText "{input.localUser.id} {Platform.appName} {Date.now.isoString} v{Platform.buildVersion}.csv", logs
 			
 	saveEventStream
 		Buffer buffer = {}
@@ -598,6 +703,8 @@ transient skipInit unit core
 	const chunkSize = 256
 	
 	storeRoomToDB
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		roomStore.put {
 			id: roomId
 			frame
@@ -610,47 +717,52 @@ transient skipInit unit core
 		}
 	
 	storeInputsToDB: InternalUser user
+		// TEMP: Storing event stream in database is disabled for now
+		return
 		let inputs = user.inputs
-		// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
-		let start = inputs.writePos - (inputs.writePos % chunkSize)
-		let id = "{roomId}-{user.id}-{start}"
-		inputStore.put {id, roomId, userId:user.id, start, inputs:inputs.subArrayBuffer(start to inputs.writePos)}
-			print "storeInputsLocally", roomId, user.id, start, inputs.writePos
-		else
-			print "failed"
-			
-	openFromDB: int roomId, void() then, void() else
-		roomStore.get roomId
-			int targetFrame = .frame
-			frames = .frames
-			let randomSeed = .randomSeed
-			startInLobby = .startInLobby
-			Platform.isStaging =.isStaging
-			let localUserId = .localUserId
-			
-			inputStore.getAllFromIndex "roomId", roomId
-				result.orderBy.start
-				for result
-					int userId = .userId
-					int start = .start
-					any inputs = .inputs
-					let user = input.internalUsers[.userId] ?= {id:.userId, local:.userId == localUserId, collectInputs:true}
-					user.inputs.insertArrayBuffer .inputs
-					
-				// Replay
-				for input.internalUsers if .
-					.startInputFrame frames
-				math.setRandomSeed randomSeed
-				
-				Platform.sendClearTimeline
-				goToFrame targetFrame, replayFromStart:true
-				Platform.sendFrame(targetFrame, frames)
-				then
-				
+		if inputs.writePos > user.storedInputsUpTo
+			// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
+			let start = inputs.writePos - (inputs.writePos mod chunkSize)
+			let id = "{roomId}-{user.id}-{start}"
+			print "[{frame}] <{user.id}> Storing inputs {id} ({start} to {inputs.writePos})"
+			inputStore.put {id, roomId, userId:user.id, start, inputs:inputs.subArrayBuffer(start to inputs.writePos)}
+				print "[{frame}] <{user.id}> Storing inputs successful"
 			else
-				else
-		else
-			else
+				print "[{frame}] <{user.id}> Storing inputs failed"
+			user.storedInputsUpTo = inputs.writePos
+			
+	openFromDB
+		// TEMP: Storing event stream in database is disabled for now
+		return
+		await IndexedDB.start Platform.isStaging ? "up4playing-{localUserId}" : "up4playing", version:2
+		
+		let room = await roomStore.get roomId
+		int targetFrame = room.frame - 1
+		frames = room.frames
+		let randomSeed = room.randomSeed
+		startInLobby = room.startInLobby
+		Platform.isStaging = room.isStaging
+		localUserId = room.localUserId
+		
+		print "#database opening from db {room.toJson}"
+		dynamic[] rooms = await inputStore.getAllFromIndex "roomId", roomId
+		rooms.orderBy.start
+		forDynamic rooms as room
+			int userId = room.userId
+			int start = .start
+			dynamic inputs = .inputs
+			let user = input.internalUsers[.userId] ?= {id:.userId, local:.userId == localUserId, collectInputs:true}
+			if user.local
+				input.localUser = user
+			user.inputs.insertArrayBuffer .inputs
+			print "#database", userId, start, inputs.toString()
+		print "#database", input.localUser.inputs.toString
+			
+		// Replay
+		for input.internalUsers if .
+			.startInputFrame frames
+		math.setRandomSeed randomSeed
+		replay 0 to targetFrame
 	
 	openState
 		file.openBinary
@@ -681,7 +793,7 @@ transient skipInit unit core
 					id: buffer.readInt
 					local: buffer.readBool
 				}
-				if user.local: input.localUser = user
+				if user.local then input.localUser = user
 				buffer.readBuffer user.inputs
 				input.internalUsers[user.id] = user
 			
@@ -696,32 +808,39 @@ transient skipInit unit core
 			// Replay
 			for input.internalUsers if .
 				.collectInputs = true
-				if Platform.isDebug: .local = true
+				if Platform.isDebug then .local = true
 				.startInputFrame frames
 			math.setRandomSeed randomSeed
 			
-			if Platform.isDebug: Platform.sendClearTimeline
+			if Platform.isDebug then Platform.sendClearTimeline
 			frame = int.maxValue
 			goToFrame targetFrame
-			if Platform.isDebug: Platform.sendFrame(targetFrame, frames)
 		
 	string roomString
 	int roomId
 	string gameId
+	int localUserId
 	
 	join: string gameId, string roomString, int userId
 		statistics.scheduleSendIn 30 seconds
 		isPremiere = true
 		initAll
 		log "{Platform.url}"
-		log "{Date.realtime.dayMonthYearHourMinuteSecondString} v{Platform.buildVersion}"
+		log "{Date.realtime.dayMonthNameYearString} {Date.realtime.hourMinuteSecondString} v{Platform.buildVersion}"
 		log "{Platform.userAgent}"
 		startInLobby = true
 		this.gameId = gameId
 		this.roomString = roomString
 		this.roomId = cast roomString
-		input.localUser = {userId, local:true, connected:true, connectionId:0}
-		// initDatabase
+		this.localUserId = userId
+		this.frame = 0
+		this.frames = 0
+		// TEMP: Storing event stream in database is disabled for now
+		// try
+		// 	await openFromDB
+		// catch 
+		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		await PeerNetwork.setupLocalMedia 
 			enableVideo:not Platform.isStaging || core.enableVideoForStaging
 			enableAudio:not Platform.isStaging || core.enableAudioForStaging
@@ -739,7 +858,7 @@ transient skipInit unit core
 		
 	onWrongChecksum: int frame, float mine, float theirs
 		string message = " Out of sync. frame:{frame} mine:{mine} theirs:{theirs}"
-		string serializeLog = serializeLogs[frame % 100]
+		string serializeLog = serializeLogs[frame mod 100]
 		core.log message
 		if not snapshotLogWithWrongChecksum
 			snapshotLogWithWrongChecksum = "frame:{frame} mine:{mine} theirs:{theirs}\n{serializeLog}"
@@ -748,11 +867,25 @@ transient skipInit unit core
 		onError {message}
 		
 	onError: Error error
+		if error.message == "interrrupt" then return
 		errorMessage = error.stack
-		log "{errorMessage}"
-		Platform.sendErrorToEditor error
+		hasErrors = true
+		if(core.runningTest || Platform.isDebug) {
+			addOutput "exception|{errorMessage}||0"
+			sendOutputToEditor
+		} else {
+			core.log errorMessage
+		}
+		System.logError error
+		if Platform.isDebug
+			// Advance frame on error to ensure the current frame is replayed
+			frame++
+			if frames < frame	then frames = frame
+			if frame > frameWithNewWatches	then frameWithNewWatches = frame
+
+			Platform.pause()
 		
-transient unit Snapshot
+internal transient unit Snapshot
 	int autoSaveCount
 	int lastSnapshotSize
 	
@@ -793,23 +926,54 @@ transient unit Snapshot
 		deserialize(buffer)
 		
 	autoSave() autoSaveAtEndOfStep = true
+
+enum lowercase string PrintType
+	Action	// Use for actions performed by a player
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
+	NoAction	// Use when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
+	Headline	// Use when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
+
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
 	
+	Touch
+	Key
+	Gamepad
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
 	global inline restart() core.restart
 		
+	global inline refresh()
+		
 	// Prints a message to the console
-	global js void print: logstring text // The text, variables or expressions to print
+	global js void print: logstring text	// The text, variables or expressions to print
+	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+						  Color color = null	// The color to use when showing the message in the console or the event stream panel
+		                  void() drawDebugInfo = null	// A function that will be called to draw debug information.
 		                  SourceCodeLocation location
-		// (location ? log(text, location.start, location.file) : log(text))
-		core.log(text);
-		if(location && Platform.isDebug) {
-			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
-			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location.start, file:location.file});
+		if((core.runningTest || Platform.isDebug) && location) {
+			if(color) console.log(`%c${text}`, `color: ${color.hex}`)
+			else      console.log(text)
+			if(drawDebugInfo != null && core.outputIndex == core.interrruptAtOutputIndex) {
+				graphics.isDrawingDebugInfo = true
+				drawDebugInfo()
+				graphics.isDrawingDebugInfo = false
+			}
+			core.addOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+		} else {
+			core.log(text);
 		}
 
-class StatisticsGraph
+	global debug: void() drawDebugInfo
+		if Platform.isDebug
+			graphics.isDrawingDebugInfo = true
+			drawDebugInfo()
+			graphics.isDrawingDebugInfo = false
+
+internal class StatisticsGraph
 	int userIndex = -1
 	int set
 	string label = null
@@ -821,7 +985,7 @@ class StatisticsGraph
 	int sendingUntil
 	int successfullySentUntil
 	
-	float lastValue := values.length > 0 ? values[values.length-1] : 0
+	float lastValue => values.length > 0 ? values[values.length-1] : 0
 	
 	add: float value
 		recentValues.add value
@@ -832,7 +996,7 @@ class StatisticsGraph
 	addDirectly: float value
 		values.add value
 			
-immutable StatisticsInfo
+internal immutable StatisticsInfo
 	float value
 	int index
 	int frame
@@ -853,7 +1017,7 @@ skipInit transient unit statistics
 	int successfullySentGameLogs
 	int successfullySentSystemLogs
 	
-	Time startTime, loadTime, cameraTime, connectTime
+	float startTime, loadTime, cameraTime, connectTime
 	internal float maxValue
 	int currentSet
 	int sets = 1
@@ -864,25 +1028,25 @@ skipInit transient unit statistics
 	private bool currentlySendingStatistics
 	
 	bool sessionStarted
-	Time nextSendTime = Time.maxValue
+	float nextSendTime = float.maxValue
 	
-	scheduleSendIn: Time delay
-		nextSendTime = math.min(nextSendTime, Time.realTime + delay)
+	scheduleSendIn: float delay
+		nextSendTime = math.min(nextSendTime, PlainDate.realTime + delay)
 	
 	tick
-		if Time.realTime > nextSendTime
-			if not sessionStarted: startSession
+		if PlainDate.realTime > nextSendTime
+			if not sessionStarted then startSession
 			else                   saveStatistics
-			nextSendTime = Time.realTime + core.sendStatisticsEvery
+			nextSendTime = PlainDate.realTime + core.sendStatisticsEvery
 	
 	// Log game events (like scores, playtimes, etc)
-	log: any value
-		value.frame = Time.frame
+	log: dynamic value
+		value.frame = Time.ticks
 		this.gameLogs.add value
 	
 	private startSession
 		core.log "#statistics Start Session"
-		if currentlySendingStatistics: return
+		if currentlySendingStatistics then return
 		currentlySendingStatistics = true
 		
 		let user = storage.getObjectDirectly("user")
@@ -912,12 +1076,12 @@ skipInit transient unit statistics
 	
 	private saveStatistics
 		core.log "#statistics Send Statistics"
-		if currentlySendingStatistics: return
+		if currentlySendingStatistics then return
 		currentlySendingStatistics = true
 		
 		// Compile server and peer pings to send
 		string[] connections
-		for players -> p
+		for players as p
 			let internalUser = input.internalUsers[.id]
 			connections.add internalUser.connectionType
 			
@@ -948,18 +1112,18 @@ skipInit transient unit statistics
 			currentlySendingStatistics = false
 						
 	add: string label, int userIndex = -1, float value, Color color = White, int set = 0, isPerFrame = true
-		if userIndex != -1: label += " #{userIndex}"
+		if userIndex != -1 then label += " #{userIndex}"
 		var s = graphs.find.label == label
 		if !s
 			graphs.add s = {label, userIndex, color, set}
 			sets assignIfGreater set+1
 		s.color = color
-		if isPerFrame: s.add value
+		if isPerFrame then s.add value
 		else           s.addDirectly value
 
 	addInfo: string name, float value
 		int index = infoNames.indexOf name
-		if index == -1: index = infoNames.length; infoNames.add name
+		if index == -1 then index = infoNames.length; infoNames.add name
 		infos.add {value, index, frame:core.frame}
 		
 	internal tickGraph
@@ -967,12 +1131,13 @@ skipInit transient unit statistics
 			currentSet incrementAndWrap sets
 	
 		maxValue = 12
-		for graphs -> s
-			if .set != currentSet: continue
+		for graphs as s
+			if .set != currentSet then continue
 			int len = math.min(.values.length, 50)
-			for len: 
+			for len
+				 
 				let value = s.values[s.values.length-1-i]
-				if value > maxValue: maxValue = value
+				if value > maxValue then maxValue = value
 					
 		draw
 
@@ -982,14 +1147,14 @@ unit networkVisualizer
 	internal tick
 		if core.simulateInputsForTesting
 			for players
-				if posForPlayer[.index] == -10000: posForPlayer[.index] = posForPlayer[0]
+				if posForPlayer[.playerIndex] == -10000 then posForPlayer[.playerIndex] = posForPlayer[0]
 					
 			// Move circle with artificially created inputs to test the smoothness
-			for players -> player
+			for players as player
 				core.smooth player
 					input.onKeyDown by:player
-						if (posForPlayer[player.index] += 2) > 1080
-							posForPlayer[player.index] -= 1080
+						if (posForPlayer[player.playerIndex] += 2) > 1080
+							posForPlayer[player.playerIndex] -= 1080
 				
 		draw
 				
@@ -1018,7 +1183,8 @@ global skipInit unit math
 	internal recreateRandomValues
 		let targetRandomValueIndex = randomValueIndex
 		setRandomSeed randomSeed
-		for targetRandomValueIndex: randomFloat
+		for targetRandomValueIndex
+			randomFloat
 	
 	js void setRandomSeed: string seed
 		math.randomSeed = seed
@@ -1092,4 +1258,48 @@ global skipInit unit math
 	
 	global js int randomFloat: float to = 1.0
 		return math.randomGenerator() * to
+
+tests
+	// Used internally in the compiled code. Do not call in your code.
+	//     expect players.length == 2    ->    tests.expectToBeEqual(`players.length`, players.length, 2, new SourceCodeLocation("tests/tests.l", 69312, 69317, null, null));
+	importance:-1
+	internal expectToBeEqual: string expressionString
+	                          dynamic actual
+		                      dynamic expected
+				              SourceCodeLocation location
+		if core.interrruptAtOutputIndex != -1 or core.targetFrame != -1
+			core.outputIndex++
+			return
+		string actualString, expectedString, result
+		try	actualString = json.stringify(actual)
+		catch	actualString = actual?.toString()
+		if actual == expected
+			result = "+"
+		else
+			result = "-"
+			try		expectedString = json.stringify(expected)
+			catch		expectedString = expected?.toString()
+		core.addOutput "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
+
+	// Used internally in the compiled code. Do not call in your code.
+	//     expect players.all.ready      ->    tests.expectToBeTrue(`players.all.ready`, players.all.ready, new SourceCodeLocation("tests/tests.l", 69312, 69317, null, null));
+	importance:-1
+	internal expectToBeTrue: string expressionString
+	                         dynamic actual
+				             SourceCodeLocation location
+		if core.interrruptAtOutputIndex != -1 or core.targetFrame != -1
+			core.outputIndex++
+			return
+		string actualString
+		try	actualString = json.stringify(actual)
+		catch	actualString = actual?.toString()
+		string result = actual ? "+" : "-"
+		core.addOutput "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
 	
+	// Used internally. Do not call in your code.
+	internal tick
+		System.log "### tick core.frame:{core.frame} core.targetFrame:{core.targetFrame} "
+		// if core.frame <= core.targetFrame
+		Platform.fastForward = core.frame != core.targetFrame
+		core.tick draw:core.frame == core.targetFrame
+

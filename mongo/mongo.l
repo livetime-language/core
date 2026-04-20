@@ -34,34 +34,34 @@ DatabaseResult
 class Collection
 	string collectionName
 	
-	inline js async DatabaseResult add: any value
+	inline js async DatabaseResult add: dynamic value
 		this.insertOne(value)
 	
-	inline js async any findOne: dynamic query
+	inline js async dynamic findOne: dynamic query
 		this.findOne(query)
 	
-	inline js async any findAll
+	inline js async dynamic findAll
 		this.find().toArray()
 	
-	inline js async any find: dynamic query
+	inline js async dynamic find: dynamic query
 		this.find(query).toArray()
 	
-	inline js async any find: dynamic query, dynamic sort
+	inline js async dynamic find: dynamic query, dynamic sort
 		this.find(query).@sort(sort).toArray()
 	
-	inline js async any find: dynamic query, dynamic sort, int skip = 0, int limit
+	inline js async dynamic find: dynamic query, dynamic sort, int skip = 0, int limit
 		this.find(query).@sort(sort).@skip(skip).@limit(limit).toArray()
 	
-	inline js async any find: dynamic query, dynamic project
+	inline js async dynamic find: dynamic query, dynamic project
 		this.find(query).@project(project).toArray()
 	
-	inline js async any find: dynamic query, dynamic project, int skip = 0, int limit
+	inline js async dynamic find: dynamic query, dynamic project, int skip = 0, int limit
 		this.find(query).@project(project).@skip(skip).@limit(limit).toArray()
 	
-	inline js async any find: dynamic query, dynamic sort, dynamic project
+	inline js async dynamic find: dynamic query, dynamic sort, dynamic project
 		this.find(query).@project(project).@sort(sort).toArray()
 	
-	inline js async any find: dynamic query, dynamic sort, dynamic project, int skip = 0, int limit
+	inline js async dynamic find: dynamic query, dynamic sort, dynamic project, int skip = 0, int limit
 		this.find(query).@project(project).@sort(sort).@skip(skip).@limit(limit).toArray()
 	
 	inline js async DatabaseResult set: dynamic query, dynamic value

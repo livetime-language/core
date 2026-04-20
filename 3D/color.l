@@ -38,7 +38,7 @@ class Color
 		this.b = b
 		this.name
 		
-	toString := name
+	toString => name
 
 	js void set: float r
 		         float g

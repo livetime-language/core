@@ -1,397 +1,312 @@
-skipInit transient float Time
-	static int timezoneOffset
+enum string DateTimeFormatWeekday
+	long	// Thursday
+	short	// Thu
+	narrow	// T
+
+enum string DateTimeFormatEra
+	long	// Anno Domini
+	short	// AD
+	narrow	// A
+
+enum string DateTimeFormatYear
+	numeric	// 2026
+	twoDigit = "2-digit"	// 26
+
+enum string DateTimeFormatMonth
+	numeric	// 3
+	twoDigit = "2-digit"	// 03
+	long	// March
+	short	// Mar
+	narrow	// M
+
+enum string DateTimeFormatDay
+	numeric	// 20
+	twoDigit = "2-digit"	// 20
+
+enum string DateTimeFormatDayPeriod
+	narrow	// at night
+	short	// at night
+	long	// at night
+
+enum string DateTimeFormatHour
+	numeric	// 1
+	twoDigit = "2-digit"	// 01
+
+enum string DateTimeFormatMinute
+	numeric	// 5
+	twoDigit = "2-digit"	// 05
+
+enum string DateTimeFormatSecond
+	numeric	// 7
+	twoDigit = "2-digit"	// 07
+
+enum string DateTimeFormatTimeZoneName
+	short	// PST
+	long	// Pacific Standard Time
+	shortOffset	// GMT-8
+	longOffset	// GMT-08:00
+	shortGeneric	// PT
+	longGeneric	// Pacific Time
+
+enum string DateTimeFormatLocaleMatcher
+	lookup	// locale matching algorithm
+	bestFit = "best fit"	// locale matching algorithm (default)
+
+enum string DateTimeFormatHourCycle
+	h11	// 0-11 hour cycle
+	h12	// 1-12 hour cycle
+	h23	// 0-23 hour cycle
+	h24	// 1-24 hour cycle
+
+enum string DateTimeFormatDateStyle
+	full	// Sunday, 20 December 2020
+	long	// December 20, 2020
+	medium	// Dec 20, 2020
+	short	// 12/20/2020
+
+enum string DateTimeFormatTimeStyle
+	full	// 2:23:16 PM GMT+11
+	long	// 2:23:16 PM GMT+11
+	medium	// 2:23:16 PM
+	short	// 2:23 PM
+
+dynamic DateTimeFormatOptions
+	DateTimeFormatLocaleMatcher	localeMatcher	// Algorithm to use for locale matching
+	string	calendar	// "chinese", "gregory", "persian", etc.
+	string	numberingSystem	// "arab", "hans", "mathsans", etc.
+	bool	hour12	// true: 12-hour time, false: 24-hour time
+	DateTimeFormatHourCycle	hourCycle	// h11, h12, h23, or h24
+	string	timeZone	// IANA time zone name, e.g. "UTC", "America/New_York", "Europe/Berlin"
+	DateTimeFormatWeekday	weekday	// long: Thursday, short: Thu, narrow: T
+	DateTimeFormatEra	era	// long: Anno Domini, short: AD, narrow: A
+	DateTimeFormatYear	year	// numeric: 2026, 2-digit: 26
+	DateTimeFormatMonth	month	// numeric: 3, 2-digit: 03, long: March, short: Mar, narrow: M
+	DateTimeFormatDay	day	// numeric: 20, 2-digit: 20
+	DateTimeFormatDayPeriod	dayPeriod	// Only works with 12-hour clock. narrow/short: at night, long: at night
+	DateTimeFormatHour	hour	// numeric: 1, 2-digit: 01
+	DateTimeFormatMinute	minute	// numeric: 5, 2-digit: 05
+	DateTimeFormatSecond	second	// numeric: 7, 2-digit: 07
+	int	fractionalSecondDigits	// 1, 2, or 3 digits for fractional seconds
+	DateTimeFormatTimeZoneName	timeZoneName	// short: PST, long: Pacific Standard Time, shortOffset: GMT-8, etc.
+	DateTimeFormatDateStyle	dateStyle	// Shortcut for date formatting: full, long, medium, short
+	DateTimeFormatTimeStyle	timeStyle	// Shortcut for time formatting: full, long, medium, short
+
+// Formats a date and time according to language, locale, and time zone.
+// This is quite complex, because the start of daylight saving time is different in every country and changes every year.
+js(Intl.DateTimeFormat) class DateTimeFormat
+	inline js DateTimeFormat: DateTimeFormatOptions options
+		new Intl.DateTimeFormat(Loca.locale, options)
+
+	inline js string format: TimeString timeString
+		this.format(new Date(timeString))
+
+	inline js string format: Date date
+		this.format(date)
+
+	inline js string locale() this?.resolvedOptions().locale
+
+static skipInit class Time
+	string timerLogs
+	float timerStart
+
+	static void startTimer()
+		Time.timerLogs = ""
+		Time.timerStart = preciseTime
+
+	static void printTimer(string text) 
+		let now = preciseTime
+		let message = text+": "+(now-Time.timerStart)
+		print message
+		Time.timerLogs += message + "\n"
+		Time.timerStart = now
+
+	static inline js float preciseTime => performance.now()
 	
+struct float	
+	inline js int timeMilliseconds => Math.floor((this %    1000)          ) 
+	inline js int timeSeconds      => Math.floor((this %   60000) /    1000) 
+	inline js int timeMinutes      => Math.floor((this % 3600000) /   60000) 
+	inline js int timeHours        => Math.floor((this            ) / 3600000)
+		
+	inline js int totalSeconds      => Math.floor(this /      1000) 
+	inline js int totalMinutes      => Math.floor(this /     60000) 
+	inline js int totalHours        => Math.floor(this /   3600000)
+	inline js int totalDays         => Math.floor(this /  86400000)
+	inline js int totalWeeks        => Math.floor(this / 604800000)
+		
+	private static string toMinutesHoursDaysOrWeeksString: float time, showWeeksAfterDays = 31
+		if time < 2 minutes	then return "1 minute"
+		if time < 1 hours	then return "{time.totalMinutes} minutes"
+		if time < 2 hours	then return "1 hour"
+		if time < 1 days	then return "{time.totalHours} hours"
+		if time < 2 days	then return "1 day"
+		if time < showWeeksAfterDays days	then return "{time.totalDays} days"
+		if time < 2 weeks	then return "1 week"
+		                                         return "{time.totalWeeks} weeks"
+
 	// (31.12.)
-	inline string dayMonthString(language = Loca.language) DateTime.fromTime(this).dayMonthString(language)
+	inline string dayMonthString
+		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayMonthFormat
 		
 	// (31.12.2000)
-	inline string dayMonthYearString(language = Loca.language) DateTime.fromTime(this).dayMonthYearString(language)
-	
+	inline string dayMonthYearString
+		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayMonthYearFormat
+		
 	// (31 December 2000)
-	inline string dayMonthNameYearString(language = Loca.language) DateTime.fromTime(this).dayMonthNameYearString(language)
-	
-	// (Monday, December 31)
-	inline string dayOfWeekDayMonthString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthString(language)
-	
-	// (Monday)
-	inline string dayOfWeekString(language = Loca.language) DateTime.fromTime(this).dayOfWeekString(language)
-	
-	// (Monday, December 31 at 12:59 pm)
-	inline string dayOfWeekDayMonthAtHourMinuteString(language = Loca.language) DateTime.fromTime(this).dayOfWeekDayMonthAtHourMinuteString(language)
-	
-	// (23:59) The time is assumed to be local time, doesn't account for timezone offset
-	inline string hourMinuteString(language = Loca.language) Time.toHourMinuteString(this, language)
+	inline string dayMonthNameYearString
+		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayMonthNameYearFormat
 		
-	// (23:59) The time is assumed to be local time, doesn't account for timezone offset
-	static string toHourMinuteString: Time value, language = Loca.language
-		let hour = math.floor (value % 86400000) / 3600000
-		let minute = math.floor (value % 3600000) / 60000
-		if language == English: return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
-		else                    return ""+hour+":"+(minute < 10 ? "0":"")+minute
-	
- 	// (59:59) The time is assumed to be local time, doesn't account for timezone offset
-	inline js string minuteSecondString() (Math.floor((this % 3600000) / 60000) + (this % 60000 < 10000 ? ":0":":") + Math.floor((this % 60000) / 1000))
-	
-	// (23:59:59)
-	inline js string hourMinuteSecondString(language = Loca.language) new Date(this).hourMinuteSecondString(language)
-	
-	// (31.12.2000 23:59)
-	inline js string dayMonthYearHourMinuteString(language = Loca.language) new Date(this).dayMonthYearHourMinuteString(language)
-	
-	// (31.12.2000 23:59:59)
-	inline js string dayMonthYearHourMinuteSecondString(language = Loca.language) new Date(this).dayMonthYearHourMinuteSecondString(language)
-	
-	// (31-12-2000 23-59-59)
-	inline js string invariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
-			
-	// (20001231235959+02:00)
-	inline js string compactString() DateTime.fromTime(this).compactString()
+	// (31 Dec)
+	inline string dayShortMonthNameString
+		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
+	private static DateTimeFormat dayShortMonthNameFormat
 		
-	// (7 weeks)
-	inline string minutesHoursDaysOrWeeksString(showWeeksAfterDays = 31) toMinutesHoursDaysOrWeeksString(this, showWeeksAfterDays)
-		
-	// The largest possible time value
-	const inline js Time maxValue := Number.MAX_VALUE
-	
-	// The smallest possible time value
-	const inline js Time minValue := Number.MIN_VALUE
-	
-	static internal inline js float realTime := Date.now()
-
-	inline js Time += float value: this += value
-
-	static Time fromTimeString(string timeString)
-		if !timeString: return 0 milliseconds
-		Time value = 0
-		int colon1 = timeString.indexOf(":")
-		if(colon1 == -1)
-			value += int(timeString)*3600000
-		else
-			value += int(timeString.substring(0, colon1))*3600000
-			int colon2 = timeString.indexOf(":", colon1+1)
-			if(colon2 == -1)
-				value += int(timeString.substring(colon1+1))*60000
-			else
-				value += int(timeString.substring(colon1+1, colon2))*60000
-				value += int(timeString.substring(colon2+1))*1000
-		return value
-		
-	static inline js Time fromIsoString: string isoString
-		new Date(isoString).getTime()
-		
-	static inline js Time fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second).getTime()
-		
-	inline js implicit float toFloat() this
-	inline js int toInt() Math.floor(this)
-	inline js string toString() this.toString()
-		
-	// Returns true if the time is not zero
-	inline js bool toBool := this
-	
-	inline js string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-		
-	inline js string format: int fractionDigits, bool grouping = false
-		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, useGrouping:grouping})
-		
-	inline js string format: int minIntegerDigits = 1, bool grouping = false
-		this.toLocaleString('en-US', {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
-	
-	inline js int milliseconds := Math.floor((this %    1000)          ) 
-	inline js int seconds      := Math.floor((this %   60000) /    1000) 
-	inline js int minutes      := Math.floor((this % 3600000) /   60000) 
-	inline js int hours        := Math.floor((this          ) / 3600000)
-		
-	inline js int totalSeconds      := Math.floor(this /      1000) 
-	inline js int totalMinutes      := Math.floor(this /     60000) 
-	inline js int totalHours        := Math.floor(this /   3600000)
-	inline js int totalDays         := Math.floor(this /  86400000)
-	inline js int totalWeeks        := Math.floor(this / 604800000)
-		
-	private static string toMinutesHoursDaysOrWeeksString: Time time, showWeeksAfterDays = 31
-		if time < 2 minutes: return "1 minute"
-		if time < 1 hours:   return "{time.totalMinutes} minutes"
-		if time < 2 hours:   return "1 hour"
-		if time < 1 days:    return "{time.totalHours} hours"
-		if time < 2 days:    return "1 day"
-		if time < showWeeksAfterDays days: return "{time.totalDays} days"
-		if time < 2 weeks:   return "1 week"
-		                     return "{time.totalWeeks} weeks"
-	inline Time + Time value
-	inline Time - Time value
-	inline float / Time value
-	inline float * Time value
-	
-	inline Time += Time value
-	inline Time -= Time value
-	inline Time /= Time value
-	inline Time *= Time value
-	
-	inline bool == Time value
-	inline bool != Time value
-	inline bool < Time value
-	inline bool <= Time value
-	inline bool > Time value
-	inline bool >= Time value
-	
-	inline js Time % ensureSingleExecution Time value
-		((this % value) + value) % value
-	
-	static measure: void() do
-		let startTime = preciseTime
-		do
-		return preciseTime - startTime
-		
-	inline js float in: TimeUnit unit // Convert the time to this unit
-		(unit==1 ? this/1000 : unit==2 ? this/60000 : unit==3 ? this/3600000 : unit==4 ? this/86400000 : this)
-		
-	js static void startTimer() window._timerStart = performance.now()
-	js static void printTimer(string text) log(text+": "+(performance.now()-window._timerStart))
-	static inline js float preciseTime := performance.now()
-		
-enum TimeUnit
-	milliseconds // Milliseconds
-	seconds      // Seconds
-	minutes      // Minutes
-	hours        // Hours
-	days         // Days
-	
-// Calculate dates using pure math for better performance without using the Date class
-immutable struct DateTime
-	const dayNames = [
-		["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-		["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
-	]
-	const shortDayNames = [
-		["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-		["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
-	]
-	const monthNames = [
-		["","January","February","March","April","May","June","July","August","September","October","November","December"]
-		["","Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
-	]
-	const atString = [" at ", " um "]
-	const timeSuffixString = ["", " Uhr"]
-	
-	const daysInMonthCommon = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-	const daysInMonthLeap = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-
-	Time time
-	int year
-	int month
-	int day
-	int dayOfWeek
-	int hour
-	int minute
-	int second
-	
-	string twoDigitDay    := (this.day < 10 ? "0"+this.day : this.day.toString())
-	string twoDigitMonth  := (this.month < 10 ? "0"+this.month : this.month.toString())
-	string twoDigitHour   := (this.hour < 10 ? "0"+this.hour : this.hour.toString())
-	string twoDigitMinute := (this.minute < 10 ? "0"+this.minute : this.minute.toString())
-	string twoDigitSecond := (this.second < 10 ? "0"+this.second : this.second.toString())
-		
-	static DateTime now := DateTime.fromTime(Time.now)
-	
-	static DateTime fromTime: Time time
-		if not time: return {0, 1970, 1, 1, 4, 0, 0, 0}
-		const localTime = time - Time.timezoneOffset
-		const daysSinceEpoch = math.floor(localTime / 86400000)
-		
-		// Year
-		let currentYear = 1970;
-		let daysLeft = daysSinceEpoch;
-		
-		loop
-			let daysInYear = ((currentYear remainder 4) == 0 && (currentYear remainder 100) != 0) || (currentYear remainder 400 == 0) ? 366 : 365;
-			if daysLeft < daysInYear: break
-			daysLeft -= daysInYear
-			currentYear++
-		
-		// Month and Day
-		let daysInMonth = ((currentYear remainder 4) == 0 && (currentYear remainder 100) != 0) || (currentYear remainder 400 == 0) ? daysInMonthLeap : daysInMonthCommon
-		let currentMonth = 0
-		
-		while daysLeft >= daysInMonth[currentMonth]
-			daysLeft -= daysInMonth[currentMonth]
-			currentMonth++
-		
-		return {
-			time
-			day: daysLeft + 1
-			month: currentMonth + 1
-			year: currentYear
-			dayOfWeek: (daysSinceEpoch + 4) % 7 // January 1, 1970 was a Thursday
-			hour: math.floor (localTime % 86400000) / 3600000
-			minute: math.floor (localTime % 3600000) / 60000
-			second: math.floor (localTime % 60000) / 1000
-		}
-		
-	static DateTime fromValues: int year
-		                        int month
-		                        int day
-		                        int hour
-		                        int minute
-		                        int second
-		const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-		
-		// Calculate the number of days since the epoch for full years
-		let days = 0;
-		for 1970 to year
-		    days += (. % 4 == 0 && . % 100 != 0) || (. % 400 == 0) ? 366 : 365;
-		
-		// Add days for the months of the current year
-		for month - 1
-		    days += daysInMonth[.]
-		
-		// Add a day if the current year is a leap year and month is after February
-		if (month > 2 && (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))
-		    days += 1;
-		
-		// Add the days for the current month
-		days += day - 1; // subtract 1 because we want "full days" before the current day
-		
-		// Convert the full days to milliseconds
-		let milliseconds = days * 24 * 60 * 60 * 1000;
-		
-		// Add hours, minutes, and seconds in milliseconds
-		milliseconds += hour * 60 * 60 * 1000;
-		milliseconds += minute * 60 * 1000;
-		milliseconds += second * 1000;
-		
-		return {time: Time.timezoneOffset + milliseconds, year, month, day, dayOfWeek: (days + 4) % 7, hour, minute, second}
-		
-	// (31.12.)
-	dayMonthString: language = Loca.language
-		if language == German return "{day}.{month}."
-		else                  return "{month}-{day}"
-		
-	// (31.12.2000)
-	dayMonthYearString: language = Loca.language
-		if language == German return "{twoDigitDay}.{twoDigitMonth}.{year}"
-		else                  return "{year}-{twoDigitMonth}-{twoDigitDay}"
-	
-	// (31 December 2000)
-	dayMonthNameYearString: language = Loca.language
-		return "{day} {monthNames[language][month]} {year}"
+	// (Thursday, 31 December 2000)
+	inline string dayOfWeekDayMonthNameYearString
+		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
 		
 	// (Monday, December 31)
-	dayOfWeekDayMonthString: language = Loca.language
-		if language == German return "{dayNames[language][dayOfWeek]}, {day}. {monthNames[language][month]}"
-		else                  return "{dayNames[language][dayOfWeek]}, {day} {monthNames[language][month]}"
-			
+	inline string dayOfWeekDayMonthString
+		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthFormat
+		
 	// (Monday)
-	dayOfWeekString: language = Loca.language
-		return dayNames[language][dayOfWeek]
+	inline string dayOfWeekString
+		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekFormat
+		
+	// (Mon)
+	inline string dayOfWeekShortString
+		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekShortFormat
 		
 	// (12:59 pm)
-	hourMinuteString: language = Loca.language
-		if language == English: return ""+((hour-1)%12+1)+":"+(minute < 10 ? "0":"")+minute+(hour < 12 ? " am":" pm")
-		else                    return ""+hour+":"+(minute < 10 ? "0":"")+minute
+	inline string hourMinuteString
+		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat hourMinuteFormat
+
+	// (1:59)
+	inline string minuteSecondString
+		"{this.timeMinutes}:{this.timeSeconds.toString.padStart(2, '0')}"
 		
 	// (Monday, December 31 at 12:59 pm)
-	dayOfWeekDayMonthAtHourMinuteString: language = Loca.language
-		return dayOfWeekDayMonthString(language) + atString[language] + hourMinuteString(language) + timeSuffixString[language]
+	inline string dayOfWeekDayMonthAtHourMinuteString
+		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
 		
-	// (20001231235959+02:00)
-	compactString
-		return "{year}{twoDigitMonth}{twoDigitDay}T{twoDigitHour}{twoDigitMinute}{twoDigitSecond}+02:00"
-		
-// Calculate dates using the JavaScript Date class
-js(Date) transient class Date
-	inline js Date() new Date()
-	static inline js Date now := new Date()
-		
-	const dayStrings = [
-		["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-		["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
-	]
-		
-	const shortDayStrings = [
-		["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-		["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
-	]
+	// (Monday, 31 December 2000, 12:59 pm)
+	inline string dayOfWeekDayMonthYearHourMinuteString
+		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
+
+class string
+	implicit inline TimeString toTimeString() this
+
+// A string representation of a date and time in the ISO 8601 format, for example "2000-12-31 17:30:00.000Z".
+// It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
+string TimeString
+	static TimeString now => Date.fromTime(Time.now).utcString
+	static TimeString fromTime(float value) => Date.fromTime(value).utcString
 	
-	inline js int year := this.getFullYear()
-	inline js int month := (this.getMonth()+1)
-	inline js int day := this.getDate()
-	inline js int dayOfWeek := this.getDay()
+	inline js bool toBool => this
+	inline string toString() this
+	
+	// (31.12.)
+	inline string dayMonthString
+		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayMonthFormat
 		
-	inline js int hour := this.getHours()
-	inline js int minute := this.getMinutes()
-	inline js int second := this.getSeconds()
-	inline js int millisecond := this.getMilliseconds()
+	// (31.12.2000)
+	inline string dayMonthYearString
+		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayMonthYearFormat
 		
-	inline js string twoDigitMonth := (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitDay := this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitHour := this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// (31 December 2000)
+	inline string dayMonthNameYearString
+		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayMonthNameYearFormat
 		
-	inline js Time timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	// (31 Dec)
+	inline string dayShortMonthNameString
+		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
+	private static DateTimeFormat dayShortMonthNameFormat
+		
+	// (Thursday, 31 December 2000)
+	inline string dayOfWeekDayMonthNameYearString
+		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
+		
+	// (Monday, December 31)
+	inline string dayOfWeekDayMonthString
+		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthFormat
+		
+	// (Monday)
+	inline string dayOfWeekString
+		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekFormat
+		
+	// (Mon)
+	inline string dayOfWeekShortString
+		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekShortFormat
+		
+	// (12:59 pm)
+	inline string hourMinuteString
+		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat hourMinuteFormat
+		
+	// (Monday, December 31 at 12:59 pm)
+	inline string dayOfWeekDayMonthAtHourMinuteString
+		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
+		
+	// (Monday, 31 December 2000, 12:59 pm)
+	inline string dayOfWeekDayMonthYearHourMinuteString
+		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
+	
+// Represents a point in time using the JavaScript Date class.
+// It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
+js(Date) internal transient class Date
+	inline js Date(float time) new Date(time)
+	inline js Date(TimeString timeString) new Date(timeString)
+	inline js Date(int year, int month, int day, int hour, int minute, int second, int milliseconds) new Date(year, month-1, day, hour, minute, second, milliseconds)
+	
+	static inline js Date fromTime(float time) new Date(time)
+	static inline js Date fromString(string timeString) new Date(timeString)
+	static inline js Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second)
+	
+	// Returns the real time, even during replay. Be careful: This can break the replay.
+	static inline js Date realtime => new Date()
+	
+	static inline js Date now	=> new Date()
+	inline js int year	=> this.getFullYear()
+	inline js int month	=> (this.getMonth()+1)
+	inline js int day	=> this.getDate()
+	inline js int dayOfWeek		=> this.getDay()
+		
+	inline js int hour	=> this.getHours()
+	inline js int minute	=> this.getMinutes()
+	inline js int second	=> this.getSeconds()
+	inline js int millisecond	=> this.getMilliseconds()
+		
+	inline js string twoDigitMonth	=> (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitDay	=> this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitHour	=> this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitMinute	=> this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitSecond	=> this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})		
+	inline js float timeOfDay	=> this.getHours()*3600000 + this.getMinutes()*60000
 	
 	private static string toTwoDigitString: int value
 		return value < 10 ? "0"+value.toString : value.toString
-	
-	// (31.12.)
-	js string dayMonthString: language = Loca.language
-		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."
-	
-	// (31.12.2000)
-	js string dayMonthYearString: language = Loca.language
-		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+this.getFullYear()
-	
-	// (31 December 2000)
-	js string dayLongMonthNameYearString: language = Loca.language
-		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+" "+this.toLocaleString('en-US', {month: 'long'})+" "+this.getFullYear()
-	
-	// (31 Dec 2000)
-	js string dayShortMonthNameYearString: language = Loca.language
-		return this.getDate()+" "+this.toLocaleString('en-US', {month: 'short'})+" "+this.getFullYear()
-	
-	// (Monday)
-	string dayOfWeekString: language = Loca.language
-		return dayStrings[language][dayOfWeek]
-	
-	// (Mon)
-	string shortDayOfWeekString: language = Loca.language
-		return shortDayStrings[language][dayOfWeek]
-	
-	// (23:59)
-	string hourMinuteString: language = Loca.language
-		if language == English
-			let h = hour
-			return ""+((h-1)%12+1)+":"+toTwoDigitString(minute)+(h < 12 ? " am":" pm")
-		else
-			return ""+hour+":"+toTwoDigitString(minute)
-	
-	// (23:59:59)
-	string hourMinuteSecondString: language = Loca.language
-		if language == English
-			let h = hour
-			return ""+((h-1)%12+1)+":"+toTwoDigitString(minute)+":"+toTwoDigitString(second)+(h < 12 ? " am":" pm")
-		else
-			return ""+hour+":"+toTwoDigitString(minute)+":"+toTwoDigitString(second)
-	
-	// (23:59:59.999)
-	string hourMinuteSecondMillisecondString: language = Loca.language
-		return ""+hour+":"+toTwoDigitString(minute)+":"+toTwoDigitString(second)+"."+millisecond
-	
-	// (31.12.2000 23:59)
-	js string dayMonthYearHourMinuteString: language = Loca.language
-		if(language == 1000) return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-		else                 return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-	
-	// (31.12.2000 23:59:59)
-	js string dayMonthYearHourMinuteSecondString: language = Loca.language
-		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
-	
-	// (31-12-2000 23-59-59)
-	js string invariantDayMonthYearHourMinuteSecondString: language = Loca.language
-		return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
-	
-	// The number of milliseconds elapsed since January 1, 1970
-	inline js Time time := this.getTime()
+			
+	// In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
+	inline js float time => this.getTime()
 		
 	// The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	js string isoString()
@@ -411,8 +326,95 @@ js(Date) transient class Date
 			dif + pad(Math.floor(Math.abs(tzo) / 60)) +
 			":" + pad(Math.abs(tzo) % 60);
 
-	static inline js Date fromTime(Time time) new Date(time)
-	static inline js Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second)
+	inline js TimeString utcString() this.toISOString()
+
+	Date + float delta 
+		return Date.fromTime(this.time + delta)
+	Date - float delta 
+		return Date.fromTime(this.time - delta)
+
+		// (31.12.)
+	inline string dayMonthString
+		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(this)
+	private static DateTimeFormat dayMonthFormat
+		
+	// (31.12.2000)
+	inline string dayMonthYearString
+		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(this)
+	private static DateTimeFormat dayMonthYearFormat
+		
+	// (31 December 2000)
+	inline string dayMonthNameYearString
+		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(this)
+	private static DateTimeFormat dayMonthNameYearFormat
+		
+	// (31 Dec 2000)
+	inline string dayShortMonthNameYearString
+		(dayShortMonthNameYearFormat?.locale == Loca.locale ? dayShortMonthNameYearFormat : (dayShortMonthNameYearFormat = {options:{day:numeric, month:short, year:numeric}})).format(this)
+	private static DateTimeFormat dayShortMonthNameYearFormat
+		
+	// (31 Dec)
+	inline string dayShortMonthNameString
+		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
+	private static DateTimeFormat dayShortMonthNameFormat
+		
+	// (Thursday, 31 December 2000)
+	inline string dayOfWeekDayMonthNameYearString
+		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(this)
+	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
+		
+	// (Monday, December 31)
+	inline string dayOfWeekDayMonthString
+		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(this)
+	private static DateTimeFormat dayOfWeekDayMonthFormat
+		
+	// (Monday)
+	inline string dayOfWeekString
+		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(this)
+	private static DateTimeFormat dayOfWeekFormat
+		
+	// (Mon)
+	inline string dayOfWeekShortString
+		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(this)
+	private static DateTimeFormat dayOfWeekShortFormat
+		
+	// (12:59 pm)
+	inline string hourMinuteString
+		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(this)
+	private static DateTimeFormat hourMinuteFormat
+		
+	// (12:59:00 pm)
+	inline string hourMinuteSecondString
+		(hourMinuteSecondFormat?.locale == Loca.locale ? hourMinuteSecondFormat : (hourMinuteSecondFormat = {options:{hour:numeric, minute:twoDigit, second:twoDigit}})).format(this)
+	private static DateTimeFormat hourMinuteSecondFormat
+		
+	// (12:59:00.999 pm)
+	inline string hourMinuteSecondMillisecondString
+		(hourMinuteSecondMillisecondFormat?.locale == Loca.locale ? hourMinuteSecondMillisecondFormat : (hourMinuteSecondMillisecondFormat = {options:{hour:numeric, minute:twoDigit, second:twoDigit, fractionalSecondDigits:3}})).format(this)
+	private static DateTimeFormat hourMinuteSecondMillisecondFormat
+		
+	// (Monday, December 31 at 12:59 pm)
+	inline string dayOfWeekDayMonthAtHourMinuteString
+		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(this)
+	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
+		
+	// (Monday, 31 December 2000, 12:59 pm)
+	inline string dayOfWeekDayMonthYearHourMinuteString
+		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(this)
+	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
+
+	// (20260412T121357)
+	// js string compactTimeString()
+	// 	let parts = (Date.compactTimeStringFormat ??= new Intl.DateTimeFormat('en-US', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23'})).formatToParts(this)
+	// 	let get = type => parts.find(p => p.type === type).value
+	// 	return get('year') + get('month') + get('day') + 'T' + get('hour') + get('minute') + get('second')
+	// private static DateTimeFormat compactTimeStringFormat
+
+	// (20260412T121357)
+	string compactTimeString()
+		return "{year}{twoDigitMonth}{twoDigitDay}T{twoDigitHour}{twoDigitMinute}{twoDigitSecond}"
+
+	// Parses a string like "20260412T121357" produced by compactTimeString into a Date (in local time).
+	static js Date fromCompactTimeString(string compactTimeString)
+		new Date(+compactTimeString.slice(0,4), +compactTimeString.slice(4,6)-1, +compactTimeString.slice(6,8), +compactTimeString.slice(9,11), +compactTimeString.slice(11,13), +compactTimeString.slice(13,15))
 	
-	// Returns the real time, even during replay. Be careful: This can break the replay.
-	static inline js Date realtime := new Date()

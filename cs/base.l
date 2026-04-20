@@ -1,15 +1,15 @@
 // A number stored as a 32-bit integer
 struct int
 	// The largest possible integer value
-	static inline cs int maxValue := int.MaxValue
+	static inline cs int maxValue => int.MaxValue
 	
 	// The smallest possible integer value
-	static inline cs int minValue := int.MinValue
+	static inline cs int minValue => int.MinValue
 	
-	inline cs int operator ** (int a, int b) 
+	inline cs int ** (int a, int b) 
 		Math.pow(a,b)
 		
-	inline cs int operator % (int a, int b)
+	inline cs int mod (int a, int b)
 		(((a % b) + b) % b)
 		
 	// The remainer after a division by the given value. The sign stays the same.
@@ -17,11 +17,11 @@ struct int
 		(this % value)
 		
 	// Returns true if the integer is not zero
-	inline cs bool toBool := (this != 0)
+	inline cs bool toBool => (this != 0)
 	
-	inline cs string toString := this.ToString()
+	inline cs string toString => this.ToString()
 		
-	inline cs string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+	inline cs string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 		
 	inline cs string format: int minIntegerDigits = 1, bool grouping = false
 		this.toLocaleString('en-US', {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
@@ -48,14 +48,14 @@ struct int
 	inline cs int unsetBit: implicit int value
 		(this &= ~value)
 	
-	inline cs int limit: int from
+	inline cs int clamp: int from
 		                 int to
 		(this < from ? from : this > to ? to : this)
 		
-	inline cs int limit: int to
+	inline cs int clamp: int to
 		(this > to ? to : this)
 	
-	inline cs int limit: int from
+	inline cs int clamp: int from
 		(this < from ? from : this)
 	
 	inline cs int max: int value
@@ -98,29 +98,29 @@ struct int
 // A number stored as a double precision 64-bit floating point value
 struct float
 	// The largest possible floating point value
-	static inline cs float maxValue := float.MaxValue
+	static inline cs float maxValue => float.MaxValue
 	
 	// The smallest possible floating point value
-	static inline cs float minValue := float.MinValue
+	static inline cs float minValue => float.MinValue
 	
-	const inline cs float infinity := float.PositiveInfinity
+	const inline cs float infinity => float.PositiveInfinity
 	
-	inline cs float operator ** (float a, float b) 
+	inline cs float ** (float a, float b) 
 		Math.pow(a,b)
 		
-	inline cs float operator % (float a, float b)
+	inline cs float mod (float a, float b)
 		(((a % b) + b) % b)
 		
 	// The remainer after a division by the given value. The sign stays the same.
 	inline cs float remainder: float value
 		(this % value)
 		
-	inline cs(System) int toInt := (int)(this)
+	inline cs(System) int toInt => (int)(this)
 		
 	// Returns true if the floot is not zero
-	inline cs bool toBool := this
+	inline cs bool toBool => this
 	
-	inline cs string toString := this.ToString()
+	inline cs string toString => this.ToString()
 		
 	inline cs string format: int fractionDigits, int minIntegerDigits = 1, bool grouping = false
 		this.toLocaleString('en-US', {maximumFractionDigits:fractionDigits, minimumFractionDigits:fractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
@@ -147,14 +147,14 @@ struct float
 	inline cs int round
 		Math.round(this)
 		
-	inline cs float limit: float from
+	inline cs float clamp: float from
 		                   float to
 		(this < from ? from : this > to ? to : this)
 		
-	inline cs float limit: float to
+	inline cs float clamp: float to
 		(this > to ? to : this)
 	
-	inline cs float limit: float from
+	inline cs float clamp: float from
 		(this < from ? from : this)
 	
 	inline cs float max: float value
@@ -169,7 +169,7 @@ struct float
 		
 	inline cs bool isAngleApproximately: float value
 		                                 float epsilon = 0.0175
-		(Math.abs((((this % Math.TwoPI) + Math.TwoPI) % Math.TwoPI) - (((value % Math.TwoPI) + Math.TwoPI) % Math.TwoPI)) < epsilon)
+		(Math.abs((((this % Math.twoPi) + Math.twoPi) % Math.twoPi) - (((value % Math.twoPi) + Math.twoPi) % Math.twoPi)) < epsilon)
 		
 	inline cs void moveTowards: float value
 		                        float speed
@@ -191,43 +191,38 @@ struct float
 		
 	// ------------------------------------------- Time -------------------------------------------
 	
-	implicit inline cs Time toTime() this
-	
 	// Milliseconds
-	inline cs Time ms := this
+	inline cs float ms => this
 	
 	// Seconds
-	inline cs Time s := (this*1000)
+	inline cs float s => (this*1000)
 		
 	// Minutes
-	inline cs Time min := (this*60000)
+	inline cs float min => (this*60000)
 		
 	// Hours
-	inline cs Time h := (this*3600000)
+	inline cs float h => (this*3600000)
 	
 	// Days
-	inline cs Time days := (this*86400000)
+	inline cs float days => (this*86400000)
 	
 	// Weeks	
-	inline cs Time weeks := (this*604800000)
+	inline cs float weeks => (this*604800000)
 		
-	// ------------------------------------------- Angle -------------------------------------------
+	inline js float ° (this/180*math.pi)
 	
-	implicit inline cs Angle toAngle() this
+	// One full rotation is 1
+	inline cs float turn => (this*math.twoPi)
 	
-	inline cs Angle operator °(float angle) (angle/360)
-	
-	// Turns (one full rotation is 1)
-	inline cs Angle turns() this
-	
-	// Radians (one full rotation is 1π) 
-	inline cs Angle rad() (this/Math.TwoPI)
+	// One full rotation is 2π (about 6.2832)
+	inline cs float radians => this
 		
-	// Degrees (one full rotation is 360)
-	inline cs Angle deg() (this/360)
+	// One full rotation is 360
+	inline cs float degrees => (this/180*pi)
 		
-	// Gradians (one full rotation is 360)
-	inline cs Angle grad() (this/400)
+	// One full rotation is 400
+	inline cs float gradians => (this/200*pi)
+
 		
 class EaseFunction
 	// float(float value) function
@@ -240,22 +235,22 @@ class EaseFunction
 cs ,string
 class string
 	// Returns the number of characters in the string
-	inline cs int length := this.Length
+	inline cs int length => this.Length
 	
 	// Returns a string with each character converted to uppercase
-	inline cs string toUpperCase := this.toUpperCase()
+	inline cs string toUpperCase => this.toUpperCase()
 		
 	// Returns a string with each character converted to lowercase
-	inline cs string toLowerCase := this.toLowerCase()
+	inline cs string toLowerCase => this.toLowerCase()
 	
 	// Returns true if the string is not null and not empty	
-	inline cs bool toBool := !string.IsNullOrEmpty(this)
+	inline cs bool toBool => !string.IsNullOrEmpty(this)
 	
 	inline cs string toString() this
 	
-	inline cs int toInt := parseInt(this)
+	inline cs int toInt => parseInt(this)
 		
-	inline cs int toFloat := parseFloat(this)
+	inline cs int toFloat => parseFloat(this)
 	
 	inline cs string[] split: string character = " "
 		this.split(character)
@@ -326,8 +321,6 @@ struct Array
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum SortingOrder: Ascending, Descending
-	
 // A data container that grows in size as needed
 cs System.Collections.Generic List
 class List<T>
@@ -550,7 +543,7 @@ class List<T>
 	// 	return closestItem
 			
 	// // Returns true if the list is not null and not empty	
-	// inline cs bool toBool := (this != null && this.Count != 0) 
+	// inline cs bool toBool => (this != null && this.Count != 0) 
 	
 	// // Reverses the order of the items of the list in place
 	// inline cs T[] reverse() this.reverse()
@@ -586,12 +579,6 @@ class List<T>
 	// inline cs T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
 	// 	this.sort(comparer)
 	
-	// inline cs T[] sort: Time(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-	
-	// inline cs T[] sort: Angle(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
-	// 	this.sort(comparer)
-	
 	// // Sort the list by a given expression
 	// T[] orderBy: float(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) - expression(b))
@@ -600,20 +587,8 @@ class List<T>
 	// 	         label nocolon float(T it) thenBy // Then order by this expression
 	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
-	// T[] orderBy: Time(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
-		
-	// T[] orderBy: Angle(T a) expression // First order by this expression
-	// 	return this.sort(expression(a) - expression(b))
-		
 	// T[] orderBy: string(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) compareTo expression(b))
-		
-	// // Sort the list by a given expression
-	// T[] orderBy: float(T a) expression // First order by this expression
-	// 	         SortingOrder order    // Specifies if you want to sort in ascending or descending order
-	// 	if order == Ascending: return this.sort(expression(a) - expression(b))
-	// 	else                   return this.sort(expression(b) - expression(a))
 		
 	// Returns true if the given condition is true for any item in the list
 	inline cs(System.Linq) bool any: bool(T a) predicate // The condition to check
@@ -752,15 +727,6 @@ class List<T>
 	// 		if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
 		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	Time resultValue = threshold
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
 	// max: int(T a) selector
 	// 	 int threshold = int.minValue
 	// 	 int default = 0
@@ -777,17 +743,6 @@ class List<T>
 	// 	 float default = 0
 	// 	 label bool(T a) where
 	// 	float resultValue = threshold
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value > resultValue: resultValue = value
-	// 	return resultValue != threshold ? resultValue : default
-		
-	// max: Time(T a) selector
-	// 	 Time threshold = float.minValue
-	// 	 Time default = 0
-	// 	 label bool(T a) where
-	// 	Time resultValue = threshold
 	// 	for this
 	// 		if where(.)
 	// 			let value = selector(.)
@@ -838,17 +793,6 @@ class List<T>
 	// 			resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
 		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value < resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
 	// withMin: int(T a) selector
 	// 	     int threshold = int.maxValue
 	// 	     label bool(T a) where
@@ -875,19 +819,6 @@ class List<T>
 	// 				resultItem = .
 	// 	return resultValue != threshold ? resultItem : null
 		
-	// withMin: Time(T a) selector
-	// 	     Time threshold = float.maxValue
-	// 	     label bool(T a) where
-	// 	Time resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		if where(.)
-	// 			let value = selector(.)
-	// 			if value < resultValue
-	// 				resultValue = value
-	// 				resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
 	// withMax: int(T a) selector
 	// 	     int threshold = int.minValue
 	// 	int resultValue = threshold
@@ -902,17 +833,6 @@ class List<T>
 	// withMax: float(T a) selector
 	// 	     float threshold = float.minValue
 	// 	float resultValue = threshold
-	// 	T resultItem
-	// 	for this
-	// 		let value = selector(.)
-	// 		if value > resultValue
-	// 			resultValue = value
-	// 			resultItem = .
-	// 	return resultValue != threshold ? resultItem : null
-		
-	// withMax: Time(T a) selector
-	// 	     Time threshold = float.minValue
-	// 	Time resultValue = threshold
 	// 	T resultItem
 	// 	for this
 	// 		let value = selector(.)
@@ -998,12 +918,12 @@ class List<T>
 	// 	const a = this || []
 	// 	const b = other || []
 	// 	const result = [];
-	// 	const map = {};
+	// 	const dictionary = {};
 	// 	for (let i = 0, length = b.Count; i < length; ++i) {
-	// 		map[b[i]] = true;
+	// 		dictionary[b[i]] = true;
 	// 	}
 	// 	for (let i = 0, length = a.Count; i < length; ++i) {
-	// 		if (a[i] in map) result.push(a[i]);
+	// 		if (a[i] in dictionary) result.push(a[i]);
 	// 	}
 	// 	return result;
 		
@@ -1060,7 +980,7 @@ class List<T>
 		
 // A data container that stores key-value pairs
 cs System.Collections.Generic Dictionary
-class Map<TKey, TValue>
+class Dictionary<TKey, TValue>
 	cs TValue get: TKey key
 		TValue value = default(TValue);
 		this.TryGetValue(key, out value);
@@ -1075,9 +995,9 @@ class Map<TKey, TValue>
 		(this.ContainsKey(key) ? this[key] : this[key] = value)
 		
 	inline cs void each: -> void(
-		                     TValue it, // The current value of the map we are iterating over with the for-loop
-		                     TKey key   // The current key of the map we are iterating over with the for-loop
-		                 ) do           // Do this for each item in a map
+		                     TValue it, // The current value of the dictionary we are iterating over with the for-loop
+		                     TKey key   // The current key of the dictionary we are iterating over with the for-loop
+		                 ) do           // Do this for each item in a dictionary
 		foreach(var pair in this) { var it = pair.Value; var key = pair.Key; do()}
 			
 	cs TValue[] values
@@ -1141,7 +1061,7 @@ transient class SourceCodeLocation
 	inline cs bool toBool() (this != null)
 	inline cs string toString() (this.file+":"+this.start)
 	
-	// SourceCodeLocation clone := {file, start, end, left, right}
+	// SourceCodeLocation clone => {file, start, end, left, right}
 			
 	// SourceCodeLocation find: string file, int pos
 	// 	if this.file and this.file == file and pos >= this.start and pos <= this.end
@@ -1179,7 +1099,7 @@ cs System Exception
 class Error
 	string message
 	string stack
-	implicit inline cs string toString := this.stack
+	implicit inline cs string toString => this.stack
 	
 // A collection of basic system functions
 global transient unit System
@@ -1231,11 +1151,11 @@ global transient unit System
 		                       ) do           // Do this for each item in a list
 		for(int _i=subject.Count-1; _i>=0; --_i) { var _it = subject[_i]; do(_it, _i)}
 		
-	global inline cs void for: TValue[TKey] subject    // The map to iterate over
+	global inline cs void for: TValue[TKey] subject    // The dictionary to iterate over
 		                       -> void(
-		                           TValue it, // The current value of the map we are iterating over with the for-loop
-		                           TKey key   // The current key of the map we are iterating over with the for-loop
-		                       ) do           // Do this for each item in a map
+		                           TValue it, // The current value of the dictionary we are iterating over with the for-loop
+		                           TKey key   // The current key of the dictionary we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a dictionary
 		foreach(var _pair in subject) do(_pair.Value, _pair.Key)
 		
 	// Do something for each item in a list. You can add or remove items inside the loop.
@@ -1454,46 +1374,18 @@ global skipInit unit Math
 	inline cs(System) float abs: float value // The value to return the absolute value of
 		Math.Abs(value)
 		
-	// Returns the absolute value
-	inline cs(System) Angle abs: Angle value // The angle to return the absolute value of
-		Math.Abs(value)
-		
 	// Returns the smallest integer greater than or equal to the given value 
 	inline cs(System) int ceil: float value // The value to round up
-		(int)Math.Ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline cs(System) Time ceil: Time value // The value to round up
-		(int)Math.Ceil(value)
-		
-	// Returns the smallest integer greater than or equal to the given value 
-	inline cs(System) Angle ceil: Angle value // The angle to round up
 		(int)Math.Ceil(value)
 		
 	// Returns the largest integer less than or equal to the given value
 	inline cs(System) int floor: float value // The value to round down
 		(int)Math.Floor(value)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline cs(System) Time floor: Time value // The value to round down
-		(int)Math.Floor(value)
-		
-	// Returns the largest integer less than or equal to the given value
-	inline cs(System) Angle floor: Angle value // The angle to round down
-		(int)Math.Floor(value)
-		
+				
 	// Returns the given value rounded to the nearest integer
 	inline cs(System) int round: float value // The value to round
 		(int)Math.Round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cs(System) Angle round: Angle value // The angle to round
-		(int)Math.Round(value)
-		
-	// Returns the given value rounded to the nearest integer
-	inline cs(System) Time round: Time value // The angle to round
-		(int)Math.Round(value)
-		
+				
 	inline cs(System) int min: int a // The first value
 		               int b // The second value
 		Math.Min(a, b)
@@ -1501,11 +1393,6 @@ global skipInit unit Math
 	// Returns the smallest of the given values
 	inline cs(System) float min: float a // The first value
 		                 float b // The second value
-		Math.Min(a, b)
-		
-	// Returns the smallest of the given values
-	inline cs(System) Angle min: Angle a // The first angle
-		                 Angle b // The second angle
 		Math.Min(a, b)
 		
 	// Returns the largest of the given values
@@ -1518,16 +1405,6 @@ global skipInit unit Math
 		                 float b // The second value
 		Math.Max(a, b)
 		
-	// Returns the largest of the given values
-	inline cs(System) Angle max: Angle a // The first angle
-		                 Angle b // The second angle
-		Math.Max(a, b)
-		
-	// Returns the largest of the given values
-	inline cs(System) Time max: Time a // The first time
-		                Time b // The second time
-		Math.Max(a, b)
-		
 	// Returns the positive square root of the given value
 	inline cs(System) float sqrt: float value // The value to return the square root of
 		MathF.Sqrt(value)
@@ -1536,11 +1413,28 @@ global skipInit unit Math
 		                 float exponent
 		Math.Pow(base, exponent)
 		
-	// The ratio of a circle's circumference to its diameter
-	inline cs float PI() 3.141592653589793f
+	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
 	
-	// The ratio of a circle's radius to its diameter
-	inline cs float TwoPI() 6.283185307179586f
+	// The angle of a half rotation (the ratio of a circle's circumference to its diameter)
+	global const float pi = 3.141592653589793
+
+	// The angle of a half rotation (pi)
+	const float halfCircle = 3.141592653589793
+	
+	// The angle of a full rotation (the ratio of a circle's radius to its diameter)
+	const float twoPi = 6.283185307179586
+
+	// The angle of a full rotation (2*pi)
+	const float fullCircle = 6.283185307179586
+
+	// The angle of a quarter rotation
+	const float halfPi = 1.5707963267948966
+
+	// The angle of a quarter rotation (pi/2)
+	const float quarterCircle = 1.5707963267948966
+	
+	// The angle of a eighth rotation
+	const float quarterPi = 0.7853981633974483
 	
 	internal inline cs(System) float nativeSin: float angle // The angle in radians
 		Math.Sin(angle)
@@ -1551,26 +1445,28 @@ global skipInit unit Math
 	internal inline cs(System) float nativeTan: float angle // The angle in radians
 		Math.Tan(angle)
 		
-	// Returns the sine of an angle in turns
-	sin: Angle angle // The angle in turns (one full rotation is 1)
+	// Returns the sine of an angle in radians
+	sin: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= twoPi
 	    float result = cast(angle - .5 - Math.floor(angle));
 	    result *= 16 * (Math.abs(result) - .5);
 	    result += .225 * result * (Math.abs(result) - 1);
 	    return result;
 
-	// Returns the cosine of an angle in turns
-	cos: Angle angle // The angle in turns (one full rotation is 1)
+	// Returns the cosine of an angle in radians
+	cos: float angle // The angle in radians (one full rotation is 2*pi)
+		angle /= twoPi
 	    float result = cast(angle - .25 - Math.floor(angle + .25))
 	    result *= 16 * (Math.abs(result) - .5)
 	    result += .225 * result * (Math.abs(result) - 1)
 	    return result
 	
-	// Returns the tangent of an angle in turns
-	tan: Angle angle
+	// Returns the tangent of an angle in radians
+	tan: float angle
 		return sin(angle) / cos(angle)
 		
-	// Returns the inverse tangent in turns
-	Angle atan2: float y, float x
+	// Returns the inverse tangent in radians
+	float atan2: float y, float x
 		float r, angle;
 		float abs_y = Math.abs(y) + .00000000001
 		if x < 0.0
@@ -1707,57 +1603,46 @@ global skipInit unit Math
 		if targetValue < value: return Math.max(value - speed, targetValue)
 			                    return value
 			
-	moveTowards: Angle value
-		         Angle targetValue
-		         Angle speed = 1
+	moveTowardsAngle: float value
+		              float targetValue
+		              float speed = 1
 		if targetValue > value: return Math.min(value + speed, targetValue)
 		if targetValue < value: return Math.max(value - speed, targetValue)
 			                    return value
 			
-	limit: int value
+	clamp: int value
 		   int min
 		   int max
 		if value < min: return min
 		if value > max: return max
 			            return value
 	
-	limit: int value
+	clamp: int value
 		   int max
 		if value > max: return max
 			            return value
 	
-	limit: int value
+	clamp: int value
 		   int min
 		if value < min: return min
 			            return value
 	
-	limit: float value
+	clamp: float value
 		   float min
 		   float max
 		if value < min: return min
 		if value > max: return max
 			            return value
 	
-	limit: float value
+	clamp: float value
 		   float max
 		if value > max: return max
 			            return value
 			
-	limit: float value
+	clamp: float value
 		   float min
 		if value < min: return min
 			            return value
-			
-	// Maps a value from an input range to an output range
-	map: Time value        // The input value 
-		 Time from = 0     // The beginning of the input range
-		 Time to = 1       // The end of the input range
-		 float start = 0   // The lowest possible output value, will be returned for values smaller than "from".
-		 float target = 1  // The highest possible output value, will be returned for values larger than "to".
-		if value <= from: return start
-		if value >= to:   return target
-		let factor = (value-from) / (to-from)
-		return start + (target-start) * factor
 			
 	// Maps a value from an input range to an output range
 	map: float value       // The input value 
@@ -1788,77 +1673,21 @@ global skipInit unit Math
 // 	add: float value
 // 		total += value
 // 		count++
-// 	average := total / count		
-
-transient float Angle
-	inline cs float toFloat() this
-	inline cs string toString() this.toString()
-		
-	// Returns true if the angle is not zero
-	inline cs bool toBool := this
+// 	average => total / count		
 	
-	inline cs Angle operator +  (Angle a, Angle b) a+b
-	inline cs Angle operator +  (Angle a, int b) a+b
-	inline cs Angle operator +  (Angle a, float b) a+b
-	
-	inline cs Angle operator -  (Angle a, Angle b) a-b
-	inline cs Angle operator -  (Angle a, int b) a-b
-	inline cs Angle operator -  (Angle a, float b) a-b
-	inline cs Angle operator -  (Angle a) -a
-	
-	inline cs float operator /  (Angle a, Angle b) a/b
-	inline cs Angle operator /  (Angle a, int b) a/b
-	inline cs Angle operator /  (Angle a, float b) a/b
-	
-	inline cs Angle operator *  (Angle a, int b) a*b
-	inline cs Angle operator *  (Angle a, float b) a*b
-	inline cs Angle operator *  (int a, Angle b) a*b
-	inline cs Angle operator *  (float a, Angle b) a*b
-	
-	inline cs Angle operator %  (Angle a, int b) a%b
-	inline cs Angle operator %  (Angle a, Angle b) a%b
-	
-	inline cs bool  operator <  (Angle a, Angle b) a<b
-	inline cs bool  operator <= (Angle a, Angle b) a<=b
-	inline cs bool  operator >  (Angle a, Angle b) a>b
-	inline cs bool  operator >= (Angle a, Angle b) a>=b
-	
-	inline cs bool  operator == (Angle a, Angle b) a==b
-	inline cs bool  operator == (Angle a, int b) a==b
-	inline cs bool  operator == (Angle a, float b) a==b
-	
-	inline cs bool  operator != (Angle a, Angle b) a!=b
-	inline cs bool  operator != (Angle a, int b) a!=b
-	inline cs bool  operator != (Angle a, float b) a!=b
-	
-	inline cs float in: AngleUnit unit
-		(unit==1 ? this*Math.TwoPI : unit==2 ? this*360 : unit==3 ? this*400 : this)
-		
-enum AngleUnit
-	turns // Turn (one full rotation is 1)
-	rad   // Radians (one full rotation is 2π)
-	deg   // Degrees (one full rotation is 360)
-	grad  // Gradiants (one full rotation is 400)
-		
-skipInit transient float Time
-	// // The largest possible time value
-	// const inline cs Time maxValue := Number.MAX_VALUE
-	
-	// // The smallest possible time value
-	// const inline cs Time minValue := Number.MIN_VALUE
-	
-	static inline cs(UnityEngine) float deltaTime() UnityEngine.Time.deltaTime
+struct float	
+	static inline cs(UnityEngine) float deltaTime() UnityEngine.float.deltaTime
 	
 	// // The number of milliseconds elapsed since January 1, 1970
 	static float now
 	
-	static internal inline cs(System) float realTime := (float)(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond)
+	static internal inline cs(System) float realTime => (float)(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond)
 
 	// // The current frame
 	static int frame
 	
-	// static Time fromTimeString(string timeString)
-	// 	Time value = 0
+	// static float fromTimeString(string timeString)
+	// 	float value = 0
 	// 	int colon1 = timeString.indexOf(":")
 	// 	if(colon1 == -1)
 	// 		value += int(timeString)*3600000
@@ -1872,7 +1701,7 @@ skipInit transient float Time
 	// 			value += int(timeString.substring(colon2+1))*1000
 	// 	return value
 		
-	// static inline cs Time fromIsoString: string isoString
+	// static inline cs float fromIsoString: string isoString
 	// 	new Date(isoString).getTime()
 		
 	// inline cs float toFloat() this
@@ -1880,12 +1709,12 @@ skipInit transient float Time
 	// inline cs string toString() this.toString()
 		
 	// // Returns true if the time is not zero
-	// inline cs bool toBool := this
+	// inline cs bool toBool => this
 	
-	// inline cs int milliseconds := Math.floor((this %    1000)          ) 
-	// inline cs int seconds      := Math.floor((this %   60000) /    1000) 
-	// inline cs int minutes      := Math.floor((this % 3600000) /   60000) 
-	// inline cs int hours        := Math.floor((this          ) / 3600000)
+	// inline cs int milliseconds => Math.floor((this %    1000)          ) 
+	// inline cs int seconds      => Math.floor((this %   60000) /    1000) 
+	// inline cs int minutes      => Math.floor((this % 3600000) /   60000) 
+	// inline cs int hours        => Math.floor((this          ) / 3600000)
 		
 	// // (31.12.)
 	// inline cs string dayMonthString(language = Loca.language) new Date(this).dayMonthString(language)
@@ -1919,31 +1748,6 @@ skipInit transient float Time
 	
 	// // (31-12-2000 23-59-59)
 	// inline cs string invariantDayMonthYearHourMinuteSecondString() new Date(this).invariantDayMonthYearHourMinuteSecondString()
-			
-	inline cs Time  operator +  (Time a, Time b) a+b
-	inline cs Time  operator +  (Time a, int b) a+b
-	inline cs Time  operator +  (Time a, float b) a+b
-	
-	inline cs Time  operator -  (Time a, Time b) a-b
-	inline cs Time  operator -  (Time a, int b) a-b
-	inline cs Time  operator -  (Time a, float b) a-b
-	
-	inline cs float operator /  (Time a, Time b) a/b
-	inline cs Time  operator /  (Time a, int b) a/b
-	inline cs Time  operator /  (Time a, float b) a/b
-	
-	inline cs Time  operator *  (Time a, int b) a*b
-	inline cs Time  operator *  (Time a, float b) a*b
-	inline cs Time  operator *  (int a, Time b) a*b
-	inline cs Time  operator *  (float a, Time b) a*b
-	
-	inline cs Time  operator %  (Time a, int b) a%b
-	inline cs Time  operator %  (Time a, Time b) a%b
-	
-	inline cs bool  operator <  (Time a, Time b) a<b
-	inline cs bool  operator <= (Time a, Time b) a<=b
-	inline cs bool  operator >  (Time a, Time b) a>b
-	inline cs bool  operator >= (Time a, Time b) a>=b
 	
 	// static measure: void() do
 	// 	let startTime = preciseTime
@@ -1955,7 +1759,7 @@ skipInit transient float Time
 		
 	// cs static void startTimer() window._timerStart = performance.now()
 	// cs static void printTimer(string text) log(text+": "+(performance.now()-window._timerStart))
-	// static inline cs float preciseTime := performance.now()
+	// static inline cs float preciseTime => performance.now()
 		
 enum TimeUnit
 	ms   // Milliseconds
@@ -1978,22 +1782,22 @@ enum TimeUnit
 		
 	// inline cs Date() new Date(Time_now)
 	
-	// inline cs int year := this.getFullYear()
-	// inline cs int month := (this.getMonth()+1)
-	// inline cs int day := this.getDate()
-	// inline cs int dayOfWeek := this.getDay()
+	// inline cs int year	=> this.getFullYear()
+	// inline cs int month	=> (this.getMonth()+1)
+	// inline cs int day	=> this.getDate()
+	// inline cs int dayOfWeek	=> this.getDay()
 		
-	// inline cs int hour := this.getHours()
-	// inline cs int minute := this.getMinutes()
-	// inline cs int second := this.getSeconds()
+	// inline cs int hour	=> this.getHours()
+	// inline cs int minute	=> this.getMinutes()
+	// inline cs int second	=> this.getSeconds()
 		
-	// inline cs string twoDigitMonth := (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitDay := this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitHour := this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cs string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitMonth => (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitDay => this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitHour => this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitMinute => this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cs string twoDigitSecond => this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 		
-	// inline cs Time timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	// inline cs float timeOfDay => this.getHours()*3600000 + this.getMinutes()*60000
 	
 	// private static string toTwoDigitString: int value
 	// 	return value < 10 ? "0"+value.toString : value.toString
@@ -2052,7 +1856,7 @@ enum TimeUnit
 	// 	return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	// // The number of milliseconds elapsed since January 1, 1970
-	// inline cs Time time := this.getTime()
+	// inline cs float time => this.getTime()
 		
 	// // The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	// cs string isoString()
@@ -2072,12 +1876,12 @@ enum TimeUnit
 	// 		dif + pad(Math.floor(Math.abs(tzo) / 60)) +
 	// 		':' + pad(Math.abs(tzo) % 60);
 
-	// static inline cs Date now := new Date(Time_now)
-	// static inline cs Date fromTime(Time time) new Date(time)
+	// static inline cs Date now => new Date(Time_now)
+	// static inline cs Date fromTime(float time) new Date(time)
 	// static inline cs Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
 	
 	// // Returns the real time, even during replay. Be careful: This can break the replay.
-	// static inline cs Date realtime := new Date()
+	// static inline cs Date realtime => new Date()
 	
 class Range
 	int from // The start of the range

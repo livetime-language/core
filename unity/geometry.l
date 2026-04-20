@@ -17,22 +17,19 @@ cs(UnityEngine) struct Vector3
 	static inline cs(UnityEngine) Vector3 zero() Vector3.zero
 		
 	// A string representation of the vector
-	string toString := "({x} {y} {z})"
+	string toString => "({x} {y} {z})"
 	
-	// Returns true if the vector is not equal to Vector2.none
-	bool toBool := (x != float.infinity || y != float.infinity)
+	// Returns true if the vector is not equal to Vector2.None
+	bool toBool => (x != float.infinity || y != float.infinity)
 	
 	// Creates a copy of the vector with the same values
-	// Vector2 clone() := {x, y, location}
+	// Vector2 clone() => {x, y, location}
 		
-	// Vector2 operator = (Vector2 a, Vector2 b) a.x = b.x; a.y = b.y; a.location = b.location; return a
-	
 	inline cs Vector3 operator + (Vector3 a, Vector3 b) a + b
 	inline cs Vector3 operator - (Vector3 a, Vector3 b) a - b
 	
 	inline cs Vector3 operator * (Vector3 a, Vector3 b) a * b
 	inline cs Vector3 operator * (Vector3 a, float b) a * b
-	inline cs Vector3 operator * (Vector3 a, Time b) a * b
 	// Vector2 operator * (float a, Vector2 b)   return {a*b.x, a*b.y, b.location}
 	// Vector2 operator * (Vector2 vector, Matrix2D matrix)
 	// 	return {
@@ -86,33 +83,33 @@ cs(UnityEngine) struct Vector3
 	// bool operator <= (Vector2 a, float length) var x = a.x, y = a.y; return Math.sqrt(x*x + y*y) <= length
 	
 	// // The length of the vector
-	// length := Math.sqrt(x * x + y * y)
+	// length => Math.sqrt(x * x + y * y)
 		
 	// // A vector that is orthogonal to the existing vector
-	// orthogonal := Vector2(x:-y, y:x)
+	// orthogonal => Vector2(x:-y, y:x)
 		
 	// // A vector with the sign of each coordinate flipped
-	// inverse := Vector2(-x, -y)
+	// inverse => Vector2(-x, -y)
 		
 	// A vector with each coordinate rounded to the closest integer value
-	Vector3 rounded := {Math.round(x), Math.round(y), Math.round(z)}
+	Vector3 rounded => {Math.round(x), Math.round(y), Math.round(z)}
 	
 	// // A vector with each coordinate rounded down to an integer value
-	// floor := IntVector2(Math.floor(x), Math.floor(y))
+	// floor => IntVector2(Math.floor(x), Math.floor(y))
 		
 	// // A vector with each coordinate rounded up to an integer value
-	// ceil := IntVector2(Math.ceil(x), Math.ceil(y))
+	// ceil => IntVector2(Math.ceil(x), Math.ceil(y))
 		
 	// // A vector with the absolute value of each coordinate
-	// abs := Vector2(Math.abs(x), Math.abs(y))
+	// abs => Vector2(Math.abs(x), Math.abs(y))
 		
 	// // The larger of the two coordinates
-	// max := x > y ? x : y
+	// max => x > y ? x : y
 	
 	// // The smaller of the two coordinates
-	// min := x < y ? x : y
+	// min => x < y ? x : y
 	
-	// rotate: Angle angle // The angle in turns (one full rotation is 1)
+	// rotate: float angle // The angle in radians (one full rotation is 2*pi)
 	// 	var x = this.x, y = this.y
 	// 	var sn = Math.sin(angle)
 	// 	var cs = Math.cos(angle)
@@ -128,7 +125,7 @@ cs(UnityEngine) struct Vector3
 	// manhattanDistanceTo: Vector2 value // The second vector
 	// 	return Math.abs(x - value.x) + Math.abs(y - value.y)
 
-	// // The angle to another vector in turns (one full rotation is 1)
+	// // The angle to another vector in radians (one full rotation is 2*pi)
 	// angleTo: Vector2 value // The second vector
 	// 	return Math.getAngleForVector(value - this)
 
@@ -175,7 +172,7 @@ cs(UnityEngine) struct Vector3
 		         float speed = 1        // The distance to move by
 		var delta = targetPosition - this
 		if delta.x != 0 || delta.y != 0 || delta.z != 0
-			delta = delta.normalized * (speed * Time.deltaTime)
+			delta = delta.normalized * (speed * DateTime.deltaTime)
 			if delta.x > 0: x = Math.min(x + delta.x, targetPosition.x)
 			else            x = Math.max(x + delta.x, targetPosition.x)
 			if delta.y > 0: y = Math.min(y + delta.y, targetPosition.y)
@@ -265,21 +262,19 @@ cs(UnityEngine Vector2Int) struct IntVector2
 	static inline cs(UnityEngine) IntVector2 zero() Vector2Int.zero
 		
 	// A string representation of the vector
-	string toString := "({x} {y})"
+	string toString => "({x} {y})"
 	
 	// Returns true if the vector is not equal to IntVector2.none
-	bool toBool := (x != int.minValue || y != int.minValue)
+	bool toBool => (x != int.minValue || y != int.minValue)
 	
-	implicit Vector2 toVector2 := {x, y}
-	implicit Vector3 toVector3 := {x, y:0, z:y}
+	implicit Vector2 toVector2 => {x, y}
+	implicit Vector3 toVector3 => {x, y:0, z:y}
 	
 	inline cs IntVector2 operator + (IntVector2 a, IntVector2 b) a + b
 	inline cs IntVector2 operator - (IntVector2 a, IntVector2 b) a - b
 	
 	inline cs IntVector2 operator * (IntVector2 a, IntVector2 b) a * b
 	inline cs IntVector2 operator * (IntVector2 a, float b) a * b
-	inline cs IntVector2 operator * (IntVector2 a, Time b) a * b
-	
 	// IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; return a
 	
 	// IntVector2 operator +  (IntVector2 a, IntVector2 b) return IntVector2(a.x+b.x, a.y+b.y)
@@ -313,40 +308,40 @@ cs(UnityEngine Vector2Int) struct IntVector2
 	// bool operator <= (IntVector2 a, IntVector2 b) return a.x <= b.x && a.y <= b.y
 	
 	// The length of the vector
-	length := Math.sqrt(x * x + y * y)
+	length => Math.sqrt(x * x + y * y)
 		
 	// A vector that is orthogonal to the existing vector
-	orthogonal := IntVector2(x:-y, y:x)
+	orthogonal => IntVector2(x:-y, y:x)
 		
 	// A vector with the sign of each coordinate flipped
-	inverse := IntVector2(-x, -y)
+	inverse => IntVector2(-x, -y)
 		
 	// A vector with the absolute value of each coordinate
-	abs := IntVector2(Math.abs(x), Math.abs(y))
+	abs => IntVector2(Math.abs(x), Math.abs(y))
 		
 	// The larger of the two coordinates
-	max := x > y ? x : y
+	max => x > y ? x : y
 	
 	// The smaller of the two coordinates
-	min := x < y ? x : y
+	min => x < y ? x : y
 	
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		   IntVector2 max
 		return IntVector2(
-			Math.limit x, min:min.x, max:max.x
-			Math.limit y, min:min.y, max:max.y
+			Math.clamp x, min:min.x, max:max.x
+			Math.clamp y, min:min.y, max:max.y
 		)
 		
-	limit: IntVector2 max
+	clamp: IntVector2 max
 		return IntVector2(
-			Math.limit x, max:max.x
-			Math.limit y, max:max.y
+			Math.clamp x, max:max.x
+			Math.clamp y, max:max.y
 		)
 		
-	limit: IntVector2 min
+	clamp: IntVector2 min
 		return IntVector2(
-			Math.limit x, min:min.x
-			Math.limit y, min:min.y
+			Math.clamp x, min:min.x
+			Math.clamp y, min:min.y
 		)
 		
 	// Interpolates linearly to another vector
@@ -371,7 +366,7 @@ cs(UnityEngine Vector2Int) struct IntVector2
 	manhattanDistanceTo: IntVector2 value // The second vector
 		return Math.abs(x - value.x) + Math.abs(y - value.y)
 
-	// The angle to another vector in turns (one full rotation is 1)
+	// The angle to another vector in radians (one full rotation is 2*pi)
 	angleTo: IntVector2 value // The second vector
 		return Math.getAngleForVector(value - this)
 		
@@ -393,22 +388,21 @@ cs(UnityEngine Vector3Int) struct IntVector3
 // 	const IntVector2 zero = {0, 0, null}
 	
 // 	// Creates a copy of the vector with the same values
-// 	IntVector2 clone := {x, y, location}
+// 	IntVector2 clone => {x, y, location}
 		
 // 	// A string representation of the vector
-// 	string toString := "({x} {y})"
+// 	string toString => "({x} {y})"
 	
 // 	// Returns true if the vector is not equal to IntVector2.none
-// 	bool toBool := (x != int.minValue || y != int.minValue)
+// 	bool toBool => (x != int.minValue || y != int.minValue)
 	
-// 	implicit Vector2 toVector2 := {x, y, location}
+// 	implicit Vector2 toVector2 => {x, y, location}
 	
 	inline cs IntVector3 operator + (IntVector3 a, IntVector3 b) a + b
 	inline cs IntVector3 operator - (IntVector3 a, IntVector3 b) a - b
 	
 	inline cs IntVector3 operator * (IntVector3 a, IntVector3 b) a * b
 	inline cs IntVector3 operator * (IntVector3 a, float b) a * b
-	inline cs IntVector3 operator * (IntVector3 a, Time b) a * b
 	
 // 	// IntVector2 operator = (IntVector2 a, IntVector2 b) a.x = b.x; a.y = b.y; return a
 	
@@ -463,40 +457,40 @@ cs(UnityEngine Vector3Int) struct IntVector3
 // 	bool operator <= (IntVector2 a, IntVector2 b) return a.x <= b.x && a.y <= b.y
 	
 // 	// The length of the vector
-// 	length := Math.sqrt(x * x + y * y)
+// 	length => Math.sqrt(x * x + y * y)
 		
 // 	// A vector that is orthogonal to the existing vector
-// 	orthogonal := IntVector2(x:-y, y:x)
+// 	orthogonal => IntVector2(x:-y, y:x)
 		
 // 	// A vector with the sign of each coordinate flipped
-// 	inverse := IntVector2(-x, -y)
+// 	inverse => IntVector2(-x, -y)
 		
 // 	// A vector with the absolute value of each coordinate
-// 	abs := IntVector2(Math.abs(x), Math.abs(y))
+// 	abs => IntVector2(Math.abs(x), Math.abs(y))
 		
 // 	// The larger of the two coordinates
-// 	max := x > y ? x : y
+// 	max => x > y ? x : y
 	
 // 	// The smaller of the two coordinates
-// 	min := x < y ? x : y
+// 	min => x < y ? x : y
 	
-// 	limit: IntVector2 min
+// 	clamp: IntVector2 min
 // 		   IntVector2 max
 // 		return IntVector2(
-// 			Math.limit x, min:min.x, max:max.x
-// 			Math.limit y, min:min.y, max:max.y
+// 			Math.clamp x, min:min.x, max:max.x
+// 			Math.clamp y, min:min.y, max:max.y
 // 		)
 		
-// 	limit: IntVector2 max
+// 	clamp: IntVector2 max
 // 		return IntVector2(
-// 			Math.limit x, max:max.x
-// 			Math.limit y, max:max.y
+// 			Math.clamp x, max:max.x
+// 			Math.clamp y, max:max.y
 // 		)
 		
-// 	limit: IntVector2 min
+// 	clamp: IntVector2 min
 // 		return IntVector2(
-// 			Math.limit x, min:min.x
-// 			Math.limit y, min:min.y
+// 			Math.clamp x, min:min.x
+// 			Math.clamp y, min:min.y
 // 		)
 		
 // 	// Interpolates linearly to another vector
@@ -521,7 +515,7 @@ cs(UnityEngine Vector3Int) struct IntVector3
 // 	manhattanDistanceTo: IntVector2 value // The second vector
 // 		return Math.abs(x - value.x) + Math.abs(y - value.y)
 
-// 	// The angle to another vector in turns (one full rotation is 1)
+// 	// The angle to another vector in radians (one full rotation is 2*pi)
 // 	angleTo: IntVector2 value // The second vector
 // 		return Math.getAngleForVector(value - this)
 		
@@ -537,10 +531,10 @@ class List<T>
 
 unit Math
 	// Returns the arctangent of the quotient of the given values
-	Angle getAngleForVector: Vector2 vector
+	float getAngleForVector: Vector2 vector
 		return Math.atan2(vector.y, vector.x)
 		
-	Vector2 getVectorForAngle: Angle angle      // The angle in turns (one full rotation is 1)
+	Vector2 getVectorForAngle: float angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
 		                       float radius = 1
 		return new Vector2(Math.cos(angle)*radius, Math.sin(angle)*radius)
 		
@@ -557,18 +551,18 @@ unit Math
 	// 	var x4    = endB.x,   y4 = endB.y
 		
 	// 	// Check if none of the lines are of length 0
-	// 	if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+	// 	if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 	// 	// compute line params
 	// 	var denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-	// 	if (denominator == 0) return Vector2.none // lines are parallel
+	// 	if (denominator == 0) return Vector2.None // lines are parallel
 	// 	var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 	// 	var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 	// 	// is the intersection along the segments
 	// 	if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 	// 	|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-	// 		return Vector2.none
+	// 		return Vector2.None
 			
 	// 	// Return a object with the x and y coordinates of the intersection
 	// 	return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -690,7 +684,7 @@ global transient unit System
 // 		var x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 // 		var y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 // 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-// 		else                                                                  return Vector2.none
+// 		else                                                                  return Vector2.None
 		
 // 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 // 	getGridPosition: Vector2 screenPos // The screen position
@@ -706,8 +700,8 @@ global transient unit System
 		
 // 	limitToInside: IntVector2 position
 // 		return IntVector2(
-// 			Math.limit position.x, min:0, max:size.x-1
-// 			Math.limit position.y, min:0, max:size.y-1
+// 			Math.clamp position.x, min:0, max:size.x-1
+// 			Math.clamp position.y, min:0, max:size.y-1
 // 		)
 		
 // 	getScreenVector: Vector2 worldVector
@@ -739,11 +733,11 @@ struct Direction
 	int index
 	IntVector2 vector
 	IntVector3 vector3
-	Angle angle
+	float angle
 	Quaternion quaternion
 	
-	override toString := name
-	implicit toQuaternion := quaternion
+	override toString	=> name
+	implicit toQuaternion	=> quaternion
 		
 // enum LineType: Line, Ray, Segment
 	
@@ -763,23 +757,23 @@ struct Direction
 // 		var typeB = other.type
 		
 // 		// Check if none of the lines are of length 0
-// 		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
+// 		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
 
 // 		// compute line params
 // 		var denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-// 		if (denominator == 0) return Vector2.none // lines are parallel
+// 		if (denominator == 0) return Vector2.None // lines are parallel
 // 		var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 // 		var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 // 		// is the intersection along the segments
 // 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 // 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-// 			return Vector2.none
+// 			return Vector2.None
 			
 // 		// Return a object with the x and y coordinates of the intersection
 // 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-// 	toString := "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
+// 	toString => "{start.x.format(fractionDigits:2)} {start.y.format(fractionDigits:2)} -> {end.x.format(fractionDigits:2)} {end.y.format(fractionDigits:2)}"
 
 // class Rect
 // 	Vector2 position, size

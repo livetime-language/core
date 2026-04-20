@@ -5,7 +5,7 @@
 //     setup
 //     onConnectedToServer
 //     sendJoinMessage
-//     onJoinResponse     ->  PeerNetwork.initiate for each user already in the room
+//     onJoinResponse            ->    PeerNetwork.initiate for each user already in the room
 //     ping
 //     onPong
 //     startConnected 
@@ -16,34 +16,35 @@
 //     setupRemoteMedia
 //     setupDataChannel
 //     onNegotiationNeeded
-//     createOffer
-//     onAnwserReceived
+//     createOffer               ->    onReceivedOffer called on the peer we are connection to
+//                                         \/
+//     onReceivedAnswer          <-    createAnswer
 //     onConnectionStateChange
 
-transient immutable Signal
+internal transient immutable Signal
 	int receiverId
 	string type
 	string sdp
 
-transient immutable IceMessage
+internal transient immutable IceMessage
 	int receiverId
 	object iceCandidate
 	
 enum VideoShape: Rectangle, Square, Circle
 enum RelayMode: Never, Auto, Always
 		
-immutable MediaDeviceInfo
+internal transient immutable MediaDeviceInfo
 	string deviceId
 	string groupId
 	string kind
 	string label
 
-immutable MediaDevices
+internal transient MediaDevices
 	MediaDeviceInfo[] audioInput
 	MediaDeviceInfo[] audioOutput
 	MediaDeviceInfo[] videoInput
 	
-transient skipInit unit PeerNetwork
+internal transient skipInit unit PeerNetwork
 	RelayMode relayMode = Auto
 	
 	internal enableVideo = true
@@ -58,7 +59,7 @@ transient skipInit unit PeerNetwork
 		setupRemoteMedia user
 		
 	tick
-		let now = Time.realTime
+		let now = PlainDate.realTime
 		
 		for input.internalUsers as user
 			if . and not .local
@@ -79,8 +80,8 @@ transient skipInit unit PeerNetwork
 				// !!! EVALUATE Reconned immediately when failed
 				// or .connectionState == "failed"
 					
-					core.log "[{Time.frame}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
-					.startToConnectTime = user.lastIncomingMessageTime = Time.realTime
+					core.log "[{Time.ticks}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
+					.startToConnectTime = user.lastIncomingMessageTime = PlainDate.realTime
 					statistics.scheduleSendIn 3 seconds
 					
 					if user.offerByMe
@@ -296,7 +297,7 @@ transient skipInit unit PeerNetwork
 		}
 		
 	onConnected: InternalUser user
-		user.startDataChannelTime = user.lastIncomingMessageTime = Time.realTime
+		user.startDataChannelTime = user.lastIncomingMessageTime = PlainDate.realTime
 		logConnectionType user
 		
 		if user.offerByMe
@@ -308,12 +309,13 @@ transient skipInit unit PeerNetwork
 			core.log "#peer Connected on try {user.connectionTries}, {connectedCount} of {offerCount} my offers are connected"
 			
 			if input.internalUsers.none.offerByMe and not .connected
-				statistics.connectTime = Time.preciseTime - statistics.startTime
+				statistics.connectTime = PlainDate.preciseTime - statistics.startTime
 				core.log "#peer All my offers are connected after {statistics.connectTime} ms and {retries} retries"
 			
 	disconnect: InternalUser user
+		core.log "####### disconnect"
 		user.dataChannels.each.close()
-		if user.peerConnection != null: user.peerConnection.close
+		if user.peerConnection != null then user.peerConnection.close
 		input.internalUsers[user.id] = null
 		
 	js void setBitrate: InternalUser user, float scaleResolutionDownBy = 1, float maxBitrate
@@ -436,18 +438,19 @@ transient skipInit unit PeerNetwork
 		}
 	
 	private onMessage: InternalUser user, Buffer buffer
-		user.lastIncomingMessageTime = Time.realTime
+		user.lastIncomingMessageTime = PlainDate.realTime
 		NetworkMessageType type = cast buffer.readInt8
-		if type == Tick:         onTick user, buffer; else
-		if type == Ping:         onPing user, buffer; else
-		if type == Pong:         onPong user, buffer;
+		switch type
+			Tick	onTick user, buffer
+			Ping	onPing user, buffer
+			Pong	onPong user, buffer
 			
 	sendInputs: int inputFrame
-		for input.internalUsers -> receiver if receiver
-			let inputs = input.localUser.inputs
+		let inputs = input.localUser.inputs
+		for input.internalUsers as receiver if receiver
 			let length = inputs.writePos - receiver.receivedMyInputsUpToPos
 			
-			if receiver.dataChannels
+			if not receiver.local and receiver.dataChannels
 				sendBuffer.reset
 				sendBuffer.writeInt8 cast NetworkMessageType.Tick
 				sendBuffer.writeInt inputFrame                       // I send inputs up to and including this frame
@@ -458,17 +461,15 @@ transient skipInit unit PeerNetwork
 				sendBuffer.writeFloat64 core.checksums[core.lastChecksumFrame] || 0  // The checksum of the last certain frame
 				
 				core.tickMessageSize = send ., sendBuffer
+				
 				if core.verbose
 					if receiver.receivedMyInputsUpToPos > inputs.writePos
 						core.log "[{inputFrame}] <{receiver.id}> #send -->> {receiver.receivedMyInputsUpToPos}->{inputs.writePos} id:{receiver.dataChannels[0]._id}"
 					else
 						core.log "[{inputFrame}] <{receiver.id}> #send -->>"
 				
-			if length
-				print "Sending inputs", inputs.writePos, receiver.receivedMyInputsUpToPos, length
-				core.storeInputsToDB input.localUser
-			core.storeRoomToDB
-			
+				core.log "[{inputFrame}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {receiver.receivedMyInputsUpToPos} and I'm <{input.localUser.id}> sending {length} bytes, from {receiver.receivedMyInputsUpToPos} to {inputs.writePos}"
+		
 	private onTick: InternalUser sender, Buffer buffer
 		let inputFrame = buffer.readInt                     // The sender sent inputs up to and including this frame
 		
@@ -478,7 +479,9 @@ transient skipInit unit PeerNetwork
 			sender.receivedMyInputsUpToPos = buffer.readInt // The sender received my inputs up to this pos
 			
 			sender.inputFrame = inputFrame
-			buffer.readBuffer sender.inputs, incomingInputsWritePos
+			let length = buffer.readBuffer sender.inputs, incomingInputsWritePos
+			
+			core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
 			
 			if core.verbose
 				if sender.inputs.writePos > incomingInputsWritePos
@@ -489,11 +492,14 @@ transient skipInit unit PeerNetwork
 			// Checksum
 			int checksumFor = buffer.readInt
 			float checksum = buffer.readFloat64
-			if core.verbose: core.log "<{sender.id}> #{checksumFor} {checksum}"
+			if core.verbose then core.log "<{sender.id}> #{checksumFor} {checksum}"
 			
 			let myChecksum = core.checksums[checksumFor]
 			if !myChecksum                           core.checksums[checksumFor] = checksum; else
-			if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
+			if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine: myChecksum theirs:checksum
+				
+			// Store incoming inputs
+			if length then core.storeInputsToDB sender
 		
 	js void onReceivedAnswer: InternalUser user, string sdp
 		core.log("#peer <"+user.id+"> Received Answer");
@@ -538,7 +544,7 @@ transient skipInit unit PeerNetwork
 	// --------------------------------------------- Ping/Pong ---------------------------------------------
 	
 	ping
-		for input.internalUsers -> user
+		for input.internalUsers as user
 			if user and user.dataChannels
 				sendBuffer.reset
 				sendBuffer.writeInt8 cast NetworkMessageType.Ping
@@ -557,7 +563,7 @@ transient skipInit unit PeerNetwork
 		float pingTime = buffer.readFloat64
 		float pingPongTime = now - pingTime
 		let player = input.players.find.id == user.id
-			statistics.add "pingPongTime" userIndex:player.index, color:player.color, value:pingPongTime, set:3, isPerFrame:false
+			statistics.add "pingPongTime" userIndex:player.playerIndex, color:player.playerColor, value:pingPongTime, set:3, isPerFrame:false
 				
 	// --------------------------------------------- Checksum ---------------------------------------------
 	
@@ -567,14 +573,14 @@ transient skipInit unit PeerNetwork
 		sendBuffer.writeInt checksumFor
 		sendBuffer.writeFloat64 checksum
 		
-		for input.internalUsers -> user
+		for input.internalUsers as user
 			if user and user.dataChannels
 				send ., sendBuffer
 
 	onChecksum: InternalUser user, Buffer buffer
 		int checksumFor = buffer.readInt
 		float checksum = buffer.readFloat64
-		if core.verbose: core.log "<{user.id}> #{checksumFor} {checksum}"
+		if core.verbose then core.log "<{user.id}> #{checksumFor} {checksum}"
 		
 		let myChecksum = core.checksums[checksumFor]
 		if !myChecksum

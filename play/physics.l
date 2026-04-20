@@ -2,12 +2,13 @@ transient unit Physics
 	object world
 	float scale = 100
 	
-	js void start
+	js async void start
+		await Platform.openScript((_basePath || location.href.getUntilLast("/")+"/")+"lib/liquidfun.js")
 		if(window.world) _b2World_Delete(world)
 		window.world = new b2World(new b2Vec2(0, 10))
 		
 	js void step
-		if(window.world) window.world.Step(1/core.targetFps, 8, 3)
+		if(window.world) window.world.Step(1/core.ticksPerSecond, 8, 3)
 			
 	js void destroy: PhysicsBody body
 		world.DestroyBody(body.body)

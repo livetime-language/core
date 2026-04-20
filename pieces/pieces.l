@@ -24,7 +24,7 @@ Object Piece
 	// const minSize = 75 // EVAL
 	
 	Image image // The image of the piece
-	Angle angle // The rotation of the piece in turns (one full rotation is 1)
+	float angle // The rotation of the piece in radians (one full rotation is 2*pi)
 	
 	bool stackable
 	bool movable = true
@@ -32,7 +32,7 @@ Object Piece
 	bool flipable
 	
 	Image backImage
-	Side side
+	PieceSide side
 	int frame
 	
 	// Move
@@ -43,21 +43,21 @@ Object Piece
 	
 	// Rotate
 	private Touch rotateTouch
-	private Angle rotateOffset
-	private Angle targetAngle
+	private float rotateOffset
+	private float targetAngle
 	private bool rotatedOverThreshold
 	
-	Vector2 iconPos = Vector2.none
+	Vector2 iconPos = Vector2.None
 	Vector2 clickableMargin = {50,50}
 	
 	public Board board
 	private Player interactingPlayer
 	
-	private siblings := board ? board.objects : Framework.objects
+	private siblings => board ? board.objects : Framework.objects
 	onBoardChanged
 		
 	// Snap
-	visible Vector2 snappedAt = Vector2.none
+	visible Vector2 snappedAt = Vector2.None
 	onSnap
 	onUnsnap
 	onRotate
@@ -71,7 +71,7 @@ Object Piece
 			// if size.y < minSize: size.y = minSize
 		this.targetAngle = angle
 		
-	debugString := "(Piece pos:{position.x} {position.y} frame:{frame} side:{side} image:{image?.file} board:{board.toBool})"
+	debugString => "(Piece pos:{position.x} {position.y} frame:{frame} side:{side} image:{image?.file} board:{board.toBool})"
 	
 	finishTouch
 		rotateTouch = null
@@ -160,7 +160,7 @@ Object Piece
 					
 Piece Stack
 	private Piece[] objects
-	Side sideWhenRemoving = Front
+	PieceSide sideWhenRemoving = Front
 	
 	private int visibleObjects
 	private Vector2 basePosition
@@ -168,10 +168,10 @@ Piece Stack
 	
 	stackable = true
 	
-	Stack: Vector2 position, Side side = Back
+	Stack: Vector2 position, PieceSide side = Back
 		basePosition = position
 	
-	static create: Piece a, Piece b, Side side = Front
+	static create: Piece a, Piece b, PieceSide side = Front
 		Stack stack = {position:a.position, side:side}
 		stack.add a
 		stack.add b
@@ -202,7 +202,7 @@ Piece Stack
 		size = (b.position+{b.size.x/2, b.image.size.y/2}) - (a.position-{a.size.x/2, a.size.y/2})
 	
 	override tick
-		for math.limit(objects.length-shownObjectCount, min:0) to objects.length <- i
+		for math.clamp(objects.length-shownObjectCount, min:0) to objects.length <- i
 			let obj = objects[i]
 			let image = obj.backImage || obj.image
 			drawImage image, obj.position, frame:obj.frame%image.frames.length, size:obj.size
@@ -279,7 +279,7 @@ Piece Board
 		// Zoom
 		if zoomable	
 			onScrolllWithin position, size, by:visibleFor
-				float factor = zoomLookupTable[math.limit math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
+				float factor = zoomLookupTable[math.clamp math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
 				matrix.move event.position
 				matrix.scale {factor, factor}
 				matrix.move event.position*{-1,-1}
@@ -303,11 +303,11 @@ Board SmartBoard
 		return []
 			
 	snap: Piece currentObject, Vector2 position
-		Vector2 closestSpotPos = Vector2.none
+		Vector2 closestSpotPos = Vector2.None
 		float minDistance = int.maxValue
 		let positions = getValidPositions currentObject
 		
-		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.none
+		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.None
 			currentObject.position = snapToPosition
 			
 		if snapToPosition != currentObject.snappedAt
@@ -331,7 +331,7 @@ Board SpotBoard
 		spots.add spot
 	
 	snap: Piece currentObject, Vector2 position
-		Vector2 closestSpotPos = Vector2.none
+		Vector2 closestSpotPos = Vector2.None
 		float minDistance = int.maxValue
 		for spots -> spot
 			let spotPos = spot.getClosestPoint position, this.position
@@ -348,7 +348,7 @@ Board SpotBoard
 		
 class Spot
 	Vector2 pos
-	getClosestPoint(Vector2 touchPos, Vector2 boardPos) := pos + boardPos
+	getClosestPoint(Vector2 touchPos, Vector2 boardPos) => pos + boardPos
 	
 Spot SpotGrid
 	Vector2 cellSize
@@ -382,7 +382,7 @@ Piece Coin
 	private closestCoinType closestCoinType
 	private float distanceToClosest
 	
-	debugString := "(Coin {value} pos:{position.x} {position.y} dis:{distanceToClosest})"
+	debugString => "(Coin {value} pos:{position.x} {position.y} dis:{distanceToClosest})"
 	
 	override tick
 		if movable

@@ -1,10 +1,13 @@
 transient skipInit unit Platform
-	public inline js string url := location.href
-	public inline js string hostname := location.hostname
-	public protocolAndHost := hostname && hostname != "localhost" ? "https://"+hostname : "http://localhost"
-	public inline js int userAgent := navigator.userAgent.replace(/,/g," ")
-	public inline js float usedMemory := (performance.memory ? performance.memory.usedJSHeapSize : 0)
+	public inline js string url	=> location.href
+	public inline js string hostname	=> location.hostname
+	public protocolAndHost	=> !Platform.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
+	public inline js int userAgent	=> navigator.userAgent.replace(/,/g," ")
+	public inline js float usedMemory	=> (performance.memory ? performance.memory.usedJSHeapSize : 0)
 	
+	js string getAbsoluteUrl: string relativeUrl
+		return relativeUrl.startsWith("http") || relativeUrl.startsWith("data:") ? relativeUrl : _basePath+relativeUrl
+
 	js void setTitle: string title
 		document.title = title
 		
@@ -23,7 +26,7 @@ transient skipInit unit Platform
 		window.scrollTo(0,0)
 		
 	js void setLocalStorageObject: string key
-		                           any value
+		                           dynamic value
 		                           void() then = null
 		                           void() else = null
 		try {
@@ -33,7 +36,7 @@ transient skipInit unit Platform
 			else?.()
 		}
 		
-	js any getLocalStorageObject: string key
+	js dynamic getLocalStorageObject: string key
 		try {
 			let str = localStorage.getItem(key)
 			return str ? JSON.parse(str) : null 
@@ -41,15 +44,13 @@ transient skipInit unit Platform
 			return null
 		}
 			
-	js void setLocalStorageString: string key
+	js bool setLocalStorageString: string key
 		                           string value
-		                           void() then = null
-		                           void() else = null
 		try {
 			localStorage.setItem(key, value)
-			then?.()
+			return true
 		} catch(e) {
-			else?.()
+			return false
 		}
 		
 	js string getLocalStorageString: string key
@@ -59,6 +60,9 @@ transient skipInit unit Platform
 			return ""
 		}
 		
+	js void removeLocalStorageItem: string key
+		localStorage.removeItem(key)
+			
 	inline js void vibrate: int duration = 100
 		if(navigator.vibrate) navigator.vibrate(duration)
 		
@@ -66,7 +70,7 @@ transient skipInit unit Platform
 		alert(message)
 		log(message)
 		
-	inline js void delay: Time time
+	inline js void delay: float time // The delay in milliseconds
 		                  void() then
 		setTimeout(then, time)
 		
@@ -81,11 +85,11 @@ transient skipInit unit Platform
 	inline js void openLink: string url
 		window.open(url)
 		
-	js void setInterval: Time interval
+	js void setInterval: float interval // The interval in milliseconds
 		                 void() code
 		setInterval(code, interval)
 		
-	inline js int setTimeout: Time time
+	inline js int setTimeout: float time // The delay in milliseconds
 		                      void() code
 		setTimeout(code, time)
 		
@@ -93,11 +97,11 @@ transient skipInit unit Platform
 		clearTimeout(id)
 		
 	inline js void pushState: string url
-		                      object state = null
+		                      dynamic state = null
 		if(core.isPremiere) history.pushState(state, "", url);
 		
 	inline js void replaceState: string url
-		                         object state = null
+		                         dynamic state = null
 		if(core.isPremiere) history.replaceState(state, "", url);
 		
 	inline js void back
@@ -105,9 +109,19 @@ transient skipInit unit Platform
 		
 	inline js void reload
 		if(!Platform.isDebug) location.reload();
+
+	js void openScript: string url
+		return new Promise((resolve, reject) => {
+			let script = document.createElement("script")
+			script.src = url
+			script.onload = resolve
+			script.onerror = reject
+			document.body.appendChild(script)
+		})
 	
 unit file
 	js void saveText: string filename, string text
+		if(!core.isPremiere) return
 		var element = document.createElement("a");
 		element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
 		element.setAttribute("download", filename);
@@ -117,6 +131,7 @@ unit file
 		document.body.removeChild(element);
 		
 	js void saveBinary: string filename, Buffer buffer
+		if(!core.isPremiere) return
 		var binary = "";
 		var bytes = new Uint8Array(buffer.buffer);
 		var len = bytes.byteLength;
@@ -161,7 +176,7 @@ unit file
 		document.body.appendChild(fileInput)
 		fileInput.click()
 	
-HTMLElement
+internal HTMLElement
 	Vector2 position, size = {1920,100}
 	Color color
 	
@@ -179,7 +194,7 @@ HTMLElement
 			}
 		}
 		
-HTMLElement HTMLInput
+internal HTMLElement HTMLInput
 	fontSize = 50
 	borderColor = Color("ffffff00")
 	HorizontalAlignment align = Center
@@ -191,7 +206,7 @@ HTMLElement HTMLInput
 	HTMLInput
 		changeCallbackId = networkData.addCallback
 			value = .
-			if not core.isPremiere: this.element.value = .
+			if not core.isPremiere then this.element.value = .
 				
 		enterCallbackId = networkData.addCallback
 			value = .
@@ -236,29 +251,26 @@ HTMLElement HTMLInput
 		// this.element.style.height = "{size.y}px"
 		// this.element.style.font = "{fontSize}px OpenSans"
 		
-IndexedDBIndex
+internal IndexedDBIndex
 	string name
 	string[] keyPaths
 	
 	IndexedDBIndex
-		if not keyPaths: keyPaths.add name
+		if not keyPaths then keyPaths.add name
 		
-IndexedDBStore
+internal IndexedDBStore
 	string name
 	IndexedDBIndex[] indices
 	
 	string keyPath = "id"
 	bool autoIncrement = false
 	
-	private dynamic db
-	
 	IndexedDBStore
 		IndexedDB.stores.add this
-		print "Adding store {name} {IndexedDB.stores.length}"
 		
-	js void put: any data, void() then = null, void(Error error) else = null
+	js void put: dynamic data, void() then = null, void(Error error) else = null
 		try {
-			let trans = this.db.transaction(this.name, "readwrite")
+			let trans = IndexedDB.db.transaction(this.name, "readwrite")
 			trans.onerror = e => {
 				core.log("Error in IndexedDB.save: "+trans.error)
 				else?.()
@@ -271,9 +283,22 @@ IndexedDBStore
 			else?.(error)
 		}
 		
-	js void get: any id, void(any result) then, void(Error error) else = null
+	js async dynamic get: dynamic id
+		return new Promise((resolve, reject) => {
+			try {
+				let trans = IndexedDB.db.transaction(this.name, "readonly");
+				let req = trans.objectStore(this.name).get(id);
+				req.onsuccess = async e => resolve(req.result)
+				req.onerror = e => { core.onError(e); reject(); }
+			} catch(e) {
+				core.onError(e);
+				reject();
+			}
+		})
+		
+	js void get: dynamic id, void(dynamic result) then, void(Error error) else = null
 		try {
-			let trans = this.db.transaction(storeName, "readonly");
+			let trans = IndexedDB.db.transaction(this.name, "readonly");
 			let req = trans.objectStore(this.name).get(id);
 			req.onsuccess = async e => {
 				let result = req.result;
@@ -292,9 +317,22 @@ IndexedDBStore
 			else?.();
 		}
 		
-	js void getAllFromIndex: string index, any query, void(any[] result) then, void(Error error) else = null
+	js async dynamic[] getAllFromIndex: string index, dynamic query
+		return new Promise((resolve, reject) => {
+			try {
+				let trans = IndexedDB.db.transaction(this.name, "readonly");
+				let req = trans.objectStore(this.name).index(index).getAll(query);
+				req.onsuccess = async e => resolve(req.result)
+				req.onerror = e => { core.onError(e); reject(); }
+			} catch(e) {
+				core.onError(e);
+				reject();
+			}
+		})
+		
+	js void getAllFromIndex: string index, dynamic query, void(dynamic[] result) then, void(Error error) else = null
 		try {
-			let trans = this.db.transaction(storeName, "readonly");
+			let trans = IndexedDB.db.transaction(this.name, "readonly");
 			let req = trans.objectStore(this.name).index(index).getAll(query);
 			req.onsuccess = async e => {
 				let result = req.result;
@@ -312,15 +350,51 @@ IndexedDBStore
 			core.onError(e);
 			else?.();
 		}
-	
-		
-transient skipInit unit IndexedDB
+
+internal transient skipInit unit IndexedDB
 	internal dynamic db
 	IndexedDBStore[] stores
 	
+	inline bool isReady => (IndexedDB.db != null)
+	
+	js async void start: string databaseName, int version = 1
+		return new Promise((resolve, reject) => {
+			try {
+				var request = indexedDB.open(databaseName, version)
+				request.onupgradeneeded = e => {
+					core.log("IndexedDB: upgradeneeded");
+					IndexedDB.db = e.target.result;
+					for(let store of IndexedDB.stores) {
+						if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
+							let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
+							System.print("IndexedDB: created store "+store.name)
+							for(let index of store.indices) {
+								storeObject.createIndex(index.name, index.keyPaths.length == 1 ? index.keyPaths[0] : index.keyPaths)
+							}
+						}
+					}
+					System.print("IndexedDB: successfully upgraded to version "+version)
+				}
+				request.onsuccess = e => {
+					System.print("IndexedDB: success");
+					IndexedDB.db = e.target.result;
+					for(let store of IndexedDB.stores) {
+						store.db = IndexedDB.db
+					}
+					resolve();
+				}
+				request.onerror = e => {
+					core.onError(request.error);
+					reject(request.error);
+				}
+			} catch(e) {
+				core.onError(e);
+				reject(e);
+			}
+		})
+		
 	js void start: string databaseName, int version = 1, void() success = null, void(Error error) else = null
 		try {
-			System.print("IndexedDB: start stores:"+IndexedDB.stores.length);
 			var request = indexedDB.open(databaseName, version)
 			request.onupgradeneeded = e => {
 				core.log("IndexedDB: upgradeneeded");
@@ -348,7 +422,6 @@ transient skipInit unit IndexedDB
 				core.onError(request.error);
 				else?.(request.error);
 			}
-			core.log("IndexedDB: finished");
 		} catch(e) {
 			core.onError(e);
 			else?.(e);

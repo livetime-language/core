@@ -76,7 +76,7 @@ priority class Player
 	Color color = White
 	Vector2 pointerPosition
 	
-	toString := color.name
+	toString => color.name
 	
 	// Touch input
 	internal Touch[] touches
@@ -87,7 +87,7 @@ priority class Player
 	internal Key[] keysCurrentlyDown
 	
 	// Controller input
-	visible GameController controller = {}
+	visible Gamepad gamepad = {}
 	internal int[] controllerKeyDownFrame
 	
 	// If a player was lost by anybody and nobody who is still connected to that player
@@ -105,7 +105,7 @@ priority class Player
 	// 		if (.phase == Up and .type >= Touch) or (hasTouch and .type != Touch)
 	// 			touches.remove .
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, GameController, String, Json, Object
+enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -127,8 +127,8 @@ class Touch
 	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
 	// even if we never check the touch with a input.onTouch method
 	
-	// Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
-	// Vector2 startPosition := referenceStartPosition.getRelativeTo(graphics.localMatrix)
+	// Vector2 position	=> referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector2 startPosition	=> referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -138,7 +138,7 @@ transient class ScrollEvent
 	immutable Vector2 referencePosition
 	bool handled
 	
-	// Vector2 position := referencePosition.getRelativeTo(graphics.localMatrix)
+	// Vector2 position => referencePosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -436,10 +436,10 @@ class DigitalButton
 	Key key
 	
 	bool state, prevState
-	bool down := state and not prevState
-	bool up   := not state and prevState
+	bool down => state and not prevState
+	bool up   => not state and prevState
 	
-	toString := name
+	toString => name
 	
 	internal assign: string name, Key key
 		this.name = name
@@ -459,8 +459,8 @@ transient immutable class ControllerButtonPlayerAndIndex
 	
 enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Select, Start, Menu
 	
-enum GameControllerType: Keyboard, Xbox, PlayStation
-class GameController
+enum GamepadType: Keyboard, Xbox, PlayStation
+class Gamepad
 	const deadZone = .1
 	
 	// Sticks
@@ -484,7 +484,7 @@ class GameController
 	visible DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, a, b, x, y, menu]
 	
 	bool inMotion
-	GameControllerType type
+	GamepadType type
 	
 	internal startFrame
 		leftStick.x = 0
@@ -499,13 +499,13 @@ enum ShowPointersMode
 	Remote         // Show the mouse pointer only for remote players
 	LocalAndRemote // Show the mouse pointers of all players
 	
-immutable class InternetGamePadButton
+immutable class InternalGamepadButton
 	bool pressed, touched
 	float value
 	
-immutable class InternetGamePad
+immutable class InternalGamepad
 	float[] axes
-	InternetGamePadButton[] buttons
+	InternalGamepadButton[] buttons
 	string id
 	
 // Collect user input
@@ -672,7 +672,7 @@ skipInit global unit input
 	// 	return 0
 		
 	// private handleTextInput: InputType type, string text
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
 	// 	inputs.writeInt32 localUser.inputFrame
@@ -680,13 +680,13 @@ skipInit global unit input
 	// 	inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, int scanCode, Key keyCode
-		// if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+		// if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 		// let inputs = localUser.inputs
 		// int composite = cast inputType                                  // inputType:   0 - 31 (5 bit)
 		
 		let controllerButton = controllerButtonMap[keyCode]
 			let player = players.find.id == controllerButton.userId
-			player.controllerKeyDownFrame[controllerButton.buttonIndex] = inputType == KeyDown ? Time.frame : 0
+			player.controllerKeyDownFrame[controllerButton.buttonIndex] = inputType == KeyDown ? Time.ticks : 0
 			
 		// 	composite += (controllerButton.buttonIndex + 1) shiftLeft 5 // buttonIndex: 0 - 15 (4 bit)
 		// 	if core.mode == Local and not core.simulateConnection
@@ -699,7 +699,7 @@ skipInit global unit input
 		
 	// internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 	// 	int touchType, id
-	// 	if pointerType == "mouse": touchType = button.limit(0..2); else
+	// 	if pointerType == "mouse": touchType = button.clamp(0..2); else
 	// 	if pointerType == "touch": touchType = 3; id = pointerId; else
 	// 		                       touchType = 4
 		
@@ -707,7 +707,7 @@ skipInit global unit input
 	// 	Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 	// 	gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 
 	// 	if inputType == TouchMove
@@ -734,7 +734,7 @@ skipInit global unit input
 	// internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 	// 	let inputs = localUser.inputs
 	// 	int composite = cast(InputType.TouchMove)                       // inputType: 0 -  31 (5 bit)
-	// 	              + math.shiftLeft(cast TouchType.Left, 5)          // touchType: 0 -   7 (3 bit)
+	// 	              + math.shiftLeft(cast TouchType.LeftMouseButton, 5)          // touchType: 0 -   7 (3 bit)
 	// 	              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
 	// 	inputs.writeInt32 localUser.inputFrame
 	// 	inputs.writeUnsignedInt16 composite
@@ -742,7 +742,7 @@ skipInit global unit input
 	// 	inputs.writeInt16 math.round(referencePos.y)
 	
 	// private handleWheelEvent: float x, float y, float deltaX, float deltaY
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
 	// 	Vector2 referencePos = {x*graphics.pixelRatio, y*graphics.pixelRatio}.getRelativeTo(graphics.baseMatrix)
@@ -767,7 +767,7 @@ skipInit global unit input
 				
 	// // Handles navigating back or forward in the browser	
 	// internal handleNavigate: string url
-	// 	if core.mode == None || Platform.mode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
 	// 	inputs.writeInt16 cast InputType.Navigate
@@ -778,7 +778,7 @@ skipInit global unit input
 	// 	if core.mode < Local or !lobby.inLobby: return
 	// 	for players <- player
 	// 		let internalUser = internalUsers[.id]
-	// 			if player.lostAtFrame and core.frame > player.lostAtFrame + core.targetFps * 3
+	// 			if player.lostAtFrame and core.frame > player.lostAtFrame + core.ticksPerSecond * 3
 	// 				// If a player was lost by anybody and nobody who is still connected to that player
 	// 				// disagrees within a certrain time, we remove this player
 	// 				core.log "Removing player {player.id} at frame {core.frame}, player was lost at frame {player.lostAtFrame} and nobody disagreed", isCertain
@@ -787,7 +787,7 @@ skipInit global unit input
 	// 				internalUser.active = false
 	// 				updatePlayers
 	// 			else	
-	// 			if core.frame > internalUser.inputFrame + core.targetFps * 8
+	// 			if core.frame > internalUser.inputFrame + core.ticksPerSecond * 8
 	// 			and core.frame > internalUser.nextLostMessageAtFrame
 	// 				// If we lost the connection to a player, we post a lost message to everybody every 12 seconds
 	// 				core.log "Sending lost message for player {player.id} at frame {core.frame}", internalUser.inputFrame
@@ -795,7 +795,7 @@ skipInit global unit input
 	// 				inputs.writeInt32 localUser.inputFrame
 	// 				inputs.writeInt16 cast InputType.Lost
 	// 				inputs.writeInt16 player.id
-	// 				internalUser.nextLostMessageAtFrame = core.frame + core.targetFps * 12
+	// 				internalUser.nextLostMessageAtFrame = core.frame + core.ticksPerSecond * 12
 					
 	// 				// Send logfiles to server
 	// 				Platform.setTimeout 7 seconds: statistics.saveStatistics
@@ -833,10 +833,10 @@ skipInit global unit input
 	// // Returns a "GamepadList" (which doesn't have the functions of a LiveTime list)
 	// private inline js dynamic getGamepads() navigator.getGamepads()
 	
-	// internal updateGameControllers
+	// internal updateGamepads
 	// 	let gamepads = getGamepads
 	// 	if gamepads == null: return
-	// 	InternetGamePad gp = gamepads[0]
+	// 	InternalGamepad gp = gamepads[0]
 	// 	if !gp or gp.axes.length < 2: return
 			
 	// 	let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")
@@ -869,21 +869,21 @@ skipInit global unit input
 	// 	// Write to event stream
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.GameController
-	// 	inputs.writeFloat32 math.abs(leftStickX) > GameController.deadZone ? leftStickX : 0
-	// 	inputs.writeFloat32 math.abs(leftStickY) > GameController.deadZone ? leftStickY : 0
+	// 	inputs.writeInt16 cast InputType.Gamepad
+	// 	inputs.writeFloat32 math.abs(leftStickX) > Gamepad.deadZone ? leftStickX : 0
+	// 	inputs.writeFloat32 math.abs(leftStickY) > Gamepad.deadZone ? leftStickY : 0
 	// 	inputs.writeUnsignedInt16 buttons
 			
 	internal parseInputs: int frame
 		for players
-			.controller.startFrame
+			.gamepad.startFrame
 			
 	// 	for internalUsers -> internalUser if internalUser
 	// 		let inputs = internalUser.inputs
 	// 		let userId = internalUser.id
 	// 		let player = playersById[userId]
 	// 		if core.logging: core.parseLog += " <{userId}>"
-	// 		player?.controller.startFrame
+	// 		player?.gamepad.startFrame
 			
 	// 		while true
 	// 			int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
@@ -949,7 +949,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " move {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " move(new) {id} {referencePos} {type}"
 								
@@ -968,7 +968,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " up {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " up(new) {id} {referencePos} {type}"
 								
@@ -1009,8 +1009,8 @@ skipInit global unit input
 	// 			if inputType == Navigate
 	// 				internalUser.navigations.add inputs.readString
 	// 			else
-	// 			if inputType == GameController
-	// 				GameController c = player.controller
+	// 			if inputType == Gamepad
+	// 				Gamepad c = player.gamepad
 					
 	// 				// Controller axix
 	// 				c.leftStick.x = inputs.readFloat32
@@ -1057,7 +1057,7 @@ skipInit global unit input
 							
 	// 					// If we are still connected to that player, we disagree to their removal
 	// 					// by posting the "StillConnected" message
-	// 					if lostInternalUser.dataChannel and core.frame < lostInternalUser.inputFrame + core.targetFps * 5
+	// 					if lostInternalUser.dataChannel and core.frame < lostInternalUser.inputFrame + core.ticksPerSecond * 5
 	// 						core.log "Lost {lostUserId} by {userId} -> We are still connected, sending StillConnected", lostInternalUser.dataChannel, core.frame, lostInternalUser.inputFrame, isCertain
 	// 						handleStillConnected lostUserId
 	// 					else
@@ -1109,20 +1109,20 @@ skipInit global unit input
 			let down  = .controllerKeyDownFrame[ControllerButton.Down]
 			let left  = .controllerKeyDownFrame[ControllerButton.Left]
 			let up    = .controllerKeyDownFrame[ControllerButton.Up]
-			if right or left: .controller.leftStick.x = right >= left ? 1 : -1
-			if down  or up:   .controller.leftStick.y = down  >= up   ? 1 : -1
-			.controller.inMotion = math.abs(.controller.leftStick.x) >= GameController.deadZone
-			                    or math.abs(.controller.leftStick.y) >= GameController.deadZone
+			if right or left: .gamepad.leftStick.x = right >= left ? 1 : -1
+			if down  or up:   .gamepad.leftStick.y = down  >= up   ? 1 : -1
+			.gamepad.inMotion = math.abs(.gamepad.leftStick.x) >= Gamepad.deadZone
+			                    or math.abs(.gamepad.leftStick.y) >= Gamepad.deadZone
 			
 			// Buttons
-			for .controller.buttons
+			for .gamepad.buttons
 				if p.controllerKeyDownFrame[i]: 
 					.state = true
 	
 	internal #miyoo updatePlayers
-		players.each.index = i
+		players.each.playerIndex = i
 			
-		GameController c = players[0].controller
+		Gamepad c = players[0].gamepad
 		c.right.assign "→"     DPadRight
 		c.down.assign  "↓"     DPadDown
 		c.left.assign  "←"     DPadLeft
@@ -1134,20 +1134,20 @@ skipInit global unit input
 		controllerButtonMap.clear
 		for players -> player
 			player.controllerKeyDownFrame.clear
-			for .controller.buttons
+			for .gamepad.buttons
 				controllerButtonMap[.key] = {userId:player.id, buttonIndex:i}
 				player.controllerKeyDownFrame.add 0
 		
 	internal #keyboard updatePlayers
 		// players.orderBy.id
 		for players
-			.index = i
-			// .color = graphics.defaultColors[i]
+			.playerIndex = i
+			// .playerColor = graphics.defaultColors[i]
 			// internalUsers[.id].index = i
 			
 		if core.mode == Local
 			if players.length >= 1
-				GameController c = players[0].controller
+				Gamepad c = players[0].gamepad
 				if c.type == Keyboard
 					c.right.assign "→"     Right
 					c.down.assign  "↓"     Down
@@ -1157,7 +1157,7 @@ skipInit global unit input
 					c.b.assign     "B"     B
 			
 			if players.length >= 2
-				GameController c = players[1].controller
+				Gamepad c = players[1].gamepad
 				if c.type == Keyboard
 					c.right.assign "D"     D
 					c.down.assign  "S"     S
@@ -1167,7 +1167,7 @@ skipInit global unit input
 					c.b.assign     "G"     G
 			
 			if players.length >= 3
-				GameController c = players[2].controller
+				Gamepad c = players[2].gamepad
 				if c.type == Keyboard
 					c.right.assign "L"     L
 					c.down.assign  "K"     K
@@ -1179,13 +1179,13 @@ skipInit global unit input
 			controllerButtonMap.clear
 			for players -> player
 				player.controllerKeyDownFrame.clear
-				for .controller.buttons
+				for .gamepad.buttons
 					controllerButtonMap[.key] = {userId:player.id, buttonIndex:i}
 					player.controllerKeyDownFrame.add 0
 		else
 			controllerButtonMap.clear
 			for players
-				GameController c = .controller
+				Gamepad c = .gamepad
 				if c.type == Keyboard
 					c.right.assign "→"     Right
 					c.down.assign  "↓"     Down
@@ -1195,7 +1195,7 @@ skipInit global unit input
 					c.b.assign     "B"     B
 			
 			controllerButtonMap.clear
-			for localPlayer.controller.buttons
+			for localPlayer.gamepad.buttons
 				controllerButtonMap[.key] = {userId:localPlayer.id, buttonIndex:i}
 				
 			// controllerButtonMap[D] = {userId:localUser.id, buttonIndex:0}
@@ -1288,7 +1288,7 @@ skipInit global unit input
 	// // Image: onTouchDown1.png
 	// global onTouchDown: Vector2 position                    // The center of the touch area
 	// 	                      Vector2 size                        // The size of the rectangular touch area
-	// 	                      Angle angle                         // Rotate the touch area by this angle
+	// 	                      float angle                         // Rotate the touch area by this angle
 	// 	                      implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 	// 	                      Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
 	// 	                      bool showClickableArea = false          // Highlight the clickable area for debugging

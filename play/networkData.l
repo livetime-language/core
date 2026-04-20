@@ -1,9 +1,9 @@
 networkData
-	void(any data)[] callbacks
-	call: int id, any data
+	void(dynamic data)[] callbacks
+	call: int id, dynamic data
 		callbacks[id](data)
 		
-	addCallback: stored void(any data) do
+	addCallback: stored void(dynamic data) do
 		let id = networkData.callbacks.length
 		networkData.callbacks.add do
 		return id
@@ -14,7 +14,7 @@ storage
 			localStorage.setItem(key, JSON.stringify(value));
 		}
 		
-	get: string key, nocolon Player of, stored void(any data) do
+	get: string key, nocolon Player of, stored void(dynamic data) do
 		let id = networkData.addCallback do
 		if core.isPremiere and input.isCertain and input.internalUsers[of.id]?.local
 			let data = getStringDirectly(key)
@@ -37,7 +37,7 @@ http
 	
 	// Perform an http get request
 	js void get: string url
-		         stored void(any result) code
+		         stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.frame == 0 || Platform.waitingForInitialData) Platform.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
@@ -68,6 +68,36 @@ http
 			}
 		}
 		
+	js async void postStreamDirectly: string url
+		                              dynamic body
+								      dynamic headers = object.undefined
+		                              void(string result, bool done, void() cancel) onData
+		                              void() onEnd = null
+		if(!core.isPremiere || !input.isCertain) return
+		return new Promise(async (resolve, reject) => {
+			try {
+				let response = await fetch(url, {method:"POST", body:JSON.stringify(body), headers})
+				let reader = response.body.getReader();
+				let decoder = new TextDecoder();
+				let cancelled = false
+				function cancel() { cancelled = true; }
+				for(;;) {
+					const { value, done } = await reader.read();
+					if (value) {
+						let chunk = decoder.decode(value, { stream: true });
+						onData(chunk, done, cancel);
+					}
+					if(done || cancelled) break;
+				}
+				onEnd?.();
+				resolve();
+			} catch (error) {
+				console.error('Error during fetch or stream processing:', error);
+				reject(error);
+			}
+		})
+
+		
 	internal js async string getStringDirectly string url
 		return await (await fetch(url)).text()
 		
@@ -77,8 +107,11 @@ http
 		
 	internal js async dynamic getJsonDirectly: string url, dynamic options
 		return await (await fetch(url, options)).json()
+	
+	internal js async string postDirectly: string url, dynamic body
+		return (await fetch(url, {method:"POST", body:JSON.stringify(body)})).text()	
 		
-	internal js void postDirectly: string url, any body, void(any result) code, void() else
+	internal js void postDirectly: string url, dynamic body, void(dynamic result) code, void() else = null
 		try {
 			let data = await (await fetch(url, {method:"POST", body:JSON.stringify(body)})).text();
 			code(data);
@@ -89,7 +122,7 @@ http
 		
 	// Perform an http post request
 	js void post: string url
-		          stored void(any result) code
+		          stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.frame == 0) Platform.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
@@ -100,8 +133,8 @@ http
 		
 	// Perform an http post request
 	js void post: string url
-		          any body
-		          stored void(any result) code
+		          dynamic body
+		          stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.frame == 0) Platform.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
@@ -112,14 +145,14 @@ http
 		}
 		
 	js void post: string url
-		          any body
+		          dynamic body
 		if(core.isPremiere && input.isCertain) {
 			(await fetch(url, {method:"POST", body:JSON.stringify(body)})).text()
 		}
 		
 	// Perform an http put request
 	js void put: string url
-		         stored void(any result) code
+		         stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.frame == 0) Platform.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
@@ -130,8 +163,8 @@ http
 		
 	// Perform an http put request
 	js void put: string url
-		         any body
-		         stored void(any result) code
+		         dynamic body
+		         stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.frame == 0) Platform.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
@@ -142,7 +175,7 @@ http
 		
 	// Perform an http delete request
 	js void delete: string url
-		            stored void(any result) code
+		            stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.isPremiere && input.isCertain) {
 			let data = await (await fetch(url, {method:"DELETE"})).text()
@@ -152,8 +185,8 @@ http
 		
 	// Perform an http delete request
 	js void delete: string url
-		            any body
-		            stored void(any result) code
+		            dynamic body
+		            stored void(dynamic result) code
 		let id = networkData.addCallback(code)
 		if(core.isPremiere && input.isCertain) {
 			let data = await (await fetch(url, {method:"DELETE", body:JSON.stringify(body)})).text()

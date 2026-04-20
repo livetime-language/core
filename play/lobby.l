@@ -56,7 +56,7 @@ unit lobby
 	
 	tick
 		tickSettings
-		if Platform.isStaging: drawText "Version:{Platform.buildVersion}", size:20, position:{-940, 520}, align:Left
+		if Platform.isStaging then drawText "Version:{Platform.buildVersion}", size:20, position:{-940, 520}, align:Left
 		if (PeerNetwork.error or core.errorMessage) and Platform.isStaging
 			drawText PeerNetwork.error, size:40
 			drawText core.errorMessage, size:14, position:{0,40}
@@ -68,12 +68,12 @@ unit lobby
 			if key == E and cmd
 				setupFields newHost:pressedBy
 				
-			if not host: return
+			if not host then return
 			if key == Right
-				showName players[showNameIndex++ % players.length]
+				showName players[showNameIndex++ mod players.length]
 			else
 			if key == Tab and cmd
-				showNameIndex = (showNameIndex+1) % players.length
+				showNameIndex = (showNameIndex+1) mod players.length
 			else
 			if key == Enter or key == Tab or key == Right
 				switchFieldFocus 1
@@ -87,18 +87,18 @@ unit lobby
 			float halfVideoHeight = videoWidth*3/8
 			
 			for players as player, playerIndex
-				Vector2 pos = {offset+videoWidth*.index, 0}
+				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				onTouchDown position:pos size:{videoWidth, videoWidth*3/4}
 					cyclePlayer player
 					
 			for players as player, playerIndex
-				Vector2 pos = {offset+videoWidth*.index, 0}
+				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				drawVideo ., pos, videoWidth
 				
 				// Start button
 				let text = not .isReadyInLobby ? "START" : Loca.language == German ? "Ich bin bereit" : "I'm ready"
-				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.color, enabled:!.isReadyInLobby, clickableBy:player
-					if enableFullscreen: Platform.setFullscreen true forPlayer:touch.by
+				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.playerColor, enabled:!.isReadyInLobby, clickableBy:player
+					if enableFullscreen then Platform.setFullscreen true forPlayer:touch.by
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
 					
@@ -117,13 +117,13 @@ unit lobby
 				let field = fields.find.player == player
 					// Set field position
 					field.position = pos + {0, -halfVideoHeight-(players.length<=2 ? 85 : 120)}
-					if field.effect: field.effect.position = field.position + {0,-190}
-					if field.particleSystem: field.particleSystem.position = field.position
+					if field.effect then field.effect.position = field.position + {0,-190}
+					if field.particleSystem then field.particleSystem.position = field.position
 						
 					if editNames
 						// Suggestions
-						for nameSuggestions -> name
-							drawButton name, position:pos+{-150+100*(i%4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
+						for nameSuggestions as name
+							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
 								fields[playerIndex].text = name
 								setPlayerName player, name
 								
@@ -133,7 +133,8 @@ unit lobby
 
 		// For testing, display to coordinates when we click the screen
 		if core.drawPointsForTesting
-			onTouchDown: points.add .position.clone
+			onTouchDown
+				points.add .position.clone
 			points.each drawText text:. position:. size:30; drawCircle . outlineColor:White size:200
 			drawText ++counter, {0, -480}, size:100
 		
@@ -145,7 +146,7 @@ unit lobby
 		
 	setupFields: Player newHost
 		input.host = newHost
-		this.showNameIndex = host.index + 1
+		this.showNameIndex = host.playerIndex + 1
 		Framework.clear
 		fields.clear
 		if not editNames
@@ -158,7 +159,7 @@ unit lobby
 			
 	switchFieldFocus: int delta
 		let focusIndex = fields.indexWhere.isFocused
-		focusIndex = (focusIndex + delta) % fields.length
+		focusIndex = (focusIndex + delta) mod fields.length
 		fields.each.focus focusIndex == i
 			
 	showName: Player player
@@ -168,31 +169,31 @@ unit lobby
 		// Effect(image:FireballSoft, position:field.position+{30,70}, size:1000, framesPerSecond:12)
 		// Effect(image:GranadeExplosion, position:field.position+{0,-200}, size:1000)
 		// Effect(image:NukeCone, position:field.position+{0,-150}, size:1000)
-		field.effect = Effect(image:Nuke, size:1000)
+		// field.effect = Effect(image:Nuke, size:1000)
 		field.particleSystem = ParticleSystem(image:Spark, bursts:1, gravity:.5, minSpeed:10 maxSpeed:20, angleSpread:.5)
-		playSound LobbyImpact
+		// playSound LobbyImpact
 		
 	createField: Player player, implicit Player[] visibleFor = null
-		let field = LobbyTextField(text:player.name, player, visibleFor, editableBy:host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
+		let field = LobbyTextField(text:player.playerName, player, visibleFor, editableBy:host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
 		fields.add field
 		return field
 		
 	setPlayerName: Player player, string name
-		player.name = name.capitalizeWords
+		player.playerName = name.capitalizeWords
 		let user = input.internalUsers[player.id]
-			user.name = player.name
+			user.name = player.playerName
 		if player.id == input.localUser.id
-			core.account.name = player.name
+			core.account.name = player.playerName
 			Platform.setLocalStorageObject("user", core.account)
 	
 	cyclePlayer: Player player
-		watch "Cycle color {player.index}"
+		watch "Cycle color {player.playerIndex}"
 		players.moveToBack player
 		input.updatePlayers
-		player.colorPreferences = [player.index]
+		player.colorPreferences = [player.playerIndex]
 	
 	tickSettings
-		for players -> player
+		for players as player
 			graphics.visibleFor player
 				drawImage settingsIcon, {-920,-500}, size:32
 					player.showSettingsInLobby = !player.showSettingsInLobby
@@ -203,7 +204,7 @@ unit lobby
 					drawImage cameraIcon, pos
 					forPositions 10 start:pos+{36} delta:{0,26}
 						let device = PeerNetwork.devices.videoInput[i]
-							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.videoInputId == device.deviceId ? player.color : White
+							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.videoInputId == device.deviceId ? player.playerColor : White
 						onTouchDown pos+{200,0}, size:{400,30} by player
 							PeerNetwork.setVideoInput device?.deviceId, player
 					pos += {450}
@@ -211,7 +212,7 @@ unit lobby
 					drawImage microphoneIcon, pos
 					forPositions 10 start:pos+{36} delta:{0,26}
 						let device = PeerNetwork.devices.audioInput[i]
-							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioInputId == device.deviceId ? player.color : White
+							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioInputId == device.deviceId ? player.playerColor : White
 						onTouchDown pos+{200,0}, size:{400,30} by player
 							PeerNetwork.setAudioInput device?.deviceId, player
 					pos += {550}
@@ -220,14 +221,14 @@ unit lobby
 						drawImage speakerIcon, pos
 					forPositions 10 start:pos+{36} delta:{0,26}
 						let device = PeerNetwork.devices.audioOutput[i]
-							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioOutputId == device.deviceId ? player.color : White
+							drawText device.label, pos, size:18, align:Left, color:PeerNetwork.audioOutputId == device.deviceId ? player.playerColor : White
 						onTouchDown pos+{200,0}, size:{400,30} by player
 							PeerNetwork.setAudioOutput device?.deviceId, player
 						
 Player
 	bool showSettingsInLobby
 	
-Object LobbyTextField
+internal Object LobbyTextField
 	string text
 	Font font
 	Color color = White
@@ -239,7 +240,7 @@ Object LobbyTextField
 	void(string text) onChanged
 	
 	visible bool isFocused
-	private Time lastTypeTime
+	private float lastTypeTime
 	
 	clear
 		text = ""
@@ -250,7 +251,7 @@ Object LobbyTextField
 		lastTypeTime = Time.now
 		
 	tick
-		let c = isFocused and ((Time.now%1000) < 500)
+		let c = isFocused and ((Time.now mod 1000) < 500)
 		onTouchDownAny by editableBy
 			focus false
 		onTouchDown position+{0,size.x/2}, {width,size.x*2}, by:editableBy
@@ -258,14 +259,14 @@ Object LobbyTextField
 		if isFocused
 			onType by editableBy
 				text += .; lastTypeTime = Time.now
-				if onChanged != null: onChanged text
+				if onChanged != null then onChanged text
 			onKeyDown Backspace by editableBy
-				if text: text = text.substring(0, text.length-1)
+				if text then text = text.substring(0, text.length-1)
 				lastTypeTime = Time.now
-				if onChanged != null: onChanged text
+				if onChanged != null then onChanged text
 					
 		drawText text, position+{0, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor
-		
-		if isFocused and (((Time.now - lastTypeTime)%1500) < 750)
+
+		if isFocused and (((Time.now - lastTypeTime) mod 1500) < 750)
 			let textWidth = graphics.getTextWidth text, size, font:ByTheWay
 			drawText "|", position+{textWidth/2, 0}, size, angle, alpha, align:Center, font:ByTheWay, visibleFor:editableBy
