@@ -1,8 +1,8 @@
-enum WallDirection: Horizontal, Vertical
+enum MazeWallDirection: Horizontal, Vertical
 
-priority:high class Wall
+priority:high class MazeWall
 	int x, y
-	WallDirection dir
+	MazeWallDirection dir
 	int doorId = -1
 	int stepsToOtherSide
 	int cellsOnBothSidesDifference
@@ -10,9 +10,9 @@ priority:high class Wall
 
 unit maze
 	IntVector2 size
-	Wall[,] horizontalWalls
-	Wall[,] verticalWalls	
-	Wall[] walls
+	MazeWall[,] horizontalWalls
+	MazeWall[,] verticalWalls	
+	MazeWall[] walls
 	
 	create: IntVector2 size
 		this.size = size
@@ -32,7 +32,7 @@ unit maze
 			walls.add horizontalWalls[x, 0] = {x, y:0, dir:Horizontal}
 			walls.add horizontalWalls[x, size.y] = {x, y:size.y, dir:Horizontal}
 		
-		Wall[] potentialWalls
+		MazeWall[] potentialWalls
 		// Vertical
 		for 1 to size.x as x
 			for size.y as y
@@ -64,7 +64,7 @@ unit maze
 		// 			result = algorithms.findPath startPos:{w.x-1, w.y}, endPos:{w.x, w.y}, size, getNeighbors(grid, x, y), heuristic: a manhattanDistanceTo b
 		// 		w.stepsToOtherSide = result.length
 		// 	walls.sort a.stepsToOtherSide - b.stepsToOtherSide		
-		// 	Wall w = walls.pop
+		// 	MazeWall w = walls.pop
 		// 	if w.dir == Horizontal	then horizontalWalls[w.x, w.y] = null
 		// 	if w.dir == Vertical	then verticalWalls  [w.x, w.y] = null
 				
@@ -119,11 +119,11 @@ unit maze
 		if verticalWalls  [from.x  , from.y  ]	then count++
 		return count
 
-	IntVector2[] getCellsNextToWall: Wall wall
+	IntVector2[] getCellsNextToWall: MazeWall wall
 		if wall.dir == Horizontal then	return [{wall.x, wall.y-1}, {wall.x, wall.y}]
 		else	return [{wall.x-1, wall.y}, {wall.x, wall.y}]
 
-	Wall[] potentialWalls
+	MazeWall[] potentialWalls
 
 	placeDoor: int doorId, bool[,] area = null
 		potentialWalls.clear
@@ -131,7 +131,7 @@ unit maze
 			for 1 to horizontalWalls.size.y-1 as y
 				if not horizontalWalls[x, y]
 				and (area == null or (area[x, y] and area[x, y-1]))
-					Wall newWall = {x, y, dir:Horizontal, doorId}
+					MazeWall newWall = {x, y, dir:Horizontal, doorId}
 					horizontalWalls[x,y] = newWall
 					int a = getReachableCells x, y-1;	newWall.areaOnSideA = isVisited
 					int b = getReachableCells x, y;	newWall.areaOnSideB = isVisited
@@ -143,7 +143,7 @@ unit maze
 			for 1 to verticalWalls.size.y-1 as y
 				if not verticalWalls[x, y]
 				and (area == null or (area[x, y] and area[x-1, y]))
-					Wall newWall = {x, y, dir:Vertical, doorId}
+					MazeWall newWall = {x, y, dir:Vertical, doorId}
 					verticalWalls[x,y] = newWall
 					int a = getReachableCells x-1, y;	newWall.areaOnSideA = isVisited
 					int b = getReachableCells x,   y;	newWall.areaOnSideB = isVisited
