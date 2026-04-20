@@ -1,9 +1,9 @@
 transient skipInit unit Platform
-	public inline js string url := location.href
-	public inline js string hostname := location.hostname
-	public protocolAndHost := !Platform.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
-	public inline js int userAgent := navigator.userAgent.replace(/,/g," ")
-	public inline js float usedMemory := (performance.memory ? performance.memory.usedJSHeapSize : 0)
+	public inline js string url	=> location.href
+	public inline js string hostname	=> location.hostname
+	public protocolAndHost	=> !Platform.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
+	public inline js int userAgent	=> navigator.userAgent.replace(/,/g," ")
+	public inline js float usedMemory	=> (performance.memory ? performance.memory.usedJSHeapSize : 0)
 	
 	js string getAbsoluteUrl: string relativeUrl
 		return relativeUrl.startsWith("http") || relativeUrl.startsWith("data:") ? relativeUrl : _basePath+relativeUrl
@@ -121,6 +121,7 @@ transient skipInit unit Platform
 	
 unit file
 	js void saveText: string filename, string text
+		if(!core.isPremiere) return
 		var element = document.createElement("a");
 		element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
 		element.setAttribute("download", filename);
@@ -130,6 +131,7 @@ unit file
 		document.body.removeChild(element);
 		
 	js void saveBinary: string filename, Buffer buffer
+		if(!core.isPremiere) return
 		var binary = "";
 		var bytes = new Uint8Array(buffer.buffer);
 		var len = bytes.byteLength;
@@ -204,7 +206,7 @@ internal HTMLElement HTMLInput
 	HTMLInput
 		changeCallbackId = networkData.addCallback
 			value = .
-			if not core.isPremiere: this.element.value = .
+			if not core.isPremiere then this.element.value = .
 				
 		enterCallbackId = networkData.addCallback
 			value = .
@@ -254,7 +256,7 @@ internal IndexedDBIndex
 	string[] keyPaths
 	
 	IndexedDBIndex
-		if not keyPaths: keyPaths.add name
+		if not keyPaths then keyPaths.add name
 		
 internal IndexedDBStore
 	string name
@@ -353,7 +355,7 @@ internal transient skipInit unit IndexedDB
 	internal dynamic db
 	IndexedDBStore[] stores
 	
-	inline bool isReady := (IndexedDB.db != null)
+	inline bool isReady => (IndexedDB.db != null)
 	
 	js async void start: string databaseName, int version = 1
 		return new Promise((resolve, reject) => {

@@ -107,40 +107,42 @@ js(Intl.DateTimeFormat) class DateTimeFormat
 
 static skipInit class Time
 	string timerLogs
-	js static void startTimer()
+	float timerStart
+
+	static void startTimer()
 		Time.timerLogs = ""
-		window._timerStart = performance.now()
+		Time.timerStart = preciseTime
 
-	js static void printTimer(string text) 
-		let now = performance.now()
-		let message = text+": "+(now-window._timerStart)
-		console.log(message)
+	static void printTimer(string text) 
+		let now = preciseTime
+		let message = text+": "+(now-Time.timerStart)
+		print message
 		Time.timerLogs += message + "\n"
-		window._timerStart = now
+		Time.timerStart = now
 
-	static inline js float preciseTime := performance.now()
+	static inline js float preciseTime => performance.now()
 	
 struct float	
-	inline js int timeMilliseconds := Math.floor((this %    1000)          ) 
-	inline js int timeSeconds      := Math.floor((this %   60000) /    1000) 
-	inline js int timeMinutes      := Math.floor((this % 3600000) /   60000) 
-	inline js int timeHours        := Math.floor((this            ) / 3600000)
+	inline js int timeMilliseconds => Math.floor((this %    1000)          ) 
+	inline js int timeSeconds      => Math.floor((this %   60000) /    1000) 
+	inline js int timeMinutes      => Math.floor((this % 3600000) /   60000) 
+	inline js int timeHours        => Math.floor((this            ) / 3600000)
 		
-	inline js int totalSeconds      := Math.floor(this /      1000) 
-	inline js int totalMinutes      := Math.floor(this /     60000) 
-	inline js int totalHours        := Math.floor(this /   3600000)
-	inline js int totalDays         := Math.floor(this /  86400000)
-	inline js int totalWeeks        := Math.floor(this / 604800000)
+	inline js int totalSeconds      => Math.floor(this /      1000) 
+	inline js int totalMinutes      => Math.floor(this /     60000) 
+	inline js int totalHours        => Math.floor(this /   3600000)
+	inline js int totalDays         => Math.floor(this /  86400000)
+	inline js int totalWeeks        => Math.floor(this / 604800000)
 		
 	private static string toMinutesHoursDaysOrWeeksString: float time, showWeeksAfterDays = 31
-		if time < 2 minutes: return "1 minute"
-		if time < 1 hours:   return "{time.totalMinutes} minutes"
-		if time < 2 hours:   return "1 hour"
-		if time < 1 days:    return "{time.totalHours} hours"
-		if time < 2 days:    return "1 day"
-		if time < showWeeksAfterDays days: return "{time.totalDays} days"
-		if time < 2 weeks:   return "1 week"
-		                     return "{time.totalWeeks} weeks"
+		if time < 2 minutes	then return "1 minute"
+		if time < 1 hours	then return "{time.totalMinutes} minutes"
+		if time < 2 hours	then return "1 hour"
+		if time < 1 days	then return "{time.totalHours} hours"
+		if time < 2 days	then return "1 day"
+		if time < showWeeksAfterDays days	then return "{time.totalDays} days"
+		if time < 2 weeks	then return "1 week"
+		                                         return "{time.totalWeeks} weeks"
 
 	// (31.12.)
 	inline string dayMonthString
@@ -207,10 +209,10 @@ class string
 // A string representation of a date and time in the ISO 8601 format, for example "2000-12-31 17:30:00.000Z".
 // It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
 string TimeString
-	static TimeString now := Date.fromTime(Time.now).utcString
-	static TimeString fromTime(float value) := Date.fromTime(value).utcString
+	static TimeString now => Date.fromTime(Time.now).utcString
+	static TimeString fromTime(float value) => Date.fromTime(value).utcString
 	
-	inline js bool toBool := this
+	inline js bool toBool => this
 	inline string toString() this
 	
 	// (31.12.)
@@ -280,31 +282,31 @@ js(Date) internal transient class Date
 	static inline js Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second)
 	
 	// Returns the real time, even during replay. Be careful: This can break the replay.
-	static inline js Date realtime := new Date()
+	static inline js Date realtime => new Date()
 	
-	static inline js Date now := new Date()
-	inline js int year := this.getFullYear()
-	inline js int month := (this.getMonth()+1)
-	inline js int day := this.getDate()
-	inline js int dayOfWeek := this.getDay()
+	static inline js Date now	=> new Date()
+	inline js int year	=> this.getFullYear()
+	inline js int month	=> (this.getMonth()+1)
+	inline js int day	=> this.getDate()
+	inline js int dayOfWeek		=> this.getDay()
 		
-	inline js int hour := this.getHours()
-	inline js int minute := this.getMinutes()
-	inline js int second := this.getSeconds()
-	inline js int millisecond := this.getMilliseconds()
+	inline js int hour	=> this.getHours()
+	inline js int minute	=> this.getMinutes()
+	inline js int second	=> this.getSeconds()
+	inline js int millisecond	=> this.getMilliseconds()
 		
-	inline js string twoDigitMonth := (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitDay := this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitHour := this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-	inline js string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})		
-	inline js float timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	inline js string twoDigitMonth	=> (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitDay	=> this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitHour	=> this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitMinute	=> this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
+	inline js string twoDigitSecond	=> this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})		
+	inline js float timeOfDay	=> this.getHours()*3600000 + this.getMinutes()*60000
 	
 	private static string toTwoDigitString: int value
 		return value < 10 ? "0"+value.toString : value.toString
 			
 	// In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
-	inline js float time := this.getTime()
+	inline js float time => this.getTime()
 		
 	// The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	js string isoString()
@@ -401,4 +403,18 @@ js(Date) internal transient class Date
 		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(this)
 	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
 
+	// (20260412T121357)
+	// js string compactTimeString()
+	// 	let parts = (Date.compactTimeStringFormat ??= new Intl.DateTimeFormat('en-US', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23'})).formatToParts(this)
+	// 	let get = type => parts.find(p => p.type === type).value
+	// 	return get('year') + get('month') + get('day') + 'T' + get('hour') + get('minute') + get('second')
+	// private static DateTimeFormat compactTimeStringFormat
+
+	// (20260412T121357)
+	string compactTimeString()
+		return "{year}{twoDigitMonth}{twoDigitDay}T{twoDigitHour}{twoDigitMinute}{twoDigitSecond}"
+
+	// Parses a string like "20260412T121357" produced by compactTimeString into a Date (in local time).
+	static js Date fromCompactTimeString(string compactTimeString)
+		new Date(+compactTimeString.slice(0,4), +compactTimeString.slice(4,6)-1, +compactTimeString.slice(6,8), +compactTimeString.slice(9,11), +compactTimeString.slice(11,13), +compactTimeString.slice(13,15))
 	

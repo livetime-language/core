@@ -95,11 +95,15 @@ dynamic HTMLElement
 	
 	onTouchDown: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointerdown = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			TouchType type
-			if ev.pointerType == Mouse: type = cast ev.button.clamp(0 to 2); else
-			if ev.pointerType == Touch: type = Touch; else
-				                        type = Pen
+			// if ev.pointerType == Mouse then type = cast ev.button.clamp(0 to 2); else
+			// if ev.pointerType == Touch then type = Touch; else
+			// 	                               type = Pen
+			switch ev.pointerType
+				Mouse	then type = cast ev.button.clamp(0 to 2)
+				Touch	then type = Touch
+				default	then type = Pen
 			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, pixels)}
 			touch.shiftKey = ev.shiftKey
 			touch.ctrlKey = ev.ctrlKey
@@ -111,7 +115,7 @@ dynamic HTMLElement
 	
 	onTouchMove: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointermove = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			Touch touch = this.touches.find.id == ev.pointerId
 			if touch
 				touch.phase = Move
@@ -122,7 +126,7 @@ dynamic HTMLElement
 	
 	onTouchUp: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointerup = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			int index = this.touches.indexWhere.id == ev.pointerId
 			if index != -1
 				let touch = this.touches[index]
@@ -141,7 +145,7 @@ dynamic HTMLElement
 		
 	onTouchCancel: void(Touch touch, Touch[] touches, HTMLElement element, PointerEvent event) do
 		this.onpointercancel = {
-			if this.touches == null: this.touches = []
+			if this.touches == null then this.touches = []
 			int index = this.touches.indexWhere.id == ev.pointerId
 			if index != -1
 				let touch = this.touches[index]
@@ -171,18 +175,15 @@ importance:5 dynamic Attributes
 	string key   // A unique identifier used to find the html element that should be reused
 	string title
 	
-	native void() onClick = null                       // Execute this code when the user releases the left mouse button on the HTML element
-	native void(HtmlEvent ev) onRightClick = null      // Execute this code when the user releases the right mouse button on the HTML element
-	
-	native void(PointerEvent ev) onPointerDown = null  // Execute this code when the user presses down the left mouse button on the HTML element
-	native void(PointerEvent ev) onPointerOver = null  // Execute this code when the pointer hovers over the element
-	native void(PointerEvent ev) onPointerOut = null   // Execute this code when the pointer stops hovering over the element
-	
-	native void(HtmlKeyboardEvent ev) onKeyDown = null // Execute this code when the user presses a key on the keyboard
-	native void(HtmlKeyboardEvent ev) onKeyUp = null   // Execute this code when the user releases a key on the keyboard
-	
-	native void(FocusEvent ev) onBlur = null           // Execute this code when the element loses focus
-	native void(FocusEvent ev) onFocus = null          // Execute this code when the element gains focus
+	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
+	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element
+	native void(PointerEvent ev) onPointerDown = null	// Execute this code when the user presses down the left mouse button on the HTML element
+	native void(PointerEvent ev) onPointerOver = null	// Execute this code when the pointer hovers over the element
+	native void(PointerEvent ev) onPointerOut = null	// Execute this code when the pointer stops hovering over the element
+	native void(HtmlKeyboardEvent ev) onKeyDown = null	// Execute this code when the user presses a key on the keyboard
+	native void(HtmlKeyboardEvent ev) onKeyUp = null	// Execute this code when the user releases a key on the keyboard
+	native void(FocusEvent ev) onBlur = null	// Execute this code when the element loses focus
+	native void(FocusEvent ev) onFocus = null	// Execute this code when the element gains focus
 
 	int tabIndex = 0
 
@@ -228,7 +229,7 @@ skipInit class Image
 	string src
 	string basePath = Platform.basePath
 	
-	toString := "url('{basePath}{src}')"
+	toString => "url('{basePath}{src}')"
 	
 skipInit class Font
 	string name
@@ -286,19 +287,19 @@ struct float
 immutable priority low struct float
 	inline Dimension toAngle() Angle(this, radians)
 
-	inline Angle ° := Angle(this, degrees)
+	inline Angle ° => Angle(this, degrees)
 	
 	// Turns: One full rotation is 1
-	inline Angle turn := Angle(this, turns)
+	inline Angle turn => Angle(this, turns)
 	
 	// Radians: One full rotation is 2π (about 6.2832)
-	inline Angle rad := Angle(this, radians)
+	inline Angle rad => Angle(this, radians)
 		
 	// Degrees: One full rotation is 360
-	inline Angle deg := Angle(this, degrees)
+	inline Angle deg => Angle(this, degrees)
 		
 	// Gradians: One full rotation is 400
-	inline Angle grad := Angle(this, gradians)
+	inline Angle grad => Angle(this, gradians)
 		
 global skipInit unit math
 	// Returns the arctangent of the quotient of the given values
@@ -317,7 +318,7 @@ struct Angle
 	string toString() return "{this.value}{this.unit}"
 	
 	// Returns true if the angle is not zero
-	inline js bool toBool := this.value
+	inline js bool toBool => this.value
 	
 	Angle assign Angle other: value = other.value; unit = other.unit; return this
 	Angle assign float other: value = other; return this
@@ -382,6 +383,7 @@ global priority low skipInit static class html
 			currentOverlay.remove
 			currentOverlay = next
 		focusTabIndex = int.minValue
+		defaultButtonToTriggerWithEnterKey = null
 		// if not overlayNode
 		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
 		// 	body.parentNode.appendChild overlayNode
@@ -424,10 +426,12 @@ global priority low skipInit static class html
 	internal js void resize
 		let body = document.body
 		body.style = "background-color: white; color: black; font:16px/1.7 OpenSans; overflow: "+html.overflow
-		if(Platform.referenceSizes && Platform.referenceSizes.length > 0) {
-			let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : screen.width
+		let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : window.innerWidth
+		Platform.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
+
+		let referenceWidth = 0
+		if(Platform.referenceSizes) {
 			Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
-			let referenceWidth = 0
 			for(let entry of Platform.referenceSizes) {
 				if(screenWidth < entry.forWidthBelow) {
 					referenceWidth = entry.referenceWidth
@@ -435,8 +439,10 @@ global priority low skipInit static class html
 					break;
 				}
 			}
+		}
+		
+		if(referenceWidth) {
 			Platform.scale = window.innerWidth / referenceWidth
-			Platform.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
 			Platform.size = new Vector2(referenceWidth, referenceWidth * window.innerHeight/window.innerWidth)
 			body.style.transform = 'none !important'
 			body.style.marginRight = '0 !important'
@@ -451,8 +457,8 @@ global priority low skipInit static class html
 			body.style.marginBottom = `${-pullUp}px`
 			body.style.marginRight = `${-pullLeft}px`
 		} else {
+			Platform.scale = 1
 			Platform.isMobile = localStorage.getItem("isMobile") == "true"
-			Platform.scale = Platform.isDebug ? Platform.debugScale : 1
 			body.style.zoom = Platform.scale
 		}
 		body.className = Platform.isMobile ? "mobile" : ""
@@ -526,7 +532,7 @@ global priority low skipInit static class html
 			// Check if style has changed using a shadow copy (fastest)
 			let shadowStyle = element.shadowStyle || (element.shadowStyle = new Map)
 			for(let key in html.expandStyle(style)) {
-				let value = style[key].toString();
+				let value = style[key]?.toString();
 				if(shadowStyle.get(key) != value) {
 					element.style[key] = value;
 					shadowStyle.set(key, value);

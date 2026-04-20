@@ -8,10 +8,10 @@ struct float
 	// inline cpp string format: int minIntegerDigits = 1, bool grouping = false
 	// 	this.toLocaleString('en-US', {minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
 	
-	// inline cpp int milliseconds := Math.floor((this %    1000)          ) 
-	// inline cpp int seconds      := Math.floor((this %   60000) /    1000) 
-	// inline cpp int minutes      := Math.floor((this % 3600000) /   60000) 
-	// inline cpp int hours        := Math.floor((this          ) / 3600000)
+	// inline cpp int milliseconds => Math.floor((this %    1000)          ) 
+	// inline cpp int seconds      => Math.floor((this %   60000) /    1000) 
+	// inline cpp int minutes      => Math.floor((this % 3600000) /   60000) 
+	// inline cpp int hours        => Math.floor((this          ) / 3600000)
 		
 	// // (31.12.)
 	// inline cpp string dayMonthString(language = Loca.language) new Date(this).dayMonthString(language)
@@ -62,16 +62,16 @@ struct float
 	// 	log(text+": "+(now-window._timerStart));
 	// 	window._timerStart = now;
 		
-	// static inline cpp float preciseTime := performance.now()
+	// static inline cpp float preciseTime => performance.now()
 
 PlainDate
-	static inline cpp float now := new Date()
+	static inline cpp float now => new Date()
 
 	static internal cpp(chrono) int realTime
 		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 	
 	// The current frame
-	static inline cpp int frame := core::frame
+	static inline cpp int frame => core::frame
 
 cpp(Date) transient struct Date
 
@@ -85,22 +85,22 @@ cpp(Date) transient struct Date
 	// 	["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
 	// ]
 	
-	// inline cpp int year := this.getFullYear()
-	// inline cpp int month := (this.getMonth()+1)
-	// inline cpp int day := this.getDate()
-	// inline cpp int dayOfWeek := this.getDay()
+	// inline cpp int year => this.getFullYear()
+	// inline cpp int month => (this.getMonth()+1)
+	// inline cpp int day => this.getDate()
+	// inline cpp int dayOfWeek => this.getDay()
 		
-	// inline cpp int hour := this.getHours()
-	// inline cpp int minute := this.getMinutes()
-	// inline cpp int second := this.getSeconds()
+	// inline cpp int hour => this.getHours()
+	// inline cpp int minute => this.getMinutes()
+	// inline cpp int second => this.getSeconds()
 		
-	// inline cpp string twoDigitMonth := (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cpp string twoDigitDay := this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cpp string twoDigitHour := this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cpp string twoDigitMinute := this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
-	// inline cpp string twoDigitSecond := this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cpp string twoDigitMonth => (this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cpp string twoDigitDay => this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cpp string twoDigitHour => this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cpp string twoDigitMinute => this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})
+	// inline cpp string twoDigitSecond => this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 		
-	// inline cpp float timeOfDay := this.getHours()*3600000 + this.getMinutes()*60000
+	// inline cpp float timeOfDay => this.getHours()*3600000 + this.getMinutes()*60000
 	
 	// private static string toTwoDigitString: int value
 	// 	return value < 10 ? "0"+value.toString : value.toString
@@ -159,7 +159,7 @@ cpp(Date) transient struct Date
 	// 	return this.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+(this.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getFullYear()+" "+this.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+"-"+this.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})
 	
 	// // The number of milliseconds elapsed since January 1, 1970
-	// inline cpp float time := this.getTime()
+	// inline cpp float time => this.getTime()
 		
 	// // The data and time in ISO 8601 format, for example "2000-12-31T17:30:00.000Z"
 	// cpp string isoString()
@@ -183,4 +183,4 @@ cpp(Date) transient struct Date
 	// static inline cpp Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, month-1, day, hour, minute, second)
 	
 	// // Returns the real time, even during replay. Be careful: This can break the replay.
-	// static inline cpp Date realtime := new Date()
+	// static inline cpp Date realtime => new Date()

@@ -21,21 +21,25 @@ skipInit global unit Platform
 	float debugScale = 1
 	ReferenceSize[] referenceSizes
 	
+	// Info
+	public inline js string appName	=> _appName
+	public inline js int buildVersion	=> _buildVersion
+
 	// Environment
 	bool isDebug
 	global bool isMobile
 	bool electron
+	string os
 	
 	// Location
-	public inline js string url := location.href
-	public inline js string host := location.host
-	public inline js string locationHash := location.hash
-	public inline js string basePath := _basePath
+	public inline js string url	=> location.href
+	public inline js string host	=> location.host
+	public inline js string locationHash	=> location.hash
+	public inline js string basePath	=> _basePath
+	public inline js string referrer	=> document.referrer
 	public inline js string protocolAndHost() (location.host && !Platform.isDebug ? location.origin : "http://localhost")
-	public inline js string referrer := document.referrer
 	public inline js dynamic networkInformation() navigator.connection
 	public inline js void reload() location.reload(/*forceReload=*/true)
-	public inline js int buildVersion() _buildVersion
 
 	// Encode
 	public inline js string encodeURIComponent(string value) encodeURIComponent(value)
@@ -43,61 +47,74 @@ skipInit global unit Platform
 
 	private inline js void initMedia
 		this.electron = window?.process?.versions?.electron
+		const ua = navigator.userAgent;
+		switch (true) {
+			case /Android/i.test(ua):             this.os = "Android"; break;
+			case /iPhone|iPad|iPod/i.test(ua):    this.os = "iOS";     break;
+			case /Windows/i.test(ua):             this.os = "Windows"; break;
+			case /Mac OS X|Macintosh/i.test(ua):  this.os = "macOS";   break;
+			case /Linux/i.test(ua):               this.os = "Linux";   break;
+			default:                              this.os = "Unknown";
+		}
+		IndexedDB.stores = []
 		audio.init();
 		media.init();
 		PlainDate.init();
 		html.init();
 		app.init?.()
 		
-	private async inline js void initBackend
-		if(typeof(backend) != "undefined") {
-			await backend.connect2()
-			backend.onDataChange = () => html.refresh()
-		}
 
-	inline js float startTime := _startTime
+	inline js float startTime => _startTime
 			
 	async start: bool isDebug
 		try
-			print Time.preciseTime - startTime
-			Time.startTimer
-			this.nextHeartbeatTime = 0
-			heartbeat "start"
-			
 			this.isDebug = isDebug
+			// print Time.preciseTime - startTime
+			Time.startTimer
+			
 			this.referenceSizes = [
-				{1920}
-				{960 forWidthBelow:600 isMobile:true}
+				{500 forWidthBelow:1000 isMobile:true}
 			]
 			this.ticksPerSecond = 0
 			this.tickMode = Interval
 			this.resetWhenCodeChanged = true
 			
 			initMedia
-			Time.printTimer "initMedia"
-			initBackend
-			Time.printTimer "initBackend"
-			openMedia
-				Time.printTimer "openMedia"
-				try
-					stop
-					// We need to call resize again after the first refresh to prevent unwanted scrolling
-					html.resize
-					Time.printTimer "resize"
-					startTickInterval
-				catch 
-					sendErrorToEditor .
-				finally
-					sendFinished
-		catch 
-			sendErrorToEditor .
+			Time.printTimer "Platform.start: initMedia"
+
+			await loadFont "OpenSans.woff2"
+			Time.printTimer "Platform.start: loadFont"
+			try
+				html.reset
+				initAll
+				Time.printTimer "Platform.start: initAll"
+
+				html.resize
+				Time.printTimer "Platform.start: html.resize"
+
+				app.start??()
+				Time.printTimer "Platform.start: startApp"
+
+				refresh
+				Time.printTimer "Platform.start: refresh"
+
+				// We need to call resize again after the first refresh to prevent unwanted scrolling
+				html.resize
+				Time.printTimer "Platform.start: resize"
+
+				startTickInterval
+				sendToEditor {type:"startupComplete"}
+			finally
+				sendFinished
+				updatePageIconAndTitle
+		finally 
 			sendFinished
+			updatePageIconAndTitle
 		
-	js void openMedia: void() success
-		let font = new FontFace('OpenSans', `url(${_basePath}OpenSans.woff2)`);
+	js async void loadFont: string name
+		let font = new FontFace('OpenSans', `url(${_basePath}${name})`);
 		await font.load();
 		document.fonts.add(font);
-		success()
 		
 	js void initAll
 		if(window.reset_state != undefined) reset_state()
@@ -105,16 +122,15 @@ skipInit global unit Platform
 		
 	async replay
 		try
-			heartbeat "replay"
-			if resetWhenCodeChanged: html.reset
+			sendStringToEditor "start"
+			if resetWhenCodeChanged then html.reset
 			initMedia
-			initBackend
 			initAll
 			html.resize
 			startApp
 			refresh
 		catch
-			sendErrorToEditor .
+			onError .
 		finally
 			sendFinished
 
@@ -129,9 +145,8 @@ skipInit global unit Platform
 		if(app.start) app.start()
 		
 	private js void tick
-		Platform.heartbeat("tick")
 		if(app.tick) app.tick()
-		Time.frame++
+		Time.ticks++
 		
 	private js void startTickInterval
 		if(window._tickInterval) {
@@ -148,24 +163,20 @@ skipInit global unit Platform
 				window.tick();
 			}
 		}
+
+	onError: Error error
+		System.logError error
+		sendStringToEditor("exception|{error.stack}||0")
+
+	internal inline js void sendToEditor: dynamic message
+		if(Platform.isDebug) _sendToEditor(message)
 		
-	internal inline js void sendErrorToEditor: Error error
-		if(window._sendErrorToEditor) _sendErrorToEditor(error)
-		else                          console.error(error)
+	internal inline js void sendStringToEditor: string message
+		if(Platform.isDebug) _sendStringToEditor(message)	
 		
 	private inline js void sendFinished
 		console.log("[app] ----- Finished -----")
 		if(Platform.isDebug) _sendToEditor({type:"finished"})
-			
-	float nextHeartbeatTime = 0
-	
-	private js void heartbeat: string context
-		if(!Platform.isDebug) return
-		let now = Date.now();
-		if(now > Platform.nextHeartbeatTime) {
-			Platform.nextHeartbeatTime = now + 3000;
-			_sendStringToEditor("~");
-		}
 		
 	js string generateObjectId
 		const timestamp = Math.floor(new Date().getTime() / 1000).toString(16);
@@ -322,6 +333,27 @@ skipInit global unit Platform
 			else?.(e.message)
 		}
 		
+	inline js void openPrintDialog
+		window.print()
+
+	internal updatePageIconAndTitle
+		System.log("Updating page title and icon")
+		if not isDebug then return
+		setPageTitle appName
+		
+	js void setPageTitle: string title
+		document.title = title;
+
+	js void setPageIcon: string iconUrl
+		console.log("Setting page icon to " + iconUrl)
+		var link = document.querySelector("link[rel~='icon']");
+		if (!link) {
+			link = document.createElement('link');
+			link.rel = 'icon';
+			document.head.appendChild(link);
+		}
+		link.href = iconUrl;
+		
 enum lowercase string DataTransferItemKind: String, File
 		
 interface DataTransferItem
@@ -347,14 +379,28 @@ MenuItem
 	MenuItem[] submenu = null
 	bool checked
 	
+enum lowercase string PrintType
+	Action	// Use for actions performed by a user
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action.
+	NoAction	// Use when no action was performed. For example, if user input is invalid.
+	Headline	// When a major action is performed, for example navigating to a new page.
+
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
+
+	
 global transient unit System
 	// Prints a message to the console
-	global js void print: logstring text // The text, variables or expressions to print
+	global js void print: logstring text	// The text, variables or expressions to print
+	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+						  Color color = null	// The color to use when showing the message in the console or the event stream panel
 		                  SourceCodeLocation location
-		console.log(text)
-		if(Platform.isDebug) {
-			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
-			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location?.start, file:location?.file});
+		if(color) console.log(`%c${text}`, `color: ${color.colorString}`)
+		else      console.log(text)
+		if(Platform.isDebug && location) {
+			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
 		}
 	
 global skipInit unit math
@@ -386,7 +432,7 @@ class Color
 	string colorString
 	string name
 	
-	string toString := colorString
+	string toString => colorString
 	
 	Color: string colorString = ""
 		let firstChar = colorString[0]

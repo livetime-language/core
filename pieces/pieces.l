@@ -53,7 +53,7 @@ Object Piece
 	public Board board
 	private Player interactingPlayer
 	
-	private siblings := board ? board.objects : Framework.objects
+	private siblings => board ? board.objects : Framework.objects
 	onBoardChanged
 		
 	// Snap
@@ -71,7 +71,7 @@ Object Piece
 			// if size.y < minSize: size.y = minSize
 		this.targetAngle = angle
 		
-	debugString := "(Piece pos:{position.x} {position.y} frame:{frame} side:{side} image:{image?.file} board:{board.toBool})"
+	debugString => "(Piece pos:{position.x} {position.y} frame:{frame} side:{side} image:{image?.file} board:{board.toBool})"
 	
 	finishTouch
 		rotateTouch = null
@@ -348,7 +348,7 @@ Board SpotBoard
 		
 class Spot
 	Vector2 pos
-	getClosestPoint(Vector2 touchPos, Vector2 boardPos) := pos + boardPos
+	getClosestPoint(Vector2 touchPos, Vector2 boardPos) => pos + boardPos
 	
 Spot SpotGrid
 	Vector2 cellSize
@@ -382,7 +382,7 @@ Piece Coin
 	private closestCoinType closestCoinType
 	private float distanceToClosest
 	
-	debugString := "(Coin {value} pos:{position.x} {position.y} dis:{distanceToClosest})"
+	debugString => "(Coin {value} pos:{position.x} {position.y} dis:{distanceToClosest})"
 	
 	override tick
 		if movable

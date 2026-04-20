@@ -1,16 +1,4 @@
 tests
-	// The first player (players[0])
-	bluePlayer	:= players[0]	
-	
-	// The second player (players[1])
-	redPlayer	:= players[1]	
-
-	// The third player (players[2])
-	greenPlayer	:= players[2]
-
-	// The fourth player (players[3])
-	yellowPlayer	:= players[3]
-
 	// Simulate a click by a given player.
 	// Always test that each player can only interact with items they are allowed to interact with.
 	// Example:
@@ -82,8 +70,9 @@ tests
 	importance:5
 	void moveLeftStickTo: Vector2 direction	// The direction to move the left stick to
 	                      nocolon Player by = players[0]	// The player
-		by.gameController.leftStick.assign(direction)
-		print type:GameController "Move left stick to {direction} by {by}"
+		by.gamepad.leftStick.assign(direction)
+		app.onGamepad??(by.gamepad)
+		by.onGamepad??(by.gamepad)
 		tick
 
 	// Wait for a given amount of time
@@ -94,8 +83,13 @@ tests
 		let targetFrame = core.frame + math.round time * core.ticksPerSecond / 1000
 		if core.targetFrame != -1 and targetFrame > core.targetFrame
 			targetFrame = core.targetFrame
-		System.log "wait until {targetFrame} (frame: {core.frame}, core.targetFrame: {core.targetFrame})"
 		while core.frame <= targetFrame
+			tick
+
+	// Wait for all animations to finish
+	importance:5
+	void waitForAnimationsToFinish
+		while runningAnimations
 			tick
 
 	// Use printWhatIsOnScreen to check if the what is shown on screen is correct
@@ -113,13 +107,5 @@ tests
 		try	actualString = json.stringify(expression)
 		catch	actualString = expression?.toString()
 		string result = expression ? "+" : "-"
-		core.debugLog "expect||{result}|{actualString}|true|{location.file}|{location.start}"
+		core.addOutput "expect||{result}|{actualString}|true|{location.file}|{location.start}"
 
-	// Asserts that the application output contains a given string at any point
-	// Example:
-	//     expectToPrint "Cell {2,3} clicked by blue player"
-	importance:5
-	void expectToPrint: string value // The assert will fail if the application output does not contain this string
-		                SourceCodeLocation location
-		let result = (core.output.any.contains value) ? "+" : "-"
-		core.debugLog "expect|to print|{result}|{value}||{location.file}|{location.start}"

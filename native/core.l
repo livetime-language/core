@@ -98,7 +98,7 @@ skipInit unit core
 			
 	step
 		// print "step", frame
-		input.parseInputs Time.frame
+		input.parseInputs Time.ticks
 		tick
 		frame++
 		

@@ -1,7 +1,7 @@
 CompilerSettings
 	logSerialize = false
 	
-enum PlatformMode: Pause, Manipulator, Slide, Play, Record
+enum PlayMode: Stop, Pause, Manipulator, Slide, Play, Record
 enum OperatingSystem: Windows, Mac, Linux, Android, iOS
 enum IntervalMode: JavaScriptInterval, AnimationFrame
 
@@ -11,23 +11,28 @@ transient skipInit unit Platform
 	public supportedUserCount = Range 2..4
 	public bool showDebugInfo = false
 	public bool isLocal = false
+	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
 	
 	// Info
-	public inline js string appName := _appName
-	public inline js int buildVersion := _buildVersion
+	public inline js string appName	=> _appName
+	public inline js int buildVersion	=> _buildVersion
 	
+	global visible bool isDebug
+	global public bool isOnlineMultiplayer
+
 	visible OperatingSystem os
 	visible bool isMobile
 	visible bool isBrowser
 	visible bool isNode
-	visible bool isDebug
 	visible bool isSmallScreen
 	public bool isStaging
 	
 	// Internal
 	internal bool engineStarted
-	internal PlatformMode mode
+	internal PlayMode playMode
+	internal int homeFrame
+	internal int homeInterrruptAtOutputIndex
 	internal bool fastForward
 	internal bool isDrawing
 	internal int waitingForInitialData
@@ -40,8 +45,8 @@ transient skipInit unit Platform
 		media.init();
 		
 	private js void initPlatform
+		Object.prototype.toString = function() { return object.stringify(this, 5) }
 		statistics.init();
-		debug.init();
 		IndexedDB?.init();
 		PlainDate.init();
 		Platform.init();
@@ -67,7 +72,7 @@ transient skipInit unit Platform
 		if(!Platform.isMobile) 
 			window.onresize = e => { 
 				graphics.onResize();
-				if(Platform.mode < 3/*Pause,Manipulator,Slide*/ && Platform.engineStarted) Platform.goToCurrentFrame();
+				if(Platform.playMode <= 3/*Stop,Pause,Manipulator,Slide*/ && Platform.engineStarted) core.tick(/*draw*/true);
 			}
 		if(app.init) app.init();
 			
@@ -77,13 +82,14 @@ transient skipInit unit Platform
 	// This is called when the application starts for the first time	
 	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
 		try
+			System.log "Platform.start"
 			let now = PlainDate.preciseTime
-			this.nextHeartbeatTime = 0
-			heartbeat "start"
 			
 			initMedia
 			initPlatform
 			this.engineStarted = false
+			this.homeFrame = 0
+			this.homeInterrruptAtOutputIndex = -1
 			this.isDebug = isDebug
 			this.userCount = userCount
 			initBackend
@@ -95,8 +101,7 @@ transient skipInit unit Platform
 			// await graphics.setup {referenceSizeX, referenceSizeY}
 			await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
 			graphics.onResize
-			// graphics.drawStatus "Loading media"
-			if mode >= Play: mode = Pause
+			playMode = Stop
 			let path = url.getUntil("?").split("/")
 			let gameId = path[3]
 			let roomId = path[4]
@@ -109,7 +114,7 @@ transient skipInit unit Platform
 			let userId = -1
 			if roomId
 				let dashIndex = roomId.indexOf("x")
-				if dashIndex != -1: isStaging = true;
+				if dashIndex != -1 then isStaging = true;
 				else                dashIndex = roomId.indexOf("u")
 				
 				if dashIndex != -1
@@ -122,57 +127,64 @@ transient skipInit unit Platform
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
 					startInterval
-					if isDebug || isLocal || roomId == "local" || url.startsWith("file"): core.startLocal
-					else                                                                  core.join gameId, roomId, userId
+					isOnlineMultiplayer = not (isDebug or isLocal or roomId == "local" or url.startsWith("file"))
+					if isOnlineMultiplayer	core.join gameId, roomId, userId
+					else	core.startLocal
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
-					if !isDebug: record
+					if !isDebug then record
+					
+					// Tell the editor that we can call "replay" when the code changes
+					// If we didn't reach this point, we call "start" again when the code changes
+					sendToEditor {type:"startupComplete"}
 						
 				catch
 					core.onError .
 				finally 
-					sendFinished
-					updateIcon
+					core.sendOutputToEditor frame:core.frame-1
+					updatePageIconAndTitle
 		catch
 			core.onError .
-			sendFinished
-			updateIcon
+			updatePageIconAndTitle
 	
 	private async js void preload
 		if(app.preload) await app.preload();
 		
 	string runningTestFunction = null
 	private runTest: string testFunction, int id
-		mode = Pause
+		playMode = Pause
 		runningTestFunction = testFunction
-		core.runTest FirstRun, testFunction, id
+		core.output.clear
+		core.runTest testFunction, id
 			
 	// This is called after every code change to replay all inputs with the new code
-	private async replay: bool updateMedia
+	internal async replay: bool updateMedia
+		System.log "Platform.replay"
 		if runningTestFunction
-			core.runTest FullReplay, runningTestFunction
+			core.runTest runningTestFunction, targetFrame:core.frame-1, interrruptAtOutputIndex:core.interrruptAtOutputIndex
 		else
-			core.goToFrame core.frames-1, replayFromStart:true
+			core.goToFrame core.frame-1, core.interrruptAtOutputIndex, codeChanged:true
+
+	private async home
+		goToFrame homeFrame, homeInterrruptAtOutputIndex
+
+	private async clearHomeAndGoToEnd
+		homeFrame = 0
+		homeInterrruptAtOutputIndex = -1
+		goToFrame core.frames-1, interrruptAtOutputIndex:-1
 
 	// This is called when clicking on an event stream item
-	goToFrame: int targetFrame, int targetOutputId
-		mode = Pause
+	goToFrame: int targetFrame, int interrruptAtOutputIndex, bool saveHome = false
+		if playMode != Pause
+			playMode = Pause
+			updatePageIconAndTitle
+		if saveHome
+			homeFrame = targetFrame
+			homeInterrruptAtOutputIndex = interrruptAtOutputIndex
 		if runningTestFunction
-			core.runTest PartialReplay, runningTestFunction, targetFrame, targetOutputId
+			core.runTest runningTestFunction, targetFrame, interrruptAtOutputIndex
 		else
-			core.goToFrame targetFrame, targetOutputId
-
-	generateIntegrationTest: GenerateIntegrationTestMode mode
-		input.generateIntegrationTest = mode
-		input.integrationTest = ""
-		try
-			core.goToFrame core.frames-1, replayFromStart:true
-		catch
-			core.onError .
-		finally 
-			sendFinished
-		input.generateIntegrationTest = None
-		sendToEditor {type:"integrationTest", text:input.integrationTest}
+			core.goToFrame targetFrame, interrruptAtOutputIndex, codeChanged:false
 			
 	object interval
 	private js void startInterval
@@ -191,65 +203,71 @@ transient skipInit unit Platform
 	
 	// This is called every animation frame
 	private tick
-		heartbeat "tick"
-		if mode == Play or mode == Record or waitingForInitialData
+		if playMode == Play or playMode == Record or waitingForInitialData
 			core.animationFrame
 				
-	private enterSlideMode(PlatformMode mode) this.mode = mode; updateIcon; sendMode
+	private startManipulator:PlayMode playMode
+		this.playMode = playMode
+		gizmo.clear
+		updatePageIconAndTitle
+		replay updateMedia:false
 	
-	internal stop()    mode = Pause; gizmo.clear; runningTestFunction = null; core.frame = 0; updateIcon; sendMode; core.stop
-	internal pause()   mode = Pause; gizmo.clear; updateIcon; sendMode; audio.stop
-	internal record()  core.adjustStartTimeIfNeeded; mode = Record; gizmo.clear; updateIcon; sendMode; core.record
-	internal play()    core.adjustStartTimeIfNeeded; mode = Play; gizmo.clear; updateIcon; sendMode
+	internal stop
+		playMode = Stop
+		gizmo.clear
+		runningTestFunction = null
+		updatePageIconAndTitle
+		try
+			core.stop
+		catch
+			core.onError .
+		finally
+			core.sendOutputToEditor
+
+	internal pause
+		playMode = Pause
+		gizmo.clear
+		updatePageIconAndTitle
+		core.sendOutputToEditor frame:core.frame-1
+		audio.stop
+
+	internal record
+		core.adjustStartTimeIfNeeded
+		playMode = Record
+		gizmo.clear
+		updatePageIconAndTitle
+		core.record
+
+	internal play
+		gizmo.clear
+		goToFrame core.frame-1, interrruptAtOutputIndex:-1, saveHome:false
+		core.adjustStartTimeIfNeeded
+		playMode = Play
+		updatePageIconAndTitle
+
+	internal togglePlay
+		if playMode == Play or playMode == Record then	pause
+		else	play
 	
 	internal switchToPlayer(int index)
 		core.switchToPlayer(input.players[index]);
-		if mode == Pause: core.step fastForward:false draw:true
-	
-	internal js void sendSelectToEditor: string cursorFile, int cursorPos
-		_sendToEditor({type:"select", cursorFile, cursorPos})
-	
-	internal js void sendDeselectToEditor
-		_sendToEditor({type:"deselect"})
-	
-	internal js void sendStartManipulationToEditor: GizomInfluence[] influences
-		_sendToEditor({type:"startManipulation", influences})
-	
-	internal js void sendMoveManipulationToEditor: GizomInfluence[] influences, int codeId
-		_sendToEditor({type:"moveManipulation", influences, codeId})
-	
-	internal js void sendFrame: int frame, int frames
-		_sendToEditor({type:"frame", frame, frames})
-	
+		if playMode == Pause or playMode == Stop then core.step fastForward:false draw:true
+		
 	internal js void sendWatch: int frame, string text, int location, string file
 		_sendToEditor({type:"watch", frame, text, location, file})
 	
 	internal js void sendClearTimeline:
 		_sendToEditor({type:"clearTimeline"})
 	
-	private js void sendMode
-		if(Platform.isDebug) _sendToEditor({type:"setPlatformMode", mode:Platform.mode, frame:core.frame})
-		
-	internal inline js void sendToEditor: dynamic message
+	inline js void sendToEditor: dynamic message
 		if(Platform.isDebug) _sendToEditor(message)
 		
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
-		
-	inline js void sendFinished
-		console.log("[app] Finished initializing")
-		if(Platform.isDebug) _sendToEditor({type:"finished", frame:core.frame, frames:core.frames})
 	
-	private float nextHeartbeatTime
-	
-	private js void heartbeat: string context
-		if(!Platform.isDebug) return
-		let now = Date.now();
-		if(now > Platform.nextHeartbeatTime) {
-			Platform.nextHeartbeatTime = now + 3000;
-			_sendStringToEditor("~");
-		}
-		
+	// sendFinished
+	// 	if Platform.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)Platform.playMode, output:core.output})
+			
 	private void toggleDebugInfo
 		showDebugInfo = !showDebugInfo;
 		setLocalStorageObject("showDebugInfo", showDebugInfo ? "true" : "false")
@@ -276,35 +294,52 @@ transient skipInit unit Platform
 	js void navigate: string url
 		window.location.href = url
 
-	inline js bool isConnectedToEditor := _isConnectedToEditor
+	inline js bool isConnectedToEditor => _isConnectedToEditor
 
-	private updateIcon
-		if not isConnectedToEditor:	setPageTitleAndIcon title:"Not connected to editor" iconUrl:"/_dev/NotConnected.png"; else
-		if mode == Pause and core.frame <= 1:	setPageTitleAndIcon title:"Stop" iconUrl:"/_dev/Stop.png"; else
-		if mode == Pause:	setPageTitleAndIcon title:"Pause" iconUrl:"/_dev/Pause.png"; else
-		if mode == Play:	setPageTitleAndIcon title:"Play" iconUrl:"/_dev/Play.png"; else
-		if mode == Record:	setPageTitleAndIcon title:"Record" iconUrl:"/_dev/Record.png"; else
-		if mode == Manipulator:	setPageTitleAndIcon title:"Manipulator" iconUrl:"/_dev/Manipulator.png"; else
-		if mode == Slide:	setPageTitleAndIcon title:"Slide" iconUrl:"/_dev/Slide.png";
 
-	js void setPageTitleAndIcon: string title = null, string iconUrl = null
-		if(title) {
-			document.title = title;
+	const string[PlayMode] iconForPlayMode = {
+		Stop:	"⏹"
+		Pause:	"⏸"
+		Play:	"▶"
+		Record:	"⏺"
+		Manipulator:	"✥"
+		Slide:	"⏭"
+	}
+
+	internal updatePageIconAndTitle
+		if not isDebug then return
+		let playerName = input.localPlayer?.toString or ""
+
+		if showPlayModeInPageIcon
+			setPageTitle "{playerName}"
+			switch
+				not isConnectedToEditor	then setPageIcon "/_dev/NotConnected.png"
+				playMode == Stop	then setPageIcon "/_dev/Stop.png"
+				playMode == Pause	then setPageIcon "/_dev/Pause.png"
+				playMode == Play	then setPageIcon "/_dev/Play.png"
+				playMode == Record 	then setPageIcon "/_dev/Record.png"
+				playMode == Manipulator	then setPageIcon "/_dev/Manipulator.png"
+				playMode == Slide	then setPageIcon "/_dev/Slide.png";
+		else
+			setPageTitle "{iconForPlayMode[playMode]} | {playerName}"
+	
+	js void setPageTitle: string title
+		document.title = title;
+
+	js void setPageIcon: string iconUrl
+		console.log("Setting page icon to " + iconUrl)
+		var link = document.querySelector("link[rel~='icon']");
+		if (!link) {
+			link = document.createElement('link');
+			link.rel = 'icon';
+			document.head.appendChild(link);
 		}
-		if(iconUrl) {
-			var link = document.querySelector("link[rel~='icon']");
-			if (!link) {
-				link = document.createElement('link');
-				link.rel = 'icon';
-				document.head.appendChild(link);
-			}
-			link.href = iconUrl;
-		}
+		link.href = iconUrl;
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 float now
 	
-	// The current frame (by default, there are 30 frames per second)
-	static importance:5 inline js int frame := core.frame
+	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second)
+	static importance:5 inline js int ticks => core.frame

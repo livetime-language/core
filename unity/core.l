@@ -96,7 +96,7 @@ skipInit unit Core
 	
 	step
 		Time.now = DateTime.realTime
-		Input.parseInputs Time.frame, true
+		Input.parseInputs Time.ticks, true
 		tick
 		
 		// Cleanup
@@ -105,7 +105,7 @@ skipInit unit Core
 		Input.users.each.clearEvents
 		
 		// Advance frame
-		Time.frame++
+		Time.ticks++
 		if frames < frame: frames = frame
 					
 	tick

@@ -107,13 +107,13 @@ immutable struct int
 		(this % divisor)
 		
 	// Returns true if the integer is not zero
-	inline js bool toBool := this
+	inline js bool toBool => this
 	
-	importance:4 inline js string toString := this?.toString()
+	importance:4 inline js string toString => this?.toString()
 		
 	inline js int fromHex(string value) parseInt(value, 16)
 		
-	inline js string formatWithSpaces := this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 		
 	// Shift the bits of the int to the left. Excess bits shifted off to the left are discarded
 	importance:3  inline js int shiftLeft: int count // The amount of bits to shift 
@@ -202,7 +202,7 @@ immutable struct int
 		int.enumerate(0, this, selector)
 
 	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
+	const inline js int undefined => undefined
 	
 // A number stored as a double precision 64-bit floating point value
 immutable struct float
@@ -278,7 +278,7 @@ immutable struct float
 	// Example:
 	//     float time = 500 milliseconds
 	importance:3 inline js 
-	float milliseconds := this
+	float milliseconds => this
 	
 	// Take a time in seconds and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -287,7 +287,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 7000
 	importance:3 inline js
-	float seconds := (this*1000)
+	float seconds => (this*1000)
 		
 	// Take a time in minutes and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -296,7 +296,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 120000
 	importance:3 inline js
-	float minutes := (this*60000)
+	float minutes => (this*60000)
 		
 	// Take a time in hours and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -305,7 +305,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 7200000
 	importance:3 inline js
-	float hours := (this*3600000)
+	float hours => (this*3600000)
 	
 	// Take a time in days and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -314,7 +314,7 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 172800000
 	importance:3 inline js
-	float days := (this*86400000)
+	float days => (this*86400000)
 	
 	// Take a time in weeks and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
@@ -323,13 +323,13 @@ immutable struct float
 	// Output:
 	//     Time in milliseconds: 1209600000
 	importance:3 inline js
-	float weeks := (this*604800000)
+	float weeks => (this*604800000)
 	
-	// Take a time in frames (30 frames are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Take a time in ticks (30 ticks are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
 	// Example:
-	//     float time = 10 frames
+	//     float time = 10 ticks
 	importance:3 inline js 
-	float frames := this * 1000 / core.ticksPerSecond
+	float ticks => this * 1000 / core.ticksPerSecond
 	
 	// ------------------------------------------- Operators -------------------------------------------
 
@@ -357,19 +357,19 @@ immutable struct float
 		
 	// The largest possible floating point value
 	const importance:5 inline js
-	float maxValue := Number.MAX_VALUE
+	float maxValue => Number.MAX_VALUE
 	
 	// The smallest possible floating point value
 	const importance:5 inline js
-	float minValue := -Number.MAX_VALUE
+	float minValue => -Number.MAX_VALUE
 	
 	// Positiv infinity
 	const importance:4 inline js
-	float infinity := Number.POSITIVE_INFINITY
+	float infinity => Number.POSITIVE_INFINITY
 
-	const inline js float notANumber := Number.NaN 
+	const inline js float notANumber => Number.NaN 
 	
-	const inline js float epsilon := Number.EPSILON
+	const inline js float epsilon => Number.EPSILON
 	
 	inline js float ** (float a, float b) 
 		Math.pow(a,b)
@@ -396,12 +396,12 @@ immutable struct float
 	float remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
 		
-	inline js int toInt := Math.floor(this)
+	inline js int toInt => Math.floor(this)
 		
 	// Returns true if the floot is not zero
-	inline js bool toBool := this
+	inline js bool toBool => this
 	
-	importance:4 inline js string toString := this.toString()
+	importance:4 inline js string toString => this.toString()
 		
 	importance:3 inline js float moveTowards: float value
 		                                      float speed = 1
@@ -418,24 +418,24 @@ immutable struct float
 	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
 		
 	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
-	const inline js int undefined := undefined
-	const inline js int null := null
+	const inline js int undefined => undefined
+	const inline js int null => null
 	
 	
 // A sequence of characters
 js String
 immutable class string
 	// Returns the number of characters in the string
-	importance:5 inline js int length := this.length
+	importance:5 inline js int length => this.length
 	
 	// Returns a string with each character converted to uppercase
-	importance:5 inline js string toUpperCase := this.toUpperCase()
+	importance:5 inline js string toUpperCase => this.toUpperCase()
 		
 	// Returns a string with each character converted to lowercase
-	importance:5 inline js string toLowerCase := this.toLowerCase()
+	importance:5 inline js string toLowerCase => this.toLowerCase()
 	
 	// Returns true if the string is not null and not empty	
-	inline js bool toBool := this
+	inline js bool toBool => this
 	inline js string toString() this
 
 	// Returns the string converted to an integer. Use int.isValidNumber to check if the conversion was successful.
@@ -445,7 +445,7 @@ immutable class string
 	//             int number = str.toInt
 	//             if number.isValidNumber: print "The string is a number: {number}"
 	//             else                     print "The string is not a number"
-	importance:5 inline js int toInt := parseInt(this)
+	importance:5 inline js int toInt => parseInt(this)
 
 	// Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
 	// Example:
@@ -454,20 +454,20 @@ immutable class string
 	//             float number = str.toFloat
 	//             if number.isValidNumber: print "The string is a number: {number}"
 	//             else                     print "The string is not a number"
-	importance:5 inline js float toFloat := parseFloat(this)
+	importance:5 inline js float toFloat => parseFloat(this)
 	
 	// Parse the string as json
 	importance:5 inline js dynamic parseJson() JSON.parse(this)
 	
 	// Parse the string as yaml
 	importance:5 inline js dynamic parseYaml() yaml.parse(this)
-		
+
 	importance:4 inline js int parseInt(int radix) parseInt(this, radix)
 	
 	// Variable values that indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
 	// Example:
 	//     if user.name == string.undefined: user.name = "Guest"
-	const inline js string undefined := undefined
+	const inline js string undefined => undefined
 	
 	// Splits the string at the given character into a list of substrings#
 	importance:5 inline js
@@ -479,8 +479,8 @@ immutable class string
 		int start
 		while start < this.length
 			int end = this.indexOf(seperator, start)
-			if end == -1: break
-			if end > start+1: result.add this[start to end]
+			if end == -1	then break
+			if end > start+1	then result.add this[start to end]
 			start = end+1
 		return result
 		
@@ -586,7 +586,7 @@ immutable class string
 		
 	js string getUntilLast: string value
 		                    int start = 0
-		let index = this.lastIndexOf(value, start)
+		let index = this.lastIndexOf(value)
 		if(index != -1) return this.substring(start, index);
 		if(start > 0)   return this.substring(start);
 		                return this
@@ -658,7 +658,7 @@ immutable class string
 	importance:5 inline js
 	string replaceAll: string occurrencesOf // Search for all occurrences of this string
 		               nocolon string with  // Replace them with this string
-		this.replaceAll(occurrencesOf, with)
+		this.replace(new RegExp(occurrencesOf, "g"), with)
 		
 	inline js string padStart: int targetLength
 		                       string padString = " "
@@ -685,8 +685,8 @@ immutable class string
 		let result = ""
 		let prevChar = " "
 		for this
-			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z"): result += .toUpperCase
-			else                                      result += .
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z") then	result += .toUpperCase
+			else	result += .
 			prevChar = .
 		return result
 		
@@ -801,10 +801,10 @@ class List<T>
 			this.push(item)
 		
 	// Add each item from a list if it isn't already in there
-	importance:5 js void ensure: stored T[] items // The list of items to add
-		for(let it of items)
-			if(!this.includes(it))
-				this.push(it)
+	importance:5 ensure: T[] items // The list of items to add
+		for items
+			if not contains .
+				add .
 
 	// ------------------------------------------- Remove -------------------------------------------
 		
@@ -910,7 +910,7 @@ class List<T>
 		return null
 	
 	// Removes all items from the list
-	importance:5 inline js void clear := this.length = 0
+	importance:5 inline js void clear => this.length = 0
 	
 	// ------------------------------------------- Pop -------------------------------------------
 		
@@ -922,7 +922,7 @@ class List<T>
 	// Output:
 	//     Orange
 	//     [Apple, Lemon]
-	importance:4 inline js T pop := this.pop()
+	importance:4 inline js T pop => this.pop()
 		
 	// Remove an item at a specific index from the list and return it
 	// Example: Print and remove "Lemon" from the list
@@ -949,7 +949,7 @@ class List<T>
 	// Exmaple: Remove the first player with a health below 10
 	//     let firstActivePlayer = players.popWhere.health < 10
 	importance:2 T popWhere: bool(T it) condition // The condition for the item to meet
-		for length()
+		for length
 			let item = get(i)
 			if condition(item)
 				removeAt i
@@ -970,7 +970,7 @@ class List<T>
 	// ------------------------------------------- Length -------------------------------------------
 
 	// Gets the number of items in the list
-	importance:5 inline js int length() this.length
+	importance:5 int length
 
 	// Truncated or expands the list the given number of items
 	importance:5 js int setLength: int length // The new length of the list
@@ -1050,7 +1050,9 @@ class List<T>
 	void setFilteredList: T[] list
 		                  bool(T it) condition
 		clear
-		for list: if condition(.): add .
+		for list
+			if condition(.)
+				add .
 		
 	void setFilteredList: T[] list
 		                  bool(T it) condition
@@ -1060,7 +1062,7 @@ class List<T>
 		for list
 			if condition .
 				add .
-				if ++count >= maxCount: break
+				if ++count >= maxCount then break
 			
 	// ------------------------------------------- Clone or Convert -------------------------------------------
 
@@ -1068,7 +1070,7 @@ class List<T>
 	inline js T[] clone() [...this]
 	
 	// Returns true if the list is not null and not empty	
-	inline js bool toBool := (this != null && this.length != 0) 
+	inline js bool toBool => (this != null && this.length != 0) 
 
 	// Create a string representation of the list
 	js string toString()
@@ -1096,7 +1098,7 @@ class List<T>
 	
 	// Remove a random item from the list and return it
 	importance:3 T popRandom()
-		if length == 0: return null
+		if length == 0 then return null
 		int index = math.randomInteger(length)
 		T item = get(index)
 		this.removeAt(index)
@@ -1184,7 +1186,7 @@ class List<T>
 
 	// Sort the list by a given expression in descending order
 	// Example:
-	//    let bestPlayers = (players.where.isAlive).orderByDescending.score
+	//    let bestPlayers = (players.where.isAlive).orderByDescending.playerScore
 	importance:5
 	T[] orderByDescending: float(T it) expression // First order by this expression
 		return this.sort(expression(b) - expression(a))
@@ -1245,7 +1247,7 @@ class List<T>
 		
 	// Return a list that contains the selected field or expression for each item
 	// Example: Get a list of all player names
-	//     let playerNames = players.select.name
+	//     let playerNames = players.select.playerName
 	importance:4 inline js 
 	TValue[] select: TValue(
 		                 T it,  // The current item of the list
@@ -1255,7 +1257,7 @@ class List<T>
 
 	// Return a list of all items that meet a specific condition
 	// Example: Get all players with more than 0 health, ordered by their score
-	//     let healthyPlayers = (players.where.health > 0).orderByDescending.score
+	//     let healthyPlayers = (players.where.health > 0).orderByDescending.playerScore
 	// Example: Get all active enemies in a random order
 	//    let activeEnemies = (enemies.where.isActive).shuffle
 	importance:4 inline js 
@@ -1274,7 +1276,7 @@ class List<T>
 	// Example: Find the name of the player with a specific id
 	//     app
 	//         string getName: int id
-	//             return (players.find.id == id)?.name
+	//             return (players.find.id == id)?.playerName
 	importance:5 inline js T find: bool(T it) condition // The condition to check
 		this.find(condition)
 		
@@ -1320,21 +1322,26 @@ class List<T>
 	TValue findIn: TValue(T it) selector
 		for this
 			let value = selector(it)
-			if value != null: return value
+			if value != null then return value
 		return null
 
 	T findWithinRangeOrClosest: float(T it) selector
-		                        float min = -float.infinity
-		                        float max = float.infinity
+		                        float from = -float.infinity
+		                        float to = float.infinity
 		float closestDistance = float.infinity
 		int closestIndex = -1
 		T closestItem = null
-		for this
+		for this as item
 			let value = selector(.)
 			float distance
-			if value > max: distance = value - max; else
-			if value < min: distance = min - value; else
-				            this.removeAt(i); return .
+			// if value > to then distance = value - to; else
+			// if value < from then distance = from - value; else
+			// 	            this.removeAt(i); return .
+
+			switch value
+				> to	then distance = value - to
+				< from	then distance = from - value
+				default	then this.removeAt(i); return item
 				
 			if distance < closestDistance
 				closestDistance = distance
@@ -1385,18 +1392,21 @@ class List<T>
 					
 	importance:2 int total: int(T it) selector
 		let sum = 0
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum
 		
 	int total: int(T it) selector
 		       label bool(T it) where
 		let sum = 0
-		for this: if where(.): sum += selector(.)
+		for this
+			if where(.) then sum += selector(.)
 		return sum
 		
 	float total: float(T it) selector
 		let sum = 0.0
-		for this: sum += selector(.)
+		for this
+			sum += selector(.)
 		return sum
 		
 	js int sum
@@ -1412,19 +1422,19 @@ class List<T>
 		                 string separator = ", "
 		let result = ""
 		for this
-			if result: result += separator
+			if result then result += separator
 			result += selector(.)
 		return result
 		
 	importance:5 shuffle
-		for 1 to length <- i
+		for 1 to length backwards
 			var j = math.floor(math.randomFloat * (i + 1))
 			var temp = this.get(i)
 			this.set(i, this.get(j))
 			this.set(j, temp)
 		return this
 		
-	shuffled := this.clone.shuffle
+	shuffled => this.clone.shuffle
 		
 	private static transient T[] temporaryCopy = null
 		
@@ -1443,7 +1453,7 @@ class List<T>
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value < resultValue: resultValue = value
+			if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	min: float(T it) selector 
@@ -1452,7 +1462,7 @@ class List<T>
 		float resultValue = threshold
 		for this
 			let value = selector(.)
-			if value < resultValue: resultValue = value
+			if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	min: int(T it) selector 
@@ -1463,7 +1473,7 @@ class List<T>
 		for this
 			if where(.)
 				let value = selector(.)
-				if value < resultValue: resultValue = value
+				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	min: float(T it) selector 
@@ -1474,7 +1484,7 @@ class List<T>
 		for this
 			if where(.)
 				let value = selector(.)
-				if value < resultValue: resultValue = value
+				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: int(T it) selector
@@ -1483,7 +1493,7 @@ class List<T>
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue: resultValue = value
+			if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: float(T it) selector
@@ -1492,7 +1502,7 @@ class List<T>
 		float resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue: resultValue = value
+			if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: int(T it) selector
@@ -1503,7 +1513,7 @@ class List<T>
 		for this 
 			if where(.)
 				let value = selector(.)
-				if value > resultValue: resultValue = value
+				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	max: float(T it) selector
@@ -1514,7 +1524,7 @@ class List<T>
 		for this
 			if where(.)
 				let value = selector(.)
-				if value > resultValue: resultValue = value
+				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
 		
 	maxUnique: int(T it) selector
@@ -1523,8 +1533,8 @@ class List<T>
 		int resultValue = threshold
 		for this
 			let value = selector(.)
-			if value > resultValue:  resultValue = value; else
-			if value == resultValue: resultValue = threshold
+			if value > resultValue then  resultValue = value; else
+			if value == resultValue then resultValue = threshold
 		return resultValue != threshold ? resultValue : default
 		
 	minIndex: float(T it) selector
@@ -1633,7 +1643,7 @@ class List<T>
 				resultItem = .
 				resultIndex = i
 				
-		if resultIndex != -1: removeAt resultIndex
+		if resultIndex != -1 then removeAt resultIndex
 		return resultItem
 		
 	popMax: int(T it) selector
@@ -1648,7 +1658,7 @@ class List<T>
 				resultItem = .
 				resultIndex = i
 				
-		if resultIndex != -1: removeAt resultIndex
+		if resultIndex != -1 then removeAt resultIndex
 		return resultItem
 		
 	withMax: int(T it) selector
@@ -1695,7 +1705,8 @@ class List<T>
 		insert pop
 		
 	rotate: int count
-		for count: insert pop
+		for count
+			insert pop
 		
 	js T[] intersectWith: T[] other
 		const a = this || []
@@ -1810,11 +1821,18 @@ class Dictionary<TKey, TValue>
 		(this.get(key) || this.setAndReturn(key, value))
 		
 	// Add a value to an item of the list
-	js T addToItem: TKey key // The key of the item to add to the dictionary
-		            TValue value   // The item to add to the dictionary
+	js T addToItem: TKey key	// The key of the item to change
+		            TValue value	// The value to add to the item
 		let item = this.get(key)
 		if(item) this.set(key, item + value)
 		else     this.set(key, value)
+		
+	// Subtract a value from an item of the list
+	js T subtractFromItem: TKey key	// The key of the item to change
+		                   TValue value	// The value to subtract from the item
+		let item = this.get(key)
+		if(item) this.set(key, item - value)
+		else     this.set(key, -value)
 		
 	// Add 1 to item of the dictionary
 	inline js T incrementItem: TKey key
@@ -1844,6 +1862,9 @@ class Dictionary<TKey, TValue>
 				this.delete(pair[0]);
 			}
 		}
+
+	importance:4 inline js TKey[] keys() [...this.keys()]
+	importance:4 inline js TValue[] values() [...this.values()]
 
 // A data container that stores unique values of a given type
 js Set
@@ -1891,17 +1912,20 @@ interface object
 	
 	inline js bool toBool() (this != null)
 	inline js string toJson() JSON.stringify(this)
-	// inline js string toString() object_stringify(this, 3)
+	// inline js string toString() object.stringify(this, 5)
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
-		
-	static internal js string stringify: object subject, int depth = 0 
+	static inline js string typeof(dynamic value) typeof(value)
+	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
+	static inline js void deleteField(dynamic object, string field) delete object[field]
+
+	static internal js string stringify: object subject, int depth = 5
 		switch(typeof subject)
 		{
 			case "object":
 				if(subject === null) return "null"
 				let result = ""
-				if(subject.constructor) result += "_type: " + subject.constructor.name
+				// if(subject.constructor) result += "_type: " + subject.constructor.name
 				if(depth > 0) {
 					for(let name in subject) {
 						let item = object.stringify(subject[name], depth-1)
@@ -1926,6 +1950,569 @@ interface object
 				return subject.toString()
 		}
 
+	static string toTypedTsv: dynamic[] objects
+		if(objects.length == 0) return ""
+		string[] fieldNames
+		string[] fieldTypes
+		let result = ""
+
+		// Get all field names and types
+		for objects
+			forDynamic . as value, key
+				if typeof(value) == "function" then continue
+				if(!fieldNames.contains(key)) {
+					fieldNames.add(key)
+					fieldTypes.add(object.typeof(value))
+				}
+		
+		// Output field names
+		for fieldNames
+			if i > 0 then result += "\t"
+			result += .
+		result += "\n"
+
+		// Output field types
+		for fieldTypes
+			if i > 0 then result += "\t"
+			result += .
+		result += "\n"
+			
+		// Output values
+		for objects
+			dynamic object = .
+			for fieldNames
+				if i > 0 then result += "\t"
+				let value = object[.]
+				if value == undefined or value == null
+					switch fieldTypes[i]
+						"number"	result += "0"
+						"boolean"	result += "false"
+						"string"	result += ""
+						default	result += "null"
+				else
+					switch fieldTypes[i]
+						"object"	result += json.stringify(value)
+						"number"	result += value.toString()
+						"boolean"	result += value ? "true" : "false"
+						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
+			result += "\n"
+
+		return result
+
+	static dynamic fromTsv: string tsv
+		let lines = tsv.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		dynamic[] result
+		for 1 to lines.length
+			let line = lines[i]
+				let values = line.split("\t")
+				dynamic obj = {}
+				for names
+					obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
+				result.add(obj)
+		return result
+
+	static dynamic fromTypedTsv: string tsv
+		let lines = tsv.split("\n")
+		if(lines.length < 2) return []
+		let names = lines[0].split("\t")
+		let types = lines[1].split("\t")
+		dynamic[] result
+		for 2 to lines.length
+			let line = lines[i]
+				let values = line.split("\t")
+				dynamic obj = {}
+				for names
+					let value = values[i]
+					switch types[i]
+						"object"	obj[.] = value.parseJson
+						"number"	obj[.] = value.toFloat
+						"boolean"	obj[.] = value == "true"
+						"undefined"	
+						"null"	obj[.] = null
+						default	obj[.] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
+				result.add(obj)
+		return result
+
+	static js string toYaml: dynamic subject
+		function refWalk(v, counts, path) {
+			if(v === null || v === undefined) return
+			let t = typeof v
+			if(t !== "object") return
+			counts.set(v, (counts.get(v) || 0) + 1)
+			if(path.has(v)) return
+			path.add(v)
+			if(Array.isArray(v)) {
+				for(let i = 0, n = v.length; i < n; ++i)
+					refWalk(v[i], counts, path)
+			} else {
+				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
+				for(let k in v)
+					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						if(tset && tset.has(k)) continue
+						let child = v[k]
+						refWalk(child, counts, path)
+					}
+			}
+			path.delete(v)
+		}
+		function typeTag(v) {
+			if(v === null) return ""
+			if(Array.isArray(v)) return ""
+			let n = v.constructor && v.constructor.name
+			return "!!" + (n && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : "Object") + " "
+		}
+		function escStr(s) {
+			return "\"" + s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "\""
+		}
+		function ser(v, counts, anchors, nextId) {
+			if(v === null) return "null"
+			if(v === undefined) return "null"
+			let t = typeof v
+			if(t === "string") return escStr(v)
+			if(t === "number") {
+				if(v !== v) return ".nan"
+				if(v === Infinity) return ".inf"
+				if(v === -Infinity) return "-.inf"
+				return String(v)
+			}
+			if(t === "boolean") return v ? "true" : "false"
+			if(t === "bigint") return "\"" + v + "\""
+			if(t === "function") return "\"\""
+			let multi = (counts.get(v) || 0) > 1
+			if(multi) {
+				if(anchors.has(v)) return "*" + anchors.get(v)
+				let id = "id" + nextId[0]++
+				anchors.set(v, id)
+			}
+			let tag = typeTag(v), body
+			if(Array.isArray(v)) {
+				let p = [], n = v.length
+				for(let i = 0; i < n; ++i)
+					p.push(ser(v[i], counts, anchors, nextId))
+				body = "[" + p.join(", ") + "]"
+			} else {
+				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
+				let p = []
+				for(let k in v)
+					if(Object.prototype.hasOwnProperty.call(v, k)) {
+						if(tset && tset.has(k)) continue
+						let child = v[k]
+						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
+						p.push(kk + ": " + ser(child, counts, anchors, nextId))
+					}
+				body = "{" + p.join(", ") + "}"
+			}
+			let out = tag + body
+			if(multi) out = "&" + anchors.get(v) + " " + out
+			return out
+		}
+		let counts = new Map()
+		refWalk(subject, counts, new Set())
+		return ser(subject, counts, new Map(), [0])
+
+	static js dynamic fromYaml: string yaml
+		function isIgnorableWs(c) {
+			if(c === 9 || c === 10 || c === 13 || c === 32) return true
+			if(c === 133 || c === 160 || c === 5760) return true
+			if(c >= 8192 && c <= 8202) return true
+			if(c === 8232 || c === 8233) return true
+			if(c === 8239 || c === 8287 || c === 12288) return true
+			if(c === 65279) return true
+			return false
+		}
+		function skipWs(s, i) {
+			let n = s.length
+			while(i < n && isIgnorableWs(s.charCodeAt(i))) ++i
+			return i
+		}
+		function isIdentStart(c) {
+			return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+		}
+		function isIdentChar(c) {
+			return isIdentStart(c) || (c >= 48 && c <= 57)
+		}
+		function readIdent(s, i) {
+			let j = i
+			while(j < s.length && isIdentChar(s.charCodeAt(j))) ++j
+			return [s.slice(i, j), j]
+		}
+		function construct(tag) {
+			let C = globalThis["_" + tag]
+			if(typeof C === "function") return new C()
+			if(tag === "Array") return []
+			if(tag === "Object") return {}
+			return {}
+		}
+		function parseString(s, ctx) {
+			let n = s.length, i = ctx.i
+			if(s.charCodeAt(i) !== 34) throw new Error("fromYaml: expected \"")
+			++i
+			let out = ""
+			while(i < n) {
+				let c = s.charCodeAt(i)
+				if(c === 34) {
+					ctx.i = i + 1
+					return out
+				}
+				if(c === 92 && i + 1 < n) {
+					let nxt = s.charCodeAt(i + 1)
+					if(nxt === 92) { out += "\\"; i += 2; continue }
+					if(nxt === 34) { out += "\""; i += 2; continue }
+					if(nxt === 110) { out += "\n"; i += 2; continue }
+					if(nxt === 114) { out += "\r"; i += 2; continue }
+					if(nxt === 116) { out += "\t"; i += 2; continue }
+				}
+				out += s[i++]
+			}
+			throw new Error("fromYaml: unterminated string")
+		}
+		function parseScalar(s, ctx) {
+			let i = ctx.i, n = s.length, cc = s.charCodeAt(i)
+			if(cc === 34) return parseString(s, ctx)
+			function kw(t, len) {
+				if(i + len > n) return false
+				if(s.slice(i, i + len) !== t) return false
+				let nx = i + len
+				return nx >= n || !isIdentChar(s.charCodeAt(nx))
+			}
+			if(kw("null", 4)) { ctx.i = i + 4; return null }
+			if(kw("true", 4)) { ctx.i = i + 4; return true }
+			if(kw("false", 5)) { ctx.i = i + 5; return false }
+			if(kw(".nan", 4)) { ctx.i = i + 4; return NaN }
+			if(kw(".inf", 4)) { ctx.i = i + 4; return Infinity }
+			if(kw("-.inf", 5)) { ctx.i = i + 5; return -Infinity }
+			let j = i
+			if(cc === 45) ++j
+			let has = false
+			if(j < n && s.charCodeAt(j) === 46) {
+				++j
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+			} else {
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+				if(j < n && s.charCodeAt(j) === 46) {
+					++j
+					while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+				}
+			}
+			if(j < n && (s.charCodeAt(j) === 101 || s.charCodeAt(j) === 69)) {
+				++j
+				if(j < n && (s.charCodeAt(j) === 45 || s.charCodeAt(j) === 43)) ++j
+				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
+			}
+			if(has) {
+				let start = ctx.i
+				ctx.i = j
+				return parseFloat(s.slice(start, j))
+			}
+			throw new Error("fromYaml: bad scalar at " + i)
+		}
+		function parseFlowArrayInto(arr, s, ctx) {
+			while(true) {
+				ctx.i = skipWs(s, ctx.i)
+				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated [")
+				if(s.charCodeAt(ctx.i) === 93) { ++ctx.i; break }
+				arr.push(parseValue(s, ctx))
+				ctx.i = skipWs(s, ctx.i)
+				let c = s.charCodeAt(ctx.i)
+				if(c === 93) { ++ctx.i; break }
+				if(c !== 44) throw new Error("fromYaml: expected , or ]")
+				++ctx.i
+			}
+		}
+		function parseFlowMapInto(obj, s, ctx) {
+			while(true) {
+				ctx.i = skipWs(s, ctx.i)
+				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated {")
+				if(s.charCodeAt(ctx.i) === 125) { ++ctx.i; break }
+				let key
+				if(s.charCodeAt(ctx.i) === 34)
+					key = parseString(s, ctx)
+				else {
+					let [id, ni] = readIdent(s, ctx.i)
+					if(!id) throw new Error("fromYaml: expected key")
+					key = id
+					ctx.i = ni
+				}
+				ctx.i = skipWs(s, ctx.i)
+				if(s.charCodeAt(ctx.i) !== 58) throw new Error("fromYaml: expected :")
+				++ctx.i
+				obj[key] = parseValue(s, ctx)
+				ctx.i = skipWs(s, ctx.i)
+				let c = s.charCodeAt(ctx.i)
+				if(c === 125) { ++ctx.i; break }
+				if(c !== 44) throw new Error("fromYaml: expected , or }")
+				++ctx.i
+			}
+		}
+		function parseTagged(s, ctx, anchor) {
+			ctx.i += 2
+			let [tag, ni] = readIdent(s, ctx.i)
+			ctx.i = skipWs(s, ni)
+			if(!tag) throw new Error("fromYaml: missing tag")
+			let c = s.charCodeAt(ctx.i)
+			let inst = construct(tag)
+			if(c === 91 && typeof inst.push !== "function") inst = []
+			if(anchor) ctx.anchors.set(anchor, inst)
+			if(c === 91) {
+				++ctx.i
+				parseFlowArrayInto(inst, s, ctx)
+			} else if(c === 123) {
+				++ctx.i
+				parseFlowMapInto(inst, s, ctx)
+			} else throw new Error("fromYaml: expected [ or { after tag")
+			return inst
+		}
+		function parseValue(s, ctx) {
+			ctx.i = skipWs(s, ctx.i)
+			let anchor = null
+			if(s.charCodeAt(ctx.i) === 38) {
+				++ctx.i
+				let [an, ni] = readIdent(s, ctx.i)
+				if(!an) throw new Error("fromYaml: bad anchor")
+				anchor = an
+				ctx.i = skipWs(s, ni)
+			}
+			if(s.charCodeAt(ctx.i) === 42) {
+				++ctx.i
+				let [al, ni] = readIdent(s, ctx.i)
+				if(!al) throw new Error("fromYaml: bad alias")
+				ctx.i = skipWs(s, ni)
+				if(anchor) throw new Error("fromYaml: anchor with alias")
+				let ref = ctx.anchors.get(al)
+				if(ref === undefined) throw new Error("fromYaml: unknown alias " + al)
+				return ref
+			}
+			if(ctx.i + 1 < s.length && s.charCodeAt(ctx.i) === 33 && s.charCodeAt(ctx.i + 1) === 33)
+				return parseTagged(s, ctx, anchor)
+			if(s.charCodeAt(ctx.i) === 91) {
+				let arr = []
+				if(anchor) ctx.anchors.set(anchor, arr)
+				++ctx.i
+				parseFlowArrayInto(arr, s, ctx)
+				return arr
+			}
+			if(anchor) throw new Error("fromYaml: anchor without tagged value")
+			return parseScalar(s, ctx)
+		}
+		let ctx = { i: 0, anchors: new Map() }
+		ctx.i = skipWs(yaml, 0)
+		if(ctx.i >= yaml.length) return null
+		let root = parseValue(yaml, ctx)
+		ctx.i = skipWs(yaml, ctx.i)
+		if(ctx.i < yaml.length) throw new Error("fromYaml: trailing input")
+		return root
+
+	static js dynamic fromXml: string xml
+		let length = xml.length
+		let i = 0
+		function isWs(c) {
+			return c === 9 || c === 10 || c === 13 || c === 32
+		}
+		function skipWs() {
+			while(i < length && isWs(xml.charCodeAt(i))) ++i
+		}
+		function hasNonWs(value) {
+			for(let j = 0, n = value.length; j < n; ++j) {
+				let c = value.charCodeAt(j)
+				if(c !== 9 && c !== 10 && c !== 13 && c !== 32) return true
+			}
+			return false
+		}
+		function decode(value) {
+			let amp = value.indexOf("&")
+			if(amp === -1) return value
+			let result = value.slice(0, amp)
+			let start = amp
+			for(;;) {
+				let end = value.indexOf(";", start + 1)
+				if(end === -1) return result + value.slice(start)
+				let entity = value.slice(start + 1, end)
+				if(entity === "lt") result += "<"
+				else if(entity === "gt") result += ">"
+				else if(entity === "amp") result += "&"
+				else if(entity === "quot") result += '"'
+				else if(entity === "apos") result += "'"
+				else if(entity.charCodeAt(0) === 35) {
+					let code = entity.charCodeAt(1) === 120 || entity.charCodeAt(1) === 88 ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10)
+					result += isNaN(code) ? "&" + entity + ";" : String.fromCodePoint(code)
+				} else result += "&" + entity + ";"
+				let next = value.indexOf("&", end + 1)
+				if(next === -1) return result + value.slice(end + 1)
+				result += value.slice(end + 1, next)
+				start = next
+			}
+		}
+		function toTypedValue(value) {
+			if(value === "true") return true
+			if(value === "false") return false
+			if(value === "null") return null
+			if(value === "undefined") return undefined
+				
+			let first = value.charCodeAt(0)
+			if(first === 123 || first === 91) {
+				try {
+					return JSON.parse(value)
+				} catch(error) {}
+			}
+			if((first >= 48 && first <= 57) || first === 45 || first === 43 || first === 46) {
+				let numeric = true
+				for(let i = 1, len = value.length; i < len; i++) {
+					let code = value.charCodeAt(i)
+					if((code < 48 || code > 57) && code !== 46 && code !== 43 && code !== 45) {
+						numeric = false
+						break
+					}
+				}
+				if(numeric) {
+					let number = parseFloat(value)
+					if(!isNaN(number)) return number
+				}
+			}
+			return value
+		}
+		function addValue(target, name, value) {
+			let existing = target[name]
+			if(existing === undefined) target[name] = value
+			else if(Array.isArray(existing)) existing.push(value)
+			else target[name] = [existing, value]
+		}
+		function addText(node, value) {
+			if(!hasNonWs(value)) return
+			value = decode(value).trim()
+			if(!value) return
+			node.value._text = node.value._text ? string(node.value._text) + value : toTypedValue(value)
+		}
+		function finish(node, target) {
+			let value = node.value
+			if(!node.hasAttributes && !node.hasChildren) value = value._text === undefined ? "" : value._text
+			else if(value._text === undefined) delete value._text
+			addValue(target, node.name, value)
+		}
+		let root = {}
+		let stack = []
+		while(i < length) {
+			let open = xml.indexOf("<", i)
+			if(open === -1) {
+				if(stack.length) addText(stack[stack.length - 1], xml.slice(i))
+				break
+			}
+			if(open > i && stack.length) addText(stack[stack.length - 1], xml.slice(i, open))
+			i = open + 1
+			if(i >= length) break
+			let marker = xml.charCodeAt(i)
+			if(marker === 63) {
+				let end = xml.indexOf("?>", i + 1)
+				if(end === -1) throw new Error("fromXml: unterminated declaration")
+				i = end + 2
+				continue
+			}
+			if(marker === 33) {
+				if(xml.slice(i + 1, i + 3) === "--") {
+					let end = xml.indexOf("-->", i + 3)
+					if(end === -1) throw new Error("fromXml: unterminated comment")
+					i = end + 3
+					continue
+				}
+				if(xml.slice(i + 1, i + 8) === "[CDATA[") {
+					let end = xml.indexOf("]]>", i + 8)
+					if(end === -1) throw new Error("fromXml: unterminated cdata")
+					if(stack.length) addText(stack[stack.length - 1], xml.slice(i + 8, end))
+					i = end + 3
+					continue
+				}
+				let depth = 0
+				let quote = 0
+				++i
+				while(i < length) {
+					let c = xml.charCodeAt(i++)
+					if(quote) {
+						if(c === quote) quote = 0
+						continue
+					}
+					if(c === 34 || c === 39) quote = c
+					else if(c === 91) ++depth
+					else if(c === 93 && depth) --depth
+					else if(c === 62 && !depth) break
+				}
+				continue
+			}
+			if(marker === 47) {
+				++i
+				let start = i
+				while(i < length) {
+					let c = xml.charCodeAt(i)
+					if(isWs(c) || c === 62) break
+					++i
+				}
+				let name = xml.slice(start, i)
+				while(i < length && xml.charCodeAt(i) !== 62) ++i
+				if(i < length) ++i
+				let node = stack.pop()
+				if(!node || node.name !== name) throw new Error("fromXml: mismatched closing tag")
+				finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
+				continue
+			}
+			let nameStart = i
+			while(i < length) {
+				let c = xml.charCodeAt(i)
+				if(isWs(c) || c === 47 || c === 62) break
+				++i
+			}
+			let node = { name: xml.slice(nameStart, i), value: {}, hasAttributes: false, hasChildren: false }
+			while(i < length) {
+				skipWs()
+				let c = xml.charCodeAt(i)
+				if(c === 47) {
+					++i
+					if(xml.charCodeAt(i) !== 62) throw new Error("fromXml: expected >")
+					++i
+					finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
+					break
+				}
+				if(c === 62) {
+					++i
+					stack.push(node)
+					break
+				}
+				let attrStart = i
+				while(i < length) {
+					c = xml.charCodeAt(i)
+					if(isWs(c) || c === 61 || c === 47 || c === 62) break
+					++i
+				}
+				let attrName = xml.slice(attrStart, i)
+				skipWs()
+				let attrValue = ""
+				if(xml.charCodeAt(i) === 61) {
+					++i
+					skipWs()
+					let quote = xml.charCodeAt(i)
+					if(quote === 34 || quote === 39) {
+						let valueStart = ++i
+						while(i < length && xml.charCodeAt(i) !== quote) ++i
+						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
+						if(i < length) ++i
+					} else {
+						let valueStart = i
+						while(i < length) {
+							quote = xml.charCodeAt(i)
+							if(isWs(quote) || quote === 47 || quote === 62) break
+							++i
+						}
+						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
+					}
+				}
+				(node.value._attributes || (node.value._attributes = {}))[attrName] = attrValue
+				node.hasAttributes = true
+			}
+		}
+		if(stack.length) throw new Error("fromXml: unterminated tag")
+		for(let name in root)
+			return root
+		return null
+
 skipInit global unit Platform
 	string libUrl
 	global inline js async dynamic import: string file
@@ -1936,13 +2523,6 @@ json
 		JSON.parse(value)
 	importance:5 inline js string stringify: dynamic value
 		JSON.stringify(value)
-
-yaml
-	dynamic lib
-	setup
-		if yaml.lib == null: yaml.lib = await Platform.import("lib/js-yaml.js")
-	dynamic parse: string value
-		return yaml.lib.load(value)
 
 class Reference<T>
 	dynamic container
@@ -1977,10 +2557,10 @@ internal transient immutable SourceCodeLocation
 			return this
 		if left != null
 			let result = left.find file, pos
-			if result != null: return result
+			if result != null then return result
 		if right != null
 			let result = right.find file, pos
-			if result != null: return result
+			if result != null then return result
 		return null
 			
 	SourceCodeLocation find: SourceCodeLocation location
@@ -1988,27 +2568,27 @@ internal transient immutable SourceCodeLocation
 			return this
 		if left != null
 			let result = left.find location
-			if result != null: return result
+			if result != null then return result
 		if right != null
 			let result = right.find location
-			if result != null: return result
+			if result != null then return result
 		return null
 		
 	SourceCodeLocation leaf
-		if file: return this
+		if file then return this
 		if right
 			let result = right.leaf
-			if result: return result
+			if result then return result
 		if left
 			let result = left.leaf
-			if result: return result
+			if result then return result
 		return null
 		
 js Error
 immutable Error
 	string message
 	string stack
-	implicit inline js string toString := this.stack
+	implicit inline js string toString => this.stack
 	
 // A collection of basic system functions
 global transient priority unit System
@@ -2041,7 +2621,7 @@ global transient priority unit System
 		@do do() 
 		@while(while)
 		
-	global inline js Promise<T> promise: void(void(T it) resolve) resolve
+	global inline js Promise<T> promise: void(void(T it) resolve, void(Error error) reject) resolve
 		new Promise(resolve)
 		
 	inline js void doNotSerialize: dynamic object
@@ -2257,6 +2837,9 @@ global transient priority unit System
 	inline js void log: dynamic value, dynamic value2, dynamic value3
 		console.log(value, value2, value3)
 	
+	inline js void logError: dynamic value
+		console.error(value)
+	
 	// Display a message in the timeline
 	global js void watch: logstring text // The text, variables or expressions to watch
 		                  SourceCodeLocation sourceCodeLocation
@@ -2293,6 +2876,8 @@ global transient priority unit System
 
 	global inline js void debugger() debugger
 	global inline js void throw(Error error) throw error
+
+	global inline js dynamic Capacitor => window.Capacitor
 		
 global transient priority low unit System		
 	global inline js void for: string subject // Iterate over every character of this string
@@ -2356,7 +2941,7 @@ global skipInit unit math
 		Math.abs(value)
 		
 	// Returns -1, 0, or 1 depending on the sign of the value
-	importance:5 inline js float sign: float value
+	importance:5 inline js int sign: float value
 		Math.sign(value)
 		
 	// Returns the positive square root of the given value
@@ -2370,8 +2955,8 @@ global skipInit unit math
 	importance:3 moveTowards: float value
 		         float targetValue
 		         float speed = 1
-		if targetValue > value: return math.min(value + speed, targetValue) else
-		if targetValue < value: return math.max(value - speed, targetValue)
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
 		
 	// ------------------------------------------------------- floor, ceil, round -------------------------------------------------------
 		
@@ -2434,14 +3019,14 @@ global skipInit unit math
 	moveTowardsAngle: float value
 		              float targetValue
 		              float speed = 10
-		if targetValue > value: return math.min(value + speed, targetValue) else
-		if targetValue < value: return math.max(value - speed, targetValue)
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
 	
 	// Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
 	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi] using true modulo for stability
 		float x = angle mod math.twoPi
-		if x > math.pi: x -= math.twoPi
+		if x > math.pi then x -= math.twoPi
 		
 		// Use symmetries to fold into [-pi/2, pi/2]
 		bool negate = false
@@ -2461,7 +3046,7 @@ global skipInit unit math
 	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi]
 		float x = angle mod math.twoPi
-		if x > math.pi: x -= math.twoPi
+		if x > math.pi then x -= math.twoPi
 		
 		// Use even symmetry and fold to [0, pi/2]
 		x = math.abs(x)
@@ -2487,10 +3072,10 @@ global skipInit unit math
 		// https://stackoverflow.com/questions/42537957/fast-accurate-atan-arctan-approximation-algorithm
 
 		// Handle negative values using atan(-x) = -atan(x)
-		if x < 0: return -atan(-x)
+		if x < 0 then return -atan(-x)
 		
 		// Handle large values using atan(x) = pi/2 - atan(1/x)
-		if x > 1: return math.halfPi - atan(1 / x)
+		if x > 1 then return math.halfPi - atan(1 / x)
 		
 		// Transform to z-space: z = x / (x + pi/3)
 		float z = x / (x + 1.0471975511965976) // pi/3
@@ -2598,43 +3183,44 @@ global skipInit unit math
 	clamp: int value
 		   int min
 		   int max
-		if value < min: return min
-		if value > max: return max
-			            return value
+		if value < min	then return min
+		if value > max	then return max
+			                 return value
 	
 	clamp: int value
 		   int max
-		if value > max: return max
-			            return value
+		if value > max then return max
+			                return value
 	
 	clamp: int value
 		   int min
-		if value < min: return min
-			            return value
+		if value < min then return min
+			                return value
 	
 	clamp: float value
 		   float min
 		   float max
-		if value < min: return min
-		if value > max: return max
-			            return value
+		if value < min then return min
+		if value > max then return max
+			                return value
 	
 	clamp: float value
 		   float max
-		if value > max: return max
-			            return value
+		if value > max then return max
+			                return value
 			
 	clamp: float value
 		   float min
-		if value < min: return min
-			            return value
+		if value < min then return min
+			                return value
 	
 	// ------------------------------------------------------- Random -------------------------------------------------------
 			
 	static randomString: int length = 16
 		string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 		string token
-		for length: token += chars[math.randomInteger chars.length-1]
+		for length
+			token += chars[math.randomInteger chars.length-1]
 		return token
 		
 
@@ -2654,21 +3240,24 @@ struct RollingList
 		values[index++ mod length] = PlainDate.preciseTime - startTime
 	
 	average
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float total
-		for values: total += .
+		for values
+			total += .
 		return total / (values.length atMost length)
 	
 	max
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float max = float.minValue
-		for values: if . > max: max = .
+		for values
+			if . > max then max = .
 		return max
 	
 	min
-		if values.length == 0: return 0.0
+		if values.length == 0 then return 0.0
 		float min = float.maxValue
-		for values: if . < min: min = .
+		for values
+			if . < min then min = .
 		return min
 	
 	implicit string toString()
@@ -2697,16 +3286,14 @@ class File
 	
 	inline js string objectUrl() URL.createObjectURL(this)
 
-enum Language: English, German, Spanish, French, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant = 1000
+enum Language: English, German, Spanish, French, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant
 
 unit Loca
 	private const string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
-	private const string[] languageNames = ["English", "German", "Spanish", "French", "Italian", "Portuguese", "Japanese", "Chinese", "Korean", "Dutch", "Turkish", "Polish", "Russian", "Hindi", "Arabic", "Bengali", "Urdu", "Indonesian", "Invariant"]
 	
 	visible Language[] supportedLanguages = [English, German]
 	visible Language language = English
 	visible string locale = defaultLocaleForLanguage[language]
-	string languageName := languageNames[language]
 	
 	internal init
 		setLanguage English

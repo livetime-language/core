@@ -1,79 +1,126 @@
 global unit fx
-	internal Animation[] animations
-	add: Animation animation
-		animations.add animation
+	global Animation[] runningAnimations
+	private void()[] whenAnimationsFinishedCallbacks
+
+	// Start an animation with a given duration. Executes a 'tick' callback on every frame and a 'then' callback when the animation finishes
+	// Example:
+	//     animate duration:500 milliseconds
+	//         // Called on every tick of the animation, passing in the progress ranging from 0 to 1
+	//         for capturedPieces as piece
+	//             let pos = piece.gridPos.toScreenPos interpolateTo videoPos, progress
+	//             drawCircle pos, size:60, color:this.color
+	//     then
+	//         // Called when the animation finished
+	//         capturedPiecesCount += capturedPieces.length
+	importance:4
+	global animate: float delay = 0	// Start animation after this time in milliseconds
+		            float duration = 300	// The duration of the animation in milliseconds
+		            stored void(float progress, float time) tick	// Execute this code on every tick of the animation, passing in the progress (0 to 1) and elapsed time in milliseconds
+				    stored void() then = null	// Execute this code once after the animation finishes
+		add InterpolateAnimation startTime:Time.now+delay, duration
+			graphics.currentLayer += 65535
+			tick(progress, time)
+			graphics.currentLayer -= 65535
+			if progress >= 1 and then != null then then()
+
+	// Execute code after a delay
+	// Example:
+	//     delay 3 seconds
+	//         app.startTurn
+	global delay: float time = 0 // The delay in milliseconds
+		          stored void() do
+		add DelayAnimation startTime:Time.now+time, do
+	
+	// Execute code on the next tick
+	// Example:
+	//     defer
+	//         app.cleanup
+	global defer: stored void() do
+		add DelayAnimation startTime:Time.now, do
 		
-	removeForObject: Object object
-		animations.removeWhere.object == object
+	// Execute code when all running animations have finished. If there are no running animations, the callback is called immediately.
+	// Example:
+	//     whenAnimationsFinished
+	//         app.startTurn
+	importance:4
+	global whenAnimationsFinished: stored void() do // Execute this code when all running animations have finished
+		if runningAnimations.length == 0
+			do()
+		else
+			whenAnimationsFinishedCallbacks.add do
+
+	internal add: Animation animation
+		runningAnimations.add animation
 		
-	endOfPrevAnimation: Object object
-		let lastAnimation = animations.last
+	internal removeForObject: Object object
+		runningAnimations.removeWhere.object == object
+		
+	internal endOfPrevAnimation: Object object
+		let lastAnimation = runningAnimations.last
 		if lastAnimation?.object == object
 			return math.max(Time.now, lastAnimation.startTime + lastAnimation.duration)
 		return Time.now
 		
 	internal tick
+		if runningAnimations.length == 0 then return
 		let now = Time.now
-		for animations <-
+		for runningAnimations <-
 			if now >= .startTime
-				float f = .duration ? (now - .startTime)/.duration : 1
-				if f >= 1: f = 1; animations.removeAt i
-				.tick f
+				float time = now - .startTime
+				float progress = .duration ? time/.duration : 1
+				if progress >= 1 then progress = 1; runningAnimations.removeAt i
+				.tick progress, time
+
+		if runningAnimations.length == 0
+			for whenAnimationsFinishedCallbacks as callback
+				callback()
+			whenAnimationsFinishedCallbacks.clear
 				
-	global delay: float time = 0 // The delay in milliseconds
-		          stored void() do
-		add DelayAnimation startTime:Time.now+time, do
-		
-	global js async void delay: float time // The delay in milliseconds
-		return new Promise((resolve, reject) => {
-			setTimeout(resolve, time);
-		})
-		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: float variable = 0   // The variable to animate
+	internal importance:0 inline animateVariable: float variable = 0   // The variable to animate
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
-		interpolate variable, to, delay, duration, variable = .
+		animateValue variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: float variable = 0   // The variable to animate
+	internal importance:0 inline animateVariable: float variable = 0   // The variable to animate
 		                   float to = 1         // The target value to animate to
 		                   float delay = 0       // The delay before the animation starts in milliseconds
 		                   float duration = 300  // The duration of the animation in milliseconds
 		                   EaseFunction ease    // The easing function to apply
-		interpolate variable, to, delay, duration, ease, variable = .
+		animateValue variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: Vector2 variable    // The variable to animate
+	internal importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
-		interpolate variable, to, delay, duration, variable = .
+		animateValue variable, to, delay, duration, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: Vector2 variable    // The variable to animate
+	internal importance:0 inline animateVariable: Vector2 variable    // The variable to animate
 		                   Vector2 to          // The target vector to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
 		                   EaseFunction ease   // The easing function to apply
-		interpolate variable, to, delay, duration, ease, variable = .
+		animateValue variable, to, delay, duration, ease, variable = .
 		
 	// Animate a variable to a target value over a given period of time
-	global inline animate: Color variable      // The variable to animate
+	internal importance:0 inline animateVariable: Color variable      // The variable to animate
 		                   Color to            // The target color to animate to
 		                   float delay = 0      // The delay before the animation starts in milliseconds
 		                   float duration = 300 // The duration of the animation in milliseconds
-		interpolate variable, to, delay, duration, variable = .
+		animateValue variable, to, delay, duration, variable = .
 		
-	interpolate: float from = 0
+	internal importance:0 animateValue: float from = 0
 		         float to = 1
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
 		         float duration = 300  // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from + (to - from) * .)
 				
-	interpolate: float from = 0
+	internal importance:0 animateValue: float from = 0
 		         float to = 1
 		         stored void(float progress) do
 		         float delay = 0       // The delay in milliseconds
@@ -81,14 +128,14 @@ global unit fx
 		         EaseFunction ease
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(ease.function(from + (to - from) * .))
 				
-	interpolate: Vector2 from
+	internal importance:0 animateValue: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
-	interpolate: Vector2 from
+	internal importance:0 animateValue: Vector2 from
 		         Vector2 to
 		         stored void(Vector2 progress) do
 		         float delay = 0      // The delay in milliseconds
@@ -96,58 +143,55 @@ global unit fx
 		         EaseFunction ease
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress, ease)
 				
-	interpolate: Color from
+	internal importance:0 animateValue: Color from
 		         Color to
 		         stored void(Color progress) do
 		         float delay = 0      // The delay in milliseconds
 		         float duration = 300 // The duration in milliseconds
 		add InterpolateAnimation startTime:Time.now+delay, duration, do:do(from interpolateTo target:to, progress)
 				
-	global defer: stored void() do
-		add DelayAnimation startTime:Time.now, do
-		
 struct float
 	// Animate the float to a target value over a given period of time	
 	inline animateTo: float target        // The target value to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
-		fx.interpolate this, target, delay, duration, this = .
+		fx.animateValue this, target, delay, duration, this = .
 	
 	// Animate the float to a target value over a given period of time	
 	inline animateTo: float target        // The target value to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
 		              EaseFunction ease   // The easing function to apply
-		fx.interpolate this, target, delay, duration, ease, this = .
+		fx.animateValue this, target, delay, duration, ease, this = .
 		
 struct Vector2
 	// Animate the vector to a target vector over a given period of time
 	inline animateTo: Vector2 target      // The target vector to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
-		fx.interpolate this, target, delay, duration, this.x = .x; this.y = .y
+		fx.animateValue this, target, delay, duration, this.x = .x; this.y = .y
 
 	// Animate the vector to a target vector over a given period of time
 	inline animateTo: Vector2 target      // The target vector to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
 		              EaseFunction ease   // The easing function to apply
-		fx.interpolate this, target, delay, duration, ease, this.x = .x; this.y = .y
+		fx.animateValue this, target, delay, duration, ease, this.x = .x; this.y = .y
 		
 Color
 	// Animate the color to a target vector over a given period of time
 	inline animateTo: Color target        // The target color to animate to
 		              float delay = 0      // The delay before the animation starts in milliseconds
 		              float duration = 300 // The duration of the animation in milliseconds
-		fx.interpolate this, target, delay, duration, this = .
+		fx.animateValue this, target, delay, duration, this = .
 
 transient global skipInit unit audio
 	global importance:4 playSound: Sound sound
 		              float delay = 0 // The delay before the sound starts in milliseconds
 		              bool needsToBeCertain = false
-		if needsToBeCertain and not input.isCertain: return
+		if needsToBeCertain and not input.isCertain then return
 		
-		if Time.frame == 0
+		if Time.ticks == 0
 			fx.add PlaySoundAnimation startTime:math.ceil(Time.now+core.frameTime)+delay, sound
 		else
 		if delay
@@ -158,7 +202,7 @@ transient global skipInit unit audio
 	global importance:4 static playSound: Sound sound
 		              nocolon float at = 0 // The time at which the sound starts in milliseconds
 		              bool needsToBeCertain = false
-		if needsToBeCertain and not input.isCertain: return
+		if needsToBeCertain and not input.isCertain then return
 		if Time.now >= at and Time.now < math.floor at + core.frameTime
 			sound.play
 				
@@ -166,63 +210,63 @@ internal Animation
 	float startTime // The time at which the animation starts in milliseconds
 	float duration  // The duration of the animation in milliseconds
 	Object object
-	tick: float progress
+	tick: float progress, float time
 	
 internal Animation FadeAnimation
 	float startValue, delta
 	bool removeWhenDone
-	tick(float progress) 
+	tick(float progress, float time) 
 		object.alpha = startValue + delta * progress
-		if progress >= 1 and removeWhenDone: Framework.objects.remove object
+		if progress >= 1 and removeWhenDone then Framework.objects.remove object
 		
 internal Animation MoveAnimation
 	Vector2 startValue, delta
-	tick(float progress) object.position = startValue + delta * progress
+	tick(float progress, float time) object.position = startValue + delta * progress
 		
 internal Animation ScaleAnimation
 	implicit Vector2 startValue
 	implicit Vector2 delta
-	tick(float progress) object.size = startValue + delta * progress
+	tick(float progress, float time) object.size = startValue + delta * progress
 	
 internal Animation RotateAnimation
 	implicit float startValue
 	implicit float delta
-	tick(float progress) object.angle = startValue + delta * progress
+	tick(float progress, float time) object.angle = startValue + delta * progress
 	
 internal Animation FadeSoundAnimation
 	float startValue, delta
 	Sound sound
-	tick(float progress)
-		if sound == null: return
+	tick(float progress, float time)
+		if sound == null then return
 		sound.volume = startValue + delta * progress
-		if progress >= 1: sound.stop
+		if progress >= 1 then sound.stop
 			
 internal Animation PlaySoundAnimation
 	Sound sound
-	tick(float progress) sound.play
+	tick(float progress, float time) sound.play
 	
 internal Animation DelayAnimation
 	void(Object object) do
-	tick(float progress) do(object)
+	tick(float progress, float time) do(object)
 	
 internal Animation InterpolateAnimation
-	void(float progress) do
-	tick(float progress) do(progress)
+	void(float progress, float time) do
+	tick(float progress, float time) do(progress, time)
 
 internal Animation BezierAnimation
 	Vector2[] points
 	float smoothness = 1.0
 	bool removeWhenDone
-	tick(float progress) 
+	tick(float progress, float time) 
 		object.position = getPointOnBezierCurve(points, progress, smoothness)
-		if progress >= 1 and removeWhenDone: Framework.objects.remove object
+		if progress >= 1 and removeWhenDone then Framework.objects.remove object
 
 	static getPointOnBezierCurve: Vector2[] points, float progress, float smoothness = 1.0
 		// Handle edge cases
-		if points.length == 0: return Vector2.Zero
-		if points.length == 1: return points[0]
-		if progress <= 0: return points[0]
-		if progress >= 1: return points.last
+		if points.length == 0	then return Vector2.Zero
+		if points.length == 1	then return points[0]
+		if progress <= 0	then return points[0]
+		if progress >= 1	then return points.last
 		
 		// For 2 points, just use linear interpolation
 		if points.length == 2
@@ -253,7 +297,7 @@ internal Animation BezierAnimation
 		// Find which segment the progress falls into
 		float totalProgress = progress * (points.length - 1)
 		int segmentIndex = math.floor(totalProgress)
-		if segmentIndex >= points.length - 1: segmentIndex = points.length - 2
+		if segmentIndex >= points.length - 1 then segmentIndex = points.length - 2
 		
 		float localProgress = totalProgress - segmentIndex
 		
