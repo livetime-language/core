@@ -359,6 +359,7 @@ global priority low skipInit static class html
 	private HTMLElement currentNode
 	private HTMLElement currentOverlay
 	private dynamic currentStyleSheet
+	private bool refreshInProgress = false
 
 	// Call refresh to re-render the html after you changed any data.
 	// Example:
@@ -367,6 +368,11 @@ global priority low skipInit static class html
 	//         draw
 	//             button "You clicked this button {counter} times", onClick:counter++; refresh
 	global void refresh
+		if refreshInProgress 
+			// This might hapapen because removing a node in div triggers its onBlur, which calls refresh
+			print "Skipping refresh because another refresh is already in progress"
+			return
+		refreshInProgress = true
 		Platform.resetStateIndex
 		currentStyleSheet.replaceSync("")
 		nodesCreated = nodesUpdated = 0
@@ -387,6 +393,7 @@ global priority low skipInit static class html
 		// if not overlayNode
 		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
 		// 	body.parentNode.appendChild overlayNode
+		refreshInProgress = false
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform.scale)
 	inline js void scrollToTop() window.scrollTo(0,0)
@@ -462,6 +469,7 @@ global priority low skipInit static class html
 			body.style.zoom = Platform.scale
 		}
 		body.className = Platform.isMobile ? "mobile" : ""
+		html.resizeInProgress = false
 	
 	enableScrolling: bool value
 		let style = documentBody.style
