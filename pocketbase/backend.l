@@ -359,7 +359,7 @@ DatabaseTable<T>
 		return model;
 
 	importance:3
-	inline js void unsubscribe: string topic = "*"
+	inline js async void unsubscribe: string topic = "*"
 		backend.pb.collection(this.name).unsubscribe(topic)
 		
 	// ------------------------------------------------------- Files -------------------------------------------------------
