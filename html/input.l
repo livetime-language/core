@@ -167,7 +167,7 @@ unit html
 
 	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
 
-	Gamepad[] gamepads
+	Gamepad[] gamepads = [{}]
 
 	Gamepad[] queryGamepads
 		InternalGamepad[] internalGamepads = getGamepads
@@ -176,44 +176,42 @@ unit html
 			if internalGamepad
 				let gp = gamepads[i]
 				if not gp then gamepads[i] = gp = {}
-				gp.buttons.each.wasPreviouslyPressed = .isPressed
 
-				gp.leftStick = {x: internalGamepad.axes[0], y: internalGamepad.axes[1]}
-				gp.A.isPressed	= internalGamepad.buttons[0].pressed
-				gp.B.isPressed	= internalGamepad.buttons[1].pressed
-				gp.X.isPressed	= internalGamepad.buttons[2].pressed
-				gp.Y.isPressed	= internalGamepad.buttons[3].pressed
-				gp.L1.isPressed	= internalGamepad.buttons[4].pressed
-				gp.R1.isPressed	= internalGamepad.buttons[5].pressed
-				gp.L2.isPressed	= internalGamepad.buttons[6].pressed
-				gp.R2.isPressed	= internalGamepad.buttons[7].pressed
-				gp.select.isPressed	= internalGamepad.buttons[8].pressed
-				gp.start.isPressed	= internalGamepad.buttons[9].pressed
-				gp.leftStickButton.isPressed	= internalGamepad.buttons[10].pressed
-				gp.rightStickButton.isPressed	= internalGamepad.buttons[11].pressed
-				gp.up.isPressed	= internalGamepad.buttons[12].pressed
-				gp.down.isPressed	= internalGamepad.buttons[13].pressed
-				gp.left.isPressed	= internalGamepad.buttons[14].pressed
-				gp.right.isPressed	= internalGamepad.buttons[15].pressed
-				gp.type	= internalGamepad.id.contains("054c") or internalGamepad.id.contains("810") ? PlayStation : Xbox
+				gp.id	= .id
+				gp.leftStick	= {x: internalGamepad.axes[0], y: internalGamepad.axes[1]}
 				gp.inMotion	= gp.leftStick.length > Gamepad.deadZone
+				gp.type	= internalGamepad.id.contains("054c") or internalGamepad.id.contains("810") ? PlayStation : internalGamepad.id.contains("retro") ? Nintendo : Xbox
 
 				// Controller button names
-				if gp.type == Xbox
-					gp.A.name = "A"
-					gp.B.name = "B"
-					gp.X.name = "X"
-					gp.Y.name = "Y"
-				else
-					gp.A.name = "X"
-					gp.B.name = "O"
-					gp.X.name = "SQUARE"
-					gp.Y.name = "TRIANGLE"
+				switch gp.type
+					Nintendo
+						gp.A.name = "A";	gp.A.image = ButtonA;	gp.A.index = 0
+						gp.B.name = "B";	gp.B.image = ButtonB;	gp.B.index = 1
+						gp.X.name = "X";	gp.X.image = ButtonX;	gp.X.index = 2
+						gp.Y.name = "Y";	gp.Y.image = ButtonY;	gp.Y.index = 3
+					PlayStation
+						gp.A.name = "O";	gp.A.image = ButtonCircle;	gp.A.index = 1
+						gp.B.name = "X";	gp.B.image = ButtonCross;	gp.B.index = 0
+						gp.X.name = "TRIANGLE";	gp.Y.image = ButtonTriangle;	gp.Y.index = 3
+						gp.Y.name = "SQUARE";	gp.X.image = ButtonSquare;	gp.X.index = 2
+					Xbox
+						gp.A.name = "A";	gp.A.image = ButtonA;	gp.A.index = 0
+						gp.B.name = "B";	gp.B.image = ButtonB;	gp.A.index = 1
+						gp.X.name = "X";	gp.X.image = ButtonX;	gp.A.index = 2
+						gp.Y.name = "Y";	gp.Y.image = ButtonY;	gp.A.index = 3
+
+				// Update button states
+				gp.buttons.each.wasPreviouslyPressed = .isPressed
+				for gp.buttons
+					.isPressed = internalGamepad.buttons[.index].pressed
+
 		return gamepads
 	
 internal DigitalButton
 	string name
+	int index
 	Key key
+	Image image
 	
 	bool isPressed
 	bool wasJustPressed	=> isPressed and not wasPreviouslyPressed
@@ -237,7 +235,7 @@ internal transient immutable InternalGamepad
 	
 enum GamepadButton: A, B, X, Y, L1, R1, L2, R2, Select, Start, LeftStickButton, RightStickButton, Up, Down, Left, Right
 	
-enum GamepadType: Keyboard, Xbox, PlayStation
+enum GamepadType: Keyboard, Xbox, PlayStation, Nintendo
 internal Gamepad
 	const deadZone = .1
 	
@@ -246,27 +244,22 @@ internal Gamepad
 	Vector2 rightStick
 	
 	// Buttons
-	DigitalButton A = {}
-	DigitalButton B = {}
-	DigitalButton X = {}
-	DigitalButton Y = {}
-
-	DigitalButton L1 = {name:"L1"}
-	DigitalButton R1 = {name:"R1"}
-	DigitalButton L2 = {name:"L2"}
-	DigitalButton R2 = {name:"R2"}
-	
-	DigitalButton start	= {name:"Start"}
-	DigitalButton select	= {name:"Select"}
-
-	DigitalButton leftStickButton	= {name:"Left Stick"}
-	DigitalButton rightStickButton	= {name:"Right Stick"}
-	
-	// DPad
-	DigitalButton up	= {name:"Up"}
-	DigitalButton right	= {name:"Right"}
-	DigitalButton down	= {name:"Down"}
-	DigitalButton left	= {name:"Left"}
+	DigitalButton A	= {name:"A"	index:0	image:ButtonA}
+	DigitalButton B	= {name:"B"	index:1	image:ButtonB}
+	DigitalButton X	= {name:"X"	index:2	image:ButtonX}
+	DigitalButton Y	= {name:"Y"	index:3	image:ButtonY}
+	DigitalButton L1	= {name:"L1"	index:4}
+	DigitalButton R1	= {name:"R1"	index:5}
+	DigitalButton L2 	= {name:"L2"	index:6}
+	DigitalButton R2 	= {name:"R2"	index:7}
+	DigitalButton start	= {name:"Start"	index:8}
+	DigitalButton select	= {name:"Select"	index:9}
+	DigitalButton leftStickButton	= {name:"Left Stick"	index:10}
+	DigitalButton rightStickButton	= {name:"Right Stick"	index:11}
+	DigitalButton up	= {name:"Up"	index:12}
+	DigitalButton down	= {name:"Down"	index:13}
+	DigitalButton left	= {name:"Left"	index:14}
+	DigitalButton right	= {name:"Right"	index:15}
 	
 	DigitalButton[] buttons = [
 		A, B, X, Y,
@@ -278,4 +271,5 @@ internal Gamepad
 	
 	bool inMotion
 	GamepadType type
+	string id
 	
