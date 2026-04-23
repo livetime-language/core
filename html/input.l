@@ -192,8 +192,8 @@ unit html
 					PlayStation
 						gp.A.name = "O";	gp.A.image = ButtonCircle;	gp.A.index = 1
 						gp.B.name = "X";	gp.B.image = ButtonCross;	gp.B.index = 0
-						gp.X.name = "TRIANGLE";	gp.Y.image = ButtonTriangle;	gp.Y.index = 3
-						gp.Y.name = "SQUARE";	gp.X.image = ButtonSquare;	gp.X.index = 2
+						gp.X.name = "TRIANGLE";	gp.X.image = ButtonTriangle;	gp.X.index = 3
+						gp.Y.name = "SQUARE";	gp.Y.image = ButtonSquare;	gp.Y.index = 2
 					Xbox
 						gp.A.name = "A";	gp.A.image = ButtonA;	gp.A.index = 0
 						gp.B.name = "B";	gp.B.image = ButtonB;	gp.A.index = 1
