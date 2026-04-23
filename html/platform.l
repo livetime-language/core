@@ -98,9 +98,10 @@ skipInit global unit Platform
 				refresh
 				Time.printTimer "Platform.start: refresh"
 
+				// Do we sill need this? In which case would it prevent "unwanted scrolling"?
 				// We need to call resize again after the first refresh to prevent unwanted scrolling
-				html.resize
-				Time.printTimer "Platform.start: resize"
+				// html.resize
+				// Time.printTimer "Platform.start: resize"
 
 				startTickInterval
 				sendToEditor {type:"startupComplete"}
