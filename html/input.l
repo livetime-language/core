@@ -185,10 +185,15 @@ unit html
 				// Controller button names
 				switch gp.type
 					Nintendo
-						gp.A.assign index:1	name:"B" image:ButtonB
-						gp.B.assign index:0	name:"A" image:ButtonA
-						gp.X.assign index:3	name:"Y" image:ButtonY
-						gp.Y.assign index:2	name:"X" image:ButtonX
+						gp.A.assign index:0	name:"A" image:ButtonA
+						gp.B.assign index:1	name:"B" image:ButtonB
+						gp.X.assign index:2	name:"X" image:ButtonX
+						gp.Y.assign index:3	name:"Y" image:ButtonY
+						
+						// gp.A.assign index:1	name:"B" image:ButtonB
+						// gp.B.assign index:0	name:"A" image:ButtonA
+						// gp.X.assign index:3	name:"Y" image:ButtonY
+						// gp.Y.assign index:2	name:"X" image:ButtonX
 
 					PlayStation
 						gp.A.assign index:0	name:"X"	image:ButtonCross
