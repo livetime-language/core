@@ -457,7 +457,7 @@ transient immutable class ControllerButtonPlayerAndIndex
 	// toBool() return buttonIndex != 0
 	// toString() return buttonIndex.toString
 	
-enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Select, Start, Menu
+enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, LeftTrigger, RightTrigger, Select, Start, Menu
 	
 enum GamepadType: Keyboard, Xbox, PlayStation
 class Gamepad

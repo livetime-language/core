@@ -240,7 +240,7 @@ internal transient immutable InternalGamepad
 	ImmutableList<InternalGamepadButton> buttons
 	string id, mapping
 	
-enum GamepadButton: A, B, X, Y, L1, R1, L2, R2, Select, Start, LeftStickButton, RightStickButton, Up, Down, Left, Right
+enum GamepadButton: A, B, X, Y, LeftBumper, RightBumper, LeftTrigger, RightTrigger, Select, Start, LeftStickButton, RightStickButton, Up, Down, Left, Right
 	
 enum GamepadType: Keyboard, Xbox, PlayStation, Nintendo
 internal Gamepad
@@ -255,10 +255,10 @@ internal Gamepad
 	DigitalButton B	= {name:"B"	index:1	image:ButtonB}
 	DigitalButton X	= {name:"X"	index:2	image:ButtonX}
 	DigitalButton Y	= {name:"Y"	index:3	image:ButtonY}
-	DigitalButton L1	= {name:"L1"	index:4}
-	DigitalButton R1	= {name:"R1"	index:5}
-	DigitalButton L2 	= {name:"L2"	index:6}
-	DigitalButton R2 	= {name:"R2"	index:7}
+	DigitalButton LeftBumper	= {name:"LeftBumper"	index:4}
+	DigitalButton RightBumper	= {name:"RightBumper"	index:5}
+	DigitalButton LeftTrigger 	= {name:"LeftTrigger"	index:6}
+	DigitalButton RightTrigger 	= {name:"RightTrigger"	index:7}
 	DigitalButton start	= {name:"Start"	index:8}
 	DigitalButton select	= {name:"Select"	index:9}
 	DigitalButton leftStickButton	= {name:"Left Stick"	index:10}
@@ -270,7 +270,7 @@ internal Gamepad
 	
 	DigitalButton[] buttons = [
 		A, B, X, Y,
-		L1, R1, L2, R2,
+		LeftBumper, RightBumper, LeftTrigger, RightTrigger,
 		start, select,
 		leftStickButton, rightStickButton,
 		up, right, down, left

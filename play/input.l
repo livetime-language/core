@@ -380,7 +380,7 @@ internal transient immutable InternalGamepad
 	ImmutableList<InternalGamepadButton> buttons
 	string id
 	
-enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, L2, R2, Select, Start, Menu
+enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, LeftTrigger, RightTrigger, Select, Start, Menu
 	
 enum GamepadType: Keyboard, Xbox, PlayStation
 internal Gamepad
