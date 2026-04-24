@@ -185,20 +185,22 @@ unit html
 				// Controller button names
 				switch gp.type
 					Nintendo
-						gp.A.name = "A";	gp.A.image = ButtonA;	gp.A.index = 0
-						gp.B.name = "B";	gp.B.image = ButtonB;	gp.B.index = 1
-						gp.X.name = "X";	gp.X.image = ButtonX;	gp.X.index = 2
-						gp.Y.name = "Y";	gp.Y.image = ButtonY;	gp.Y.index = 3
+						gp.A.assign index:1	name:"B" image:ButtonB
+						gp.B.assign index:0	name:"A" image:ButtonA
+						gp.X.assign index:3	name:"Y" image:ButtonY
+						gp.Y.assign index:2	name:"X" image:ButtonX
+
 					PlayStation
-						gp.A.name = "O";	gp.A.image = ButtonCircle;	gp.A.index = 1
-						gp.B.name = "X";	gp.B.image = ButtonCross;	gp.B.index = 0
-						gp.X.name = "TRIANGLE";	gp.X.image = ButtonTriangle;	gp.X.index = 3
-						gp.Y.name = "SQUARE";	gp.Y.image = ButtonSquare;	gp.Y.index = 2
+						gp.A.assign index:0	name:"X"	image:ButtonCross
+						gp.B.assign index:1	name:"O"	image:ButtonCircle
+						gp.X.assign index:2	name:"SQUARE"	image:ButtonSquare
+						gp.Y.assign index:3	name:"TRIANGLE"	image:ButtonTriangle
+
 					Xbox
-						gp.A.name = "A";	gp.A.image = ButtonA;	gp.A.index = 0
-						gp.B.name = "B";	gp.B.image = ButtonB;	gp.A.index = 1
-						gp.X.name = "X";	gp.X.image = ButtonX;	gp.A.index = 2
-						gp.Y.name = "Y";	gp.Y.image = ButtonY;	gp.A.index = 3
+						gp.A.assign index:0	name:"A" image:ButtonA
+						gp.B.assign index:1	name:"B" image:ButtonB
+						gp.X.assign index:2	name:"X" image:ButtonX
+						gp.Y.assign index:3	name:"Y" image:ButtonY
 
 				// Update button states
 				gp.buttons.each.wasPreviouslyPressed = .isPressed
@@ -219,6 +221,11 @@ internal DigitalButton
 	internal bool wasPreviouslyPressed
 	
 	toString => name
+
+	internal assign: int index, string name, Image image
+		this.index = index
+		this.name = name
+		this.image = image
 	
 internal transient immutable struct ControllerButtonPlayerAndIndex
 	int userId
