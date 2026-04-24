@@ -19,7 +19,13 @@ file
 		return await Capacitor.Plugins.Filesystem.readdir({path:path})
 
 	async FileInfo getInfo: string path
-		return await Capacitor.Plugins.Filesystem.stat({path:path})
+		try
+			let stat = await Capacitor.Plugins.Filesystem.stat({path:path})
+			stat.creationTime = stat.ctime
+			stat.modificationTime = stat.mtime
+			return stat
+		catch
+			return null
 
 	async void write: string text
 		              string to
@@ -50,7 +56,9 @@ interface ReadDirectoryResult
 	string uri	// Capacitor only: The URI of the file.
 
 interface FileInfo
-	int size	// The size of the file in bytes.
+	int	size	// The size of the file in bytes
+	float	creationTime	// The time the file was created, in milliseconds since the Unix epoch
+	float	modificationTime	// The time the file was last modified, in milliseconds since the Unix epoch
 
 	string name	// Capacitor only: The name of the file or directory.
 	FileType type	// Capacitor only: "file" or "directory"

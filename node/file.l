@@ -39,8 +39,15 @@ file
 			result.push( { name: info.name, type: info.isDirectory() ? "directory" : "file" } )
 		return result
 				
-	inline js async FileInfo getInfo: string path
-		require("fs").promises.stat(path)	
+	js async FileInfo getInfo: string path
+		try {
+			let stat = await require("fs").promises.stat(path);
+			stat.creationTime = stat.birthtimeMs;
+			stat.modificationTime = stat.mtimeMs;
+			return stat;
+		} catch (error) {
+			return null
+		}
 	
 	js async bool exists: string path
 		try {
@@ -140,7 +147,9 @@ interface ReadDirectoryResult
 	FileType type
 	
 interface FileInfo
-	int	size	// The size of the file in bytes.
+	int	size	// The size of the file in bytes
+	float	creationTime	// The time the file was created, in milliseconds since the Unix epoch
+	float	modificationTime	// The time the file was last modified, in milliseconds since the Unix epoch
 
 	int	dev	// Node.js only: The numeric identifier of the device containing the file.
 	int	ino	// Node.js only: The file system specific "Inode" number for the file.
