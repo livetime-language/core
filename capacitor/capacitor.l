@@ -25,6 +25,8 @@ file
 		              string to
 		await Capacitor.Plugins.Filesystem.writeFile({path:to, data:text, encoding:"utf8"})
 
+	void execute: string command
+
 unit Platform
 	//inline js string os() Capacitor.getPlatform()
 	openDevTools

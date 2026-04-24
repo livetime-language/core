@@ -117,6 +117,16 @@ file
 
 	getFileUrl: string filename
 		return "file://{filename}"
+
+	inline js void execute: string command
+		require("child_process").exec(command, (error, stdout, stderr) => {
+			if (error) {
+				console.error(`Error executing command: ${error}`)
+				return
+			}
+			if (stdout) console.log(`Output: ${stdout}`)
+			if (stderr) console.error(`Error Output: ${stderr}`)
+		})
 	
 interface ArrayBuffer
 struct FileFilter
