@@ -122,8 +122,9 @@ file
 				let values = line.split("\t")
 					processLine(values)
 
-	getFileUrl: string filename
-		return "file://{filename}"
+	getFileUrl: string filename, string cacheKey = null
+		if cacheKey then	return "file://{filename}?cacheKey={cacheKey}"
+		else	return "file://{filename}"
 
 	inline js void execute: string command
 		require("child_process").exec(command, (error, stdout, stderr) => {
