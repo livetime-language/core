@@ -502,17 +502,17 @@ global static class html
 	// The native html input element itself is hidden. 
 	// Clicking the any of the children will show the file selector dialog.
 	importance:4
-	HTMLElement fileInput: string accept = "image/*"                   // The file extension or mime types that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
-	                       FileInputCaptureMode capture = environment  // user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera
-		                   bool multiple = false                       // Allow selecting and uploading multiple images at once
-			               void() children = null                      // Determines the look of the element, as the native html input element is hidden
-		                   void(HTMLElement element) onChange = null   // Called when the user selected a file
+	HTMLElement fileInput: string accept = "image/*"	// The file extension or mime types that are accepted, separated by commas, e.g. ".jpg,.jpeg,.png"
+	                       FileInputCaptureMode capture = none	// user: capture an image with the front-facing camera,  environment: capture an image with the backwards-facing camera, none: do not capture an image with the camera
+		                   bool multiple = false	// Allow selecting and uploading multiple images at once
+			               void() children = null	// Determines the look of the element, as the native html input element is hidden
+		                   void(HTMLElement element) onChange = null	// Called when the user selected a file
 		                   SourceCodeLocation location
-		dynamic data = {type:"file" accept capture}
+		dynamic data = {type:"file" accept}
+		if capture != none then data.capture = capture
 		if multiple then data.multiple = true
 		let element = div tag:"input", data, display:none, location
 		element.onchange = onChange(element)
-		element.setAttribute("capture", "environment")
 		// This causes the change event not to fire in Nomand's Guide to the Galaxy on mobile
 		if children != null then div children, onClick: element.click
 		return element
