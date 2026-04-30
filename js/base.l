@@ -2851,6 +2851,9 @@ global transient priority unit System
 	global inline js void alert: implicit string message // The message to show
 		alert(message)
 
+	inline js string prompt: implicit string message // The message to show
+		prompt(message)
+
 	global inline js void alert: implicit string message // The message to show
 	                             float delay             // Show the message after this delay in milliseconds
 		setTimeout(() => alert(message), delay)
