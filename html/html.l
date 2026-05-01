@@ -372,28 +372,32 @@ global priority low skipInit static class html
 			// This might hapapen because removing a node in div triggers its onBlur, which calls refresh
 			print "Skipping refresh because another refresh is already in progress"
 			return
-		refreshInProgress = true
-		Platform.resetStateIndex
-		currentStyleSheet.replaceSync("")
-		nodesCreated = nodesUpdated = 0
-		parentNode = documentBody
-		currentNode = parentNode.firstChild
-		currentOverlay = documentBody.nextSibling
-		app.draw
-		while currentNode
-			let next = currentNode.nextSibling
-			currentNode.remove
-			currentNode = next
-		while currentOverlay
-			let next = currentOverlay.nextSibling
-			currentOverlay.remove
-			currentOverlay = next
-		focusTabIndex = int.minValue
-		defaultButtonToTriggerWithEnterKey = null
-		// if not overlayNode
-		// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
-		// 	body.parentNode.appendChild overlayNode
-		refreshInProgress = false
+		try
+			refreshInProgress = true
+			Platform.resetStateIndex
+			currentStyleSheet.replaceSync("")
+			nodesCreated = nodesUpdated = 0
+			parentNode = documentBody
+			currentNode = parentNode.firstChild
+			currentOverlay = documentBody.nextSibling
+			app.draw
+			while currentNode
+				let next = currentNode.nextSibling
+				currentNode.remove
+				currentNode = next
+			while currentOverlay
+				let next = currentOverlay.nextSibling
+				currentOverlay.remove
+				currentOverlay = next
+			focusTabIndex = int.minValue
+			defaultButtonToTriggerWithEnterKey = null
+			// if not overlayNode
+			// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
+			// 	body.parentNode.appendChild overlayNode
+		catch
+			Platform.onError .
+		finally
+			refreshInProgress = false
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform.scale)
 	inline js void scrollToTop() window.scrollTo(0,0)
