@@ -581,6 +581,7 @@ importance:5 dynamic Style
 	int columnCount // The number of columns an element should be divided into
 	string columnFill // How to fill columns
 	implicit Dimension columnGap // The gap between the columns
+	implicit Dimension rowGap // The gap between the rows
 	string columnRule // A shorthand property for setting or returning all the columnRule properties
 	Color columnRuleColor // The color of the rule between columns. You can use a color literal to define a color, e.g. columnRuleColor:#ff0000
 	string columnRuleStyle // The style of the rule between columns
