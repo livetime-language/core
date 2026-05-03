@@ -140,7 +140,7 @@ global static class html
 		           SourceCodeLocation location
 		let prevParentNode = parentNode
 		let prevCurrentNode = currentNode
-		parentNode = get id
+		parentNode = getElementById id
 		currentNode = parentNode.firstChild
 		children()
 		parentNode = prevParentNode
