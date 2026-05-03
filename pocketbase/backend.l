@@ -166,6 +166,8 @@ DatabaseTable<T>
 		dynamic dynamicItem = item
 		dynamic newRecord = await backend.pb.collection(this.name).create(item)
 		dynamicItem.id = newRecord.id
+		dynamicItem.created = newRecord.created
+		dynamicItem.updated = newRecord.updated
 		items.add item
 
 	// If the item has a valid id member variable, update the item, otherwise add it to the database table
@@ -174,6 +176,8 @@ DatabaseTable<T>
 		if(!item.id) {
 			let newRecord = await backend.pb.collection(this.name).create(item);
 			item.id = newRecord.id
+			item.created = newRecord.created
+			item.updated = newRecord.updated
 		} else {
 			await backend.pb.collection(this.name).update(item.id, item)
 		}
