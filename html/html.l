@@ -24,17 +24,27 @@ dynamic HTMLElement
 	HTMLElement firstChild
 	HTMLElement nextSibling
 	HTMLElement parentNode
-	float scrollHeight
 	string href
+
+	// Width and height
+	float width
+	float height
 	
+	float clientWidth
+	float clientHeight
+	
+	float scrollWidth
+	float scrollHeight
+
+	float scrollLeft
+	float scrollTop
+
 	bool muted
 	bool autoplay
 	bool disabled
 	int tabindex
 	string contentEditable
 	dynamic context
-	float width
-	float height
 	
 	string sourceLocation
 	bool hasChildren
@@ -52,7 +62,7 @@ dynamic HTMLElement
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
 	inline js void focus() this.focus()
 	inline js void scrollToBottom() this.scrollTo(0, this.scrollHeight)
-	inline js void scrollIntoView() this.scrollIntoView()
+	inline js void scrollIntoView(dynamic options = {}) this.scrollIntoView(options)
 	inline js void on(string eventName, void(dynamic event) listener) this.addEventListener(eventName, listener)
 	inline js dynamic getContext(string type) this.getContext(type)
 	inline js void setAttribute(string name, string value) this.setAttribute(name, value)
