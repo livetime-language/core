@@ -375,6 +375,7 @@ DatabaseTable<T>
 						    void(File[] failedFiles) onError = null
 		let prevBusy = this.busy;
 		this.busy = true;
+		backend.onDataChange?.invoke();
 		let failedFiles = []
 		let addedDateUrls = []
 		try {
@@ -419,6 +420,7 @@ DatabaseTable<T>
 						            void(string[] failedUrls) onError = null
 		let prevBusy = this.busy;
 		this.busy = true;
+		backend.onDataChange?.invoke();
 		let failedUrls = []
 		try {
 			for(let i=0; i<urls.length; i++) {
