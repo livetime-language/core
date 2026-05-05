@@ -56,11 +56,12 @@ transient skipInit static class backend
 	importance:5 async
 	dynamic getAuthenticatedUser
 		try
-			let result = await pb.collection("users").authRefresh();
-			return result.record
+			if Platform.getLocalStorageString("pocketbase_auth")
+				let result = await pb.collection("users").authRefresh();
+				return result.record
 		catch as error
 			logout
-			return null
+		return null
 
 	// Log in a user with an email and password and return the authenticated user
 	// Example:
