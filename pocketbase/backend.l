@@ -322,7 +322,7 @@ DatabaseTable<T>
 					         bool skipTotal = true
 							 void() onChange = null
 		backend.pb.collection(this.name).subscribe("*", e => {
-			console.log(e.action, e.record);
+			console.log("subscribe", e.action, e.record);
 			if(e.action == "create") {
 				this.items.push(e.record);
 			} else if(e.action == "update") {
@@ -350,7 +350,7 @@ DatabaseTable<T>
 							  void() onChange = null
 		                      void() onDelete = null
 		backend.pb.collection(this.name).subscribe(id, e => {
-			console.log(e.action, e.record);
+			console.log("subscribeById", e.action, e.record);
 			if(e.action == "delete") {
 				onDelete?.();
 			} else {
