@@ -1375,7 +1375,7 @@ class List<T>
 				return i
 		return -1
 		
-	// Seaching backwards, find the last index of the item the meets the given condition
+	// Searching backwards, find the last index of the item the meets the given condition
 	int lastIndexWhere: bool(T it) condition // The condition to check
 		                int startIndex = 0  // Start searching at this index
 		for length - startIndex <-

@@ -590,7 +590,7 @@ internal PathfindingNode
 	PathfindingNeighbor[] neighbors
 	
 	PathfindingNode[] findPathTo: PathfindingNode target
-		int seachNumber = ++PathfindingNode.searchNumber
+		int searchNumber = ++PathfindingNode.searchNumber
 		combinedCost = 0
 		travelCostSoFar = 0
 		previousNode = null
@@ -615,7 +615,7 @@ internal PathfindingNode
 
 			// Normal case -- move currentNode from open to closed, process each of its neighbors.
 			currentNode.exploredAllNeighbors = true
-			currentNode.visitedInSearchNumber = seachNumber
+			currentNode.visitedInSearchNumber = searchNumber
 
 			// Find all neighbors for the current node. Optionally find diagonal neighbors as well (false by default).
 			let neighbors = currentNode.neighbors
@@ -623,13 +623,13 @@ internal PathfindingNode
 			for neighbors.length
 				let neighbor = neighbors[i]
 				let neighborNode = neighbor.node
-				let beenVisited = neighborNode.visitedInSearchNumber == seachNumber
+				let beenVisited = neighborNode.visitedInSearchNumber == searchNumber
 
 				if not beenVisited
 					// neighborNode.combinedCost = 0
 					// neighborNode.travelCostSoFar = 0
 					neighborNode.distanceToTarget = neighborNode.location manhattanDistanceTo target.location
-					neighborNode.visitedInSearchNumber = seachNumber
+					neighborNode.visitedInSearchNumber = searchNumber
 					neighborNode.exploredAllNeighbors = false
 					// neighborNode.previousNode = null
 
