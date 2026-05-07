@@ -3,13 +3,14 @@ unit html
 
 	Gamepad[] gamepads = [{}]
 
-	Gamepad[] queryGamepads
+	Gamepad[] queryGamepads: string ignore = ""
 		InternalGamepad[] internalGamepads = getGamepads
 		if internalGamepads == null or internalGamepads.length == 0 then return
+		int index
 		for internalGamepads as internalGamepad
-			if internalGamepad
-				let gp = gamepads[i]
-				if not gp then gamepads[i] = gp = {}
+			if internalGamepad and not internalGamepad.id.contains(ignore)
+				let gp = gamepads[index]
+				if not gp then gamepads[index] = gp = {}
 
 				gp.id	= .id
 				gp.leftStick	= {x: internalGamepad.axes[0], y: internalGamepad.axes[1]}
@@ -45,6 +46,7 @@ unit html
 				gp.buttons.each.wasPreviouslyPressed = .isPressed
 				for gp.buttons
 					.isPressed = internalGamepad.buttons[.index].pressed
+				index++
 
 		return gamepads
 	
@@ -79,7 +81,7 @@ internal transient immutable InternalGamepad
 	ImmutableList<InternalGamepadButton> buttons
 	string id, mapping
 	
-enum GamepadButton: A, B, X, Y, LeftBumper, RightBumper, LeftTrigger, RightTrigger, Select, Start, LeftStickButton, RightStickButton, Up, Down, Left, Right
+enum GamepadButton: A, B, X, Y, leftBumper, rightBumper, leftTrigger, rightTrigger, Select, Start, LeftStickButton, RightStickButton, Up, Down, Left, Right
 	
 enum GamepadType: Keyboard, Xbox, PlayStation, Nintendo
 internal Gamepad
@@ -94,10 +96,10 @@ internal Gamepad
 	DigitalButton B	= {name:"B"	index:1	image:ButtonB}
 	DigitalButton X	= {name:"X"	index:2	image:ButtonX}
 	DigitalButton Y	= {name:"Y"	index:3	image:ButtonY}
-	DigitalButton LeftBumper	= {name:"LeftBumper"	index:4}
-	DigitalButton RightBumper	= {name:"RightBumper"	index:5}
-	DigitalButton LeftTrigger 	= {name:"LeftTrigger"	index:6}
-	DigitalButton RightTrigger 	= {name:"RightTrigger"	index:7}
+	DigitalButton leftBumper	= {name:"Left Bumper"	index:4}
+	DigitalButton rightBumper	= {name:"Right Bumper"	index:5}
+	DigitalButton leftTrigger 	= {name:"Left Trigger"	index:6}
+	DigitalButton rightTrigger 	= {name:"Right Trigger"	index:7}
 	DigitalButton start	= {name:"Start"	index:8}
 	DigitalButton select	= {name:"Select"	index:9}
 	DigitalButton leftStickButton	= {name:"Left Stick"	index:10}
@@ -109,7 +111,7 @@ internal Gamepad
 	
 	DigitalButton[] buttons = [
 		A, B, X, Y,
-		LeftBumper, RightBumper, LeftTrigger, RightTrigger,
+		leftBumper, rightBumper, leftTrigger, rightTrigger,
 		start, select,
 		leftStickButton, rightStickButton,
 		up, right, down, left
