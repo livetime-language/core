@@ -53,7 +53,7 @@ global static class html
 				if nextNode then parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
 				if focusInitially
-					delay 0
+					Platform.delay 0
 						element.focus
 				nodesCreated++
 			else
@@ -316,7 +316,7 @@ global static class html
 		         void() children = null	// The children of the HTML element
 		         SourceCodeLocation location
 		style.display = grid
-		if isMobile and mobileGridTemplateColumns then style.gridTemplateColumns = mobileGridTemplateColumns
+		if Platform.isMobile and mobileGridTemplateColumns then style.gridTemplateColumns = mobileGridTemplateColumns
 		return div attributes, style, children, location
 
 	// Render a html div element with a grid layout
@@ -327,7 +327,7 @@ global static class html
 		         void() children = null	// The children of the HTML element
 		         SourceCodeLocation location
 		style.display = grid
-		if isMobile and mobileGridTemplate then style.gridTemplate = mobileGridTemplate
+		if Platform.isMobile and mobileGridTemplate then style.gridTemplate = mobileGridTemplate
 		return div attributes, style, children, location
 
 	global gridArea: string gridArea
@@ -538,7 +538,7 @@ global static class html
 		else         
 			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
 		if focusTabIndex == tabIndex
-			delay 100
+			Platform.delay 100
 				element.focus
 
 	// Render a html editable text element in the draw function.
@@ -564,7 +564,7 @@ global static class html
 		else         
 			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
 		if focusTabIndex == tabIndex
-			delay 100
+			Platform.delay 100
 				element.focus
 
 	// Render a html textarea element in the draw function.
