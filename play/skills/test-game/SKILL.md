@@ -2,6 +2,7 @@
 name: test-game
 description: Write unit tests for each rule of the game
 user-invokable: true
+disable-model-invocation: true
 ---
 # Analyze Code and Rules
 Analyze the code and "docs/rules.md" carefully. Make sure you have a deep understanding of the rules and the code. Add each rule to your todo list. Then process them one by one.
@@ -20,7 +21,7 @@ tests
 		click pos(1,0) by players[0]
 		expect app.grid[1,0].pieceType == Pawn
 
-2. Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run the unit tests.
+2. Use "npm run test" to run all tests.
 
 3. If something is not working as expected, analyze the output of the tests and fix the problem.
 
