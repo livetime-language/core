@@ -241,16 +241,13 @@ internal transient skipInit unit core
 			let output = codeChanged ? core.output : null
 			sendOutputToEditor frame:core.frame-1
 
-	runTest: string testFunctionName, int id = -1, int targetFrame = -1, int interrruptAtOutputIndex = -1
-		let parts = testFunctionName.split(".")
-		if parts.length < 2 then parts = ["tests", testFunctionName or "main"]
-		dynamic testFunction = globals[parts[0]][parts[1]]
-		if not testFunction then return
+	runTest: dynamic testFunction, int id = -1, int targetFrame = -1, int interrruptAtOutputIndex = -1
 		isPremiere = false
 		runningTest = true
+		errorCount = 0
 		this.targetFrame = targetFrame
 		this.interrruptAtOutputIndex = interrruptAtOutputIndex
-		Platform.fastForward = false
+		Platform.fastForward = true
 		try
 			try
 				outputSentUpTo = 0
@@ -261,12 +258,13 @@ internal transient skipInit unit core
 
 			// We draw the current state without events and animations
 			// We don't draw in the test function since we don't know when we are on the final frame
-			Platform.fastForward = false
-			for input.internalUsers as user
-				user?.clearEvent
-			runningAnimations.clear
-			tick draw:true
-			graphics.finishDrawingDebugInfo
+			if not Platform.isHeadless
+				Platform.fastForward = false
+				for input.internalUsers as user
+					user?.clearEvent
+				runningAnimations.clear
+				tick draw:true
+				graphics.finishDrawingDebugInfo
 		catch
 			core.onError .
 		finally		
@@ -276,6 +274,7 @@ internal transient skipInit unit core
 			// Platform.sendToEditor({type:"finishedTest", id, testFunction, output, onScreen:graphics.getDescriptionOfItemsOnScreen, testRunMode})
 
 	bool runningTest
+	int errorCount
 	string[] output
 	int outputIndex = -1
 	int interrruptAtOutputIndex = -1
@@ -870,6 +869,7 @@ internal transient skipInit unit core
 		if error.message == "interrrupt" then return
 		errorMessage = error.stack
 		hasErrors = true
+		errorCount++
 		if(core.runningTest || Platform.isDebug) {
 			addOutput "exception|{errorMessage}||0"
 			sendOutputToEditor
@@ -1277,8 +1277,10 @@ tests
 			result = "+"
 		else
 			result = "-"
+			core.errorCount++
 			try		expectedString = json.stringify(expected)
 			catch		expectedString = expected?.toString()
+			System.log "FAIL {expressionString}: expected {expectedString}, but got {actualString}";
 		core.addOutput "expect|{expressionString}|{result}|{actualString}|{expectedString}|{location.file}|{location.start}"
 
 	// Used internally in the compiled code. Do not call in your code.
@@ -1294,6 +1296,9 @@ tests
 		try	actualString = json.stringify(actual)
 		catch	actualString = actual?.toString()
 		string result = actual ? "+" : "-"
+		if not actual
+			core.errorCount++
+			System.log "FAIL {expressionString}: expected true, but got {actualString}";
 		core.addOutput "expect|{expressionString}|{result}|{actualString}|true|{location.file}|{location.start}"
 	
 	// Used internally. Do not call in your code.
