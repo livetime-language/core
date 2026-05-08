@@ -469,8 +469,8 @@ transient skipInit global unit graphics
 		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
 		                      VerticalAlignment valign = Middle	// The vertical alignment of the image
 		                      SourceCodeLocation location
-		if(!image?.texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
+			if(!image?.texture?.ensureIsAvailable()) return
 			let f = image.frames[frame % image.frames.length]
 			let sizeX = (size.x || f.w) * scale
 			let sizeY = size.y ? size.y * scale : (sizeX/f.w)*f.h
@@ -515,8 +515,8 @@ transient skipInit global unit graphics
 		if(angle == 0 && !flipX && !flipY) {
 			graphics.drawImage(image, position, scale, size, visibleFor, frame, layer, alpha, color, 1, 1, location)
 		} else {
-			if(!image.texture?.ensureIsAvailable()) return
 			if(graphics.isVisibleFor(visibleFor)) {
+				if(!image.texture?.ensureIsAvailable()) return
 				let f = image.frames[frame % image.frames.length]
 				let sizeX = (size.x || f.w) * scale
 				let sizeY = size.y ? size.y * scale : (sizeX/f.w)*f.h
@@ -668,8 +668,8 @@ transient skipInit global unit graphics
 		                            HorizontalAlignment align = Center  // The horizontal alignment of the image
 		                            VerticalAlignment valign = Middle   // The vertical alignment of the image
 		                            SourceCodeLocation location
-		if(!image?.texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
+			if(!image?.texture?.ensureIsAvailable()) return
 			let f = image.frames[frame % image.frames.length]
 			let factor = size.y ? size.y / f.h : 1
 			let scaledLeftSlice = leftSlice * factor
@@ -733,8 +733,8 @@ transient skipInit global unit graphics
 		                             HorizontalAlignment align = Center	// The horizontal alignment of the image
 		                             VerticalAlignment valign = Middle	// The vertical alignment of the image
 		                             SourceCodeLocation location
-		if(!image?.texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
+			if(!image?.texture?.ensureIsAvailable()) return
 			let f = image.frames[frame % image.frames.length]
 			let sizeX = (size.x || f.w) * scale
 			let sizeY = size.y ? size.y * scale : (sizeX/f.w)*f.h
@@ -1548,8 +1548,8 @@ transient skipInit global unit graphics
 		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
-		if(!texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
+			if(!texture?.ensureIsAvailable()) return
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
 			graphics.add(new DisplayImage(
@@ -1583,8 +1583,8 @@ transient skipInit global unit graphics
 		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
-		if(!texture?.ensureIsAvailable()) return
 		if(graphics.isVisibleFor(visibleFor)) {
+			if(!texture?.ensureIsAvailable()) return
 			let sizeX = size.x || texture.size.x
 			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
 			graphics.add(new DisplayImage(
@@ -1615,27 +1615,29 @@ transient skipInit global unit graphics
 		                             implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
 		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                             Color color = White                 // Tint the texture with this color
-		if(!graphics.imagesFromUrl) graphics.imagesFromUrl = new Map()
-		let texture = graphics.imagesFromUrl.get(url)
-		if(!texture) {
-			texture = new Texture(url)
-			graphics.imagesFromUrl.set(url, texture)
-		}
-		if(texture?.isAvailable() && graphics.isVisibleFor(visibleFor)) {
-			let sizeX = size.x || texture.size.x
-			let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
-			graphics.add(new DisplayImage(
-				graphics.totalMatrix,
-				position.x - sizeX/2,
-				position.y - sizeY/2,
-				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
-				`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
-				location, position.location, size.location,
-				texture.imageOrCanvas,
-				0, 0, texture.size.x, texture.size.y,
-				color
-			))
+		if(graphics.isVisibleFor(visibleFor)) {
+			if(!graphics.imagesFromUrl) graphics.imagesFromUrl = new Map()
+			let texture = graphics.imagesFromUrl.get(url)
+			if(!texture) {
+				texture = new Texture(url)
+				graphics.imagesFromUrl.set(url, texture)
+			}
+			if(texture?.isAvailable()) {
+				let sizeX = size.x || texture.size.x
+				let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
+				graphics.add(new DisplayImage(
+					graphics.totalMatrix,
+					position.x - sizeX/2,
+					position.y - sizeY/2,
+					sizeX, sizeY,
+					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+					`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
+					location, position.location, size.location,
+					texture.imageOrCanvas,
+					0, 0, texture.size.x, texture.size.y,
+					color
+				))
+			}
 		}
 
 	// ------------------------------------------------------- Clear -------------------------------------------------------

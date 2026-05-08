@@ -6,6 +6,11 @@ applyTo: '**'
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
+# Compile, run and test
+Run "npm run compile" to compile.
+Open "assets/index.html" in a browser, take a screenshot and check no text or images are overlapping unintentionally.
+Use "npm run test" to run all unit tests.
+
 # Write simple, fast code
 Always write the shortest, simplest possible and fastest code.
 Avoid code duplication.
@@ -272,8 +277,9 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Write unit tests in the "tests" static class in the "tests" folder
-// Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run unit tests
+// Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
+// Place them in the "tests" static class in the "tests" folder. Mark each test with the "test" keyword.
+// Use "npm run test" to run all tests.
 tests
 	pos: int x, int y
 		return IntVector2(x, y).toScreenPos

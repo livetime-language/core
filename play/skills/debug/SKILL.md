@@ -2,6 +2,7 @@
 name: debug
 description: Fix a bug
 user-invokable: true
+disable-model-invocation: true
 ---
 # Find and Fix Bugs
 
@@ -25,7 +26,7 @@ tests
 		wait 10 frames
 		expect bluePlayer.gridPos toBe {1,0}
 
-5. Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run the unit tests
+5. Use "npm run test" to run all tests.
 
 6. Carefully analyze the output of your print statements. The goal is to confirm one of your hypothesis. Repeat steps 1-6 until you can confirm one of your hypothesis.
 

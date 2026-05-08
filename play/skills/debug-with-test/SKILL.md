@@ -3,10 +3,11 @@ name: debug-with-test
 description: Fix a bug with a given, failing unit test
 user-invokable: true
 argument-hint: "[test function]"
+disable-model-invocation: true
 ---
 # Find and Fix a Problem
 
-1. Use vscode's built-in test-runner tool execute/runTests or the runTests mcp server to run the unit tests and analyze the output carefully.
+1. Use "npm run test" to run all tests and analyze the output carefully.
 
 2. Analyze the code carefully to find all possible causes of the problem.
 

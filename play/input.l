@@ -490,6 +490,7 @@ skipInit global unit input
 		return new Vector2(p.x/Platform.pixelRatio, p.y/Platform.pixelRatio, null)
 
 	private js void initHandlers
+		if(Platform.isHeadless) return
 		let pointerX = 0, pointerY = 0, clickWithAltKeyX = 0, clickWithAltKeyY = 0
 		window.onpointerdown = e => {
 			if(e.button == 0 && Platform.playMode <= 1 /*Stop,Pause*/) {
