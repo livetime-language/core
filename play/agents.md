@@ -6,6 +6,9 @@ applyTo: '**'
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
+# Compile and run
+Run "npm run compile" to compile. Keep iterating until there are no errors. Then open "assets/index.html" in a browser to run the game.
+
 # Write simple, fast code
 Always write the shortest, simplest possible and fastest code.
 Avoid code duplication.
