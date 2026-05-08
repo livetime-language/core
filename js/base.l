@@ -597,6 +597,11 @@ immutable class string
 		if(index == -1) return ""
 		return this.substring(index+value.length)
 		
+	js string getAfterLast: string value
+		let index = this.lastIndexOf(value)
+		if(index == -1) return this
+		return this.substring(index+value.length)
+		
 	js string getBetween: string from
 		                  string to
 		                  int start = 0
