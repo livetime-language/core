@@ -6,15 +6,15 @@ applyTo: '**'
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
-# Compile, run and test
-Run "npm run compile" to compile.
-Open "assets/index.html" in a browser, take a screenshot and check no text or images are overlapping unintentionally.
-Use "npm run test" to run all unit tests.
+# Simple code
+Always write the shortest, simplest possible code that meet the specifications.
+Prefer a few medium to large functions over lots of small functions.
+Only create functions if you need to reuse code in several places.
+Keep the flow simple and easy to understand.
+Check your code for opportunities to simplify the code or implement the same functionality with less code.
 
-# Write simple, fast code
-Always write the shortest, simplest possible and fastest code.
-Avoid code duplication.
-Analyze the complete code carefully. Check if there are opportunities to simplify the code or extract repeated functionality into functions.
+# Fast and efficient code
+Write the fastest, most efficient code possible.
 
 # Descriptive names, no abbreviations
 Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
@@ -33,6 +33,13 @@ The x-coordinate ranges from -960 to 960.
 The y-coordinate ranges from -540 to 540.
 So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}.
 The background is black by default. 
+
+# Compile and test
+Run "npm run compile" to compile.
+Open "assets/index.html" in a browser and check no text or images overlap unintentionally.
+
+Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
+Use "npm run test" to run all unit tests.
 
 # Library Source Code
 When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"
@@ -277,8 +284,7 @@ class Item
 		// Draw item					
 		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
 
-// Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
-// Place them in the "tests" static class in the "tests" folder. Mark each test with the "test" keyword.
+// Write unit tests for all features in the "tests" static class in the "tests" folder. Mark each test with the "test" keyword.
 // Use "npm run test" to run all tests.
 tests
 	pos: int x, int y

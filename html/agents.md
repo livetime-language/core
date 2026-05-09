@@ -9,9 +9,20 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 LiveTime uses inline styles for all html elements. 
 Very important: To re-render the html after changing data, you need to call refresh.
 
-Always write the shortest, simplest possible and most efficient code.
-Avoid code duplication. Do not overengineer. Keep it simple.
-Do not spread out the code over too many functions.
+# Simple code
+Always write the shortest, simplest possible code that meet the specifications.
+Prefer a few medium to large functions over lots of small functions.
+Only create functions if you need to reuse code in several places.
+Keep the flow simple and easy to understand.
+Check your code for opportunities to simplify the code or implement the same functionality with less code.
+
+# Fast and efficient code
+Write the fastest, most efficient code possible.
+
+# Descriptive names, no abbreviations
+Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
+
+# Group related code in the same function
 Elements that are grouped together visually should be in the same function.
 Aim for about 1 to 5 draw functions per page.
 
@@ -23,6 +34,9 @@ lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
 lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
 lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
+
+# Compile
+Run "npm run compile" to compile.
 
 # Basics of the LiveTime programming language
 enum State
