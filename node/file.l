@@ -78,6 +78,52 @@ file
 		const crypto = require("crypto");
 		const buffer = await fs.readFile(path);
 		return crypto.createHash("sha1").update(buffer).digest("hex")
+
+	js async string getHashOfFirstZipFile: string path
+		const fs = require("fs").promises;
+		const crypto = require("crypto");
+		const zlib = require("zlib");
+		const buffer = await fs.readFile(path);
+		const fileBytes = getFirstZipFileBytes(buffer, data => zlib.inflateRawSync(data));
+		return crypto.createHash("sha1").update(fileBytes).digest("hex")
+
+		function getFirstZipFileBytes(bytes, inflateRaw) {
+			const readUInt16 = offset => bytes.readUInt16LE(offset);
+			const readUInt32 = offset => bytes.readUInt32LE(offset);
+			const minEndOffset = Math.max(0, bytes.length - 0xffff - 22);
+			let endOffset = -1;
+			for(let offset = bytes.length - 22; offset >= minEndOffset; offset--) {
+				if(readUInt32(offset) == 0x06054b50) {
+					endOffset = offset;
+					break;
+				}
+			}
+			if(endOffset < 0) throw new Error("Invalid ZIP file: end of central directory not found");
+			let directoryOffset = readUInt32(endOffset + 16);
+			const entryCount = readUInt16(endOffset + 10);
+			for(let entryIndex = 0; entryIndex < entryCount; entryIndex++) {
+				if(readUInt32(directoryOffset) != 0x02014b50) throw new Error("Invalid ZIP file: central directory entry not found");
+				const compressionMethod = readUInt16(directoryOffset + 10);
+				const compressedSize = readUInt32(directoryOffset + 20);
+				const fileNameLength = readUInt16(directoryOffset + 28);
+				const extraLength = readUInt16(directoryOffset + 30);
+				const commentLength = readUInt16(directoryOffset + 32);
+				const localHeaderOffset = readUInt32(directoryOffset + 42);
+				const fileNameStart = directoryOffset + 46;
+				const isDirectory = fileNameLength > 0 && bytes[fileNameStart + fileNameLength - 1] == 47;
+				directoryOffset += 46 + fileNameLength + extraLength + commentLength;
+				if(isDirectory) continue;
+				if(readUInt32(localHeaderOffset) != 0x04034b50) throw new Error("Invalid ZIP file: local file header not found");
+				const localFileNameLength = readUInt16(localHeaderOffset + 26);
+				const localExtraLength = readUInt16(localHeaderOffset + 28);
+				const dataStart = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
+				const compressedBytes = bytes.subarray(dataStart, dataStart + compressedSize);
+				if(compressionMethod == 0) return compressedBytes;
+				if(compressionMethod == 8) return inflateRaw(compressedBytes);
+				throw new Error(`Unsupported ZIP compression method: ${compressionMethod}`);
+			}
+			throw new Error("Invalid ZIP file: no file entries found");
+		}
 	
 	js async bool exists: string path
 		try {

@@ -39,6 +39,57 @@ file
 		const hash = await crypto.subtle.digest("SHA-1", bytes)
 		return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("")
 
+	js async string getHashOfFirstZipFile: string path
+		const result = await Capacitor.Plugins.Filesystem.readFile({path})
+		const bytes = Uint8Array.from(atob(result.data), c => c.charCodeAt(0))
+		const fileBytes = await getFirstZipFileBytes(bytes, inflateRaw)
+		const hash = await crypto.subtle.digest("SHA-1", fileBytes)
+		return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("")
+
+		async function inflateRaw(bytes) {
+			if(typeof DecompressionStream == "undefined") throw new Error("ZIP deflate is not supported on this platform")
+			const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))
+			return new Uint8Array(await new Response(stream).arrayBuffer())
+		}
+
+		async function getFirstZipFileBytes(bytes, inflateRaw) {
+			const readUInt16 = offset => bytes[offset] | (bytes[offset + 1] << 8);
+			const readUInt32 = offset => (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0;
+			const minEndOffset = Math.max(0, bytes.length - 0xffff - 22);
+			let endOffset = -1;
+			for(let offset = bytes.length - 22; offset >= minEndOffset; offset--) {
+				if(readUInt32(offset) == 0x06054b50) {
+					endOffset = offset;
+					break;
+				}
+			}
+			if(endOffset < 0) throw new Error("Invalid ZIP file: end of central directory not found");
+			let directoryOffset = readUInt32(endOffset + 16);
+			const entryCount = readUInt16(endOffset + 10);
+			for(let entryIndex = 0; entryIndex < entryCount; entryIndex++) {
+				if(readUInt32(directoryOffset) != 0x02014b50) throw new Error("Invalid ZIP file: central directory entry not found");
+				const compressionMethod = readUInt16(directoryOffset + 10);
+				const compressedSize = readUInt32(directoryOffset + 20);
+				const fileNameLength = readUInt16(directoryOffset + 28);
+				const extraLength = readUInt16(directoryOffset + 30);
+				const commentLength = readUInt16(directoryOffset + 32);
+				const localHeaderOffset = readUInt32(directoryOffset + 42);
+				const fileNameStart = directoryOffset + 46;
+				const isDirectory = fileNameLength > 0 && bytes[fileNameStart + fileNameLength - 1] == 47;
+				directoryOffset += 46 + fileNameLength + extraLength + commentLength;
+				if(isDirectory) continue;
+				if(readUInt32(localHeaderOffset) != 0x04034b50) throw new Error("Invalid ZIP file: local file header not found");
+				const localFileNameLength = readUInt16(localHeaderOffset + 26);
+				const localExtraLength = readUInt16(localHeaderOffset + 28);
+				const dataStart = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
+				const compressedBytes = bytes.subarray(dataStart, dataStart + compressedSize);
+				if(compressionMethod == 0) return compressedBytes;
+				if(compressionMethod == 8) return await inflateRaw(compressedBytes);
+				throw new Error(`Unsupported ZIP compression method: ${compressionMethod}`);
+			}
+			throw new Error("Invalid ZIP file: no file entries found");
+		}
+
 	js async void copy: string from
 		                string to
 		const directory = to.includes("/") ? to.substring(0, to.lastIndexOf("/")) : ""
