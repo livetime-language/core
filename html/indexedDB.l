@@ -135,7 +135,24 @@ class IndexedDBStore<T>
 				reject(error)
 			}
 		})
-		
+
+	js async void delete: T item
+		if(!item) return
+		return new Promise((resolve, reject) => {
+			try {
+				let id = item[this.keyPath]
+				let trans = IndexedDB.db.transaction(this.name, "readwrite");
+				let req = trans.objectStore(this.name).delete(id);
+				req.onsuccess = e => resolve()
+				req.onerror = e => { 
+					System.print("Error in IndexedDBStore.delete: "+e)
+					reject(e)
+				}
+			} catch(e) {
+				System.print("Error in IndexedDBStore.delete: "+e)
+				reject(e)
+			}
+		})
 
 class IndexedDBCursor<T>
 	dynamic cursor
