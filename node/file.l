@@ -20,6 +20,30 @@ file
 		                string to
 		const fs = require("fs").promises;
 		await fs.writeFile(to, JSON.stringify(object, null, "\t"))
+
+	js async void copy: string from
+		                string to
+		const fs = require("fs").promises;
+		const path = require("path");
+		await fs.mkdir(path.dirname(to), {recursive:true})
+		await fs.copyFile(from, to)
+
+	js async bool saveUrl: string url
+		                   string to
+		const fs = require("fs").promises;
+		const path = require("path");
+		const { Buffer } = require("node:buffer");
+		const response = await fetch(url)
+		if(!response.ok) return false
+		const type = (response.headers.get("content-type") || "").toLowerCase()
+		if(type.includes("text") || type.includes("json") || type.includes("xml") || type.includes("html")) {
+			const text = (await response.text()).trim()
+			if(text == "NOMEDIA" || text == "CRCOK" || text == "MD5OK" || text == "SHA1OK" || text.startsWith("Erreur")) return false
+			return false
+		}
+		await fs.mkdir(path.dirname(to), {recursive:true})
+		await fs.writeFile(to, Buffer.from(await response.arrayBuffer()), {encoding:null})
+		return true
 		
 	js void download: string text
 		              string to
@@ -48,6 +72,12 @@ file
 		} catch (error) {
 			return null
 		}
+
+	js async string getHash: string path
+		const fs = require("fs").promises;
+		const crypto = require("crypto");
+		const buffer = await fs.readFile(path);
+		return crypto.createHash("sha1").update(buffer).digest("hex")
 	
 	js async bool exists: string path
 		try {
@@ -86,7 +116,8 @@ file
 		require("fs").promises.writeFile(to, data, "utf8")
 		
 	inline js void createDirectory: string path
-		require("fs").mkdirSync(path)
+		                             bool recursive = true
+		require("fs").mkdirSync(path, {recursive})
 		
 	js string[] showOpenDialog: FileFilter[] filters = null
 		return require('@electron/remote').dialog.showOpenDialogSync({ filters, properties: ["openFile"] })
