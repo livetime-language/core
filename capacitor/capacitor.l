@@ -98,6 +98,22 @@ file
 		}
 		await Capacitor.Plugins.Filesystem.copy({from, to})
 
+	js async void move: string from
+		                string to
+		const directory = to.includes("/") ? to.substring(0, to.lastIndexOf("/")) : ""
+		if(directory) {
+			try { await Capacitor.Plugins.Filesystem.mkdir({path:directory, recursive:true}) } catch {}
+		}
+		await Capacitor.Plugins.Filesystem.rename({from, to})
+
+	js async bool delete: string path
+		try {
+			await Capacitor.Plugins.Filesystem.deleteFile({path})
+			return true
+		} catch(error) {
+			return false
+		}
+
 	js async bool saveUrl: string url
 		                   string to
 		try {

@@ -28,6 +28,13 @@ file
 		await fs.mkdir(path.dirname(to), {recursive:true})
 		await fs.copyFile(from, to)
 
+	js async void move: string from
+		                string to
+		const fs = require("fs").promises;
+		const path = require("path");
+		await fs.mkdir(path.dirname(to), {recursive:true})
+		await fs.rename(from, to)
+
 	js async bool saveUrl: string url
 		                   string to
 		const fs = require("fs").promises;
@@ -154,6 +161,14 @@ file
 		
 	inline js async void rename: string from, string to
 		require("fs").promises.rename(from, to)
+
+	js async bool delete: string path
+		try {
+			await require("fs").promises.rm(path)
+			return true
+		} catch (error) {
+			return false
+		}
 		
 	inline js async string read: string filename
 		require("fs").promises.readFile(filename, "utf8")
