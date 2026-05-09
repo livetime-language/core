@@ -573,6 +573,12 @@ immutable class string
 		if(index != -1) return this.substring(start, index);
 		if(start > 0)   return this.substring(start);
 		                return this
+
+	string getUntilAny: string[] values
+		for this as char
+			for values as value
+				if . == value then return this.substring(0, i)
+		return this
 		
 	js string getUntilUnescaped: string character
 		                         int start = 0
