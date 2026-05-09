@@ -577,7 +577,7 @@ immutable class string
 	string getUntilAny: string[] values
 		for this as char
 			for values as value
-				if . == value then return this.substring(0, i)
+				if char == value then return this.substring(0, i)
 		return this
 		
 	js string getUntilUnescaped: string character
