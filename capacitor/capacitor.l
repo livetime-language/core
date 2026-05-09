@@ -17,7 +17,8 @@ file
 			return false
 
 	async ReadDirectoryResult[] readDirectory: string path
-		return await Capacitor.Plugins.Filesystem.readdir({path:path})
+		let result = await Capacitor.Plugins.Filesystem.readdir({path:path})
+		return result.files or result
 
 	async FileInfo getInfo: string path
 		try
@@ -28,48 +29,44 @@ file
 		catch
 			return null
 
-	async string getHash: string path
-		let result = await Capacitor.Plugins.Filesystem.readFile({path})
-		let binary = atob(result.data)
-		let bytes = new Uint8Array(binary.length)
-		for binary.length
-			bytes[i] = binary.charCodeAt(i)
-		let hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-1", bytes))
-		string hash
-		for hashBytes.length
-			hash += hashBytes[i].toString(16).padStart(2, "0")
-		return hash
-
 	async void write: string text
 		              string to
 		await Capacitor.Plugins.Filesystem.writeFile({path:to, data:text, encoding:"utf8"})
 
-	async void copy: string from
-		            string to
-		let slash = to.lastIndexOf("/")
-		if slash != -1
-			await createDirectory(to[0 to slash], recursive:true)
-		let result = await Capacitor.Plugins.Filesystem.readFile({path:from})
-		await Capacitor.Plugins.Filesystem.writeFile({path:to, data:result.data})
+	js async string getHash: string path
+		const result = await Capacitor.Plugins.Filesystem.readFile({path})
+		const bytes = Uint8Array.from(atob(result.data), c => c.charCodeAt(0))
+		const hash = await crypto.subtle.digest("SHA-1", bytes)
+		return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("")
 
-	async bool saveUrl: string url
-		               string to
-		let response = await fetch(url)
-		if not response.ok then return false
-		let type = (response.headers.get("content-type") or "").toLowerCase
-		if type.contains("text") or type.contains("json") or type.contains("xml") or type.contains("html")
-			let text = ((await response.text) or "").trim
-			if text == "NOMEDIA" or text == "CRCOK" or text == "MD5OK" or text == "SHA1OK" or text.startsWith("Erreur") then return false
+	js async void copy: string from
+		                string to
+		const directory = to.includes("/") ? to.substring(0, to.lastIndexOf("/")) : ""
+		if(directory) {
+			try { await Capacitor.Plugins.Filesystem.mkdir({path:directory, recursive:true}) } catch {}
+		}
+		await Capacitor.Plugins.Filesystem.copy({from, to})
+
+	js async bool saveUrl: string url
+		                   string to
+		try {
+			const response = await Capacitor.Plugins.CapacitorHttp.get({url, responseType:"arraybuffer"})
+			const type = Object.entries(response.headers || {}).find(([key]) => key.toLowerCase() == "content-type")?.[1]?.toLowerCase() || ""
+			if(response.status < 200 || response.status >= 300) return false
+			if(type.includes("text") || type.includes("json") || type.includes("xml") || type.includes("html")) return false
+			let data = response.data
+			if(data instanceof ArrayBuffer) data = arrayBufferToBase64(data)
+			else if(ArrayBuffer.isView(data)) data = arrayBufferToBase64(data.buffer)
+			else if(Array.isArray(data)) data = arrayBufferToBase64(new Uint8Array(data).buffer)
+			else if(typeof data == "string" && data.startsWith("data:")) data = data.split(",")[1]
+			if(typeof data != "string" || !data) return false
+			await Capacitor.Plugins.Filesystem.writeFile({path:to, data, recursive:true})
+			return true
+		} catch(error) {
 			return false
-		let slash = to.lastIndexOf("/")
-		if slash != -1
-			await createDirectory(to[0 to slash], recursive:true)
-		let bytes = new Uint8Array(await response.arrayBuffer())
-		let binary = ""
-		for bytes.length
-			binary += string.fromCharCode bytes[i]
-		await Capacitor.Plugins.Filesystem.writeFile({path:to, data:btoa(binary)})
-		return true
+		}
+
+	inline js string arrayBufferToBase64(dynamic buffer) => { let binary = ""; const bytes = new Uint8Array(buffer); for(let i = 0; i < bytes.byteLength; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(binary); }
 
 	async void createDirectory: string path
 		                     bool recursive = true
