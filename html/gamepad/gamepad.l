@@ -100,8 +100,8 @@ internal Gamepad
 	DigitalButton rightBumper	= {name:"Right Bumper"	index:5}
 	DigitalButton leftTrigger 	= {name:"Left Trigger"	index:6}
 	DigitalButton rightTrigger 	= {name:"Right Trigger"	index:7}
-	DigitalButton start	= {name:"Start"	index:8}
-	DigitalButton select	= {name:"Select"	index:9}
+	DigitalButton select	= {name:"Select"	index:8}
+	DigitalButton start	= {name:"Start"	index:9}
 	DigitalButton leftStickButton	= {name:"Left Stick"	index:10}
 	DigitalButton rightStickButton	= {name:"Right Stick"	index:11}
 	DigitalButton up	= {name:"Up"	index:12}
