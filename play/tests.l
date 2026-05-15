@@ -89,7 +89,7 @@ tests
 	// Wait for all animations to finish
 	importance:5
 	void waitForAnimationsToFinish
-		while runningAnimations
+		while fx??.runningAnimations.length
 			tick
 
 	// Use printWhatIsOnScreen to check if the what is shown on screen is correct
