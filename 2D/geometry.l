@@ -7,16 +7,16 @@ struct Vector2
 	SourceCodeLocation location
 	
 	// Used to specify that the vector is not set or invalid
-	static importance:4 inline Vector2 None() Vector2(float.infinity, float.infinity, null)
+	static importance:4 inline Vector2 none() Vector2(float.infinity, float.infinity, null)
 	
 	// {float.minValue, float.minValue}
-	static importance:4 inline Vector2 MinValue() Vector2(float.minValue, float.minValue, null)
+	static importance:4 inline Vector2 minValue() Vector2(float.minValue, float.minValue, null)
 	
 	// {float.maxValue, float.maxValue}
-	static importance:4 inline Vector2 MaxValue() Vector2(float.maxValue, float.maxValue, null)
+	static importance:4 inline Vector2 maxValue() Vector2(float.maxValue, float.maxValue, null)
 	
 	// {0,0}
-	static importance:4 inline Vector2 Zero() Vector2(0, 0, null)
+	static importance:4 inline Vector2 zero() Vector2(0, 0, null)
 		
 	// A string representation of the vector
 	importance:4 string toString => "\{{x.format(maxFractionDigits:1)}, {y.format(maxFractionDigits:1)}\}"
