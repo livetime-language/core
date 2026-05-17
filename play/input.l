@@ -165,18 +165,12 @@ Touch
 	importance:4 Player by
 	TouchPhase phase
 	TouchType type
-	Vector2 referencePosition
-	Vector2 referenceStartPosition
+	Vector2 position
+	Vector2 startPosition
 	Vector2 smoothPosition
 	importance:4 bool isDown
 	bool handled
 	int startFrame
-	
-	// Calculate position and startPositio dynamically to ensure it is always valid and relative to the current matrix
-	// even if we never check the touch with a input.onTouch method
-	
-	importance:4 Vector2 position	=> referencePosition.getRelativeTo(graphics.localMatrix)
-	Vector2 startPosition	=> referenceStartPosition.getRelativeTo(graphics.localMatrix)
 	
 	importance:4 markAsHandled() handled = true
 	
@@ -184,10 +178,8 @@ internal transient ScrollEvent
 	immutable int userId
 	immutable Vector2 delta
 	immutable bool isPinch
-	immutable Vector2 referencePosition
+	immutable Vector2 position
 	bool handled
-	
-	Vector2 position => referencePosition.getRelativeTo(graphics.localMatrix)
 	
 	markAsHandled() handled = true
 	
@@ -672,7 +664,7 @@ skipInit global unit input
 			default	touchType = 4
 		
 		Vector2 pixelPos = {x*graphics.pixelRatio, y*graphics.pixelRatio}
-		Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
+		Vector2 referencePos = graphics.getReferencePos(x, y)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
 		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return		
@@ -725,7 +717,7 @@ skipInit global unit input
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
 		              + math.shiftLeft(isPinch ? 1:0, 5)	// isPinch:   0 -   1 (1 bit)
 		
-		Vector2 referencePos = {x*graphics.pixelRatio, y*graphics.pixelRatio}.getRelativeTo(graphics.baseMatrix)
+		Vector2 referencePos = graphics.getReferencePos(x, y)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -1028,8 +1020,8 @@ skipInit global unit input
 		if touch
 			// Update the touch in player.touches
 			touch.phase = Down
-			touch.referencePosition = referencePos
-			touch.referenceStartPosition = referencePos
+			touch.position = referencePos
+			touch.startPosition = referencePos
 			touch.startFrame = core.frame
 			touch.type = type
 
@@ -1065,11 +1057,11 @@ skipInit global unit input
 		if touch
 			// Update the touch in player.touches
 			if touch.phase == Still then touch.phase = Move
-			touch.referencePosition = referencePos
+			touch.position = referencePos
 			touch.type = type
 			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
-			touch = {id, player, Move, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+			touch = {id, player, Move, type, referencePos, startPosition:Vector2.None, referencePos, isDown:false}
 			player.touches.add touch
 				
 		player.pointerPosition = referencePos
@@ -1092,12 +1084,12 @@ skipInit global unit input
 		if touch
 			// Update the touch in player.touches
 			touch.phase = Up
-			touch.referencePosition = referencePos
+			touch.position = referencePos
 			touch.type = type
 			touch.isDown = false
 			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
-			touch = {id, player, Up, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+			touch = {id, player, Up, type, referencePos, startPosition:Vector2.None, referencePos, isDown:false}
 			player.touches.add touch
 		
 		player.pointerPosition = referencePos
@@ -1106,12 +1098,12 @@ skipInit global unit input
 		player.onTouchUp??(touch)
 
 		if player == input.localPlayer
-			let length = referencePos distanceTo touch.referenceStartPosition
+			let length = referencePos distanceTo touch.startPosition
 			let playerVariable = "players[{player.playerIndex}]"
 			if length < 8
-				core.addOutput "code|click {touch.referenceStartPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|click {touch.startPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
 			else
-				core.addOutput "code|drag {touch.referenceStartPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|drag {touch.startPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
 
 	internal scroll: InternalUser internalUser
 	                 Player player
@@ -1258,74 +1250,20 @@ skipInit global unit input
 		let sizeY = size.y || size.x
 		let x = align == Left ? position.x : align  == Center ? position.x-sizeX/2 : position.x-sizeX
 		let y = valign == Top ? position.y : valign == Middle ? position.y-sizeY/2 : position.y-sizeY
-		Vector2[] poly = [
-			{ x,         y         }.transform(graphics.localMatrix),
-			{ x + sizeX, y         }.transform(graphics.localMatrix),
-			{ x + sizeX, y + sizeY }.transform(graphics.localMatrix),
-			{ x,         y + sizeY }.transform(graphics.localMatrix),
-		]
 		
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
-				and touch.referencePosition.insidePolygon(poly)
+				and x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					do touch
 					if markAsHandled then touch.handled = true
 						
 		if cursor != Auto
 			for localUser.movingTouches as touch
-				if !touch.handled && touch.referencePosition.insidePolygon(poly)
+				if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					this.cursor = cursor
 				
-		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
-
-	// Do something when the player touches or clicks within a given rotated rectangle.
-	//
-	// Example: Draw a the image "Character" rotated by 45 degrees and print "Clicked character" when the player touches within its rotated rectangle.
-	//     app
-	//         tick
-	//             let pos = {0,0}
-	//             let size = {100,200}
-	//             let angle = 45°         
-	//             drawImage Character, pos, size, angle
-	//             onTouchDown pos, size, angle
-	//                 print "Clicked character"
-	// Image: onTouchDown2.png
-	global importance:0 onTouchDown: Vector2 position                    // The center of the touch area
-		                Vector2 size                        // The size of the rectangular touch area
-		                float angle                          // Rotate the touch area by this angle
-		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
-		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
-		                bool showClickableArea = false      // Highlight the clickable area for debugging
-		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
-		                HorizontalAlignment align = Center  // The horizontal alignment of the touch area
-		                VerticalAlignment valign = Middle   // The vertical alignment of the touch area
-		                void(Touch touch) do                // Do this for each touch or click
-		if not active then return
-		let halfSizeX = size.x/2
-		let halfSizeY = (size.y || size.x)/2
-		let x = align == Left ? position.x+halfSizeX : align  == Center ? position.x : position.x-halfSizeX
-		let y = valign == Top ? position.y+halfSizeY : valign == Middle ? position.y : position.y-halfSizeY
-		Vector2[] poly = [
-			{ -halfSizeX, -halfSizeY }.rotate(angle).move(x,y).transform(graphics.localMatrix),
-			{ +halfSizeX, -halfSizeY }.rotate(angle).move(x,y).transform(graphics.localMatrix),
-			{ +halfSizeX, +halfSizeY }.rotate(angle).move(x,y).transform(graphics.localMatrix),
-			{ -halfSizeX, +halfSizeY }.rotate(angle).move(x,y).transform(graphics.localMatrix),
-		]
-		
-		for getTargetedPlayers(by) as player
-			for internalUsers[player.id].downTouches as touch
-				if !touch.handled and (player.enableTouch or touch.type != Finger)
-				and touch.referencePosition.insidePolygon(poly)
-					do touch
-					if markAsHandled then touch.handled = true
-						
-			if cursor != Auto
-				for localUser.movingTouches as touch
-					if !touch.handled && touch.referencePosition.insidePolygon(poly)
-						this.cursor = cursor
-				
-		if showClickableArea then drawPolygon poly, color:{"#ff000080"}, layer:10000000
+		// if showClickableArea then drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
 
 	// Do something when the player touches or clicks within a given circle.
 	//
@@ -1345,21 +1283,19 @@ skipInit global unit input
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
 		if not active then return
-		let referencePosition = position.transformed(graphics.localMatrix)
-		let referenceRadius = radius * graphics.localMatrix.scaleVector.x
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
-				and (touch.referencePosition distanceTo referencePosition) <= referenceRadius
+				and (touch.position distanceTo position) <= radius
 					do touch
 					if markAsHandled then touch.handled = true
 						
 			if cursor != Auto
 				for localUser.movingTouches as touch
-					if !touch.handled && (touch.referencePosition distanceTo position) <= radius
+					if !touch.handled && (touch.position distanceTo position) <= radius
 						this.cursor = cursor
 				
-		if showClickableArea then drawCircle position, radius*2, color:{"#ff0000b0"}, layer:10000000
+		// if showClickableArea then drawCircle position, radius*2, color:{"#ff0000b0"}, layer:10000000
 
 	// Do something when the player touches or clicks within a given polygon.
 	//
@@ -1381,24 +1317,20 @@ skipInit global unit input
 		                bool showClickableArea = false      // Highlight the clickable area for debugging
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
-		if not active then return
-		Vector2[] poly
-		for points
-			poly.add (position + .).transform(graphics.localMatrix)
-			
+		if not active then return			
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
-				and touch.referencePosition.insidePolygon(poly)
+				and touch.position.insidePolygon(points)
 					do touch
 					if markAsHandled then touch.handled = true
 						
 			if cursor != Auto
 				for localUser.movingTouches as touch
-					if !touch.handled && touch.referencePosition.insidePolygon(poly)
+					if !touch.handled && touch.position.insidePolygon(points)
 						this.cursor = cursor
 				
-		if showClickableArea then drawPolygon position, points, color:{"#ff0000b0"}, layer:10000000
+		// if showClickableArea then drawPolygon position, points, color:{"#ff0000b0"}, layer:10000000
 			
 	// Do something when the player touches or clicks anywhere on the screen.
 	//
@@ -1456,24 +1388,18 @@ skipInit global unit input
 		let sizeY = size.y || size.x
 		let x = align == Left ? position.x : align  == Center ? position.x-sizeX/2 : position.x-sizeX
 		let y = valign == Top ? position.y : valign == Middle ? position.y-sizeY/2 : position.y-sizeY
-		Vector2[] poly = [
-			{ x,         y         }.transform(graphics.localMatrix),
-			{ x + sizeX, y         }.transform(graphics.localMatrix),
-			{ x + sizeX, y + sizeY }.transform(graphics.localMatrix),
-			{ x,         y + sizeY }.transform(graphics.localMatrix),
-		]
 		
 		for getTargetedPlayers(by) as player
 			for player.touches as touch
-				if touch.referencePosition.insidePolygon(poly)
+				if x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					do touch
 					
 			if cursor != Auto
 				for localUser.movingTouches as touch
-					if !touch.handled && touch.referencePosition.insidePolygon(poly)
+					if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 						this.cursor = cursor
 				
-		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
+		// if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
 
 			
 	// ---------------------------------------------- Touch Move ----------------------------------------------
@@ -1603,20 +1529,14 @@ skipInit global unit input
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
 		if not active then return
-		Vector2[] poly = [
-			{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-			{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-			{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-			{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-		]
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].upTouches as touch
-				if !touch.handled && touch.referencePosition.insidePolygon(poly)
+				if !touch.handled and position.x <= touch.position.x < position.x + size.x and position.y <= touch.position.y < position.y + size.y
 					do touch
 					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
 						
-		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
+		// if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
 
 	// Do something when the player ends a touch or click within a given circle.
 	//
@@ -1636,21 +1556,19 @@ skipInit global unit input
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
 		if not active then return
-		let referencePosition = position.transform(graphics.localMatrix)
-		let referenceRadius = radius * graphics.localMatrix.scaleVector.x
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].upTouches as touch
-				if !touch.handled && (touch.referencePosition distanceTo referencePosition) <= referenceRadius
+				if !touch.handled && (touch.position distanceTo position) <= radius
 					do touch
 					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
 					
 			if cursor != Auto
 				for localUser.movingTouches as touch
-					if !touch.handled && (touch.referencePosition distanceTo position) <= radius
+					if !touch.handled && (touch.position distanceTo position) <= radius
 						this.cursor = cursor
 				
-		if showClickableArea then drawCircle position, radius*2, color:{"#ff000080"}
+		// if showClickableArea then drawCircle position, radius*2, color:{"#ff000080"}
 						
 	// ---------------------------------------------- Scroll ----------------------------------------------
 	
@@ -1670,19 +1588,13 @@ skipInit global unit input
 		                    bool markAsHandled = true           // Mark the touch as handled so it won't trigger more events
 		                    void(ScrollEvent event) do          // Do this for each event
 		if not active then return
-		Vector2[] poly = [
-			{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-			{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-			{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-			{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-		]
 		for getTargetedPlayers(by)
 			for internalUsers[.id].wheelEvents
-				if !.handled && .referencePosition.insidePolygon(poly)
+				if !.handled and position.x <= .position.x < position.x + size.x and position.y <= .position.y < position.y + size.y
 					do .
 					if markAsHandled then .markAsHandled
 						
-		if showClickableArea then drawRectangle position, size, Red
+		// if showClickableArea then drawRectangle position, size, Red
 			
 	// ---------------------------------------------- Text Input ----------------------------------------------
 	
