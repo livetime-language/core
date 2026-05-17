@@ -2682,23 +2682,30 @@ global transient priority unit System
 		                       -> inline void(
 		                           int i      // The iteration variable of the for-loop
 		                       ) do           // Do this for each value in the given range
-		                       label int to   // The exclusive upper bound to iterate towards (for exmaple "for 3: print ." prints 0, 1, 2)
+		                       label float to   // The exclusive upper bound to iterate towards (for exmaple "for 3: print ." prints 0, 1, 2)
 		for(let i=from; i<to; ++i) do(i)
 		
 	global inline js void for: int from       // The integer to start iterating from
 		                       <- inline void(
 		                           int i      // The iteration variable of the for-loop
 		                       ) do           // Do this for each value in the given range
-		                       label int to   // The exclusive upper bound to iterate towards
+		                       label float to   // The exclusive upper bound to iterate towards
 		for(let i=to-1; i>=from; --i) do(i)
 		
-	global inline js void for: int to         // The exclusive upper bound to iterate towards
+	global inline js void for: float to         // The exclusive upper bound to iterate towards
 		                       -> inline void(
 		                           int i      // The iteration variable of the for-loop
 		                       ) do           // Do this the given number of times
 		for(let i=0; i<to; ++i) do(i)
 		
-	global inline js void for: int to         // The exclusive upper bound to iterate towards
+	global inline js void for: float to         // The exclusive upper bound to iterate towards
+		                       -> inline void(
+		                           int i      // The iteration variable of the for-loop
+		                       ) do           // Do this the given number of times
+							   label nocolon int step
+		for(let i=0; i<to; i+=step) do(i)
+		
+	global inline js void for: float to         // The exclusive upper bound to iterate towards
 		                       <- inline void(
 		                           int i      // The iteration variable of the for-loop
 		                       ) do           // Do this the given number of times
@@ -2930,7 +2937,7 @@ global transient priority low unit System
 		                       ) do             // Select the field or expression to be included in the result
 		subject.map(do).reverse()
 	
-	global inline js TResult[] for: int to,    // The exclusive upper bound to iterate towards
+	global inline js TResult[] for: float to,    // The exclusive upper bound to iterate towards
 		                            TResult(
 		                                int i  // The iteration variable of the for-loop
 		                            ) do       // Select the field or expression to be included in the result
@@ -2940,7 +2947,7 @@ global transient priority low unit System
 		                            TResult(
 		                                int i    // The iteration variable of the for-loop
 		                            ) do         // Select the field or expression to be included in the result
-		                            label int to // The exclusive upper bound to iterate towards
+		                            label float to // The exclusive upper bound to iterate towards
 		                            nocolon label int step = 1
 		int.enumerate2(from, to, step, do)
 		
