@@ -39,6 +39,10 @@ immutable struct int
 	int atMost: int value
 		(this > value ? value : this)
 
+	inline js
+	float atMost: float value
+		(this > value ? value : this)
+
 	// Format the integer as a string
 	// Example: Format the integer as a string with the given minimum number of digits
 	//     int number = 7
