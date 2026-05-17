@@ -804,19 +804,22 @@ skipInit global unit input
 		
 		            + (gp.buttons[ 4].pressed ?    16:0) // L1
 		            + (gp.buttons[ 5].pressed ?    32:0) // R1
-		            + (gp.buttons[ 8].pressed ?    64:0) // Select
-		            + (gp.buttons[ 9].pressed ?   128:0) // Start
-		
-		            + (gp.buttons[10].pressed ?   256:0) // Left Stick Button
-		            + (gp.buttons[11].pressed ?   512:0) // Right Stick Button
+		            + (gp.buttons[ 6].pressed ?    64:0) // L2
+		            + (gp.buttons[ 7].pressed ?   128:0) // R2
 
-		            + (gp.buttons[12].pressed ?  1024:0) // Up
-		            + (gp.buttons[13].pressed ?  2048:0) // Down	
-		            + (gp.buttons[14].pressed ?  4096:0) // Left
-		            + (gp.buttons[15].pressed ?  8192:0) // Right
-
-		            + (isPlayStation          ? 16384:0)
+		            + (gp.buttons[ 8].pressed ?   256:0) // Select
+		            + (gp.buttons[ 9].pressed ?   512:0) // Start
 		
+		            + (gp.buttons[10].pressed ?  1024:0) // Left Stick Button
+		            + (gp.buttons[11].pressed ?  2048:0) // Right Stick Button
+
+		            + (gp.buttons[12].pressed ?  4096:0) // Up
+		            + (gp.buttons[13].pressed ?  8192:0) // Down	
+		            + (gp.buttons[14].pressed ? 16384:0) // Left
+		            + (gp.buttons[15].pressed ? 32768:0) // Right
+
+		            // + (isPlayStation          ? 16384:0)
+
 		// Write to event stream
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
@@ -905,16 +908,18 @@ skipInit global unit input
 					c.Y.isPressed	= (buttons bitwiseAnd 8) != 0
 					c.leftBumper.isPressed	= (buttons bitwiseAnd 16) != 0
 					c.rightBumper.isPressed	= (buttons bitwiseAnd 32) != 0
-					c.select.isPressed	= (buttons bitwiseAnd 64) != 0
-					c.start.isPressed	= (buttons bitwiseAnd 128) != 0
-					c.leftStickButton.isPressed	= (buttons bitwiseAnd 256) != 0
-					c.rightStickButton.isPressed	= (buttons bitwiseAnd 512) != 0
-					c.up.isPressed	= (buttons bitwiseAnd 1024) != 0
-					c.down.isPressed	= (buttons bitwiseAnd 2048) != 0
-					c.left.isPressed	= (buttons bitwiseAnd 4096) != 0
-					c.right.isPressed	= (buttons bitwiseAnd 8192) != 0
+					c.leftTrigger.isPressed	= (buttons bitwiseAnd 64) != 0
+					c.rightTrigger.isPressed	= (buttons bitwiseAnd 128) != 0
+					c.select.isPressed	= (buttons bitwiseAnd 256) != 0
+					c.start.isPressed	= (buttons bitwiseAnd 512) != 0
+					c.leftStickButton.isPressed	= (buttons bitwiseAnd 1024) != 0
+					c.rightStickButton.isPressed	= (buttons bitwiseAnd 2048) != 0
+					c.up.isPressed	= (buttons bitwiseAnd 4096) != 0
+					c.down.isPressed	= (buttons bitwiseAnd 8192) != 0
+					c.left.isPressed	= (buttons bitwiseAnd 16384) != 0
+					c.right.isPressed	= (buttons bitwiseAnd 32768) != 0
 
-					c.type = (buttons bitwiseAnd 16384) != 0 ? PlayStation : Xbox
+					// c.type = (buttons bitwiseAnd 16384) != 0 ? PlayStation : Xbox
 					
 					// Controller button names
 					if c.type == Xbox

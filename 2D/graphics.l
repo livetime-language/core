@@ -271,8 +271,7 @@ transient skipInit global unit graphics
 	private DisplayItem[] debugInfoItems		
 	bool isDrawingDebugInfo
 	
-	async setup: Vector2 referenceSize
-		this.referenceSize = referenceSize
+	async setup
 		if Platform.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize

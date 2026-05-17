@@ -103,7 +103,8 @@ transient skipInit unit Platform
 		
 			// isMobile = true
 			// await graphics.setup {referenceSizeX, referenceSizeY}
-			await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
+			// await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
+			await graphics.setup
 			graphics.onResize
 			playMode = Stop
 			let path = url.getUntil("?").split("/")
