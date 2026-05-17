@@ -261,7 +261,7 @@ immutable struct float
 		Math.ceil(this)
 		
 	// Returns the largest integer less than or equal to the given value
-	importance:4 inline js int floor
+	global importance:4 inline js int floor
 		Math.floor(this)
 		
 	// Returns the given value rounded to the nearest integer
