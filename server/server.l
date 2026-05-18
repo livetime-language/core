@@ -73,7 +73,7 @@ global skipInit unit math
 
 	js string generateUUID
 		return 'xxxx-xxxx-xxx-xxxx'.replace(/[x]/g, (c) => {  
-			return math.floor(math.random() * 16).toString(16);  
+			return Math.floor(Math.random() * 16).toString(16);  
 		}); 
 	
 PlainDate
