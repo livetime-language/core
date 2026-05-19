@@ -23,7 +23,6 @@ transient skipInit unit Platform
 		math.setRandomSeed math.generateRandomSeed 
 		time.ticks = 0
 		graphics.setup
-		graphics.onResize
 		initAll
 		for userCount input.internalUsers.add {}
 		app.start??()
