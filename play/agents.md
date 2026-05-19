@@ -58,7 +58,7 @@ enum State
 	Done
 
 // Defines the class Document
-// Classes have uppercase names. All members are public by default.
+// Classes have capitalized names. All members are public by default.
 // A contructor is created automatically
 class Document
 	string	id
