@@ -25,6 +25,7 @@ transient skipInit unit Platform
 		graphics.setup
 		graphics.onResize
 		initAll
+		for userCount input.internalUsers.add {}
 		app.start??()
 		startInterval
 				
@@ -50,11 +51,12 @@ transient skipInit unit Platform
 		}
 	
 	// This is called every animation frame
-	private js void tick
-		Time.now = Date.now()
-		graphics.startFrame()
-		app.tick()
-		graphics.finishFrame()
+	private tick
+		Time.startFrame
+		graphics.startFrame
+		app.tick
+		graphics.finishFrame
+		input.internalUsers.each.finishFrame
 		Time.ticks++
 					
 	js void initAll
@@ -82,3 +84,6 @@ skipInit static class Time
 	
 	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second)
 	static importance:5 int ticks
+
+	js void startFrame
+		now = Date.now()
