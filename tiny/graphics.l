@@ -66,9 +66,16 @@ Screen
 		graphics.context.imageSmoothingEnabled = smoothing;
 		graphics.context.drawImage(canvas, activeOffset.x, activeOffset.y, activeSize.x, activeSize.y)
 
+dynamic TileCollection
+	string Author
+	string Source
+	string Tags
+	string License
+	int startY, sizeY
+
 transient skipInit global unit graphics
 	const Vector2 tileSize
-	const int tilesPerRow
+	const int tilesPerRow, tilesStride
 
 	private dynamic canvas
 	internal dynamic context
@@ -79,9 +86,12 @@ transient skipInit global unit graphics
 	BitmapFont font
 	Screen screen
 	Screen[] screens
+	
 	int[] palette
 	PaletteEntry[string] paletteEntries
+
 	int[] tiles
+	TileCollection[] tileCollections
 
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
@@ -105,6 +115,7 @@ transient skipInit global unit graphics
 	setup
 		this.tileSize.create(8,8)
 		this.tilesPerRow = 16
+		this.tilesStride = floor(tilesPerRow * tileSize.x)
 
 		// screen = {size: {160,128}}	
 		screen = {size: {192,144}}	
@@ -223,15 +234,26 @@ transient skipInit global unit graphics
 		openTiles
 		openFonts
 
-	openTiles
+	private openTiles
 		tiles = []
+		tileCollections = []
+		TileCollection collection, prevCollection
 		int index = 0
 		for data.tiles.split("\n") as line
-			for line.length as i
-				PaletteEntry entry = paletteEntries[line[i]]
-					tiles[index++] = entry.index
+			if line.startsWith "#"
+				int colonIndex = line.indexOf ":"
+				string key = line.substring(1, colonIndex).trim.toLowerCase
+				string value = line.substring(colonIndex+1).trim
+				if not collection then collection = {}
+				collection[key] = value
+			else
+			if line.length > 0
+				for line.length as i
+					PaletteEntry entry = paletteEntries[line[i]]
+					tiles[index + i] = entry ? entry.index : 0
+				index += tilesStride
 
-	openFonts
+	private openFonts
 		int index = 0
 		for data.fonts.split("\n") as line
 			int pixelOffset = floor(i*font.gridSize.x*font.charsPerRow)
@@ -252,8 +274,7 @@ transient skipInit global unit graphics
 	global drawSprite: int sprite, Vector2 position
 		if Platform.fastForward then return
 		int stride = screen.size.x.round
-		int tileStride = floor(tilesPerRow * tileSize.x)
-		int tileOffset = floor(((sprite mod tilesPerRow) + math.floor(sprite / tilesPerRow) * tileStride) * tileSize.x)
+		int tileOffset = floor(((sprite mod tilesPerRow) + math.floor(sprite / tilesPerRow) * tilesStride) * tileSize.x)
 		int screenOffset = floor(position.x + position.y*stride)
 		int[] source = graphics.tiles, target = screen.pixels
 		for tileSize.y as y
@@ -261,7 +282,7 @@ transient skipInit global unit graphics
 				let value = source[tileOffset + x]
 				if value then target[screenOffset + x] = value
 			screenOffset += stride
-			tileOffset += tileStride
+			tileOffset += tilesStride
 
 	global drawText: string text, Vector2 position, int color = 6
 		if Platform.fastForward then return
