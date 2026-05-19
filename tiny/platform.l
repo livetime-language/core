@@ -21,7 +21,7 @@ transient skipInit unit Platform
 		this.userCount = 1
 
 		math.setRandomSeed math.generateRandomSeed 
-		Time.ticks = 0
+		time.ticks = 0
 		graphics.setup
 		graphics.onResize
 		initAll
@@ -31,7 +31,7 @@ transient skipInit unit Platform
 				
 	// This is called after every code change to replay all inputs with the new code
 	private async replay: bool updateMedia
-		Time.ticks = 0
+		time.ticks = 0
 		initAll
 		app.start??()
 			
@@ -52,12 +52,12 @@ transient skipInit unit Platform
 	
 	// This is called every animation frame
 	private tick
-		Time.startFrame
+		time.startFrame
 		graphics.startFrame
 		app.tick
 		graphics.finishFrame
 		input.internalUsers.each.finishFrame
-		Time.ticks++
+		time.ticks++
 					
 	js void initAll
 		init()
@@ -78,7 +78,7 @@ transient skipInit unit Platform
 		if(Platform.isDebug) _sendStringToEditor(message)
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
-skipInit static class Time
+skipInit static class time
 	// The number of milliseconds elapsed since 1 January 1970
 	static importance:5 float now
 	
