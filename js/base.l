@@ -695,9 +695,10 @@ immutable class string
 	string capitalizeWords
 		let result = ""
 		let prevChar = " "
+		// let lowercaseString = this.toLowerCase
 		for this
-			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z") then	result += .toUpperCase
-			else	result += .
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and (("a" <= . <= "z") or ("A" <= . <= "Z")) then	result += .toUpperCase
+			else	result += .toLowerCase
 			prevChar = .
 		return result
 		
