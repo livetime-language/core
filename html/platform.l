@@ -128,7 +128,7 @@ skipInit global unit Platform
 			initMedia
 			initAll
 			html.resize
-			startApp
+			app.start??()
 			refresh
 		catch
 			onError .
@@ -141,9 +141,6 @@ skipInit global unit Platform
 	stop
 		html.reset
 		replay
-		
-	private js void startApp
-		if(app.start) app.start()
 		
 	private js void tick
 		if(app.tick) app.tick()

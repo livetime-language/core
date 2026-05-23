@@ -120,7 +120,7 @@ internal transient skipInit unit core
 		input.host = null
 		input.playersToRemove.clear
 		errorMessage = ""
-		HTMLElement.clear
+		HTMLElement??.clear()
 		math.randomValueIndex = 0
 		frame = 0
 		watchIndex = 0
@@ -171,7 +171,7 @@ internal transient skipInit unit core
 	restart
 		if not input.isCertain then return
 		let hostPlayerId = input.host ? input.host.id : -1
-		Framework.clear includingLockedObjects:true
+		Framework??.clear(true)
 		Platform.fastForward = false
 		let prevLanguage = Loca.language
 		initAll
@@ -229,7 +229,7 @@ internal transient skipInit unit core
 				Platform.fastForward = false
 				for input.internalUsers as user
 					user?.clearEvent
-				runningAnimations.clear
+				fx??.clear()
 				tick draw:true
 
 			graphics.finishDrawingDebugInfo
@@ -262,7 +262,7 @@ internal transient skipInit unit core
 				Platform.fastForward = false
 				for input.internalUsers as user
 					user?.clearEvent
-				runningAnimations.clear
+				fx??.clear()
 				tick draw:true
 				graphics.finishDrawingDebugInfo
 		catch
@@ -508,7 +508,7 @@ internal transient skipInit unit core
 		// Tick
 		tick draw
 		
-		if HTMLElement.elements then HTMLElement.elements.each.tick
+		HTMLElement??.tickAll()
 		input.removePlayersIfNecessary
 			
 						
@@ -1139,7 +1139,7 @@ skipInit transient unit statistics
 				let value = s.values[s.values.length-1-i]
 				if value > maxValue then maxValue = value
 					
-		draw
+		this.draw??()
 
 unit networkVisualizer		
 	visible int[] posForPlayer = [0,-10000,-10000,-10000,-10000,-10000]
@@ -1156,7 +1156,7 @@ unit networkVisualizer
 						if (posForPlayer[player.playerIndex] += 2) > 1080
 							posForPlayer[player.playerIndex] -= 1080
 				
-		draw
+		this.draw??()
 				
 	private getHeightForFrame: int frame
 		return (50+frame-core.frame)*20

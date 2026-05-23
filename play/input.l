@@ -349,23 +349,26 @@ enum Cursor
 	
 internal DigitalButton
 	string name
+	int index
 	Key key
+	Image image
 	
-	bool state, prevState
-	bool wasJustPressed	=> state and not prevState
-	bool wasJustReleased	=> not state and prevState
+	bool isPressed
+	bool wasJustPressed	=> isPressed and not wasPreviouslyPressed
+	bool wasJustReleased	=> not isPressed and wasPreviouslyPressed
+	internal bool wasPreviouslyPressed
 	
 	toString => name
 	
 	internal assign: string name, Key key
 		this.name = name
 		this.key = key
-		state = false
-		prevState = false
+		isPressed = false
+		wasPreviouslyPressed = false
 	
 	internal startFrame
-		prevState = state
-		state = false
+		wasPreviouslyPressed = isPressed
+		isPressed = false
 		
 internal transient immutable struct ControllerButtonPlayerAndIndex
 	int userId
@@ -391,24 +394,35 @@ internal Gamepad
 	Vector2 leftStick
 	Vector2 rightStick
 	
-	// DPad
-	DigitalButton up = {}
-	DigitalButton right = {}
-	DigitalButton down = {}
-	DigitalButton left = {}
-	
 	// Buttons
-	DigitalButton A = {}
-	DigitalButton B = {}
-	DigitalButton X = {}
-	DigitalButton Y = {}
+	DigitalButton A	= {name:"A"	index:0}
+	DigitalButton B	= {name:"B"	index:1}
+	DigitalButton X	= {name:"X"	index:2}
+	DigitalButton Y	= {name:"Y"	index:3}
+	DigitalButton leftBumper	= {name:"Left Bumper"	index:4}
+	DigitalButton rightBumper	= {name:"Right Bumper"	index:5}
+	DigitalButton leftTrigger 	= {name:"Left Trigger"	index:6}
+	DigitalButton rightTrigger 	= {name:"Right Trigger"	index:7}
+	DigitalButton select	= {name:"Select"	index:8}
+	DigitalButton start	= {name:"Start"	index:9}
+	DigitalButton leftStickButton	= {name:"Left Stick"	index:10}
+	DigitalButton rightStickButton	= {name:"Right Stick"	index:11}
+	DigitalButton up	= {name:"Up"	index:12}
+	DigitalButton down	= {name:"Down"	index:13}
+	DigitalButton left	= {name:"Left"	index:14}
+	DigitalButton right	= {name:"Right"	index:15}
 	
-	DigitalButton menu = {}
-	
-	DigitalButton[] buttons = [DigitalButton("None"), up, right, down, left, A, B, X, Y, menu]
+	DigitalButton[] buttons = [
+		A, B, X, Y,
+		leftBumper, rightBumper, leftTrigger, rightTrigger,
+		start, select,
+		leftStickButton, rightStickButton,
+		up, right, down, left
+	]
 	
 	bool inMotion
 	GamepadType type
+	string id
 	
 	internal startFrame
 		leftStick.x = 0
@@ -783,25 +797,29 @@ skipInit global unit input
 		let leftStickY = axes[1]
 		
 		// Controller buttons
-		let buttons = (gp.buttons[ 0].pressed ?     1:0)
-		            + (gp.buttons[ 1].pressed ?     2:0)
-		            + (gp.buttons[ 2].pressed ?     4:0)
-		            + (gp.buttons[ 3].pressed ?     8:0)
+		let buttons = (gp.buttons[ 0].pressed ?     1:0) // A
+		            + (gp.buttons[ 1].pressed ?     2:0) // B
+		            + (gp.buttons[ 2].pressed ?     4:0) // X
+		            + (gp.buttons[ 3].pressed ?     8:0) // Y
 		
-		            + (gp.buttons[ 4].pressed ?    16:0)
-		            + (gp.buttons[ 5].pressed ?    32:0)
-		            + (gp.buttons[ 8].pressed ?    64:0)
-		            + (gp.buttons[ 9].pressed ?   128:0)
+		            + (gp.buttons[ 4].pressed ?    16:0) // L1
+		            + (gp.buttons[ 5].pressed ?    32:0) // R1
+		            + (gp.buttons[ 6].pressed ?    64:0) // L2
+		            + (gp.buttons[ 7].pressed ?   128:0) // R2
+
+		            + (gp.buttons[ 8].pressed ?   256:0) // Select
+		            + (gp.buttons[ 9].pressed ?   512:0) // Start
 		
-		            + (gp.buttons[10].pressed ?   256:0)
-		            + (gp.buttons[11].pressed ?   512:0)
-		            + (gp.buttons[12].pressed ?  1024:0)
-		            + (gp.buttons[13].pressed ?  2048:0)
-		
-		            + (gp.buttons[14].pressed ?  4096:0)
-		            + (gp.buttons[15].pressed ?  8192:0)
-		            + (isPlayStation          ? 16384:0)
-		
+		            + (gp.buttons[10].pressed ?  1024:0) // Left Stick Button
+		            + (gp.buttons[11].pressed ?  2048:0) // Right Stick Button
+
+		            + (gp.buttons[12].pressed ?  4096:0) // Up
+		            + (gp.buttons[13].pressed ?  8192:0) // Down	
+		            + (gp.buttons[14].pressed ? 16384:0) // Left
+		            + (gp.buttons[15].pressed ? 32768:0) // Right
+
+		            // + (isPlayStation          ? 16384:0)
+
 		// Write to event stream
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
@@ -883,12 +901,25 @@ skipInit global unit input
 					c.leftStick.y = inputs.readFloat32
 					
 					// Controller buttons
-					let buttons = inputs.readUnsignedInt16
-					c.A.state = (buttons bitwiseAnd 1) != 0
-					c.B.state = (buttons bitwiseAnd 2) != 0
-					c.X.state = (buttons bitwiseAnd 4) != 0
-					c.Y.state = (buttons bitwiseAnd 8) != 0
-					c.type = (buttons bitwiseAnd 16384) != 0 ? PlayStation : Xbox
+					let buttons	= inputs.readUnsignedInt16
+					c.A.isPressed	= (buttons bitwiseAnd 1) != 0
+					c.B.isPressed	= (buttons bitwiseAnd 2) != 0
+					c.X.isPressed	= (buttons bitwiseAnd 4) != 0
+					c.Y.isPressed	= (buttons bitwiseAnd 8) != 0
+					c.leftBumper.isPressed	= (buttons bitwiseAnd 16) != 0
+					c.rightBumper.isPressed	= (buttons bitwiseAnd 32) != 0
+					c.leftTrigger.isPressed	= (buttons bitwiseAnd 64) != 0
+					c.rightTrigger.isPressed	= (buttons bitwiseAnd 128) != 0
+					c.select.isPressed	= (buttons bitwiseAnd 256) != 0
+					c.start.isPressed	= (buttons bitwiseAnd 512) != 0
+					c.leftStickButton.isPressed	= (buttons bitwiseAnd 1024) != 0
+					c.rightStickButton.isPressed	= (buttons bitwiseAnd 2048) != 0
+					c.up.isPressed	= (buttons bitwiseAnd 4096) != 0
+					c.down.isPressed	= (buttons bitwiseAnd 8192) != 0
+					c.left.isPressed	= (buttons bitwiseAnd 16384) != 0
+					c.right.isPressed	= (buttons bitwiseAnd 32768) != 0
+
+					// c.type = (buttons bitwiseAnd 16384) != 0 ? PlayStation : Xbox
 					
 					// Controller button names
 					if c.type == Xbox
@@ -982,7 +1013,7 @@ skipInit global unit input
 			// Buttons
 			for .gamepad.buttons
 				if p.controllerKeyDownFrame[i]
-					.state = true
+					.isPressed = true
 
 			app.onGamepad??(p.gamepad)
 			p.onGamepad??(p.gamepad)

@@ -271,8 +271,7 @@ transient skipInit global unit graphics
 	private DisplayItem[] debugInfoItems		
 	bool isDrawingDebugInfo
 	
-	async setup: Vector2 referenceSize
-		this.referenceSize = referenceSize
+	async setup
 		if Platform.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
@@ -317,6 +316,9 @@ transient skipInit global unit graphics
 		let offsetX = anchor > TopLeft   ? pixelSize.x/2 : 0
 		let offsetY = anchor > TopCenter ? pixelSize.y/2 : 0
 		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
+
+	Vectro2 getReferencePos: float x, float y
+		return {x*pixelRatio, y*pixelRatio}.getRelativeTo(baseMatrix)
 		
 	internal js void startFrame
 		graphics.reset()
