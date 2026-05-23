@@ -2040,6 +2040,8 @@ interface object
 					switch types[i]
 						"object"	obj[.] = value.parseJson
 						"number"	obj[.] = value.toFloat
+						"float"	obj[.] = value.toFloat
+						"int"	obj[.] = value.toInt
 						"boolean"	obj[.] = value == "true"
 						"undefined"	
 						"null"	obj[.] = null
