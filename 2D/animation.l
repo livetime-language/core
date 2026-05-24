@@ -2,6 +2,9 @@ global unit fx
 	global Animation[] runningAnimations
 	private void()[] whenAnimationsFinishedCallbacks
 
+	clear
+		runningAnimations.clear
+
 	// Start an animation with a given duration. Executes a 'tick' callback on every frame and a 'then' callback when the animation finishes
 	// Example:
 	//     animate duration:500 milliseconds

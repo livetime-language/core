@@ -4,8 +4,8 @@ file
 		return result.data
 
 	getFileUrl: string filename, string cacheKey = null
-		if cacheKey then	return Platform.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + Platform.encodeURIComponent(filename) + "&cacheKey=" + cacheKey
-		else	return Platform.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + Platform.encodeURIComponent(filename)
+		if cacheKey then	return Platform.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename) + "&cacheKey=" + cacheKey
+		else	return Platform.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename)
 
 	readdir
 
@@ -154,7 +154,7 @@ unit Platform
 
 enum lowercase string FileType: File, Directory
 
-interface ReadDirectoryResult
+class ReadDirectoryResult
 	string name	// The name of the file or directory.
 	FileType type	// "file" or "directory"
 
@@ -163,7 +163,7 @@ interface ReadDirectoryResult
 	int mtime	// Capacitor only: The time the file was last modified in milliseconds
 	string uri	// Capacitor only: The URI of the file.
 
-interface FileInfo
+class FileInfo
 	int	size	// The size of the file in bytes
 	float	creationTime	// The time the file was created, in milliseconds since the Unix epoch
 	float	modificationTime	// The time the file was last modified, in milliseconds since the Unix epoch

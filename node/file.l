@@ -235,11 +235,11 @@ struct FileFilter
 
 enum lowercase string FileType: File, Directory
 
-interface ReadDirectoryResult
+class ReadDirectoryResult
 	string name
 	FileType type
 	
-interface FileInfo
+class FileInfo
 	int	size	// The size of the file in bytes
 	float	creationTime	// The time the file was created, in milliseconds since the Unix epoch
 	float	modificationTime	// The time the file was last modified, in milliseconds since the Unix epoch
