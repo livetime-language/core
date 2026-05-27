@@ -53,6 +53,7 @@ transient skipInit unit Platform
 	private tick
 		time.startFrame
 		graphics.startFrame
+		input.updateGamepads
 		app.tick
 		graphics.finishFrame
 		input.internalUsers.each.finishFrame
