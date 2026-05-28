@@ -71,7 +71,7 @@ transient speech
 			voices = allVoices.where.lang.startsWith(pref.lang)
 			// for voices: print "{.lang} {.name}"
 			for pref.voices as voicePreference
-				let voice = voices.find.name.contains(voicePreference.name)
+				let voice = voices.find.name.includes(voicePreference.name)
 					pref.voice = voice
 					pref.minSpeed = voicePreference.minSpeed
 					break

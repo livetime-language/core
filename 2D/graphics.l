@@ -317,7 +317,7 @@ transient skipInit global unit graphics
 		let offsetY = anchor > TopCenter ? pixelSize.y/2 : 0
 		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
 
-	Vectro2 getReferencePos: float x, float y
+	Vector2 getReferencePos: float x, float y
 		return {x*pixelRatio, y*pixelRatio}.getRelativeTo(baseMatrix)
 		
 	internal js void startFrame
@@ -801,7 +801,7 @@ transient skipInit global unit graphics
 		float offsetX, offsetY
 		
 		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
-		or text.contains("\n")
+		or text.includes("\n")
 			if maxWidth == 0	then maxWidth = float.maxValue
 			if overflow == Ellipsis	then maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
 			// Split text into words
@@ -1742,7 +1742,7 @@ transient skipInit global unit graphics
 	//                 drawText "OK"
 	//                 drawImage Button
 	// Image: graphicsTransform.png
-	transform: Vector2 move = Vector2.None  // The distance to move
+	transform: Vector2 move = Vector2.none  // The distance to move
 		       rotate = 0.0                 // The angle in radians (one full rotation is 2*pi)
 		       scale = 1.0                  // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
@@ -1806,7 +1806,7 @@ transient skipInit global unit graphics
 		  bool show = false     // Show the clipping area for debugging
 		  void() code           // All drawing operations within this block of code will be clipped
 		let prev = currentClippingPath
-		Vector2[] absolutePoints = points.select . + position
+		Vector2[] absolutePoints = points.map . + position
 		currentClippingPath = ClippingPath(show, absolutePoints)
 		code()
 		currentClippingPath = prev
@@ -2125,7 +2125,7 @@ internal skipInit transient unit gizmo
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
 	private IntVector2 overHandleDirection
-	private Vector2 touchDownPos = Vector2.None
+	private Vector2 touchDownPos = Vector2.none
 	private bool touchDownInsideGizmo
 	private int locationIndex
 	private int waitingForCodeId
@@ -2135,15 +2135,15 @@ internal skipInit transient unit gizmo
 	private bool showSelection = false
 	
 	clear
-		overHandleDirection = IntVector2.None
-		touchDownPos = Vector2.None
+		overHandleDirection = IntVector2.none
+		touchDownPos = Vector2.none
 		touchDownInsideGizmo = false
 		locationIndex = 0
 		waitingForCodeId = 0
 		aspectRatio = 1
 		items.clear
-		min = Vector2.None
-		max = Vector2.None
+		min = Vector2.none
+		max = Vector2.none
 		lastSendTime = 0
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
@@ -2151,10 +2151,10 @@ internal skipInit transient unit gizmo
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if inputType == TouchUp	then touchDownPos = Vector2.None
+		if inputType == TouchUp	then touchDownPos = Vector2.none
 			
 		// Which handle are we currently hovering over?
-		if items and touchDownPos == Vector2.None
+		if items and touchDownPos == Vector2.none
 			let center = (min + max)/2
 
 			switch referencePos
@@ -2166,11 +2166,11 @@ internal skipInit transient unit gizmo
 				.manhattanDistanceTo({min.x, center.y}) < handleSize	then overHandleDirection = IntVector2.Left
 				.manhattanDistanceTo({center.x, min.y}) < handleSize	then overHandleDirection = IntVector2.Up
 				.manhattanDistanceTo({center.x, max.y}) < handleSize	then overHandleDirection = IntVector2.Down
-				default 	then overHandleDirection = IntVector2.None
+				default 	then overHandleDirection = IntVector2.none
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
-		if overHandleDirection == IntVector2.None and codeId >= waitingForCodeId
+		if overHandleDirection == IntVector2.none and codeId >= waitingForCodeId
 			if (inputType == TouchDown and !insideGizmo) 
 			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
@@ -2202,7 +2202,7 @@ internal skipInit transient unit gizmo
 		
 		if cursorLocation
 			GizomInfluence[] influences
-			if overHandleDirection != IntVector2.None
+			if overHandleDirection != IntVector2.none
 				// Resize the item (we are over a handle)
 				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0

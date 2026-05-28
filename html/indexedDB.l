@@ -201,7 +201,7 @@ internal transient skipInit unit IndexedDB
 					System.print("IndexedDB: upgrade needed");
 					IndexedDB.db = e.target.result;
 					for(let store of IndexedDB.stores) {
-						if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
+						if(!IndexedDB.db.objectStoreNames.includes(store.name)) {
 							let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
 							System.print("IndexedDB: created store "+store.name)
 							for(let index of store.indices) {

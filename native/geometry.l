@@ -18,7 +18,7 @@ struct Vector2
 	// A string representation of the vector
 	string toString => "({x} {y})"
 	
-	// Returns true if the vector is not equal to Vector2.None
+	// Returns true if the vector is not equal to Vector2.none
 	bool toBool => (x != float.infinity || y != float.infinity)
 	
 	+ Vector2 value:  return {x + value.x, y + value.y}
@@ -561,18 +561,18 @@ global skipInit priority low unit math
 		let x4    = endB.x,   y4 = endB.y
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if denominator == 0: return Vector2.None // lines are parallel
+		if denominator == 0: return Vector2.none // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.None
+			return Vector2.none
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -694,7 +694,7 @@ class IsometicGrid
 		let x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		let y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-		else                                                                  return Vector2.None
+		else                                                                  return Vector2.none
 		
 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 	getGridPosition: Vector2 screenPos // The screen position
@@ -803,18 +803,18 @@ immutable Line
 		let typeB = other.type
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if denominator == 0: return Vector2.None // lines are parallel
+		if denominator == 0: return Vector2.none // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.None
+			return Vector2.none
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -829,7 +829,7 @@ immutable Rect
 	float top	=> position.y - size.y/2
 	float bottom	=> position.y + size.y/2
 	
-	bool contains: Vector2 position
+	bool includes: Vector2 position
 		return this.position - this.size/2 <=  position < this.position + this.size/2
 	
 	bool intersectsWith: Vector2 position
@@ -878,7 +878,7 @@ struct Grid<T>
 		                 ) do           // Do this for each item in a list
 		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) { let it = _items[y*_size.x + x]; let pos = IntVector2::new_(x,y); do()}
 			
-	// Return a list that contains the selected field or expression for each item
+	// Return a list that includes the selected field or expression for each item
 	inline cpp TValue[] select: TValue(T it) selector
 		this.items.map(selector)
 		

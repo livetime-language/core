@@ -57,7 +57,7 @@ transient global unit graphics
 		// 	return false
 		let videoObject = getVideoObject player
 			
-		// if !videoObject or Framework.toBeRemoved.contains(videoObject): videoObject = VideoObject(userId)
+		// if !videoObject or Framework.toBeRemoved.includes(videoObject): videoObject = VideoObject(userId)
 		if not videoObject then videoObject = VideoObject(player)
 		videoObject.position = pos
 		videoObject.size = size
@@ -145,7 +145,7 @@ class Object
 	moveAlongCurveTo: Vector2 targetPosition
 		              float curvature = 1.0
 					  float smoothness = 1.0
-					  implicit Vector2 targetSize = Vector2.None
+					  implicit Vector2 targetSize = Vector2.none
 					  float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
 		              float delay = 0       // After this time in milliseconds, the object should start moving
 					  bool removeWhenDone = false

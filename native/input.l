@@ -839,7 +839,7 @@ skipInit global unit input
 	// 	InternalGamepad gp = gamepads[0]
 	// 	if !gp or gp.axes.length < 2: return
 			
-	// 	let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")
+	// 	let isPlayStation = gp.id.includes("54c") or gp.id.includes("810")
 		
 	// 	// Controller axis
 	// 	let axes = gp.axes
@@ -949,7 +949,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " move {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " move(new) {id} {referencePos} {type}"
 								
@@ -968,7 +968,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " up {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " up(new) {id} {referencePos} {type}"
 								
@@ -1734,9 +1734,9 @@ skipInit global unit input
 	// 	       Player by = null // Only consider keys pressed by this player 
 	// 	if (core.mode == Connected || core.simulateConnection) && by
 	// 		let player = playersById[by.id]
-	// 			return player.keysCurrentlyDown.contains key
+	// 			return player.keysCurrentlyDown.includes key
 	// 	else
-	// 		return players.any.keysCurrentlyDown.contains key
+	// 		return players.any.keysCurrentlyDown.includes key
 	// 	return false
 		
 	// // ---------------------------------------------- Navigate ----------------------------------------------

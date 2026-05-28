@@ -97,7 +97,7 @@ immutable struct int
 	//     int b =  -1 mod 100	// b = 99
 	//     int c =  -1 remainder 100	// c = -1
 	importance:5 inline js 
-	int mod: ensureSingleExecution int divisor // Returns the remainder of a floored division by this value
+	int mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
 		(((this % divisor) + divisor) % divisor)
 		
 	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
@@ -107,7 +107,7 @@ immutable struct int
 	//     int b =  -1 remainder 100	// b = -1
 	//     int c =  -1 mod 100	// c = 99
 	importance:5 inline js 
-	int remainder: int divisor // Returns the remainder of a truncated division by this value
+	int remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
 		
 	// Returns true if the integer is not zero
@@ -118,12 +118,12 @@ immutable struct int
 	inline js int fromHex(string value) parseInt(value, 16)
 		
 	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
-		
-	// Shift the bits of the int to the left. Excess bits shifted off to the left are discarded
+
+	// Doubles the value count times by shifting the bits to the left. Excess bits shifted off to the left are discarded.
 	importance:3  inline js int shiftLeft: int count // The amount of bits to shift 
 		(this << count)
 	
-	// Shift the bits of the int to the right. Excess bits shifted off to the right are discarded
+	// Halves the value count times by shifting the bits to the right. Excess bits shifted off to the right are discarded.
 	importance:3  inline js int shiftRight: int count // The amount of bits to shift 
 		(this >> count)
 		
@@ -265,7 +265,7 @@ immutable struct float
 		Math.ceil(this)
 		
 	// Returns the largest integer less than or equal to the given value
-	global importance:4 inline js int floor
+	importance:4 inline js int floor
 		Math.floor(this)
 		
 	// Returns the given value rounded to the nearest integer
@@ -507,7 +507,7 @@ immutable class string
 	importance:5 inline js int lastIndexOf(string str) this.lastIndexOf(str)
 	importance:5 inline js int lastIndexOf(string str, int startPos) this.lastIndexOf(str, startPos)
 		
-	importance:5 inline js bool contains(string str) this.includes(str)
+	importance:5 inline js bool includes(string str) this.includes(str)
 
 	// Return true if the string is a valid email address
 	importance:5 js bool isEmail() 
@@ -562,6 +562,10 @@ immutable class string
 	inline js int getCharCodeAt(int index) this.charCodeAt(index)
 		
 	static inline js string fromCharCode(int charCode) String.fromCharCode(charCode)
+
+	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
+	inline js int localeCompare: string value // The string to compare to
+		this.localeCompare(value)	
 		
 	importance:5 inline js string substring: int from
 		this.substring(from)
@@ -699,10 +703,9 @@ immutable class string
 	string capitalizeWords
 		let result = ""
 		let prevChar = " "
-		// let lowercaseString = this.toLowerCase
 		for this
-			if (prevChar == " " or ("0" <= prevChar <= "9")) and (("a" <= . <= "z") or ("A" <= . <= "Z")) then	result += .toUpperCase
-			else	result += .toLowerCase
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z") then	result += .toUpperCase
+			else	result += .
 			prevChar = .
 		return result
 		
@@ -748,8 +751,6 @@ immutable class string
 // A logical data type that can have the value true or false
 enum bool: false, true
 		
-enum EachDistinctSortBy: DoNotSort = 0, SortByInteger = 1, SortByString = 2
-	
 // An array that grows and shrinks in size as needed
 js Array
 class List<T>
@@ -819,7 +820,7 @@ class List<T>
 	// Add each item from a list if it isn't already in there
 	importance:5 ensure: T[] items // The list of items to add
 		for items
-			if not contains .
+			if not includes .
 				add .
 
 	// ------------------------------------------- Remove -------------------------------------------
@@ -1040,21 +1041,21 @@ class List<T>
 			}
 		}
 
-	// ------------------------------------------- Contains -------------------------------------------
+	// ------------------------------------------- Includes -------------------------------------------
 
-	// Returns whether the list contains the given item
-	importance:5 inline js bool contains: ensureSingleExecution T item // Check if the list contains this item
+	// Returns whether the list includes the given item
+	importance:5 inline js bool includes: ensureSingleExecution T item // Check if the list includes this item
 		(typeof(item) == "object" && item._equal ? this.some(a => item._equal(a)) : this.includes(item))
 		
-	importance:3 bool containsAny: T[] list
+	importance:3 bool includesAny: T[] list
 		for list
-			if this contains .
+			if this includes .
 				return true
 		return false
 		
-	importance:3 bool containsNone: T[] list
+	importance:3 bool includesNone: T[] list
 		for list
-			if this contains .
+			if this includes .
 				return false
 		return true
 
@@ -1107,7 +1108,7 @@ class List<T>
 		return get(randomInteger)
 		
 	importance:3 T randomWhere: bool(T it) condition
-		let filteredList = this.where(condition)
+		let filteredList = this.filter(condition)
 		int index = math.randomInteger(filteredList.length)
 		T item = filteredList[index]
 		return item
@@ -1121,7 +1122,7 @@ class List<T>
 		return item
 		
 	importance:3 T popRandomWhere: bool(T it) condition
-		let filteredList = this.where(condition)
+		let filteredList = this.filter(condition)
 		int index = math.randomInteger(filteredList.length)
 		T item = filteredList[index]
 		this.remove(item)
@@ -1195,48 +1196,40 @@ class List<T>
 	
 	// Sort the list by a given expression
 	// Example:
-	//    let healthyPlayers = (players.where.health > 0).orderBy.health
+	//    let healthyPlayers = (players.filter.health > 0).sortBy.health
 	importance:5
-	T[] orderBy: float(T it) expression // First order by this expression
+	T[] sortBy: float(T it) expression // First order by this expression
 		return this.sort(expression(a) - expression(b))
 
 	// Sort the list by a given expression in descending order
 	// Example:
-	//    let bestPlayers = (players.where.isAlive).orderByDescending.playerScore
+	//    let bestPlayers = (players.filter.isAlive).sortByDescending.playerScore
 	importance:5
-	T[] orderByDescending: float(T it) expression // First order by this expression
+	T[] sortByDescending: float(T it) expression // First order by this expression
 		return this.sort(expression(b) - expression(a))
 
 	// Sort by string
-	T[] orderBy: string(T it) expression // First order by this expression
-		return this.sort(expression(a) compareTo expression(b))
+	T[] sortBy: string(T it) expression // First order by this expression
+		return this.sort(expression(a) localeCompare expression(b))
 		
 	// Sort by string in descending order
-	T[] orderByDescending: string(T it) expression // First order by this expression
-		return this.sort(expression(b) compareTo expression(a))
-		
-	// Order by TimeString
-	T[] orderBy: TimeString(T it) expression // First order by this expression
-		return this.sort(string(expression(a)) compareTo string(expression(b)))
-		
-	// Order by TimeString in descending order
-	T[] orderByDescending: TimeString(T it) expression // First order by this expression
-		return this.sort(string(expression(b)) compareTo string(expression(a)))
+	T[] sortByDescending: string(T it) expression // First order by this expression
+		return this.sort(expression(b) localeCompare expression(a))
 		
 	// Sort by float then by float
-	T[] orderBy: float(T it) expression           // First order by this expression
+	T[] sortBy: float(T it) expression           // First order by this expression
 		         label nocolon float(T it) thenBy // Then order by this expression
 		return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
 	// Sort by float then by string
-	T[] orderBy: float(T it) expression            // First order by this expression
-		         label nocolon string(T it) thenBy // Then order by this expression
-		return this.sort(expression(a) - expression(b) || thenBy(a) compareTo thenBy(b))
+	T[] sortBy: float(T it) expression            // First order by this expression
+		        label nocolon string(T it) thenBy // Then order by this expression
+		return this.sort(expression(a) - expression(b) || thenBy(a) localeCompare thenBy(b))
 		
 	// Sort by string then by float
-	T[] orderBy: string(T it) expression          // First order by this expression
-		         label nocolon float(T it) thenBy // Then order by this expression
-		return this.sort(expression(a) compareTo expression(b) || thenBy(a) - thenBy(b))
+	T[] sortBy: string(T it) expression          // First order by this expression
+		        label nocolon float(T it) thenBy // Then order by this expression
+		return this.sort(expression(a) localeCompare expression(b) || thenBy(a) - thenBy(b))
 
 	// ------------------------------------------- Query -------------------------------------------
 				
@@ -1261,11 +1254,11 @@ class List<T>
 	bool none: bool(T it) predicate // The condition to check
 		!this.some(predicate)
 		
-	// Return a list that contains the selected field or expression for each item
+	// Return a list that includes the selected field or expression for each item
 	// Example: Get a list of all player names
-	//     let playerNames = players.select.playerName
+	//     let playerNames = players.map.playerName
 	importance:4 inline js 
-	TValue[] select: TValue(
+	TValue[] map: TValue(
 		                 T it,  // The current item of the list
 		                 int i  // The index of the current item of the list
 		             ) selector // Selects a field or expression for each item
@@ -1273,16 +1266,16 @@ class List<T>
 
 	// Return a list of all items that meet a specific condition
 	// Example: Get all players with more than 0 health, ordered by their score
-	//     let healthyPlayers = (players.where.health > 0).orderByDescending.playerScore
+	//     let healthyPlayers = (players.filter.health > 0).sortByDescending.playerScore
 	// Example: Get all active enemies in a random order
-	//    let activeEnemies = (enemies.where.isActive).shuffle
+	//    let activeEnemies = (enemies.filter.isActive).shuffle
 	importance:4 inline js 
-	T[] where: bool(T it) condition // The condition to check
+	T[] filter: bool(T it) condition // The condition to check
 		this.filter(condition)
 
 	// Return a list containing the first N items from the list
 	// Example: Get the top 3 players by score
-	//     let youngestPlayers = (players.orderBy.age).take 3
+	//     let youngestPlayers = (players.sortBy.age).take 3
 	importance:4 inline js T[] take: int count
 		this.slice(0, count)
 		
@@ -1746,6 +1739,12 @@ class List<T>
 	// The last item of the list
 	inline js T last() this[this.length-1]
 		
+	// ------------------------------------------- Get/Set -------------------------------------------
+
+	// Get an item from the list
+	inline js T get: float index // The index of the item to get
+		this[Math.floor(index)]
+		
 	// Get an item from the list
 	inline js T get: implicit int index // The index of the item to get
 		this[index]
@@ -1760,7 +1759,12 @@ class List<T>
 		this.slice(from)
 	
 	// Set the item at a given index
-	inline js T set: int index // The index of the item to set
+	inline js T set: float index // The index of the item to set
+		             T value   // The new value to set
+		this[Math.floor(index)] = value
+		
+	// Set the item at a given index
+	inline js T set: implicit int index // The index of the item to set
 		             T value   // The new value to set
 		this[index] = value
 		
@@ -1925,623 +1929,19 @@ interface dynamic
 interface object
 	static inline js dynamic undefined() undefined
 	inline bool !
-	
 	inline js bool toBool() (this != null)
-	inline js string toJson() JSON.stringify(this)
-	// inline js string toString() object.stringify(this, 5)
+
 	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
 	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
 	static inline js string typeof(dynamic value) typeof(value)
 	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
 	static inline js void deleteField(dynamic object, string field) delete object[field]
 
-	static internal js string stringify: object subject, int depth = 5
-		switch(typeof subject)
-		{
-			case "object":
-				if(subject === null) return "null"
-				let result = ""
-				// if(subject.constructor) result += "_type: " + subject.constructor.name
-				if(depth > 0) {
-					for(let name in subject) {
-						let item = object.stringify(subject[name], depth-1)
-						if(item != "") {
-							if(result) result += ", "
-							result += name + ": " + item
-						}
-					}
-				}
-				return "\{" + result + "\}"
-				
-			case "string":
-				return "\"" + subject + "\""
-				
-			case "undefined":
-				return "\"undefined\""
-				
-			case "function":
-				return ""
-				
-			default:
-				return subject.toString()
-		}
-
-	static string toTypedTsv: dynamic[] objects
-		if(objects.length == 0) return ""
-		string[] fieldNames
-		string[] fieldTypes
-		let result = ""
-
-		// Get all field names and types
-		for objects
-			forDynamic . as value, key
-				if typeof(value) == "function" then continue
-				if(!fieldNames.contains(key)) {
-					fieldNames.add(key)
-					fieldTypes.add(object.typeof(value))
-				}
-		
-		// Output field names
-		for fieldNames
-			if i > 0 then result += "\t"
-			result += .
-		result += "\n"
-
-		// Output field types
-		for fieldTypes
-			if i > 0 then result += "\t"
-			result += .
-		result += "\n"
-			
-		// Output values
-		for objects
-			dynamic object = .
-			for fieldNames
-				if i > 0 then result += "\t"
-				let value = object[.]
-				if value == undefined or value == null
-					switch fieldTypes[i]
-						"number"	result += "0"
-						"boolean"	result += "false"
-						"string"	result += ""
-						default	result += "null"
-				else
-					switch fieldTypes[i]
-						"object"	result += json.stringify(value)
-						"number"	result += value.toString()
-						"boolean"	result += value ? "true" : "false"
-						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
-			result += "\n"
-
-		return result
-
-	static dynamic fromTsv: string tsv
-		let lines = tsv.split("\n")
-		if(lines.length < 2) return []
-		let names = lines[0].split("\t")
-		dynamic[] result
-		for 1 to lines.length
-			let line = lines[i]
-				let values = line.split("\t")
-				dynamic obj = {}
-				for names
-					obj[.] = values[i].replaceAll("\\t" with "\t").replaceAll("\\n" with "\n")
-				result.add(obj)
-		return result
-
-	static dynamic fromTypedTsv: string tsv
-		let lines = tsv.split("\n")
-		if(lines.length < 2) return []
-		let names = lines[0].split("\t")
-		let types = lines[1].split("\t")
-		dynamic[] result
-		for 2 to lines.length
-			let line = lines[i]
-				let values = line.split("\t")
-				dynamic obj = {}
-				for names
-					let value = values[i]
-					switch types[i]
-						"object"	obj[.] = value.parseJson
-						"number"	obj[.] = value.toFloat
-						"float"	obj[.] = value.toFloat
-						"int"	obj[.] = value.toInt
-						"boolean"	obj[.] = value == "true"
-						"undefined"	
-						"null"	obj[.] = null
-						default	obj[.] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
-				result.add(obj)
-		return result
-
-	static js string toYaml: dynamic subject
-		function refWalk(v, counts, path) {
-			if(v === null || v === undefined) return
-			let t = typeof v
-			if(t !== "object") return
-			counts.set(v, (counts.get(v) || 0) + 1)
-			if(path.has(v)) return
-			path.add(v)
-			if(Array.isArray(v)) {
-				for(let i = 0, n = v.length; i < n; ++i)
-					refWalk(v[i], counts, path)
-			} else {
-				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
-				for(let k in v)
-					if(Object.prototype.hasOwnProperty.call(v, k)) {
-						if(tset && tset.has(k)) continue
-						let child = v[k]
-						refWalk(child, counts, path)
-					}
-			}
-			path.delete(v)
-		}
-		function typeTag(v) {
-			if(v === null) return ""
-			if(Array.isArray(v)) return ""
-			let n = v.constructor && v.constructor.name
-			return "!!" + (n && /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : "Object") + " "
-		}
-		function escStr(s) {
-			return "\"" + s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "\""
-		}
-		function ser(v, counts, anchors, nextId) {
-			if(v === null) return "null"
-			if(v === undefined) return "null"
-			let t = typeof v
-			if(t === "string") return escStr(v)
-			if(t === "number") {
-				if(v !== v) return ".nan"
-				if(v === Infinity) return ".inf"
-				if(v === -Infinity) return "-.inf"
-				return String(v)
-			}
-			if(t === "boolean") return v ? "true" : "false"
-			if(t === "bigint") return "\"" + v + "\""
-			if(t === "function") return "\"\""
-			let multi = (counts.get(v) || 0) > 1
-			if(multi) {
-				if(anchors.has(v)) return "*" + anchors.get(v)
-				let id = "id" + nextId[0]++
-				anchors.set(v, id)
-			}
-			let tag = typeTag(v), body
-			if(Array.isArray(v)) {
-				let p = [], n = v.length
-				for(let i = 0; i < n; ++i)
-					p.push(ser(v[i], counts, anchors, nextId))
-				body = "[" + p.join(", ") + "]"
-			} else {
-				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
-				let p = []
-				for(let k in v)
-					if(Object.prototype.hasOwnProperty.call(v, k)) {
-						if(tset && tset.has(k)) continue
-						let child = v[k]
-						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
-						p.push(kk + ": " + ser(child, counts, anchors, nextId))
-					}
-				body = "{" + p.join(", ") + "}"
-			}
-			let out = tag + body
-			if(multi) out = "&" + anchors.get(v) + " " + out
-			return out
-		}
-		let counts = new Map()
-		refWalk(subject, counts, new Set())
-		return ser(subject, counts, new Map(), [0])
-
-	static js dynamic fromYaml: string yaml
-		function isIgnorableWs(c) {
-			if(c === 9 || c === 10 || c === 13 || c === 32) return true
-			if(c === 133 || c === 160 || c === 5760) return true
-			if(c >= 8192 && c <= 8202) return true
-			if(c === 8232 || c === 8233) return true
-			if(c === 8239 || c === 8287 || c === 12288) return true
-			if(c === 65279) return true
-			return false
-		}
-		function skipWs(s, i) {
-			let n = s.length
-			while(i < n && isIgnorableWs(s.charCodeAt(i))) ++i
-			return i
-		}
-		function isIdentStart(c) {
-			return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
-		}
-		function isIdentChar(c) {
-			return isIdentStart(c) || (c >= 48 && c <= 57)
-		}
-		function readIdent(s, i) {
-			let j = i
-			while(j < s.length && isIdentChar(s.charCodeAt(j))) ++j
-			return [s.slice(i, j), j]
-		}
-		function construct(tag) {
-			let C = globalThis["_" + tag]
-			if(typeof C === "function") return new C()
-			if(tag === "Array") return []
-			if(tag === "Object") return {}
-			return {}
-		}
-		function parseString(s, ctx) {
-			let n = s.length, i = ctx.i
-			if(s.charCodeAt(i) !== 34) throw new Error("fromYaml: expected \"")
-			++i
-			let out = ""
-			while(i < n) {
-				let c = s.charCodeAt(i)
-				if(c === 34) {
-					ctx.i = i + 1
-					return out
-				}
-				if(c === 92 && i + 1 < n) {
-					let nxt = s.charCodeAt(i + 1)
-					if(nxt === 92) { out += "\\"; i += 2; continue }
-					if(nxt === 34) { out += "\""; i += 2; continue }
-					if(nxt === 110) { out += "\n"; i += 2; continue }
-					if(nxt === 114) { out += "\r"; i += 2; continue }
-					if(nxt === 116) { out += "\t"; i += 2; continue }
-				}
-				out += s[i++]
-			}
-			throw new Error("fromYaml: unterminated string")
-		}
-		function parseScalar(s, ctx) {
-			let i = ctx.i, n = s.length, cc = s.charCodeAt(i)
-			if(cc === 34) return parseString(s, ctx)
-			function kw(t, len) {
-				if(i + len > n) return false
-				if(s.slice(i, i + len) !== t) return false
-				let nx = i + len
-				return nx >= n || !isIdentChar(s.charCodeAt(nx))
-			}
-			if(kw("null", 4)) { ctx.i = i + 4; return null }
-			if(kw("true", 4)) { ctx.i = i + 4; return true }
-			if(kw("false", 5)) { ctx.i = i + 5; return false }
-			if(kw(".nan", 4)) { ctx.i = i + 4; return NaN }
-			if(kw(".inf", 4)) { ctx.i = i + 4; return Infinity }
-			if(kw("-.inf", 5)) { ctx.i = i + 5; return -Infinity }
-			let j = i
-			if(cc === 45) ++j
-			let has = false
-			if(j < n && s.charCodeAt(j) === 46) {
-				++j
-				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-			} else {
-				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-				if(j < n && s.charCodeAt(j) === 46) {
-					++j
-					while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-				}
-			}
-			if(j < n && (s.charCodeAt(j) === 101 || s.charCodeAt(j) === 69)) {
-				++j
-				if(j < n && (s.charCodeAt(j) === 45 || s.charCodeAt(j) === 43)) ++j
-				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-			}
-			if(has) {
-				let start = ctx.i
-				ctx.i = j
-				return parseFloat(s.slice(start, j))
-			}
-			throw new Error("fromYaml: bad scalar at " + i)
-		}
-		function parseFlowArrayInto(arr, s, ctx) {
-			while(true) {
-				ctx.i = skipWs(s, ctx.i)
-				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated [")
-				if(s.charCodeAt(ctx.i) === 93) { ++ctx.i; break }
-				arr.push(parseValue(s, ctx))
-				ctx.i = skipWs(s, ctx.i)
-				let c = s.charCodeAt(ctx.i)
-				if(c === 93) { ++ctx.i; break }
-				if(c !== 44) throw new Error("fromYaml: expected , or ]")
-				++ctx.i
-			}
-		}
-		function parseFlowMapInto(obj, s, ctx) {
-			while(true) {
-				ctx.i = skipWs(s, ctx.i)
-				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated {")
-				if(s.charCodeAt(ctx.i) === 125) { ++ctx.i; break }
-				let key
-				if(s.charCodeAt(ctx.i) === 34)
-					key = parseString(s, ctx)
-				else {
-					let [id, ni] = readIdent(s, ctx.i)
-					if(!id) throw new Error("fromYaml: expected key")
-					key = id
-					ctx.i = ni
-				}
-				ctx.i = skipWs(s, ctx.i)
-				if(s.charCodeAt(ctx.i) !== 58) throw new Error("fromYaml: expected :")
-				++ctx.i
-				obj[key] = parseValue(s, ctx)
-				ctx.i = skipWs(s, ctx.i)
-				let c = s.charCodeAt(ctx.i)
-				if(c === 125) { ++ctx.i; break }
-				if(c !== 44) throw new Error("fromYaml: expected , or }")
-				++ctx.i
-			}
-		}
-		function parseTagged(s, ctx, anchor) {
-			ctx.i += 2
-			let [tag, ni] = readIdent(s, ctx.i)
-			ctx.i = skipWs(s, ni)
-			if(!tag) throw new Error("fromYaml: missing tag")
-			let c = s.charCodeAt(ctx.i)
-			let inst = construct(tag)
-			if(c === 91 && typeof inst.push !== "function") inst = []
-			if(anchor) ctx.anchors.set(anchor, inst)
-			if(c === 91) {
-				++ctx.i
-				parseFlowArrayInto(inst, s, ctx)
-			} else if(c === 123) {
-				++ctx.i
-				parseFlowMapInto(inst, s, ctx)
-			} else throw new Error("fromYaml: expected [ or { after tag")
-			return inst
-		}
-		function parseValue(s, ctx) {
-			ctx.i = skipWs(s, ctx.i)
-			let anchor = null
-			if(s.charCodeAt(ctx.i) === 38) {
-				++ctx.i
-				let [an, ni] = readIdent(s, ctx.i)
-				if(!an) throw new Error("fromYaml: bad anchor")
-				anchor = an
-				ctx.i = skipWs(s, ni)
-			}
-			if(s.charCodeAt(ctx.i) === 42) {
-				++ctx.i
-				let [al, ni] = readIdent(s, ctx.i)
-				if(!al) throw new Error("fromYaml: bad alias")
-				ctx.i = skipWs(s, ni)
-				if(anchor) throw new Error("fromYaml: anchor with alias")
-				let ref = ctx.anchors.get(al)
-				if(ref === undefined) throw new Error("fromYaml: unknown alias " + al)
-				return ref
-			}
-			if(ctx.i + 1 < s.length && s.charCodeAt(ctx.i) === 33 && s.charCodeAt(ctx.i + 1) === 33)
-				return parseTagged(s, ctx, anchor)
-			if(s.charCodeAt(ctx.i) === 91) {
-				let arr = []
-				if(anchor) ctx.anchors.set(anchor, arr)
-				++ctx.i
-				parseFlowArrayInto(arr, s, ctx)
-				return arr
-			}
-			if(anchor) throw new Error("fromYaml: anchor without tagged value")
-			return parseScalar(s, ctx)
-		}
-		let ctx = { i: 0, anchors: new Map() }
-		ctx.i = skipWs(yaml, 0)
-		if(ctx.i >= yaml.length) return null
-		let root = parseValue(yaml, ctx)
-		ctx.i = skipWs(yaml, ctx.i)
-		if(ctx.i < yaml.length) throw new Error("fromYaml: trailing input")
-		return root
-
-	static js dynamic fromXml: string xml
-		let length = xml.length
-		let i = 0
-		function isWs(c) {
-			return c === 9 || c === 10 || c === 13 || c === 32
-		}
-		function skipWs() {
-			while(i < length && isWs(xml.charCodeAt(i))) ++i
-		}
-		function hasNonWs(value) {
-			for(let j = 0, n = value.length; j < n; ++j) {
-				let c = value.charCodeAt(j)
-				if(c !== 9 && c !== 10 && c !== 13 && c !== 32) return true
-			}
-			return false
-		}
-		function decode(value) {
-			let amp = value.indexOf("&")
-			if(amp === -1) return value
-			let result = value.slice(0, amp)
-			let start = amp
-			for(;;) {
-				let end = value.indexOf(";", start + 1)
-				if(end === -1) return result + value.slice(start)
-				let entity = value.slice(start + 1, end)
-				if(entity === "lt") result += "<"
-				else if(entity === "gt") result += ">"
-				else if(entity === "amp") result += "&"
-				else if(entity === "quot") result += '"'
-				else if(entity === "apos") result += "'"
-				else if(entity.charCodeAt(0) === 35) {
-					let code = entity.charCodeAt(1) === 120 || entity.charCodeAt(1) === 88 ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10)
-					result += isNaN(code) ? "&" + entity + ";" : String.fromCodePoint(code)
-				} else result += "&" + entity + ";"
-				let next = value.indexOf("&", end + 1)
-				if(next === -1) return result + value.slice(end + 1)
-				result += value.slice(end + 1, next)
-				start = next
-			}
-		}
-		function toTypedValue(value) {
-			if(value === "true") return true
-			if(value === "false") return false
-			if(value === "null") return null
-			if(value === "undefined") return undefined
-				
-			let first = value.charCodeAt(0)
-			if(first === 123 || first === 91) {
-				try {
-					return JSON.parse(value)
-				} catch(error) {}
-			}
-			if((first >= 48 && first <= 57) || first === 45 || first === 43 || first === 46) {
-				let numeric = true
-				for(let i = 1, len = value.length; i < len; i++) {
-					let code = value.charCodeAt(i)
-					if((code < 48 || code > 57) && code !== 46 && code !== 43 && code !== 45) {
-						numeric = false
-						break
-					}
-				}
-				if(numeric) {
-					let number = parseFloat(value)
-					if(!isNaN(number)) return number
-				}
-			}
-			return value
-		}
-		function addValue(target, name, value) {
-			let existing = target[name]
-			if(existing === undefined) target[name] = value
-			else if(Array.isArray(existing)) existing.push(value)
-			else target[name] = [existing, value]
-		}
-		function addText(node, value) {
-			if(!hasNonWs(value)) return
-			value = decode(value).trim()
-			if(!value) return
-			node.value._text = node.value._text ? string(node.value._text) + value : toTypedValue(value)
-		}
-		function finish(node, target) {
-			let value = node.value
-			if(!node.hasAttributes && !node.hasChildren) value = value._text === undefined ? "" : value._text
-			else if(value._text === undefined) delete value._text
-			addValue(target, node.name, value)
-		}
-		let root = {}
-		let stack = []
-		while(i < length) {
-			let open = xml.indexOf("<", i)
-			if(open === -1) {
-				if(stack.length) addText(stack[stack.length - 1], xml.slice(i))
-				break
-			}
-			if(open > i && stack.length) addText(stack[stack.length - 1], xml.slice(i, open))
-			i = open + 1
-			if(i >= length) break
-			let marker = xml.charCodeAt(i)
-			if(marker === 63) {
-				let end = xml.indexOf("?>", i + 1)
-				if(end === -1) throw new Error("fromXml: unterminated declaration")
-				i = end + 2
-				continue
-			}
-			if(marker === 33) {
-				if(xml.slice(i + 1, i + 3) === "--") {
-					let end = xml.indexOf("-->", i + 3)
-					if(end === -1) throw new Error("fromXml: unterminated comment")
-					i = end + 3
-					continue
-				}
-				if(xml.slice(i + 1, i + 8) === "[CDATA[") {
-					let end = xml.indexOf("]]>", i + 8)
-					if(end === -1) throw new Error("fromXml: unterminated cdata")
-					if(stack.length) addText(stack[stack.length - 1], xml.slice(i + 8, end))
-					i = end + 3
-					continue
-				}
-				let depth = 0
-				let quote = 0
-				++i
-				while(i < length) {
-					let c = xml.charCodeAt(i++)
-					if(quote) {
-						if(c === quote) quote = 0
-						continue
-					}
-					if(c === 34 || c === 39) quote = c
-					else if(c === 91) ++depth
-					else if(c === 93 && depth) --depth
-					else if(c === 62 && !depth) break
-				}
-				continue
-			}
-			if(marker === 47) {
-				++i
-				let start = i
-				while(i < length) {
-					let c = xml.charCodeAt(i)
-					if(isWs(c) || c === 62) break
-					++i
-				}
-				let name = xml.slice(start, i)
-				while(i < length && xml.charCodeAt(i) !== 62) ++i
-				if(i < length) ++i
-				let node = stack.pop()
-				if(!node || node.name !== name) throw new Error("fromXml: mismatched closing tag")
-				finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
-				continue
-			}
-			let nameStart = i
-			while(i < length) {
-				let c = xml.charCodeAt(i)
-				if(isWs(c) || c === 47 || c === 62) break
-				++i
-			}
-			let node = { name: xml.slice(nameStart, i), value: {}, hasAttributes: false, hasChildren: false }
-			while(i < length) {
-				skipWs()
-				let c = xml.charCodeAt(i)
-				if(c === 47) {
-					++i
-					if(xml.charCodeAt(i) !== 62) throw new Error("fromXml: expected >")
-					++i
-					finish(node, stack.length ? (stack[stack.length - 1].hasChildren = true, stack[stack.length - 1].value) : root)
-					break
-				}
-				if(c === 62) {
-					++i
-					stack.push(node)
-					break
-				}
-				let attrStart = i
-				while(i < length) {
-					c = xml.charCodeAt(i)
-					if(isWs(c) || c === 61 || c === 47 || c === 62) break
-					++i
-				}
-				let attrName = xml.slice(attrStart, i)
-				skipWs()
-				let attrValue = ""
-				if(xml.charCodeAt(i) === 61) {
-					++i
-					skipWs()
-					let quote = xml.charCodeAt(i)
-					if(quote === 34 || quote === 39) {
-						let valueStart = ++i
-						while(i < length && xml.charCodeAt(i) !== quote) ++i
-						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
-						if(i < length) ++i
-					} else {
-						let valueStart = i
-						while(i < length) {
-							quote = xml.charCodeAt(i)
-							if(isWs(quote) || quote === 47 || quote === 62) break
-							++i
-						}
-						attrValue = toTypedValue(decode(xml.slice(valueStart, i)))
-					}
-				}
-				(node.value._attributes || (node.value._attributes = {}))[attrName] = attrValue
-				node.hasAttributes = true
-			}
-		}
-		if(stack.length) throw new Error("fromXml: unterminated tag")
-		for(let name in root)
-			return root
-		return null
-
 skipInit global unit Platform
 	string libUrl
 	global inline js async dynamic import: string file
 		import((Platform.libUrl || _basePath || location.origin+"/")+file)
-
-json
-	importance:5 inline js dynamic parse: string value
-		JSON.parse(value)
-	importance:5 inline js string stringify: dynamic value
-		JSON.stringify(value)
-
+		
 class Reference<T>
 	dynamic container
 	string key
@@ -2607,6 +2007,21 @@ immutable Error
 	string message
 	string stack
 	implicit inline js string toString => this.stack
+
+enum lowercase string PrintType
+	Action	// Use for actions performed by a player
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
+	NoAction	// Use when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
+	Headline	// Use when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
+
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
+	
+	Touch
+	Key
+	Gamepad
 	
 // A collection of basic system functions
 global transient priority unit System
@@ -2899,7 +2314,7 @@ global transient priority unit System
 		                       inline nocolon void() finally
 		try code() @finally finally()
 
-	// Return an object that contains all global variables and functions
+	// Return an object that includes all global variables and functions
 	global inline js dynamic globals() window
 
 	global inline js void debugger() debugger
@@ -2928,7 +2343,7 @@ global transient priority low unit System
 		                                  dynamic it, // The current item of the dynamic we are iterating over with the for-loop
 		                                  string key  // The current key of the dynamic we are iterating over with the for-loop
 		                              ) do            // Do this for each item in a list
-		{let _subject=subject; for(let key in _subject) do(_subject[key], key)}
+		{let _subject=subject; for(let key in _subject) {var _it = _subject[key]; if(typeof(_it) !== "function") do(_it, key)}}
 		
 	// Creates a new list populated with the results of calling a function on every element of the list
 	global inline js TResult[] for: T[] subject // The list to iterate over
@@ -2961,11 +2376,11 @@ global transient priority low unit System
 // A collection of mathematical functions and constants
 global skipInit unit math
 	// Returns the absolute value
-	inline js int abs: int value // The value to return the absolute value of
+	global inline js int abs: int value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns the absolute value
-	importance:5 inline js float abs: float value // The value to return the absolute value of
+	global inline js float abs: float value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns -1, 0, or 1 depending on the sign of the value
@@ -2989,15 +2404,15 @@ global skipInit unit math
 	// ------------------------------------------------------- floor, ceil, round -------------------------------------------------------
 		
 	// Returns the largest integer less than or equal to the given value
-	importance:5 inline js int floor: float value // The value to round down
+	global importance:5 inline js int floor: float value // The value to round down
 		Math.floor(value)
 				
 	// Returns the smallest integer greater than or equal to the given value 
-	importance:5 inline js int ceil: float value // The value to round up
+	global importance:5 inline js int ceil: float value // The value to round up
 		Math.ceil(value)
 		
 	// Returns the given value rounded to the nearest integer
-	importance:5 inline js int round: float value // The value to round
+	global importance:5 inline js int round: float value // The value to round
 		Math.round(value)
 				
 	// ------------------------------------------------------- min, max -------------------------------------------------------
@@ -3051,7 +2466,7 @@ global skipInit unit math
 		if targetValue < value	then return math.max(value - speed, targetValue)
 	
 	// Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
-	importance:5 float sin: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:5 global float sin: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi] using true modulo for stability
 		float x = angle mod math.twoPi
 		if x > math.pi then x -= math.twoPi
@@ -3071,7 +2486,7 @@ global skipInit unit math
 		return negate ? -s : s
 
 	// Platform-indepentant cosine of an angle in radians. Returns the exact same value on all platforms.
-	importance:5 float cos: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:5 global float cos: float angle // The angle in radians (one full rotation is 2*pi)
 		// Range reduction to [-pi, pi]
 		float x = angle mod math.twoPi
 		if x > math.pi then x -= math.twoPi
@@ -3090,11 +2505,11 @@ global skipInit unit math
 		return negate ? -c : c
 	
 	// Platform-indepentant tangent of an angle in radians. Returns the exact same value on all platforms.
-	importance:5 float tan: float angle // The angle in radians (one full rotation is 2*pi)
+	importance:5 global float tan: float angle // The angle in radians (one full rotation is 2*pi)
 		return sin(angle) / cos(angle)
 			
 	// Platform-indepentant inverse tangent of x in radians. Returns the exact same value on all platforms.
-	importance:5 float atan: float x
+	importance:5 global float atan: float x
 		// Uses polynomial approximation in z = x/(x + pi/3) space
 		// Max error: 4.07e-9 on [0, 1] interval
 		// https://stackoverflow.com/questions/42537957/fast-accurate-atan-arctan-approximation-algorithm
@@ -3262,11 +2677,6 @@ struct RollingList
 	add: float value
 		values[(index++ mod length)] = value
 		
-	measure: void() do
-		let startTime = PlainDate.preciseTime
-		do
-		values[index++ mod length] = PlainDate.preciseTime - startTime
-	
 	average
 		if values.length == 0 then return 0.0
 		float total
@@ -3298,7 +2708,7 @@ immutable Range
 	Range: int from       // The start of the range
 		   nocolon int to // The end of the range
 	
-	inline js bool contains: int value
+	inline js bool includes: int value
 		(value >= this.from && value < this.from)
 	
 	inline js bool containsInclusively: int value
@@ -3457,3 +2867,148 @@ js Intl.NumberFormat
 NumberFormat
 	inline js NumberFormat(string locale, NumberFormatOptions options) new Intl.NumberFormat(locale, options)
 	inline js string format(float value) this.format(value)
+class Grid<T>
+	Vector2 size
+	T[] items
+	transient void(T item, Vector2 pos)[string] itemForCharacter = null
+	
+	Grid
+		for size.x * size.y
+			items.add null
+	
+	get: Vector2 position // The vector to get the value from
+		return 0.0 <= position.x < size.x and 0.0 <= position.y < size.y ? items[floor(position.y)*size.x + position.x] : null
+	
+	get: float x // The column to get the value from
+		 float y // The row to get the value from
+		return 0.0 <= x < size.x and 0.0 <= y < size.y ? items[floor(y)*size.x + x] : null
+	
+	get: int x // The column to get the value from
+		 int y // The row to get the value from
+		return 0 <= x < size.x and 0 <= y < size.y ? items[y*size.x + x] : null
+	
+	T set: Vector2 position // The grid position of the value to set
+		   T value             // The value to set
+		return items[floor(position.y)*size.x + position.x] = value
+
+	T set: float x   // The column of the value to set
+		   float y   // The row of the value to set
+		 T value // The value to set
+		return items[floor(y)*size.x + x] = value
+	
+	T set: int x   // The column of the value to set
+		   int y   // The row of the value to set
+		 T value // The value to set
+		return items[y*size.x + x] = value
+	
+	map: string character
+		 stored void(T item, Vector2 pos) to
+		if not itemForCharacter then itemForCharacter = {}
+		itemForCharacter.set(character, to)
+
+	create: string[] strings
+		for strings as line, y
+			for line as char, x
+				let itemFunction = itemForCharacter.get(char)
+					itemFunction(items[y*size.x + x], {x, y})
+		
+	// Do something for each item in the grid
+	inline js void each: inline -> void(
+		                     T it,      // The current item of the list we are iterating over with the for-loop
+		                     Vector2 pos,
+		                     int i      // The index of the current item of the list we are iterating over with the for-loop
+		                 ) do           // Do this for each item in a list
+		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new IntVector2(i%this.size.x, Math.floor(i/this.size.x)), i)}
+			
+	inline js void each: includeEmpty = false // Include items that are null
+		                 inline -> void(
+		                     T it,      // The current item of the list we are iterating over with the for-loop
+		                     Vector2 pos,
+		                     int i      // The index of the current item of the list we are iterating over with the for-loop
+		                 ) do           // Do this for each item in a list
+		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new Vector2(x,y), i)}
+
+	// The amount of items in the grid	
+	importance:4 inline int length() this.items.length
+
+	// Return a list that includes the selected field or expression for each item
+	importance:4 inline js TValue[] select: TValue(T it) selector
+		this.items.map(selector)
+		
+	// Get the selected field or expression for each item and flattens the result
+	inline js TValue[] flatten: TValue[](T it) selector
+		this.items.flatMap(selector)
+		
+	// Returns true if the given condition is true for all items in the list
+	inline js bool all
+		this.items.every(a => a)
+		
+	// Returns true if the given condition is true for any item in the list
+	inline js bool any
+		this.items.some(a => a)
+		
+	// Returns true if the given condition is true for any item in the list
+	importance:4 inline js bool any: bool(T a) predicate // The condition to check
+		this.items.some(predicate)
+		
+	importance:4 inline js T[] where: bool(T a) predicate // The condition to check
+		this.items.filter(predicate)
+		
+	int count: bool(T a) predicate // The condition to check
+		int count = 0
+		for items
+			if predicate(.)
+				count++
+		return count
+		
+	// Returns true if the given condition is true for all items in the list
+	importance:4 inline js bool all: bool(T a) predicate // The condition to check
+		this.items.every(predicate)
+		
+	importance:4 bool isValid: Vector2 pos
+		return 0.0 <= pos.x < size.x and 0.0 <= pos.y < size.y
+
+	importance:4 withMin: float(T a) selector
+		               float threshold = float.maxValue
+		float resultValue = threshold
+		T resultItem
+		for items
+			let value = selector(.)
+			if value < resultValue
+				resultValue = value
+				resultItem = .
+		return resultValue != threshold ? resultItem : null
+
+	insertRows: int count = 1, int y = -1
+		if y == -1 then y = floor(size.y)
+		size.y += count
+		let baseIndex = y * size.x
+		for size.x * count
+			items.insert null index:floor(baseIndex + .)
+	
+	insertColumns: int count = 1, int x = -1
+		if x == -1 then x = floor(size.x)
+		size.x += count
+		for size.y as y
+			let rowIndex = y * size.x
+			for count
+				items.insert null index:floor(rowIndex + x + .)
+	
+global transient unit System
+	global inline js void for: Grid<T> subject    // The grid to iterate over
+		                       -> inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           Vector2 pos,
+		                           int i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new Vector2(i%subject.size.x, Math.floor(i/subject.size.x)), i)}
+			
+	global inline js void for: Grid<T> subject      // The grid to iterate over
+		                       includeEmpty = false // Include items that are null
+		                       -> inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           Vector2 pos,
+		                           int i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)
+		

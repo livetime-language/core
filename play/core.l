@@ -745,7 +745,7 @@ internal transient skipInit unit core
 		
 		print "#database opening from db {room.toJson}"
 		dynamic[] rooms = await inputStore.getAllFromIndex "roomId", roomId
-		rooms.orderBy.start
+		rooms.sortBy.start
 		forDynamic rooms as room
 			int userId = room.userId
 			int start = .start
@@ -926,21 +926,6 @@ internal transient unit Snapshot
 		deserialize(buffer)
 		
 	autoSave() autoSaveAtEndOfStep = true
-
-enum lowercase string PrintType
-	Action	// Use for actions performed by a player
-	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
-	NoAction	// Use when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
-	Headline	// Use when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
-
-	Debug	// Use for temporary debug messages
-	Info	// Use for informational messages
-	Error	// Use for errors
-	Warning	// Use for warnings
-	
-	Touch
-	Key
-	Gamepad
 	
 global transient unit System
 	// Reset all variables to their initial value and restart the app
@@ -1097,8 +1082,8 @@ skipInit transient unit statistics
 		http.postDirectly "{Platform.protocolAndHost}:3114/saveStatistics", body:{
 			id
 			connections
-			graphLabels: graphs.select.label
-			graphs: graphs.select.valuesToSend
+			graphLabels: graphs.map.label
+			graphs: graphs.map.valuesToSend
 			serverPings: serverPings[successfullySentServerPings..]
 			systemLogs: systemLogs[successfullySentSystemLogs..]
 			gameLogs: gameLogs[successfullySentGameLogs..]

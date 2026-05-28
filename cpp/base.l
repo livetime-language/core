@@ -343,7 +343,7 @@ immutable struct string
 	inline cpp(int, algorithm) int indexOf(string str, int startPos)
 		this.find(str, startPos)
 	
-	inline cpp(bool, algorithm) bool contains(string str)
+	inline cpp(bool, algorithm) bool includes(string str)
 		(this.find(str) != std::string::npos)
 
 	inline cpp(int) int getCharCodeAt(int index)
@@ -606,8 +606,8 @@ struct List<T>
 			if(std::find(this.begin(), this.end(), it) == this.end())
 				this.push_back(it)
 		
-	// Returns whether the list contains the given item
-	inline cpp bool contains: T item
+	// Returns whether the list includes the given item
+	inline cpp bool includes: T item
 		return std::find(this.begin(), this.end(), item) != this.end();
 		
 	// The index of an item in the list
@@ -801,7 +801,7 @@ struct List<T>
 	inline cpp bool all: bool(T a) predicate // The condition to check
 		std::all_of(this.begin(), this.end(), predicate)
 		
-	// Return a list that contains the selected field or expression for each item
+	// Return a list that includes the selected field or expression for each item
 	inline cpp TValue[] select: TValue(T it) selector
 		this.map(selector)
 		
@@ -1753,7 +1753,7 @@ immutable Range
 	Range: int from       // The start of the range
 		   nocolon int to // The end of the range
 	
-	inline cpp bool contains: int value
+	inline cpp bool includes: int value
 		(value >= this.from && value < this.from)
 	
 	inline cpp bool containsInclusively: int value

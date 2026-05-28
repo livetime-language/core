@@ -260,7 +260,7 @@ class string
 	inline cs int indexOf(string str) this.indexOf(str)
 	inline cs int indexOf(string str, int startPos) this.indexOf(str, startPos)
 		
-	inline cs bool contains(string str) (this.indexOf(str) != -1)
+	inline cs bool includes(string str) (this.indexOf(str) != -1)
 		
 	inline cs int getCharCodeAt(int index) this.charCodeAt(index)
 		
@@ -419,7 +419,7 @@ class List<T>
 	inline cs void addRange: T[] items
 		this.AddRange(items)
 			
-	inline cs bool contains: T item
+	inline cs bool includes: T item
 		this.Contains(item)
 		
 	inline cs int indexOf: T item
@@ -1890,7 +1890,7 @@ class Range
 	Range: int from       // The start of the range
 		   nocolon int to // The end of the range
 	
-	inline cs bool contains: int value
+	inline cs bool includes: int value
 		(value >= this.from && value < this.from)
 	
 	inline cs bool containsInclusively: int value

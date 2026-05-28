@@ -789,7 +789,7 @@ skipInit global unit input
 		InternalGamepad gp = gamepads[0]
 		if !gp or gp.axes.length < 2 then return
 			
-		let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")
+		let isPlayStation = gp.id.includes("54c") or gp.id.includes("810")
 		
 		// Controller axis
 		let axes = gp.axes
@@ -981,7 +981,7 @@ skipInit global unit input
 					player.playerName = internalUser.name = inputs.readString 
 					player.playerEmail = inputs.readString
 					string colorPreferencesString = inputs.readString
-					player.colorPreferences = colorPreferencesString.split(",").select.toInt
+					player.colorPreferences = colorPreferencesString.split(",").map.toInt
 	
 		// for players
 		// 	let internalUser = internalUsers[.id]
@@ -1074,7 +1074,7 @@ skipInit global unit input
 			touch.type = type
 			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
-			touch = {id, player, Move, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+			touch = {id, player, Move, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
 			player.touches.add touch
 				
 		player.pointerPosition = referencePos
@@ -1102,7 +1102,7 @@ skipInit global unit input
 			touch.isDown = false
 			if isSmoothPosition then touch.smoothPosition = referencePos
 		else
-			touch = {id, player, Up, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+			touch = {id, player, Up, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
 			player.touches.add touch
 		
 		player.pointerPosition = referencePos
@@ -1150,7 +1150,7 @@ skipInit global unit input
 		player.onKeyUp??(key)
 						
 	internal updatePlayers
-		players.orderBy.id
+		players.sortBy.id
 		for players
 			.playerIndex = i
 			.playerColor = graphics.defaultColors[i]
@@ -1826,9 +1826,9 @@ skipInit global unit input
 		       Player by = null // Only consider keys pressed by this player 
 		if (core.mode == Connected || core.simulateConnection) && by
 			let player = playersById[by.id]
-				return player.keysCurrentlyDown.contains key
+				return player.keysCurrentlyDown.includes key
 		else
-			return players.any.keysCurrentlyDown.contains key
+			return players.any.keysCurrentlyDown.includes key
 		return false
 		
 	// ---------------------------------------------- Navigate ----------------------------------------------

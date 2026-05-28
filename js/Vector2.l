@@ -309,3 +309,30 @@ global transient unit System
 		                           int y           // The y component of the current position we are iterating over with the for-loop
 		                       ) do                // Do this the given number of times
 		for(let _size=subject, y=_size.y-1; y>=0; --y) for(let x=_size.x-1; x>=0; --x) do(new Vector2(x,y), x, y)
+
+class List<T>
+	Vector2 total: Vector2(T it) selector
+		Vector2 sum = {0,0}
+		for this
+			sum += selector(.)
+		return sum	
+		
+	Vector2 average: Vector2(T it) selector
+		int count
+		Vector2 sum = {0,0}
+		for this
+			sum += selector(.)
+			count++
+		return sum/count
+		
+	Vector2 average: Vector2(T it) selector
+		             bool(T it) where
+		int count
+		Vector2 sum = {0,0}
+		for this
+			if where(.)
+				sum += selector(.)
+				count++
+		return sum/count
+
+		

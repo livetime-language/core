@@ -266,7 +266,7 @@ internal Animation BezierAnimation
 
 	static getPointOnBezierCurve: Vector2[] points, float progress, float smoothness = 1.0
 		// Handle edge cases
-		if points.length == 0	then return Vector2.Zero
+		if points.length == 0	then return Vector2.zero
 		if points.length == 1	then return points[0]
 		if progress <= 0	then return points[0]
 		if progress >= 1	then return points.last

@@ -64,7 +64,7 @@ unit lobby
 		
 		// Control show names
 		onKeyDown by host
-			let cmd = pressedBy.keysCurrentlyDown.contains LeftMetaKey
+			let cmd = pressedBy.keysCurrentlyDown.includes LeftMetaKey
 			if key == E and cmd
 				setupFields newHost:pressedBy
 				
