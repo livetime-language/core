@@ -17,10 +17,6 @@ immutable priority low struct float
 	inline float grad => (this/200*math.pi)
 			
 global skipInit unit math
-	// Returns the arctangent of the quotient of the given values
-	importance:4 float getAngleForVector: Vector2 vector
-		return math.atan2(vector.y, vector.x)
-		
 	importance:4 Vector2 getVectorForAngle: float angle      // The angle in radians (-pi/2: left, 0: up, pi/2: right, pi: down)
 		                                 float radius = 1.0
 		return new Vector2(math.sin(angle)*radius, -math.cos(angle)*radius)

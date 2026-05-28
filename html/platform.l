@@ -367,7 +367,6 @@ interface DataTransferItem
 interface DateTransfer
 	DataTransferItem[] items
 	
-	
 MenuItem
 	string label
 	string accelerator

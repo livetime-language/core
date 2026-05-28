@@ -203,10 +203,6 @@ struct Vector2
 			&& (c = !c)
 			j = i
 		return c
-		
-	importance:4 in: Rect rectangle
-		return x >= rectangle.position.x - rectangle.size.x/2 && x < rectangle.position.x + rectangle.size.x/2
-		    && y >= rectangle.position.y - rectangle.size.y/2 && y < rectangle.position.y + rectangle.size.y/2
 	
 	// The dot product
 	importance:4 dot: Vector2 value // The value to calculate the dot procut with
@@ -309,6 +305,11 @@ global transient unit System
 		                           int y           // The y component of the current position we are iterating over with the for-loop
 		                       ) do                // Do this the given number of times
 		for(let _size=subject, y=_size.y-1; y>=0; --y) for(let x=_size.x-1; x>=0; --x) do(new Vector2(x,y), x, y)
+
+global skipInit unit math
+	// Returns the arctangent of the quotient of the given values
+	importance:4 float getAngleForVector: Vector2 vector
+		return math.atan2(vector.y, vector.x)
 
 class List<T>
 	Vector2 total: Vector2(T it) selector
