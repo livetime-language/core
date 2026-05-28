@@ -1139,7 +1139,7 @@ skipInit global unit input
 				player.controllerKeyDownFrame.add 0
 		
 	internal #keyboard updatePlayers
-		// players.orderBy.id
+		// players.sortBy.id
 		for players
 			.playerIndex = i
 			// .playerColor = graphics.defaultColors[i]

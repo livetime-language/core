@@ -214,6 +214,10 @@ string TimeString
 	
 	inline js bool toBool => this
 	inline string toString() this
+
+	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
+	inline js int localeCompare: TimeString value // The string to compare to
+		this.localeCompare(value)
 	
 	// (31.12.)
 	inline string dayMonthString
@@ -423,3 +427,13 @@ struct RollingList
 		let startTime = PlainDate.preciseTime
 		do
 		values[index++ mod length] = PlainDate.preciseTime - startTime
+
+List<T>
+	// Sort by string
+	T[] sortBy: TimeString(T it) expression // First order by this expression
+		return this.sort(expression(a).localeCompare expression(b))
+		
+	// Sort by string in descending order
+	T[] sortByDescending: TimeString(T it) expression // First order by this expression
+		return this.sort(expression(b) localeCompare expression(a))
+		

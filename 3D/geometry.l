@@ -2117,7 +2117,7 @@ class Grid<T>
 	inline js bool any: bool(T a) predicate // The condition to check
 		this.items.some(predicate)
 		
-	inline js T[] where: bool(T a) predicate // The condition to check
+	inline js T[] filter: bool(T a) predicate // The condition to check
 		this.items.filter(predicate)
 		
 	int count: bool(T a) predicate // The condition to check

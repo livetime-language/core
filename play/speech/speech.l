@@ -68,7 +68,7 @@ transient speech
 		let pref = preferences[language] or preferences["English"]
 		if pref.voice == null
 			let allVoices = getVoices
-			voices = allVoices.where.lang.startsWith(pref.lang)
+			voices = allVoices.filter.lang.startsWith(pref.lang)
 			// for voices: print "{.lang} {.name}"
 			for pref.voices as voicePreference
 				let voice = voices.find.name.includes(voicePreference.name)

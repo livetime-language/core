@@ -894,7 +894,7 @@ struct Grid<T>
 	inline cpp bool any: bool(T a) predicate // The condition to check
 		this.items.some(predicate)
 		
-	inline cpp T[] where: bool(T a) predicate // The condition to check
+	inline cpp T[] filter: bool(T a) predicate // The condition to check
 		this.items.filter(predicate)
 		
 	int count: bool(T a) predicate // The condition to check

@@ -1139,11 +1139,11 @@ class List<T>
 		return this.get((index-1) mod length)
 		
 	T next: T currentItem
-		    label bool(T item) where
+		    label bool(T item) filter
 		int baseIndex = indexOf(currentItem)
 		for this.length
 			let item = this.get((baseIndex+i+1) mod length)
-			if(where(item)) return item
+			if(filter(item)) return item
 		return null
 		
 	T prev: T currentItem
@@ -1406,10 +1406,10 @@ class List<T>
 		return sum
 		
 	int total: int(T it) selector
-		       label bool(T it) where
+		       label bool(T it) filter
 		let sum = 0
 		for this
-			if where(.) then sum += selector(.)
+			if filter(.) then sum += selector(.)
 		return sum
 		
 	float total: float(T it) selector
@@ -1477,10 +1477,10 @@ class List<T>
 	min: int(T it) selector 
 		 int threshold = int.maxValue
 		 int default = 0
-		 label bool(T it) where
+		 label bool(T it) filter
 		int resultValue = threshold
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
@@ -1488,10 +1488,10 @@ class List<T>
 	min: float(T it) selector 
 		 float threshold = float.maxValue
 		 float default = 0
-		 label bool(T it) where
+		 label bool(T it) filter
 		float resultValue = threshold
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value < resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
@@ -1517,10 +1517,10 @@ class List<T>
 	max: int(T it) selector
 		 int threshold = int.minValue
 		 int default = 0
-		 label bool(T it) where
+		 label bool(T it) filter
 		int resultValue = threshold
 		for this 
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
@@ -1528,10 +1528,10 @@ class List<T>
 	max: float(T it) selector
 		 float threshold = float.minValue
 		 float default = 0
-		 label bool(T it) where
+		 label bool(T it) filter
 		float resultValue = threshold
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value > resultValue then resultValue = value
 		return resultValue != threshold ? resultValue : default
@@ -1594,11 +1594,11 @@ class List<T>
 		
 	withMin: int(T it) selector
 		     int threshold = int.maxValue
-		     label bool(T it) where
+		     label bool(T it) filter
 		int resultValue = threshold
 		T resultItem
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value < resultValue
 					resultValue = value
@@ -1607,11 +1607,11 @@ class List<T>
 		
 	withMin: float(T it) selector
 		     float threshold = float.maxValue
-		     label bool(T it) where
+		     label bool(T it) filter
 		float resultValue = threshold
 		T resultItem
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value < resultValue
 					resultValue = value
@@ -1672,11 +1672,11 @@ class List<T>
 		
 	withMax: int(T it) selector
 		     int threshold = int.minValue
-		     label bool(T it) where
+		     label bool(T it) filter
 		int resultValue = threshold
 		T resultItem
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value > resultValue
 					resultValue = value
@@ -1685,11 +1685,11 @@ class List<T>
 		
 	withMax: float(T it) selector
 		     float threshold = float.minValue
-		     label bool(T it) where
+		     label bool(T it) filter
 		float resultValue = threshold
 		T resultItem
 		for this
-			if where(.)
+			if filter(.)
 				let value = selector(.)
 				if value > resultValue
 					resultValue = value
@@ -2951,7 +2951,7 @@ class Grid<T>
 	importance:4 inline js bool any: bool(T a) predicate // The condition to check
 		this.items.some(predicate)
 		
-	importance:4 inline js T[] where: bool(T a) predicate // The condition to check
+	importance:4 inline js T[] filter: bool(T a) predicate // The condition to check
 		this.items.filter(predicate)
 		
 	int count: bool(T a) predicate // The condition to check

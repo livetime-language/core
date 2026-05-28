@@ -522,7 +522,7 @@ skipInit unit Input
 		// 		                    or Math.abs(.gamepad.leftStick.y) >= Gamepad.deadZone
 						
 	updateUserIndices
-	// 	users.orderBy.id
+	// 	users.sortBy.id
 	// 	for users
 	// 		.index = i
 	// 		internalUsers[.id].index = i

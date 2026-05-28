@@ -487,13 +487,13 @@ internal transient skipInit unit core
 
 		// Flags
 		Platform.fastForward = fastForward
-		int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) where . != null
+		int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) filter . != null
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
 		if Platform.isDebug and (Platform.playMode == Play or Platform.playMode == Record) then sendOutputToEditor
 		
-		// Save a snapshot when we are about to start the frame after the last certain frame where we got all inputs
+		// Save a snapshot when we are about to start the frame after the last certain frame filter we got all inputs
 		checkSaveState
 		
 		// Update game controllers
@@ -576,7 +576,7 @@ internal transient skipInit unit core
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
 			
 		if mode == Local and simulateRollback then	nextSnapshotFrame = frame - 5
-		else	nextSnapshotFrame = (input.internalUsers.min math.min(.smoothFrame, .inputFrame) where . and not .local)+1
+		else	nextSnapshotFrame = (input.internalUsers.min math.min(.smoothFrame, .inputFrame) filter . and not .local)+1
 		
 		if snapshotFrame != -1
 			if verbose

@@ -135,7 +135,7 @@ transient skipInit static class backend
 		return pb.collection('users').confirmVerification(token);
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
-// The items are stored locally in the member variable "items". Use the functions "get", "find", "where" and "length" to access the local items.
+// The items are stored locally in the member variable "items". Use the functions "get", "find", "filter" and "length" to access the local items.
 // You can also subscribe to changes in the remote PocketBase collection to automatically keep the local items up to date in realtime.
 DatabaseTable<T> 
 	// The name of the remote PocketBase collection
@@ -479,7 +479,7 @@ DatabaseTable<T>
 		
 	// Find all items that meet the given condition from the items stored locally in the member variable "items"
 	importance:3 
-	inline js T[] where: bool(T a) condition // The condition to check
+	inline js T[] filter: bool(T a) condition // The condition to check
 		this.items.filter(condition)
 	
 	// Gets the number of items stored locally in the member variable "items"

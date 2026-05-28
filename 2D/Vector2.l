@@ -24,13 +24,13 @@ struct Vector2
 	// Creates a copy of the vector with the same values
 	importance:4 Vector2 clone => {x, y, location}
 		
-	// Create a new instance. Useful for data imported from json where the vector might be undefined
+	// Create a new instance. Useful for data imported from json filter the vector might be undefined
 	inline js Vector2 create: float x // The x-coordinate of the vector to create
 		                      float y // The y-coordinate of the vector to create
 		                      SourceCodeLocation location
 		(this = new Vector2(x, y, location))
 		
-	// Create a new instance. Useful for data imported from json where the vector might be undefined
+	// Create a new instance. Useful for data imported from json filter the vector might be undefined
 	inline js Vector2 create: Vector2 value  // Create a new instance with the coordinated of this vector
 		(this = new Vector2(value.x, value.y, value.location))
 		
@@ -327,11 +327,11 @@ class List<T>
 		return sum/count
 		
 	Vector2 average: Vector2(T it) selector
-		             bool(T it) where
+		             bool(T it) filter
 		int count
 		Vector2 sum = {0,0}
 		for this
-			if where(.)
+			if filter(.)
 				sum += selector(.)
 				count++
 		return sum/count

@@ -376,18 +376,6 @@ MenuItem
 	MenuItem[] submenu = null
 	bool checked
 	
-enum lowercase string PrintType
-	Action	// Use for actions performed by a user
-	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action.
-	NoAction	// Use when no action was performed. For example, if user input is invalid.
-	Headline	// When a major action is performed, for example navigating to a new page.
-
-	Debug	// Use for temporary debug messages
-	Info	// Use for informational messages
-	Error	// Use for errors
-	Warning	// Use for warnings
-
-	
 global transient unit System
 	// Prints a message to the console
 	global js void print: logstring text	// The text, variables or expressions to print
