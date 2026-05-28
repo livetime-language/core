@@ -482,6 +482,7 @@ global priority low skipInit static class html
 		} else {
 			Platform.scale = 1
 			Platform.isMobile = localStorage.getItem("isMobile") == "true"
+			Platform.size = new Vector2(window.innerWidth, window.innerHeight)
 			body.style.zoom = Platform.scale
 		}
 		body.className = Platform.isMobile ? "mobile" : ""
