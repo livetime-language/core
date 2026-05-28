@@ -188,3 +188,29 @@ global skipInit unit math
 		                float startTime = 0 // The start time in milliseconds
 		                float duration = 1  // The duration in milliseconds
 		return from interpolateTo to, (Time.now - startTime)/duration
+
+struct Vector2
+	static Vector2 getPositionAlongPath: Vector2[] path, float distance
+		float traveledSoFar
+		forPairs path
+			let segmentLength = .distanceTo next
+			let traveledAfterSegment = traveledSoFar + segmentLength
+			if  traveledAfterSegment > distance
+				return .interpolateTo next progress:distance traveledSoFar..traveledAfterSegment
+			traveledSoFar = traveledAfterSegment
+		return path.last
+		
+	static PositionAndVector getPositionAndVectorAlongPath: Vector2[] path, float distance
+		float traveledSoFar
+		forPairs path
+			let segmentLength = .distanceTo next
+			let traveledAfterSegment = traveledSoFar + segmentLength
+			if  traveledAfterSegment > distance
+				return {
+					position: .interpolateTo next progress:distance traveledSoFar..traveledAfterSegment
+					vector:   next - .
+				}
+			traveledSoFar = traveledAfterSegment
+			
+		let lastPos = path.last
+		return {position:lastPos, vector:lastPos - path[path.length-2]}

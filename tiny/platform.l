@@ -87,3 +87,13 @@ skipInit static class time
 
 	js void startFrame
 		now = Date.now()
+
+global transient unit System
+	// Prints a message to the console
+	global js void print: logstring text	// The text, variables or expressions to print
+	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
+		                  SourceCodeLocation location
+		console.log(text)
+		if(Platform.isDebug && location) {
+			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|`)
+		}

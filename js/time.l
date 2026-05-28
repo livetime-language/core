@@ -418,3 +418,8 @@ js(Date) internal transient class Date
 	static js Date fromCompactTimeString(string compactTimeString)
 		new Date(+compactTimeString.slice(0,4), +compactTimeString.slice(4,6)-1, +compactTimeString.slice(6,8), +compactTimeString.slice(9,11), +compactTimeString.slice(11,13), +compactTimeString.slice(13,15))
 	
+class RollingList
+	measure: void() do
+		let startTime = Date.preciseTime
+		do
+		values[index++ mod length] = Date.preciseTime - startTime

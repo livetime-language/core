@@ -476,3 +476,12 @@ internal transient class Buffer
 			result.push(this.dataView.getUint8(i))
 		return result
 		
+struct Vector2
+	serialize: Buffer buffer
+		buffer.writeFloat64(x)
+		buffer.writeFloat64(y)
+		
+	deserialize: Buffer buffer
+		x = buffer.readFloat64
+		y = buffer.readFloat64
+	

@@ -1,24 +1,12 @@
-# Use the LiveTime programming language
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
-
-# Simple code
-Always write the shortest, simplest possible code.
-Write the fastest, most efficient code possible.
-
-# Compile and test
-Run "npm run compile" to compile.
-
-# LiveTime Cheatsheet
-# Important: Only use the following functions and features
-# Implementation: lib/core/tiny/
+/* LiveTime Cheatsheet. Important: Only use the following functions and features. Run "npm run compile" to compile. Implementation: lib/core/tiny/
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
-Player	// Use capitalized name to define a class. Its members are public by default
-	int index	// Integers are 0 by default
-	float score = 100.0	// Floats are 0.0 by default
-	bool isAlive = true	// Booleans are false by default
-	Vector2 pos = {1,2}	// Vectors are {0,0} by default
-	string name	// Strings are "" (the empty string) by default
-	Player[] friends	// Lists are [] (the empty list) by default
+class Player	// Use capitalized name to define a class. Its members are public by default
+	int        index	// Integers are 0 by default
+	float      score = 100.0	// Floating point numbers are 0.0 by default
+	bool       isAlive = true	// Booleans are false by default
+	Vector2    pos = {1,2}	// Vectors are {0,0} by default
+	string     name	// Strings are "" (the empty string) by default
+	Player[]   friends	// Lists are [] (the empty list) by default
 	PlayerRole role = Archer	// You can write "Archer" instead of "PlayerRole.Archer" if the type is known from context
 	Player: int index	// Constructor with parameter. If you don't write a constructor, one is created automatically
 		this.index = index	// Assign member variable
@@ -50,31 +38,18 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		randomFloat(0 to 1)	// Random float between 0 and 1
 		let roundedDown = floor(3.7), roundedUp = ceil(3.7)	// floor, ceil and round
 		abs(-5)	// The absolute value of a number
-		Vector p = {cos(a*2*pi), sin(a*2*pi)}	// Trigonometric functions: sin, cos, tan, asin, acos, atan
+		Vector p = {cos(a*2*pi), sin(a*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
 		players.sortBy.score	// Sort list by score
 		Player winner = players.withMax.score	// Get player with maximum score
 		Player alice = players.find.name == "Alice"	// Find item by condition
 		Player[] topPlayers = (players.filter.score > 10).sortBy.score	// Filter a list then sort it
 		time.now	// Get current time in milliseconds since 1 January 1970
 		time.ticks	// Get number of frames since the start of the app
-		setSprite 0, [	// Set the pixels of a 8x8 sprite. Each character represents a pixel on the pico8 palette: SPACE:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, a:Yellow, b:Green, c:Blue, d:Indigo, e:Pink, f:Peach
-			"        "
-			"        "
-			"   a    "
-			"  abb   "
-			" abbb3  "
-			"  bb3   "
-			"   3    "
-			"        "
-			"        "
-			"        "
-			"        "
-		]
     tick	// app.tick is called every frame (30 times per second by default)
 		pixels[vector] = color	// Set pixel at position between {0,0} and {224, 168} to color between 0 and 15
 		pixels[x,y] = color	// Pixels can also be accessed with a vector or two separate coordinates
 		int color = pixels[player.pos]	// Available colors: 0:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, 10:Yellow, 11:Green, 12:Blue, 13:Indigo, 14:Pink, 15:Peach
-		drawSprite 0, pos:{x,y}, numberOfSprites:{2,1}	// Draw sprite, numberOfSprites defaults to {1,1}
+		drawSprite sprites.diamond, pos:{x:0, y:0}	// Draw sprite
 		drawText "Hello World", pos:{x,y}, color:1	// Draw text
 		drawRect pos:{x,y}, size:{8,8}, fillColor:2, outlineColor:3	// Draw rectangle, omit fillColor for no fill, omit outlineColor for no outline
 		drawCircle pos:{x,y}, radius:8, fillColor:2, outlineColor:3	// Draw circle, radius can be a float or a vector for an ellipse
@@ -86,3 +61,15 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		if justReleased B player:2 then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 		if isPressed Up player:3 then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 		if isPressed Up player:3 then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
+sprites	// src/sprites.l contains all available sprites. Add additional sprites as needed.
+	circle = Sprite [	// SPACE:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, a:Yellow, b:Green, c:Blue, d:Indigo, e:Pink, f:Peach
+		"  cccc  "
+		" c    c "
+		"c      c"
+		"c      c"
+		"c      c"
+		"c      c"
+		" c    c "
+		"  cccc  "
+	]
+*/
