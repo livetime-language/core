@@ -81,7 +81,7 @@ class Object
 	float angle
 	float alpha = 1
 	implicit Player[] visibleFor = null
-	int layer = 0
+	float layer = 0
 	bool locked
 	SourceCodeLocation location
 	
@@ -359,7 +359,7 @@ Object ParticleSystem
 	maxRotationSpeed  = .05
 	mode = ParticleMode.Burst
 	angleSpread = math.twoPi
-	layer = int.maxValue
+	layer = float.maxValue
 	
 	private int burst
 	internal debugString => "(ParticleSystem {position.x} {position.y} {particles.length})"

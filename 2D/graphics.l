@@ -465,7 +465,7 @@ transient skipInit global unit graphics
 		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                      implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 							  alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White	// Tint the image with this color
 		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -507,7 +507,7 @@ transient skipInit global unit graphics
 		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                      implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White	// Tint the image with this color
 		                      angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -560,7 +560,7 @@ transient skipInit global unit graphics
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", "Walk2.png", ...)
 						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
 		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
-					       implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+					       implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White	// Tint the image with this color
 		                   SourceCodeLocation location
@@ -582,7 +582,7 @@ transient skipInit global unit graphics
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
 						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
 		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
-		                   implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                   implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White	// Tint the image with this color
 		                   angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -599,7 +599,7 @@ transient skipInit global unit graphics
 		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the image
 		                                implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                                implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                                implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                                alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                                Color color = White	// Tint the image with this color
 	                                    HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -635,7 +635,7 @@ transient skipInit global unit graphics
 		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the image
 		                                implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                                implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                                implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                                alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                                Color color = White	// Tint the image with this color
 		                                angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -662,7 +662,7 @@ transient skipInit global unit graphics
 		                            implicit Vector2 size = {}
 		                            implicit Player[] visibleFor = null
 								    implicit frame = 0
-		                            implicit layer = int.minValue
+		                            implicit layer = float.minValue
 		                            alpha = 1.0
 		                            Color color = White
 								    float leftSlice = 0.0
@@ -729,7 +729,7 @@ transient skipInit global unit graphics
 							         implicit Vector2 sourceSize = {}	// The size of the source image to draw
 							         implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                             implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                             implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                             implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                             alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                             Color color = White	// Tint the image with this color
 		                             HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -777,7 +777,7 @@ transient skipInit global unit graphics
 		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		             Color outlineColor = null            // The color of the outline around the text
 		             outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		             implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		             implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		             implicit Player[] visibleFor = null  // Only this player or list of players will see the text
@@ -953,7 +953,7 @@ transient skipInit global unit graphics
 		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		                                Color outlineColor = null            // The color of the outline around the text
 		                                outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		                                implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		                                implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		                                implicit Player[] visibleFor = null  // Only this player or list of players will see the text
@@ -1133,7 +1133,7 @@ transient skipInit global unit graphics
 		                     size = 0.0                           // The font size of the text
 		                     Color color = null                   // The color of the text
 		                     Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		                     implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		                     implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                     radius = 100.0                       // The radius of the circle to draw the text around
 		                     angle = 0.0                          // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
 		                     spacing = .2                         // The spacing between the letters of the text
@@ -1181,7 +1181,7 @@ transient skipInit global unit graphics
 		                    implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                    implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
 		                    hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		                    implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		                    implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                    alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                    enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
 		                    alphaWhenDisabled = .5               // The opacity of the button will be multiplied with this factor when its disabled
@@ -1207,7 +1207,7 @@ transient skipInit global unit graphics
 		if isVisibleFor(visibleFor)
 			if frame == -1	then frame = 0
 			if scale != 1.0	then textSize = math.round(textSize * scale); effectiveSize *= scale
-			int effectiveLayer = layer != int.minValue ? layer : math.floor(graphics.currentLayer)
+			let effectiveLayer = layer != float.minValue ? layer : math.floor(graphics.currentLayer)
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
 			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
 			if accentImage
@@ -1233,7 +1233,7 @@ transient skipInit global unit graphics
 		                          Color outlineColor = null           // The color of the outline around the rectangle
 		                          outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                          implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
-		                          implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
+		                          implicit layer = float.minValue       // Higher layers are drawn in front of lower layers
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                          HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                          VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
@@ -1271,7 +1271,7 @@ transient skipInit global unit graphics
 		                                 Color outlineColor = null           // The color of the outline around the rectangle
 		                                 outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                                 implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
-		                                 implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                                 implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                                 HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                                 VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
@@ -1323,7 +1323,7 @@ transient skipInit global unit graphics
 		                       angle = math.twoPi                 // Draw an arc with this angle in radians (one full rotation is 2*pi)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
 		                       implicit Player[] visibleFor = null     // Only this player or list of players will see the circle
-		                       implicit layer = int.minValue           // Higher layers are drawn in front of lower layers
+		                       implicit layer = float.minValue           // Higher layers are drawn in front of lower layers
 		                       alpha = 1.0                             // The opacity of the circle (0: fully transparent, 1: fully visible)
 		                       SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1359,7 +1359,7 @@ transient skipInit global unit graphics
 		                     Color color = null	// The color of the line
 		                     width = 0.0	// The width of the line in pixels
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
-		                     implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                     implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayLine(
@@ -1388,7 +1388,7 @@ transient skipInit global unit graphics
 		                      width = 0                           // The width of the line in pixels
 		                      smooth = false                      // Smooth the corners of the line
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the line
-		                      implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                      implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
@@ -1418,7 +1418,7 @@ transient skipInit global unit graphics
 		                           Color outlineColor = null	// The color of the outline around the arrow
 		                           outlineWidth = 0.0	// The width of the outline around the arrow
 		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
-		                           implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                           implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
 		if width <= 0 then width = graphics.currentLineWidth
 		let delta = to - from
@@ -1462,7 +1462,7 @@ transient skipInit global unit graphics
 		                        outlineWidth = 0.0                    // The width of the outline around the polygon in pixels
 		                        smooth = false                      // Smooth the corners of the polygon
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
-		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
@@ -1547,7 +1547,7 @@ transient skipInit global unit graphics
 		                        Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                        implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1582,7 +1582,7 @@ transient skipInit global unit graphics
 		                        Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                        Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1614,7 +1614,7 @@ transient skipInit global unit graphics
 		                             Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                             Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
 		                             implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                             implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                             implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                             Color color = White                 // Tint the texture with this color
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -2294,7 +2294,7 @@ awardScreen
 
 internal transient immutable DisplayItem
 	float x, y, w, h
-	int layer
+	float layer
 	float alpha
 	ClippingPath clippingPath
 	string name

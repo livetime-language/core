@@ -9,7 +9,7 @@ transient dynamic TestFunction
 
 transient skipInit unit Platform
 	// Configuration
-	public userCount = 2
+	public int userCount = 2
 	public supportedUserCount = Range 2..4
 	public bool showDebugInfo = false
 	public bool isLocal = false

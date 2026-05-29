@@ -790,7 +790,7 @@ class List<T>
 		
 	// Add an item and remove a item from the beginning if the length exceeds a maximum value
 	inline js void add: stored T item        // The item to add
-		                int maxLength // If the list gets longer than this maximum length, remove an item from the beginning
+		                float maxLength // If the list gets longer than this maximum length, remove an item from the beginning
 		this.push(item)
 		if(this.length > maxLength) this.splice(0, 1)
 			
