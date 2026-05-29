@@ -16,10 +16,10 @@ immutable struct int
 	//         int health
 	//         changeHealth: int delta
 	//             health = (health + delta) clamp 0 to 100
-	importance:4 inline js 
-	int clamp: int from // The inclusive minimum value
-		       int to   // The inclusive maximum value
-		(this < from ? from : this > to ? to : this)
+	importance:4 inline
+	int clamp: float from // The inclusive minimum value
+		       float to   // The inclusive maximum value
+		(this < from ? from.ceil : this > to ? to.floor : this)
 		
 	// Make sure the value never falls below a minimum value
 	// Example: Make sure the score is at least 0
@@ -237,8 +237,8 @@ immutable struct float
 	//         float health
 	//         changeHealth: float delta
 	//             health = (health + delta) clamp 0 to 100
-	importance:4 inline js float clamp: float from // The inclusive minimum value
-		                           float to   // The inclusive maximum value
+	importance:4 inline js float clamp: float from	// The inclusive minimum value
+		                                float to	// The inclusive maximum value
 		(this < from ? from : this > to ? to : this)
 		
 	// Make sure the value never falls below a minimum value
@@ -2623,42 +2623,6 @@ global skipInit unit math
 	inline js int shiftRight: int value
 		                      int count
 		(value >> count)
-			
-	// ------------------------------------------------------- Clamp -------------------------------------------------------
-	
-	clamp: int value
-		   int min
-		   int max
-		if value < min	then return min
-		if value > max	then return max
-			                 return value
-	
-	clamp: int value
-		   int max
-		if value > max then return max
-			                return value
-	
-	clamp: int value
-		   int min
-		if value < min then return min
-			                return value
-	
-	clamp: float value
-		   float min
-		   float max
-		if value < min then return min
-		if value > max then return max
-			                return value
-	
-	clamp: float value
-		   float max
-		if value > max then return max
-			                return value
-			
-	clamp: float value
-		   float min
-		if value < min then return min
-			                return value
 	
 	// ------------------------------------------------------- Random -------------------------------------------------------
 			

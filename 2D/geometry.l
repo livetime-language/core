@@ -135,8 +135,8 @@ struct Vector2
 	clamp: Vector2 from
 		   Vector2 to
 		return Vector2(
-			math.clamp x, min:from.x, max:to.x
-			math.clamp y, min:from.y, max:to.y
+			x.clamp from.x to to.x
+			y.clamp from.y to to.y
 		)
 
 	// Move the vector
@@ -493,23 +493,11 @@ struct IntVector2
 	// The smaller of the two coordinates
 	min => x < y ? x : y
 	
-	clamp: IntVector2 min
-		   IntVector2 max
+	clamp: Vector2 from
+		   Vector2 to
 		return IntVector2(
-			math.clamp x, min:min.x, max:max.x
-			math.clamp y, min:min.y, max:max.y
-		)
-		
-	clamp: IntVector2 max
-		return IntVector2(
-			math.clamp x, max:max.x
-			math.clamp y, max:max.y
-		)
-		
-	clamp: IntVector2 min
-		return IntVector2(
-			math.clamp x, min:min.x
-			math.clamp y, min:min.y
+			x.clamp from.x to to.x
+			y.clamp from.y to to.y
 		)
 		
 	// The distance to another vector
@@ -902,10 +890,10 @@ class IsometicGrid
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
 		
-	limitToInside: IntVector2 position
+	clamp: IntVector2 position
 		return IntVector2(
-			math.clamp position.x, min:0, max:size.x-1
-			math.clamp position.y, min:0, max:size.y-1
+			position.x.clamp 0 to size.x-1
+			position.y.clamp 0 to size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector
