@@ -83,10 +83,10 @@ immutable struct int
 		Math.pow(this, value)
 		
 	// The largest possible integer value
-	const importance:5 maxValue = 9007199254740991
+	const importance:5 int maxValue = 9007199254740991
 	
 	// The smallest possible integer value
-	const importance:5 minValue = -9007199254740991
+	const importance:5 int minValue = -9007199254740991
 	
 	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
 	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
@@ -356,6 +356,9 @@ immutable struct float
 	inline float -
 	inline float +
 	
+	inline float ++
+	inline float --
+
 	inline js float ** float value
 		Math.pow(this, value)
 		
@@ -1400,14 +1403,14 @@ class List<T>
 		return result
 					
 	importance:2 int total: int(T it) selector
-		let sum = 0
+		int sum = 0
 		for this
 			sum += selector(.)
 		return sum
 		
 	int total: int(T it) selector
 		       label bool(T it) filter
-		let sum = 0
+		int sum = 0
 		for this
 			if filter(.) then sum += selector(.)
 		return sum
