@@ -2870,6 +2870,7 @@ js Intl.NumberFormat
 NumberFormat
 	inline js NumberFormat(string locale, NumberFormatOptions options) new Intl.NumberFormat(locale, options)
 	inline js string format(float value) this.format(value)
+	
 class Grid<T>
 	Vector2 size
 	T[] items
