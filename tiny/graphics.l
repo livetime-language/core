@@ -257,12 +257,15 @@ transient global skipInit graphics
 		openTiles
 		openFonts
 
+	inline js string fontsData => _data_fonts
+	inline js string tilesData => _data_tiles
+
 	private openTiles
 		tiles = []
 		tileCollections = []
 		TileCollection collection, prevCollection
 		int index = 0
-		for data.tiles.split("\n") as line
+		for tilesData.split("\n") as line
 			if line.startsWith "#"
 				int colonIndex = line.indexOf ":"
 				string key = line.substring(1, colonIndex).trim.toLowerCase
@@ -278,7 +281,7 @@ transient global skipInit graphics
 
 	private openFonts
 		int index = 0
-		for data.fonts.split("\n") as line
+		for fontsData.split("\n") as line
 			int pixelOffset = floor(i*font.gridSize.x*font.charsPerRow)
 			for line.length as i
 				if line[i] != "0" then font.pixels[pixelOffset + i] = 1
