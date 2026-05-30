@@ -1,4 +1,4 @@
-/* LiveTime Cheatsheet. Important: Only use the following functions and features. Run "npm run compile" to compile. Implementation: lib/core/tiny/
+/* LiveTime Cheatsheet. Important: Only use the following functions and features. Run "npm run compile" to compile.
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
 class Player	// Use capitalized name to define a class. Its members are public by default
 	int        index	// Integers are 0 by default
