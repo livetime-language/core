@@ -257,8 +257,8 @@ transient global skipInit graphics
 		openTiles
 		openFonts
 
-	inline js string fontsData => _data_fonts
-	inline js string tilesData => _data_tiles
+	inline js string fontsData => (typeof _data_fonts === "string" ? _data_fonts : "")
+	inline js string tilesData => (typeof _data_tiles === "string" ? _data_tiles : "")
 
 	private openTiles
 		tiles = []
