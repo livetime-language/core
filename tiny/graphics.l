@@ -463,7 +463,7 @@ transient global skipInit graphics
 		colorReplacements[color] = with
 		enableColorReplacements = true
 
-	global stopReplacingColor
+	global stopReplacingColors
 		for colorReplacements.length
 			colorReplacements[i] = i
 		enableColorReplacements = false
