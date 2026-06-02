@@ -39,7 +39,7 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		int max = a > b ? a : b	// Ternary operator
 		randomFloat(0 to 1)	// Random float between 0 and 1
 		abs(-5)	// The absolute value of a number
-		Vector p = {cos(a*2*pi), sin(a*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
+		Vector2 pos = {cos(x*2*pi), sin(y*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
 		players.sortBy.score	// Sort list by score
 		Player winner = players.withMax(.score)	// Get player with maximum score
 		Player alice = players.find(.name == "Alice")	// Find item by condition
@@ -48,8 +48,10 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		time.ticks	// Get number of frames since the start of the app
 	move: Player p, Vector2 delta = {0,0}	// Define a function that takes a Player and a Vector2 as parameters
 		p.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
+	getDelta: Player p	// You don't need to specify the return type of a function
+		return p.direction * p.speed	// Return a value
     tick	// app.tick is called every frame (30 times per second by default)
-		move player, delta:{1,0}	// You don't need parenthesis when calling a function that doesn't return anything
+		move player, delta:getDelta(player)	// You don't need parenthesis when calling a function that doesn't return anything
 		pixels[vector] = color	// Set pixel at position between {0,0} and {224, 168} to color between 0 and 15
 		pixels[x,y] = color	// Pixels can also be accessed with a vector or two separate coordinates
 		int color = pixels[player.pos]	// Available colors: 0:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, 10:Yellow, 11:Green, 12:Blue, 13:Indigo, 14:Pink, 15:Peach
