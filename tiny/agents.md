@@ -32,13 +32,12 @@ app	// Use lowercase name to define a static class. Access its members with app.
 			players.removeAt i 	// Remove item at index
 		for players as p, i	// Iterate over list
 			print "The score of {p.name} is {p.score}"	// String interpolation
-		float oneHalf = 1/2	// Dividing two integers results in a float
+		int level = floor(lineCount / 10)	// Dividing two integers results in a float. Use floor, ceil or round if you need an integer
 		int period = filename.indexOf(".")	// Get index of character in string
 		string name = filename.substring(0 to period)	// Get substring
 		Player p = players[index mod players.length]	// Modulo operator
 		int max = a > b ? a : b	// Ternary operator
 		randomFloat(0 to 1)	// Random float between 0 and 1
-		let roundedDown = floor(3.7), roundedUp = ceil(3.7)	// floor, ceil and round
 		abs(-5)	// The absolute value of a number
 		Vector p = {cos(a*2*pi), sin(a*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
 		players.sortBy.score	// Sort list by score
