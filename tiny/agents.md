@@ -1,5 +1,5 @@
-/* Full LiveTime API. IMPORTANT: Only use the following functions and features!
-Write the simplest, most efficient code possible. Compile with "npm run compile".
+// Full LiveTime API. IMPORTANT: Only use the following functions and features!
+// Write the simplest, most efficient code possible. Compile with "npm run compile".
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
 class Player	// Use capitalized name to define a class. Its members are public by default
 	int        index	// Integers are 0 by default
@@ -32,11 +32,12 @@ app	// Use lowercase name to define a static class. Access its members with app.
 			players.removeAt i 	// Remove item at index
 		for players as p, i	// Iterate over list
 			print "The score of {p.name} is {p.score}"	// String interpolation
+		let x = 0, y = 0	// Numbers are floats by default. Use "int x" if you need an integer.
+		let max = x > y ? x : y	// Ternary operator
 		int level = floor(lineCount / 10)	// Dividing two integers results in a float. Use floor, ceil or round if you need an integer
 		int period = filename.indexOf(".")	// Get index of character in string
 		string name = filename.substring(0 to period)	// Get substring
 		Player p = players[index mod players.length]	// Modulo operator
-		int max = a > b ? a : b	// Ternary operator
 		randomFloat(0 to 1)	// Random float between 0 and 1
 		abs(-5)	// The absolute value of a number
 		Vector2 pos = {cos(x*2*pi), sin(y*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
@@ -78,5 +79,128 @@ sprites	// src/sprites.l contains all available sprites. Add additional sprites 
 		" c    c "
 		"  cccc  "
 	]
-This is the full APT. Do not use any other functions!
-*/
+// This is the full APT. Do not use any other functions!
+// The following is a complete example game: the board game "Go"
+sprites
+	Sprite emptyCell = Sprite([
+		"        "
+		"        "
+		"        "
+		"   66   "
+		"   66   "
+		"        "
+		"        "
+		"        "		
+	])
+	Sprite blackPiece = Sprite([
+		"        "
+		"   77   "
+		"  7  7  "
+		" 7    7 "
+		" 7    7 "
+		"  7  7  "
+		"   77   "
+		"        "
+	])
+	Sprite whitePiece = Sprite([
+		"        "
+		"   77   "
+		"  7777  "
+		" 777777 "
+		" 777777 "
+		"  7777  "
+		"   77   "
+		"        "
+	])
+
+enum Phase: PlacePiece, GameOver
+app
+	Vector2 boardSize = {9, 9}
+	Vector2 boardOffset = ({224, 168} - boardSize*8) / 2 // Centers the board on the 224x168 screen
+	
+	Cell[] cells
+	Player[] players
+	Player currentPlayer
+	Phase phase = PlacePiece
+	
+	start
+		for boardSize.x as x
+			for boardSize.y as y
+				cells[y*boardSize.x + x] = new Cell(pos:{x,y}, player:null)
+		
+		players = [{index:0}, {index:1}]
+		currentPlayer = players[0]
+				
+	tick
+		for boardSize.y as y
+			for boardSize.x as x
+				Cell cell = cells[y*boardSize.x + x]
+				Vector2 pos = boardOffset + {x,y}*8
+				if cell.player
+					drawSprite cell.player.index ? sprites.blackPiece : sprites.whitePiece, pos
+				else
+					drawSprite sprites.emptyCell, pos
+
+		if justPressed(LeftMouseButton, player:currentPlayer.index)
+			Vector2 gridPos = ((getPointer(player:currentPlayer.index) - boardOffset) / 8).floor
+			placePiece gridPos, player:currentPlayer
+		
+	placePiece: Vector2 gridPos, Player player
+		print "Player {player.index} places a piece at {gridPos}"
+		Cell cell = cells[gridPos.y * boardSize.x + gridPos.x]
+		cell.player = player
+		captureSurroundedPieces gridPos, player
+		
+		// Set current player to the next player
+		currentPlayer = players[(currentPlayer.index + 1) mod players.length]
+
+	const Vector2[] directions = [{0, -1}, {1, 0}, {0, 1}, {-1, 0}]
+
+	captureSurroundedPieces: Vector2 originPos, Player attacker
+		for directions as dir
+			Vector2 neighborPos = originPos + dir
+			Cell neighborCell = cells[neighborPos.y * boardSize.x + neighborPos.x]
+			
+			if neighborCell and neighborCell.player and neighborCell.player != attacker
+				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
+				if surroundesCells
+					print "Player {attacker.index} surrounded {surroundesCells.length} cells"
+					surroundesCells.each.player = null
+		
+	Cell[] collectSurroundesCells: Vector2 originPos, Player attacker
+		Vector2[] queue = [ originPos ]
+		Cell[] surroundedCells = [ cells[originPos.y * boardSize.x + originPos.x] ]
+		
+		for cells as cell
+			cell.visited = false
+		
+		while queue
+			Vector2 pos = queue.pop
+			Cell cell = cells[pos.y * boardSize.x + pos.x]
+			surroundedCells.add cell
+			cell.visited = true
+			
+			for directions as dir
+				Vector2 neighborPos = pos + dir
+				Cell neighborCell = cells[neighborPos.y * boardSize.x + neighborPos.x]
+				if neighborCell and not neighborCell.visited
+					if neighborCell.player == null
+						return []
+					if neighborCell.player != attacker
+						queue.add neighborPos
+						
+		return surroundedCells
+		
+	finishGame
+		Player winner = players.withMax.score
+		print "Player {winner.index} wins with {winner.score} points."
+		
+class Cell
+	Vector2 pos
+	Player player
+	int liberties
+	bool visited
+		
+class Player
+	int index
+	int score

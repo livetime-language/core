@@ -18,7 +18,7 @@ transient skipInit unit Platform
 		this.ticksPerSecond = 30
 		this.tickMode = Interval
 		this.fastForward = false
-		this.userCount = 1
+		this.userCount = 4
 
 		math.setRandomSeed math.generateRandomSeed 
 		Time.ticks = 0
