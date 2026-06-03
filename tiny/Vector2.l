@@ -235,8 +235,8 @@ Path
 	
 	Vector2 first	=> nodes ? nodes.first : Vector2.none
 	Vector2 last	=> nodes ? nodes.last  : Vector2.none
-	int count	=> nodes.length
-	inline Vector2 get(int index) this.nodes[index]
+	float count	=> nodes.length
+	inline Vector2 get(float index) this.nodes[index]
 	
 	Path
 		update
@@ -286,24 +286,21 @@ Path
 struct float
 	inline js Vector2 * Vector2 other: new Vector2(this * other.x, this * other.y, other.location)
 
-struct int
-	inline js Vector2 * Vector2 other: new Vector2(this * other.x, this * other.y, other.location)
-
 global transient unit System
 	global inline js void for: Vector2 subject  // The exclusive upper bound to iterate towards
 		                       -> inline void(
 		                           Vector2 pos, // The current position of the vector we are iterating over with the for-loop
-		                           int x,          // The x component of the current position we are iterating over with the for-loop
-		                           int y           // The y component of the current position we are iterating over with the for-loop
-		                       ) do                // Do this the given number of times
+		                           float x,          // The x component of the current position we are iterating over with the for-loop
+		                           float y           // The y component of the current position we are iterating over with the for-loop
+		                       ) do                // Do this the given float of times
 		for(let _size=subject, y=0; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(new Vector2(x,y), x, y)
 			
 	global inline js void for: Vector2 subject  // The exclusive upper bound to iterate towards
 		                       <- inline void(
 		                           Vector2 pos, // The current position of the vector we are iterating over with the for-loop
-		                           int x,          // The x component of the current position we are iterating over with the for-loop
-		                           int y           // The y component of the current position we are iterating over with the for-loop
-		                       ) do                // Do this the given number of times
+		                           float x,          // The x component of the current position we are iterating over with the for-loop
+		                           float y           // The y component of the current position we are iterating over with the for-loop
+		                       ) do                // Do this the given float of times
 		for(let _size=subject, y=_size.y-1; y>=0; --y) for(let x=_size.x-1; x>=0; --x) do(new Vector2(x,y), x, y)
 
 global skipInit unit math
@@ -319,7 +316,7 @@ class List<T>
 		return sum	
 		
 	Vector2 average: Vector2(T it) selector
-		int count
+		float count
 		Vector2 sum = {0,0}
 		for this
 			sum += selector(.)
@@ -328,7 +325,7 @@ class List<T>
 		
 	Vector2 average: Vector2(T it) selector
 		             bool(T it) filter
-		int count
+		float count
 		Vector2 sum = {0,0}
 		for this
 			if filter(.)

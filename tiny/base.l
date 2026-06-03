@@ -1,0 +1,2585 @@
+// A number stored as a double precision 64-bit floating point value
+immutable struct float
+	importance:3 inline js
+	bool isNaN() isNaN(this)
+
+	// Checks if the float is not NaN (Not a Number). If you convert a string to a float, it will be NaN if the string is not a valid number. 
+	// Dividing by 0, or taking the square root of a negative number will also result in NaN.
+	// Example:
+	//     convertToFloat: string stringValue, float defaultValue = 0
+	//         float floatValue = stringValue.toFloat
+	//         return floatValue.isValidNumber ? floatValue : defaultValue
+	importance:5 inline js
+	bool isValidNumber() (!isNaN(this))
+
+	// Returns the absolute value of the float
+	// Example:
+	//     float value = -3.14
+	//     print value.abs 
+	// Output:
+	//     3.14
+	importance:3 inline js float abs
+		Math.abs(this)
+
+	// Clamp the value to a specific range
+	// Example: Ensure the player's health is between 0 and 100
+	//     Player
+	//         float health
+	//         changeHealth: float delta
+	//             health = (health + delta) clamp 0 to 100
+	importance:4 inline js float clamp: float from	// The inclusive minimum value
+		                                float to	// The inclusive maximum value
+		(this < from ? from : this > to ? to : this)
+		
+	// Make sure the value never falls below a minimum value
+	// Example: Make sure the score is at least 0
+	//     score = score atLeast 0
+	importance:4 inline js float atLeast: float value
+		(this < value ? value : this)
+	
+	// Make sure the value never exceets a maximum value
+	// Example: Make sure the percentage is at most 100
+	//     percentage = percentage atMost 100
+	importance:4 inline js float atMost: float value
+		(this > value ? value : this)
+
+	inline js string format: float minFractionDigits = 0, float maxFractionDigits = 2, float minIntegerDigits = 1, bool grouping = false
+		this.toLocaleString("en-US", {@minimumFractionDigits:minFractionDigits, @maximumFractionDigits:maxFractionDigits, minimumIntegerDigits:minIntegerDigits, useGrouping:grouping})
+						
+	// Returns -1, 0, or 1 depending on the sign of the value
+	importance:4 inline js float sign
+		Math.sign(this)
+		
+	// Returns the smallest integer greater than or equal to the given value 
+	importance:4 inline js float ceil
+		Math.ceil(this)
+		
+	// Returns the largest integer less than or equal to the given value
+	importance:4 inline js float floor
+		Math.floor(this)
+		
+	// Returns the given value rounded to the nearest integer
+	importance:4 inline js float round
+		Math.round(this)
+	
+	importance:4 inline js bool isApproximately: float value
+		                            float epsilon = 0.00001
+		(Math.abs(this - value) < epsilon)
+		
+	// ------------------------------------------- Time -------------------------------------------
+		
+	// Take a time in milliseconds (does not change the value since all time values in LiveTime should be stored in milliseconds).
+	// Example:
+	//     float time = 500 milliseconds
+	importance:3 inline js 
+	float milliseconds => this
+	
+	// Take a time in seconds and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 7 seconds
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 7000
+	importance:3 inline js
+	float seconds => (this*1000)
+		
+	// Take a time in minutes and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 minutes
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 120000
+	importance:3 inline js
+	float minutes => (this*60000)
+		
+	// Take a time in hours and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 hours
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 7200000
+	importance:3 inline js
+	float hours => (this*3600000)
+	
+	// Take a time in days and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 days
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 172800000
+	importance:3 inline js
+	float days => (this*86400000)
+	
+	// Take a time in weeks and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 2 weeks
+	//     print "Time in milliseconds: {time}"
+	// Output:
+	//     Time in milliseconds: 1209600000
+	importance:3 inline js
+	float weeks => (this*604800000)
+	
+	// Take a time in ticks (30 ticks are 1 second by default) and convert it to milliseconds since all time values in LiveTime should be stored in milliseconds.
+	// Example:
+	//     float time = 10 ticks
+	importance:3 inline js 
+	float ticks => this * 1000 / core.ticksPerSecond
+	
+	// ------------------------------------------- Operators -------------------------------------------
+
+	inline float + float value
+	inline float - float value
+	inline float / float value
+	inline float * float value
+	
+	inline float += float value
+	inline float -= float value
+	inline float /= float value
+	inline float *= float value
+	
+	inline bool < float value
+	inline bool <= float value
+	inline bool > float value
+	inline bool >= float value
+
+	inline bool !
+	inline float -
+	inline float +
+	
+	inline float ++
+	inline float --
+
+	inline js float ** float value
+		Math.pow(this, value)
+		
+	// The largest possible floating point value
+	const importance:5 inline js
+	float maxValue => Number.MAX_VALUE
+	
+	// The smallest possible floating point value
+	const importance:5 inline js
+	float minValue => -Number.MAX_VALUE
+	
+	// Positiv infinity
+	const importance:4 inline js
+	float infinity => Number.POSITIVE_INFINITY
+
+	const inline js float notANumber => Number.NaN 
+	
+	const inline js float epsilon => Number.EPSILON
+	
+	inline js float ** (float a, float b) 
+		Math.pow(a,b)
+		
+	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
+	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
+	// In other words: A negative value mod a positive value will always be positive. 
+	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
+	// Example:
+	//     float a = 107 mod 100	// a = 7
+	//     float b =  -1 mod 100	// b = 99
+	//     float c =  -1 remainder 100	// c = -1
+	importance:5 inline js 
+	float mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
+		(((this % divisor) + divisor) % divisor)
+		
+	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
+	// Example:
+	//     float a = 107 remainder 100	// a =  7
+	//     float b =  -1 remainder 100	// b = -1
+	//     float c =  -1 mod 100	// c = 99
+	importance:5 inline js 
+	float remainder: float divisor // Returns the remainder of a truncated division by this value
+		(this % divisor)
+		
+	inline js float toInt => Math.floor(this)
+		
+	// Returns true if the floot is not zero
+	inline js bool toBool => this
+	
+	importance:4 inline js string toString => this.toString()
+		
+	importance:3 inline js float moveTowards: float value
+		                                      float speed = 1
+		(this < value ? (this + speed < value ? (this += speed) : (this = value)) : (this - speed > value ? (this -= speed) : (this = value)))
+		
+	inline js float moveTowardsAndEaseOut: float value
+		                                   float speed
+		(this < value ? (this + speed * (value-this) < value ? (this += speed * (value-this)) : (this = value)) : (this - speed * (this-value) > value ? (this -= speed * (this-value)) : (this = value)))
+		
+	inline js float incrementBy: float value
+		                         nocolon float to
+		(this+value < to ? (this += value) : to)
+
+	inline js string toOrdinalString() (this.toString() + (this % 10 == 1 && this % 100 != 11 ? "st" : this % 10 == 2 && this % 100 != 12 ? "nd" : this % 10 == 3 && this % 100 != 13 ? "rd" : "th"))
+		
+	// Indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	const inline js float undefined => undefined
+	const inline js float null => null
+	
+	
+// A sequence of characters
+js String
+immutable class string
+	// Returns the number of characters in the string
+	importance:5 inline js float length => this.length
+	
+	// Returns a string with each character converted to uppercase
+	importance:5 inline js string toUpperCase => this.toUpperCase()
+		
+	// Returns a string with each character converted to lowercase
+	importance:5 inline js string toLowerCase => this.toLowerCase()
+	
+	// Returns true if the string is not null and not empty	
+	inline js bool toBool => this
+	inline js string toString() this
+
+	// Returns the string converted to an integer. Use float.isValidNumber to check if the conversion was successful.
+	// Example:
+	//     app
+	//         convertStringToNumber: string str
+	//             float number = str.toInt
+	//             if number.isValidNumber: print "The string is a number: {number}"
+	//             else                     print "The string is not a number"
+	importance:5 inline js float toInt => parseInt(this)
+
+	// Returns the string converted to a float. Use float.isValidNumber to check if the conversion was successful.
+	// Example:
+	//     app
+	//         convertStringToNumber: string str
+	//             float number = str.toFloat
+	//             if number.isValidNumber: print "The string is a number: {number}"
+	//             else                     print "The string is not a number"
+	importance:5 inline js float toFloat => parseFloat(this)
+	
+	// Parse the string as json
+	importance:5 inline js dynamic parseJson() JSON.parse(this)
+	
+	// Parse the string as yaml
+	importance:5 inline js dynamic parseYaml() yaml.parse(this)
+
+	importance:4 inline js float parseInt(float radix) parseInt(this, radix)
+	
+	// Variable values that indicates that the variable isn't defined at all, useful for imported data (e.g. from JSON)
+	// Example:
+	//     if user.name == string.undefined: user.name = "Guest"
+	const inline js string undefined => undefined
+	
+	// Splits the string at the given character into a list of substrings#
+	importance:5 inline js
+	string[] split: string seperator = "," // Separate the string at this character
+		this.split(seperator)
+		
+	string[] splitByLine: string seperator = "\n" // Separate the string at this character
+		string[] result
+		float start
+		while start < this.length
+			float end = this.indexOf(seperator, start)
+			if end == -1	then break
+			if end > start+1	then result.add this[start to end]
+			start = end+1
+		return result
+		
+	// Splits the string and return a list with the selected field or expression for each item
+	inline js TValue[] splitToList: TValue(string it) selector // Selects a field or expression for each item
+		                            string seperator = ","     // Separate the string at this character
+		this.split(seperator).map(selector)
+		
+	// Splits the string, passes a list of strings to a function and returns its return value
+	js TValue splitToObject: TValue(string[] it) selector // This functions gets a list of strings and should create an object from it
+		                     string seperator = ","       // Separate the string at this character
+		return selector(this.split(seperator))
+		
+	importance:5 inline js bool startsWith(string str) this.startsWith(str)
+	importance:5 inline js bool endsWith(string str) this.endsWith(str)
+		
+	importance:5 inline js float indexOf(string str) this.indexOf(str)
+	importance:5 inline js float indexOf(string str, float startPos) this.indexOf(str, startPos)
+		
+	importance:5 inline js float lastIndexOf(string str) this.lastIndexOf(str)
+	importance:5 inline js float lastIndexOf(string str, float startPos) this.lastIndexOf(str, startPos)
+		
+	importance:5 inline js bool includes(string str) this.includes(str)
+
+	// Return true if the string is a valid email address
+	importance:5 js bool isEmail() 
+		// RFC 5322 compliant email validation
+		// Check basic structure first
+		if (!this || this.length > 254) return false;
+		
+		// Split into local and domain parts
+		const atIndex = this.lastIndexOf('@');
+		if (atIndex === -1 || atIndex === 0 || atIndex === this.length - 1) return false;
+		
+		const local = this.substring(0, atIndex);
+		const domain = this.substring(atIndex + 1);
+		
+		// Validate local part (before @)
+		// - Length: 1-64 characters
+		// - Cannot start or end with a dot
+		// - No consecutive dots
+		// - Allowed characters: a-z, A-Z, 0-9, and .!#$%&'*+-/=?^_`{|}~
+		if (local.length === 0 || local.length > 64) return false;
+		if (local[0] === '.' || local[local.length - 1] === '.') return false;
+		if (local.includes('..')) return false;
+		if (!/^[a-zA-Z0-9.!#$%&'*+\-/=?^_`{|}~]+$/.test(local)) return false;
+		
+		// Validate domain part (after @)
+		// - Length: 1-253 characters
+		// - Must contain at least one dot
+		// - Cannot start or end with a dot or hyphen
+		// - No consecutive dots
+		// - Each label (part between dots) must be 1-63 characters
+		// - Labels can only contain a-z, A-Z, 0-9, and hyphens (not at start/end)
+		if (domain.length === 0 || domain.length > 253) return false;
+		if (!domain.includes('.')) return false;
+		if (domain[0] === '.' || domain[domain.length - 1] === '.') return false;
+		if (domain[0] === '-' || domain[domain.length - 1] === '-') return false;
+		if (domain.includes('..')) return false;
+		
+		const labels = domain.split('.');
+		for (let i = 0; i < labels.length; i++) {
+			const label = labels[i];
+			if (label.length === 0 || label.length > 63) return false;
+			if (label[0] === '-' || label[label.length - 1] === '-') return false;
+			if (!/^[a-zA-Z0-9-]+$/.test(label)) return false;
+		}
+		
+		// Check that TLD is at least 2 characters and alphabetic
+		const tld = labels[labels.length - 1];
+		if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+		
+		return true;
+		
+	inline js float getCharCodeAt(float index) this.charCodeAt(index)
+		
+	static inline js string fromCharCode(float charCode) String.fromCharCode(charCode)
+
+	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
+	inline js float localeCompare: string value // The string to compare to
+		this.localeCompare(value)	
+		
+	importance:5 inline js string substring: float from
+		this.substring(from)
+		
+	importance:5 inline js 
+	string substring: float from = 0
+		              float to
+		this.substring(from, to)
+		
+	js string getUntil: string value
+		                float start = 0
+		let index = this.indexOf(value, start)
+		if(index != -1) return this.substring(start, index);
+		if(start > 0)   return this.substring(start);
+		                return this
+
+	string getUntilAny: string[] values
+		for this as char, charIndex
+			for values as value
+				if char == value then return this.substring(0, charIndex)
+		return this
+		
+	js string getUntilUnescaped: string character
+		                         float start = 0
+								 string escapeCharacter = "\\"
+		for(let i=start; i<this.length; i++) {
+			if(this[i] == character && (i==0 || this[i-1] != escapeCharacter)) {
+				return this.substring(start, i); 
+			}
+		}
+		return start > 0 ? this.substring(start) : this
+		
+	js string getUntilLast: string value
+		                    float start = 0
+		let index = this.lastIndexOf(value)
+		if(index != -1) return this.substring(start, index);
+		if(start > 0)   return this.substring(start);
+		                return this
+		
+	js string getAfter: string value
+		                float start = 0
+		let index = this.indexOf(value, start)
+		if(index == -1) return ""
+		return this.substring(index+value.length)
+		
+	js string getAfterLast: string value
+		let index = this.lastIndexOf(value)
+		if(index == -1) return this
+		return this.substring(index+value.length)
+		
+	js string getBetween: string from
+		                  string to
+		                  float start = 0
+		let index = this.indexOf(from, start)
+		if(index == -1) return ""
+		let startIndex = index + from.length
+		let endIndex = this.indexOf(to, startIndex)
+		if(endIndex == -1) return this.substring(startIndex)
+		return this.substring(startIndex, endIndex)
+		
+	js string getBetweenLast: string from
+		                      string to
+		let index = this.lastIndexOf(from)
+		let startIndex = index + from.length
+		let endIndex = this.indexOf(to, startIndex)
+		if(endIndex == -1) return this.substring(startIndex)
+		return this.substring(startIndex, endIndex)
+		
+	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
+	inline js float compareTo: string value // The string to compare to
+		this.localeCompare(value)
+		
+	importance:5 inline js string trim
+		this.trim()
+		
+	importance:5 inline js string trimStart
+		this.trimStart()
+		
+	importance:5 inline js string trimEnd
+		this.trimEnd()
+		
+	js string trimQuotes
+		return this.substring(this[0] == '"' ? 1 : 0, this[this.length-1] == '"' ? this.length-1 : this.length)
+		
+	js string trimTabs
+		let lines = this.split("\n")
+		if(lines.length < 2) return this
+		let firstLine = lines[1]
+		let tabs=0;
+		while(tabs < firstLine.length-1 && firstLine[tabs] == "\t") tabs++;
+		let result = ""
+		for(let i=1; i<lines.length; i++) {
+			let line = lines[i]
+			if(line.length > tabs) {
+				result += lines[i].substring(tabs) + "\n"
+			}
+		}
+		return result
+	
+	js string getExtension
+		let dot = this.lastIndexOf(".")
+		if(dot != -1) return this.substring(dot+1)
+		else          return ""
+		
+	inline js string interleaveWith: float charCode
+		this.split("").join(String.fromCharCode(charCode))
+		
+	// Replace all occurrences of a string with another string
+	importance:5 inline js
+	string replaceAll: string occurrencesOf // Search for all occurrences of this string
+		               nocolon string with  // Replace them with this string
+		(this.replaceAll ? this.replaceAll(occurrencesOf, with) : this.replace(new RegExp(occurrencesOf.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g"), with))
+		
+	inline js string padStart: float targetLength
+		                       string padString = " "
+		this.padStart(targetLength, padString)
+		
+	inline js string padEnd: float targetLength
+		                     string padString = " "
+		this.padEnd(targetLength, padString)
+		
+	inline js string get: float index
+		this[index]
+	
+	inline js string get: float from = 0
+		                  float to
+		this.substring(from, to >= 0 ? to : to + this.length)
+		
+	inline js string get: float from = 0
+		this.substring(from)
+		
+	js string capitalize
+		return this.length > 0 ? this[0].toUpperCase() + this.substring(1) : this
+		
+	string capitalizeWords
+		let result = ""
+		let prevChar = " "
+		for this
+			if (prevChar == " " or ("0" <= prevChar <= "9")) and ("a" <= . <= "z") then	result += .toUpperCase
+			else	result += .
+			prevChar = .
+		return result
+		
+	string onlyLetters
+		let result = ""
+		for this
+			if "a" <= . <= "z" or "A" <= . <= "Z"
+				result += .
+		return result
+		
+	string onlyLettersAndPunctuation
+		let result = ""
+		for this
+			if ("a" <= . <= "z") or ("A" <= . <= "Z") or . == " " or . == "-" or . == "," or . == "." or . == "!" or . == "?" or . == ";" or . == ":"
+				result += .
+		return result
+		
+	string onlyNumbers
+		let result = ""
+		for this
+			if "0" <= . <= "9"
+				result += .
+		return result
+		
+	inline string backspace
+		(this.length ? this = this[0 to this.length-1] : this)
+		
+	bool isLetter
+		return this.toLowerCase != this.toUpperCase
+
+	// ------------------------------------------- Operators -------------------------------------------
+
+	inline string + string value
+	inline string += string value
+	
+	inline string < string value
+	inline string <= string value
+	inline string > string value
+	inline string >= string value
+
+	inline bool !
+	
+// A logical data type that can have the value true or false
+enum bool: false, true
+		
+// An array that grows and shrinks in size as needed
+js Array
+class List<T>
+	// ------------------------------------------- Add -------------------------------------------
+
+	// Add an item to the end of the list
+	// Example:
+	//     players.add {name: "Player1", score: 0}
+	importance:5 inline js 
+	void add: stored T item // The item to add
+		this.push(item)
+		
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		this.push(item, item2)
+		
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		this.push(item, item2, item3)
+		
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		                stored T item4 // The fourth item to add
+		this.push(item, item2, item3, item4)
+		
+	inline js void add: stored T item  // The item to add
+		                stored T item2 // The second item to add
+		                stored T item3 // The third item to add
+		                stored T item4 // The fourth item to add
+		                stored T item5 // The fifth item to add
+		this.push(item, item2, item3, item4, item5)
+		
+	// Add an item and remove a item from the beginning if the length exceeds a maximum value
+	inline js void add: stored T item        // The item to add
+		                float maxLength // If the list gets longer than this maximum length, remove an item from the beginning
+		this.push(item)
+		if(this.length > maxLength) this.splice(0, 1)
+			
+	// Add an list of item to the end of the list
+	inline js void add: stored T[] items // The list of items to add
+		this.push(...items)
+			
+	// Add an list of items to the end of the list
+	importance:5 inline js
+	void addRange: stored T[] items // The list of items to add
+		this.push(...items)
+			
+	// Insert an item at a given index
+	importance:5 inline js
+	void insert: stored T item    // The item to insert
+		         index = 0 // Insert the item at this index
+		this.splice(index, 0, item)
+		
+	// Insert an item at a given index
+	importance:5 inline js 
+	void insert: stored T item    // The item to insert
+		         T after
+		this.splice(this.indexOf(after)+1, 0, item)
+
+	// Add an item to the list if it isn't already in there
+	importance:5 js void ensure: stored T item // The item to add
+		if(!this.includes(item))
+			this.push(item)
+		
+	// Add each item from a list if it isn't already in there
+	importance:5 ensure: T[] items // The list of items to add
+		for items
+			if not includes .
+				add .
+
+	// ------------------------------------------- Remove -------------------------------------------
+		
+	// Remove an item from the list
+	// Example: Remove the current player instrance from the list of playeres when they died
+	//     Player
+    //         die
+    //             alivePlayers.remove this
+	importance:5 js 
+	void remove: T item // The item to remove
+		var index = this.indexOf(item);
+		if(index > -1) this.splice(index, 1);
+			
+	js void remove: T item  // The first item to remove
+		            T item2 // The second item to remove
+		var index = this.indexOf(item);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item2);
+		if(index > -1) this.splice(index, 1);
+			
+	js void remove: T item  // The first item to remove
+		            T item2 // The second item to remove
+		            T item3 // The third item to remove
+		var index = this.indexOf(item);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item2);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item3);
+		if(index > -1) this.splice(index, 1);
+			
+	js void remove: T item  // The first item to remove
+		            T item2 // The second item to remove
+		            T item3 // The third item to remove
+		            T item4 // The forth item to remove
+		var index = this.indexOf(item);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item2);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item3);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item4);
+		if(index > -1) this.splice(index, 1);
+			
+	js void remove: T item  // The first item to remove
+		            T item2 // The second item to remove
+		            T item3 // The third item to remove
+		            T item4 // The forth item to remove
+		            T item5 // The fifth item to remove
+		var index = this.indexOf(item);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item2);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item3);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item4);
+		if(index > -1) this.splice(index, 1);
+		var index = this.indexOf(item5);
+		if(index > -1) this.splice(index, 1);
+			
+	// Remove a list of items from the list
+	js void remove: T[] items // The items to remove
+		for(let item of items) {
+			var index = this.indexOf(item);
+			if(index > -1) this.splice(index, 1);
+		}
+		
+	// Remove the item at the given index from the list
+	importance:5 inline js void removeAt: float index // The index of the item to remove
+		this.splice(index, 1)
+			
+	// Remove a range of items from the list
+	// Example: Remove the first 3 players from the list
+	//     players.removeRange 0 to 3
+	importance:5 inline js
+	void removeRange: float from = 0   // Remove items starting from this index
+		              nocolon float to // Remove items up to (but not including) this index
+		this.splice(from, to-from)
+			
+	// Remove all item the meet a specific condition
+	// Example: Remove all players that have died.
+	//     Player
+    //         bool hasDied
+	//      app
+    //          gameOver
+    //              players.removeWhere.hasDied
+	importance:5 removeWhere: bool(T it) condition // The condition to check
+		for this <-
+			if condition(.)
+				removeAt i
+		
+	// Remove the first item the meet a specific condition
+	// Example: Remove the first player with a health smaller than 10.
+	//     Player
+    //         float health
+	//     app
+    //         gameOver
+    //             players.removeFirstWhere.health < 10
+	importance:5 T removeFirstWhere: bool(T it) condition // The condition to check
+		for this
+			if condition(.)
+				removeAt i
+				return .
+		return null
+	
+	// Removes all items from the list
+	importance:5 inline js void clear => this.length = 0
+	
+	// ------------------------------------------- Pop -------------------------------------------
+		
+	// Remove the last item from the list and return it
+	// Example: Print and remove "Orange" from the list
+	//     let fruits = ["Apple", "Lemon", "Orange"]
+	//     print fruits.pop
+	//     print fruits
+	// Output:
+	//     Orange
+	//     [Apple, Lemon]
+	importance:4 inline js T pop => this.pop()
+		
+	// Remove an item at a specific index from the list and return it
+	// Example: Print and remove "Lemon" from the list
+	//     let fruits = ["Apple", "Lemon", "Orange"]
+	//     print fruits.popAt 1
+	// Output:
+	//     Lemon
+	//     [Apple, Orange]
+	importance:4 inline js T popAt: float index
+		this.splice(index, 1)[0]
+		
+	// Remove a range of items from the list and return a new list containing the removed items
+	// Example: Remote "Lemon" and "Orange" from the list of fruits a create a new list with those fruits 
+	//     let fruits = ["Apple", "Pear", "Lemon", "Orange"]
+	//     let citrusFruit  = fruits.popRange 2 to 4
+	//     print citrusFruit
+	// Output:
+	//     [Apple, Pear]
+	inline js T[] popRange: float from
+		                    nocolon float to
+		this.splice(from, to-from)
+		
+	// Remove the first item that meet a given condition and return it
+	// Exmaple: Remove the first player with a health below 10
+	//     let firstActivePlayer = players.popWhere.health < 10
+	importance:2 T popWhere: bool(T it) condition // The condition for the item to meet
+		for length
+			let item = get(i)
+			if condition(item)
+				removeAt i
+				return item
+		return null
+	
+	// Remove the first item from the list and return it
+	// Example: Print and remove "Apple" from the list
+	//     let fruits = ["Apple", "Lemon", "Orange"]
+	//     print fruits.popFirst
+	//     print fruits
+	// Output:
+	//     Apple
+	//     [Lemon, Orange]
+	importance:5 inline js T popFirst
+		this.shift()
+
+	// ------------------------------------------- Length -------------------------------------------
+
+	// Gets the number of items in the list
+	importance:5 float length
+
+	// Truncated or expands the list the given number of items
+	importance:5 js float setLength: float length // The new length of the list
+		this.length = length
+
+	// -------------------------------------------- Iterate -------------------------------------------
+				
+	// Do something for each item in a list
+	inline js void each -> inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       float i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let i=0, _subject=this, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	inline js void each <- inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       float i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let _subject=this, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+		
+	// Do something for each item in a list. You can add or remove items inside the loop.
+	inline js void eachChangable -> inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       float i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let i=0, _subject=[...this], _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	inline js void eachChangable <- inline void(
+		                       T it,      // The current item of the list we are iterating over
+		                       float i      // The index of the current item of the list we are iterating over
+		                   ) do           // Do this for each item in a list
+		for(let _subject=[...this], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+			
+	js void eachDistinct: TKey(T it) selector
+		                  void(
+		                      TKey it,
+		                      T[] items,
+		                      float i
+		                  ) do
+		if(this.length > 0) {
+			let _subject = this
+			let keys = _subject.map(selector);
+			let distinctKeys = new Set(keys).values();
+			let index = 0
+			for(let key of distinctKeys) {
+				let items = []
+				for(let i=0; i<_subject.length; ++i) {
+					if(keys[i] == key) items.push(_subject[i])
+				}
+				do(key, items, index++)
+			}
+		}
+
+	// ------------------------------------------- Includes -------------------------------------------
+
+	// Returns whether the list includes the given item
+	importance:5 inline js bool includes: ensureSingleExecution T item // Check if the list includes this item
+		(typeof(item) == "object" && item._equal ? this.some(a => item._equal(a)) : this.includes(item))
+		
+	importance:3 bool includesAny: T[] list
+		for list
+			if this includes .
+				return true
+		return false
+		
+	importance:3 bool includesNone: T[] list
+		for list
+			if this includes .
+				return false
+		return true
+
+	// ------------------------------------------- SetList -------------------------------------------
+					
+	inline js void setList: T[] list
+		this.splice(0, this.length, ...list)
+		
+	void setFilteredList: T[] list
+		                  bool(T it) condition
+		clear
+		for list
+			if condition(.)
+				add .
+		
+	void setFilteredList: T[] list
+		                  bool(T it) condition
+		                  float maxCount
+		clear
+		float count = 0
+		for list
+			if condition .
+				add .
+				if ++count >= maxCount then break
+			
+	// ------------------------------------------- Clone or Convert -------------------------------------------
+
+	// Create a shallow clone of the list
+	inline js T[] clone() [...this]
+	
+	// Returns true if the list is not null and not empty	
+	inline js bool toBool => (this != null && this.length != 0) 
+
+	// Create a string representation of the list
+	js string toString()
+		let result = "";
+		for(let item of this) {
+			if(result) result += ", ";
+			result += item;
+		}
+		return "["+result+"]"
+
+	inline js implicit ImmutableList<T> toImmutableList() this
+
+	// ------------------------------------------- Random -------------------------------------------
+		
+	// Gets a random item from the list
+	importance:5 T random()
+		let randomInteger = math.randomInteger(length)
+		return get(randomInteger)
+		
+	importance:3 T randomWhere: bool(T it) condition
+		let filteredList = this.filter(condition)
+		float index = math.randomInteger(filteredList.length)
+		T item = filteredList[index]
+		return item
+	
+	// Remove a random item from the list and return it
+	importance:3 T popRandom()
+		if length == 0 then return null
+		float index = math.randomInteger(length)
+		T item = get(index)
+		this.removeAt(index)
+		return item
+		
+	importance:3 T popRandomWhere: bool(T it) condition
+		let filteredList = this.filter(condition)
+		float index = math.randomInteger(filteredList.length)
+		T item = filteredList[index]
+		this.remove(item)
+		return item
+
+	// ------------------------------------------- Next/Prev -------------------------------------------
+		
+	T next: T currentItem
+		float index = indexOf(currentItem)
+		return this.get((index+1) mod length)
+		
+	T previous: T currentItem
+		float index = indexOf(currentItem)
+		return this.get((index-1) mod length)
+		
+	T next: T currentItem
+		    label bool(T item) filter
+		float baseIndex = indexOf(currentItem)
+		for this.length
+			let item = this.get((baseIndex+i+1) mod length)
+			if(filter(item)) return item
+		return null
+		
+	T prev: T currentItem
+		float index = indexOf(currentItem)
+		return index != -1 ? this.get((index-1) mod length) : this.get(length-1)
+
+	// ------------------------------------------- Transform -------------------------------------------
+			
+	// Reverses the order of the items of the list in place
+	importance:4 inline js T[] reverse() this.reverse()
+				
+	// Return a list with all unique items of the original list
+	importance:4 inline js T[] distinct() [...new Set(this)]
+
+	// Get the selected field or expression for each item and flattens the result
+	inline js TValue[] flatten: TValue[](T it) selector
+		this.flatMap(selector)
+
+	// -------------------------------------------- Move items -------------------------------------------
+	
+	// Moves an item to the end of the list
+	importance:3 js void moveToBack: T item // The item to move to the end of the list
+		var index = this.indexOf(item);
+		if(index != -1) {
+			let endIndex = this.length-1;
+			for(let i=index; i<endIndex; ++i) {
+				this[i] = this[i+1]
+			}
+			this[endIndex] = item
+		}
+		
+	// Moves an item to the end of the list
+	importance:3 js void moveToFront: T item // The item to move to the end of the list
+		var index = this.indexOf(item);
+		if(index != -1) {
+			for(let i=index; i>0; --i) {
+				this[i] = this[i-1]
+			}
+			this[0] = item
+		}
+
+	// ------------------------------------------- Sort -------------------------------------------
+		
+	// Sort the list
+	inline js T[] sort
+		this.sort((a,b) => a - b)
+	
+	inline js T[] sort: float(T a, T b) comparer // A function returning 1 if "a" is larger, -1 if "b" is larger, 0 if they are equal
+		this.sort(comparer)
+	
+	// Sort the list by a given expression
+	// Example:
+	//    let healthyPlayers = (players.filter.health > 0).sortBy.health
+	importance:5
+	T[] sortBy: float(T it) expression // First order by this expression
+		return this.sort(expression(a) - expression(b))
+
+	// Sort the list by a given expression in descending order
+	// Example:
+	//    let bestPlayers = (players.filter.isAlive).sortByDescending.playerScore
+	importance:5
+	T[] sortByDescending: float(T it) expression // First order by this expression
+		return this.sort(expression(b) - expression(a))
+
+	// Sort by string
+	T[] sortBy: string(T it) expression // First order by this expression
+		return this.sort(expression(a) localeCompare expression(b))
+		
+	// Sort by string in descending order
+	T[] sortByDescending: string(T it) expression // First order by this expression
+		return this.sort(expression(b) localeCompare expression(a))
+		
+	// Sort by float then by float
+	T[] sortBy: float(T it) expression           // First order by this expression
+		         label nocolon float(T it) thenBy // Then order by this expression
+		return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
+		
+	// Sort by float then by string
+	T[] sortBy: float(T it) expression            // First order by this expression
+		        label nocolon string(T it) thenBy // Then order by this expression
+		return this.sort(expression(a) - expression(b) || thenBy(a) localeCompare thenBy(b))
+		
+	// Sort by string then by float
+	T[] sortBy: string(T it) expression          // First order by this expression
+		        label nocolon float(T it) thenBy // Then order by this expression
+		return this.sort(expression(a) localeCompare expression(b) || thenBy(a) - thenBy(b))
+
+	// ------------------------------------------- Query -------------------------------------------
+				
+	// Returns true if the given condition is true for any item in the list
+	// Example: Check if there are any active enemies
+	//     if enemies.any.isActive
+	importance:4 inline js 
+	bool any: bool(T it) predicate // The condition to check
+		this.some(predicate)
+		
+	// Returns true if the given condition is true for all items in the list
+	// Example: Check if all players are ready
+	//     if players.all.isReady
+	importance:4 inline js 
+	bool all: bool(T it) predicate // The condition to check
+		this.every(predicate)
+		
+	// Returns true if the given condition is false for all items in the list
+	// Example: Check if no player has a health of 0
+	//     if players.none.health == 0
+	importance:3 inline js 
+	bool none: bool(T it) predicate // The condition to check
+		!this.some(predicate)
+		
+	// Return a list that includes the selected field or expression for each item
+	// Example: Get a list of all player names
+	//     let playerNames = players.map.playerName
+	importance:4 inline js 
+	TValue[] map: TValue(
+		                 T it,  // The current item of the list
+		                 float i  // The index of the current item of the list
+		             ) selector // Selects a field or expression for each item
+		this.map(selector)
+
+	// Return a list of all items that meet a specific condition
+	// Example: Get all players with more than 0 health, ordered by their score
+	//     let healthyPlayers = (players.filter.health > 0).sortByDescending.playerScore
+	// Example: Get all active enemies in a random order
+	//    let activeEnemies = (enemies.filter.isActive).shuffle
+	importance:4 inline js 
+	T[] filter: bool(T it) condition // The condition to check
+		this.filter(condition)
+
+	// Return a list containing the first N items from the list
+	// Example: Get the top 3 players by score
+	//     let youngestPlayers = (players.sortBy.age).take 3
+	importance:4 inline js T[] take: float count
+		this.slice(0, count)
+		
+	// ------------------------------------------- Find -------------------------------------------
+		
+	// Find the first item thats meets a condition
+	// Example: Find the name of the player with a specific id
+	//     app
+	//         string getName: float id
+	//             return (players.find.id == id)?.playerName
+	importance:5 inline js T find: bool(T it) condition // The condition to check
+		this.find(condition)
+		
+	inline js T find: backwards bool(T it) condition // The condition to check
+		this.findLast(condition)
+		
+	inline js T findLast: bool(T it) condition // The condition to check
+		this.findLast(condition)
+		
+	inline js T find: bool(T it) condition // The condition to check
+		              float startIndex      // Start searching at this index
+		Array.findStartingAtIndex(this, condition, startIndex)
+		
+	inline js T find: backwards bool(T it) condition // The condition to check
+		              float startIndex                // Start searching at this index
+		Array.findLastStartingAtIndex(this, condition, startIndex)
+		
+	inline js T findLast: bool(T it) condition // The condition to check
+		                  float startIndex                // Start searching at this index
+		Array.findLastStartingAtIndex(this, condition, startIndex)
+		
+	private static T findStartingAtIndex: T[] list            // The list to search
+		                                  bool(T it) condition // The condition to check
+		                                  float startIndex = 0  // Start searching at this index
+		for startIndex to list.length
+			let it = list[.]
+			if condition(it)
+				return it
+		return null
+	
+	private static T findLastStartingAtIndex: T[] list            // The list to search
+		                                      bool(T it) condition // The condition to check
+		                                      float startIndex = 0  // Start searching at this index
+		for startIndex+1 backwards
+			let it = list[.]
+			if condition(it)
+				return it
+		return null
+	
+	// Execute a selector for each item and if it returns a value that isn't null, return this value
+	// Example: Find object that is nested within another object
+	//     transport.routes.findIn.trips.find.id == tripId
+	TValue findIn: TValue(T it) selector
+		for this
+			let value = selector(it)
+			if value != null then return value
+		return null
+
+	T findWithinRangeOrClosest: float(T it) selector
+		                        float from = -float.infinity
+		                        float to = float.infinity
+		float closestDistance = float.infinity
+		float closestIndex = -1
+		T closestItem = null
+		for this as item
+			let value = selector(.)
+			float distance
+			// if value > to then distance = value - to; else
+			// if value < from then distance = from - value; else
+			// 	            this.removeAt(i); return .
+
+			switch value
+				> to	then distance = value - to
+				< from	then distance = from - value
+				default	then this.removeAt(i); return item
+				
+			if distance < closestDistance
+				closestDistance = distance
+				closestIndex = i
+				closestItem = .
+		
+		if(closestIndex != -1) this.removeAt(closestIndex)
+		return closestItem
+
+	// ------------------------------------------- Index Of -------------------------------------------
+		
+	// The index of an item in the list
+	importance:5 inline js
+	float indexOf: ensureSingleExecution T item // Get the index of this item
+		(typeof(item) == "object" && item?._equal ? this.findIndex(a => item._equal(a)) : this.indexOf(item))
+		
+	// Find the index of the item the meets the given condition
+	importance:3 float indexWhere: bool(T it) condition	// The condition to check
+		                         float startIndex = 0 	// Start searching at this index
+								 float ifNotFound = -1	// The value to return if no item is found
+		for startIndex to length
+			if condition(this[.])
+				return i
+		return ifNotFound
+		
+	// Find the index of the item the meets the given condition
+	float indexWhere: <- bool(T it) condition // The condition to check
+		            float startIndex = 0     // Start searching at this index
+		for length - startIndex <-
+			if condition(this[.])
+				return i
+		return -1
+		
+	// Searching backwards, find the last index of the item the meets the given condition
+	float lastIndexWhere: bool(T it) condition // The condition to check
+		                float startIndex = 0  // Start searching at this index
+		for length - startIndex <-
+			if condition(this[.])
+				return i
+		return -1
+		
+	T[] except: T item 
+		T[] result
+		for this 
+			if . != item
+				result.add .
+		return result
+					
+	importance:2 float total: float(T it) selector
+		float sum = 0
+		for this
+			sum += selector(.)
+		return sum
+		
+	float total: float(T it) selector
+		       label bool(T it) filter
+		float sum = 0
+		for this
+			if filter(.) then sum += selector(.)
+		return sum
+		
+	js float sum
+		let sum = 0;
+		for(let i=0; i<this.length; i++)
+			sum += this[i];
+		return sum;
+	
+	js float average
+		return this.length > 0 ? this.sum() / this.length : 0
+		
+	string joinToString: string(T it) selector
+		                 string separator = ", "
+		let result = ""
+		for this
+			if result then result += separator
+			result += selector(.)
+		return result
+		
+	importance:5 shuffle
+		for 1 to length backwards
+			var j = math.floor(math.randomFloat * (i + 1))
+			var temp = this.get(i)
+			this.set(i, this.get(j))
+			this.set(j, temp)
+		return this
+		
+	shuffled => this.clone.shuffle
+		
+	private static transient T[] temporaryCopy = null
+		
+	js T percentile: float value
+		if(this.length == 0) return 0
+		if(this.length == 1) return this[0]
+		if(!Array.temporaryCopy) Array.temporaryCopy = []
+		const len = Array.temporaryCopy.length = this.length
+		for(let i=0; i<len; ++i) Array.temporaryCopy[i] = this[i] 
+		Array.temporaryCopy.sort((a,b) => a - b)
+		return Array.temporaryCopy[Math.round((Array.temporaryCopy.length-1) * value / 100)]
+		
+	min: float(T it) selector 
+		 float threshold = float.maxValue
+		 float default = 0
+		float resultValue = threshold
+		for this
+			let value = selector(.)
+			if value < resultValue then resultValue = value
+		return resultValue != threshold ? resultValue : default
+		
+	min: float(T it) selector 
+		 float threshold = float.maxValue
+		 float default = 0
+		 label bool(T it) filter
+		float resultValue = threshold
+		for this
+			if filter(.)
+				let value = selector(.)
+				if value < resultValue then resultValue = value
+		return resultValue != threshold ? resultValue : default
+		
+	max: float(T it) selector
+		 float threshold = float.minValue
+		 float default = 0
+		float resultValue = threshold
+		for this
+			let value = selector(.)
+			if value > resultValue then resultValue = value
+		return resultValue != threshold ? resultValue : default
+		
+	maxUnique: float(T it) selector
+		       float threshold = float.minValue
+		       float default = 0
+		float resultValue = threshold
+		for this
+			let value = selector(.)
+			if value > resultValue then  resultValue = value; else
+			if value == resultValue then resultValue = threshold
+		return resultValue != threshold ? resultValue : default
+		
+	minIndex: float(T it) selector
+		      float startIndex = 0
+		      float threshold = float.maxValue
+		float resultValue = threshold
+		float index = -1
+		for startIndex to length
+			let value = selector(this[.])
+			if value < resultValue
+				resultValue = value
+				index = i
+		return index
+		
+	maxIndex: float(T it) selector
+		      float startIndex = 0
+		      float threshold = float.minValue
+		float resultValue = threshold
+		float index = -1
+		for startIndex to length
+			let value = selector(this[.])
+			if value > resultValue
+				resultValue = value
+				index = i
+		return index
+		
+	withMin: float(T it) selector
+		     float threshold = float.maxValue
+		float resultValue = threshold
+		T resultItem
+		for this
+			let value = selector(.)
+			if value < resultValue
+				resultValue = value
+				resultItem = .
+		return resultValue != threshold ? resultItem : null
+		
+	withMax: float(T it) selector
+		     float threshold = float.minValue
+		float resultValue = threshold
+		T resultItem
+		for this
+			let value = selector(.)
+			if value > resultValue
+				resultValue = value
+				resultItem = .
+		return resultValue != threshold ? resultItem : null
+		
+	popMax: float(T it) selector
+		    float threshold = float.minValue
+		float resultValue = threshold
+		T resultItem = null
+		float resultIndex = -1
+		for this
+			let value = selector(.)
+			if value > resultValue
+				resultValue = value
+				resultItem = .
+				resultIndex = i
+				
+		if resultIndex != -1 then removeAt resultIndex
+		return resultItem
+		
+	withMax: float(T it) selector
+		     float threshold = float.minValue
+		     label bool(T it) filter
+		float resultValue = threshold
+		T resultItem
+		for this
+			if filter(.)
+				let value = selector(.)
+				if value > resultValue
+					resultValue = value
+					resultItem = .
+		return resultValue != threshold ? resultItem : null
+		
+	countNot: bool(T it) predicate
+		float count = 0
+		for this
+			if !predicate(.)
+				count++
+		return count
+		
+	rotate
+		insert pop
+		
+	rotate: float count
+		for count
+			insert pop
+		
+	js T[] intersectWith: T[] other
+		const a = this || []
+		const b = other || []
+		const result = [];
+		const dictionary = {};
+		for (let i = 0, length = b.length; i < length; ++i) {
+			dictionary[b[i]] = true;
+		}
+		for (let i = 0, length = a.length; i < length; ++i) {
+			if (a[i] in dictionary) result.push(a[i]);
+		}
+		return result;
+		
+	// The first item of the list
+	inline js T first() this[0]
+	
+	// The second item of the list
+	inline js T second() this[1]
+	
+	// The last item of the list
+	inline js T last() this[this.length-1]
+		
+	// ------------------------------------------- Get/Set -------------------------------------------
+
+	// Get an item from the list
+	inline js T get: float index // The index of the item to get
+		this[Math.floor(index)]
+		
+	// Set the item at a given index
+	inline js T set: float index // The index of the item to set
+		             T value   // The new value to set
+		this[Math.floor(index)] = value
+		
+	// Add a value to an item of the list
+	inline js T addToItem: float index // The index of the item to change
+		                   T value   // The value to add to the item
+		this[index] += value
+		
+	// Subtract a value from an item of the list
+	inline js T subtractFromItem: float index // The index of the item to change
+		                          T value   // The value to subtract from the item
+		this[index] -= value
+		
+	// Multiply an item of the list by a value
+	inline js T multiplyItem: float index // The index of the item to change
+		                      T value   // The value to multiply the item by
+		this[index] *= value
+		
+	// Divide an item of the list by a value
+	inline js T divideItem: float index // The index of the item to change
+		                    T value   // The value to divide the item by
+		this[index] /= value
+		
+	// Add 1 to item of the list
+	inline js T incrementItem: float index // The index of the item to change
+		this[index]++
+	
+	// Subtract 1 from an item of the list
+	inline js T decrementItem: float index // The index of the item to change
+		this[index]--
+
+	// Adds the item if it is not in the list, otherwise removes it
+	js void toggle: T item // The item to add
+		let index = this.indexOf(item)
+		if(index != -1) this.splice(index, 1)
+		else            this.push(item)
+		
+js Array
+immutable ImmutableList<T>
+	inline js T get: implicit float index // The index of the item to get
+		this[index]
+
+	// Gets the number of items in the list
+	importance:5 inline js float length() this.length
+
+	inline js List<T> toList() [...this]
+	
+		
+// A hashtable that maps keys to values
+js Map
+class Dictionary<TKey, TValue>
+	// Get the item assosiated with the given key
+	inline js TValue get: TKey key  // The key of the item to get from the dictionary
+		this.get(key)
+	
+	// Set the item for the given key
+	inline js void set: TKey key     // The key of the item to add to the dictionary
+		                TValue value // The item to add to the dictionary
+		this.set(key, value)
+		
+	private js TValue setAndReturn: TKey key     // The key of the item to add to the dictionary
+		                            TValue value // The item to add to the dictionary
+		this.set(key, value);
+		return value;
+		
+	inline js TValue getOrSet: TKey key
+		                       TValue value
+		(this.get(key) || this.setAndReturn(key, value))
+		
+	// Add a value to an item of the list
+	js T addToItem: TKey key	// The key of the item to change
+		            TValue value	// The value to add to the item
+		let item = this.get(key)
+		if(item) this.set(key, item + value)
+		else     this.set(key, value)
+		
+	// Subtract a value from an item of the list
+	js T subtractFromItem: TKey key	// The key of the item to change
+		                   TValue value	// The value to subtract from the item
+		let item = this.get(key)
+		if(item) this.set(key, item - value)
+		else     this.set(key, -value)
+		
+	// Add 1 to item of the dictionary
+	inline js T incrementItem: TKey key
+		this.set(key, this.get(key)+1)
+		
+	// Subtract 1 to item of the dictionary
+	inline js T decrementItem: TKey key
+		this.set(key, this.get(key)-1)
+		
+	// Remove the item assosiated with the given key
+	importance:5 inline js void remove: TKey key  // The key of the item to remove from the dictionary
+		this.delete(key)
+		
+	// Does the dictionary have an item with a specific key?
+	importance:5 inline js bool has: TKey key // The key of the item to check
+		this.has(key)
+		
+	// Remove all items from the dictionary
+	importance:5 inline js void clear
+		this.clear()
+		
+	importance:5 inline js float length() this.size
+		
+	importance:3 js void removeWhere: bool(TValue it) condition // The condition to check
+		for(var pair of this) {
+			if(condition(pair[1])) {
+				this.delete(pair[0]);
+			}
+		}
+
+	importance:4 inline js TKey[] keys() [...this.keys()]
+	importance:4 inline js TValue[] values() [...this.values()]
+
+// A data container that stores unique values of a given type
+js Set
+class Set<T>
+	inline js Set() new Set()
+	inline js Set(T[] list) new Set(list)
+	
+	// Return a boolean indicating whether an element with the specified value exists in this set
+	inline js bool get: T value // The value to check
+		this.has(value)
+	
+	// Add a new element to this set, if there isn't already an element with the same value
+	importance:5 inline js void add: T value // The value to add
+		this.add(value)
+
+	// Remove a value from the set
+	importance:5 inline js void remove: T value // The value to remove
+		this.delete(value)
+		
+	// Is a certain value in the set?
+	importance:5 inline js bool has: T value // The value to check
+		this.has(value)
+	inline js T[] toList() [...this]
+		
+	// Remove all items from the set
+	importance:5 inline js void clear
+		this.clear()
+		
+	// Return the number of items in the set
+	importance:5 inline js float length() this.size
+
+// Specifies that a function doesn't return a value
+immutable struct void
+	
+// Denotes a type that can be null
+struct Nullable<T>
+	
+// A dynamic type. Useful for representing json and yaml data.
+interface dynamic
+
+// The base class for all classes
+interface object
+	static inline js dynamic undefined() undefined
+	inline bool !
+	inline js bool toBool() (this != null)
+
+	static inline js bool isEqualAndSameType(dynamic a, dynamic b) (a === b)
+	static inline js bool isUndefinedOrEmptyString(dynamic value) (value === "" || value === null || value === undefined)
+	static inline js string typeof(dynamic value) typeof(value)
+	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
+	static inline js void deleteField(dynamic object, string field) delete object[field]
+
+skipInit global unit Platform
+	string libUrl
+	global inline js async dynamic import: string file
+		import((Platform.libUrl || _basePath || location.origin+"/")+file)
+		
+class Reference<T>
+	dynamic container
+	string key
+	assign: T value
+		container[key] = value
+	implicit T toT
+		return container[key]
+	T value
+		return container[key]
+	inline bool toBool
+		(this != null and this.container and this.container[this.key])
+	inline bool ! 
+		(this == null or this.container == null or !this.container[this.key])
+
+struct Type<T>
+	inline js string toString() this
+		
+// This struct is automatically filled with the source code location
+internal transient immutable SourceCodeLocation
+	string file
+	float start
+	float end
+	SourceCodeLocation left
+	SourceCodeLocation right
+	
+	inline js bool toBool() (this != null)
+	inline js string toString() (this.file+":"+this.start)
+			
+	SourceCodeLocation find: string file, float pos
+		if this.file and this.file == file and pos >= this.start and pos <= this.end
+			return this
+		if left != null
+			let result = left.find file, pos
+			if result != null then return result
+		if right != null
+			let result = right.find file, pos
+			if result != null then return result
+		return null
+			
+	SourceCodeLocation find: SourceCodeLocation location
+		if file == location.file and start == location.start and end == location.end
+			return this
+		if left != null
+			let result = left.find location
+			if result != null then return result
+		if right != null
+			let result = right.find location
+			if result != null then return result
+		return null
+		
+	SourceCodeLocation leaf
+		if file then return this
+		if right
+			let result = right.leaf
+			if result then return result
+		if left
+			let result = left.leaf
+			if result then return result
+		return null
+		
+js Error
+immutable Error
+	string message
+	string stack
+	implicit inline js string toString => this.stack
+
+enum lowercase string PrintType
+	Action	// Use for actions performed by a player
+	Reaction	// Use for consequences of an action. Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
+	NoAction	// Use when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
+	Headline	// Use when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
+
+	Debug	// Use for temporary debug messages
+	Info	// Use for informational messages
+	Error	// Use for errors
+	Warning	// Use for warnings
+	
+	Touch
+	Key
+	Gamepad
+	
+// A collection of basic system functions
+global transient priority unit System
+	// Executes code depending on whether a given condition is true or false
+	global inline js void if: implicit bool condition // The condition to check
+		                      inline void() then      // Do this if the condition is true
+		if(condition) then()
+			
+	// Executes code depending on whether a given condition is true or false
+	global inline js void if: implicit bool condition          // The condition to check
+		                      inline void() then               // Do this if the condition is true
+		                      inline label nocolon void() else // Do this if the condition is false
+		if(condition) then() @else else()
+			
+	global inline js T if: implicit bool condition
+		                   T then
+		                   label nocolon T else
+		(condition ? then : else)
+			
+	// Executes code as long as a given condition is true
+	global inline js void while: implicit bool condition // The condition to check
+		                         inline void() do        // Do this while to condition is true
+		while(condition) do()
+			
+	global inline js void loop: inline void() do
+		for(;;) do()
+	
+	global inline js void do: inline void() do            // Do this while to condition is true
+		                      nocolon implicit bool while // The condition to check
+		@do do() 
+		@while(while)
+		
+	global inline js Promise<T> promise: void(void(T it) resolve, void(Error error) reject) resolve
+		new Promise(resolve)
+		
+	inline js void doNotSerialize: dynamic object
+		_constCache.push(object)
+	
+	// Do something a given number of times or for each item in a list
+	global inline js void for: T[] subject    // The list to iterate over
+		                       -> inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           float i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	// Do something a given number of times or for each item in a list
+	global inline js void for: T[] subject    // The list to iterate over
+		                       <- inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           float i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let _subject=subject, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+		
+	// Do something a given number of times or for each item in a list
+	global inline js void for: TValue[TKey] subject // The list to iterate over
+		                       -> inline void(
+		                           TValue it,       // The current item of the dictionary we are iterating over with the for-loop
+		                           TKey key         // The current key of the dictionary we are iterating over with the for-loop
+		                       ) do                 // Do this for each item in a list
+		for(let _pair of subject) do(_pair[1], _pair[0])
+		
+	// Do something for each item in a list. You can add or remove items inside the loop.
+	global inline js void forChangeable: T[] subject // The list to iterate over
+		                       -> inline void(
+		                           T it,             // The current item of the list we are iterating over with the for-loop
+		                           float i             // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do                  // Do this for each item in a list
+		for(let i=0, _subject=[...subject], _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		
+	// Do something for each item in a list. You can add or remove items inside the loop.
+	global inline js void forChangeable: T[] subject // The list to iterate over
+		                       <- inline void(
+		                           T it,             // The current item of the list we are iterating over with the for-loop
+		                           float i             // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do                  // Do this for each item in a list
+		for(let _subject=[...subject], i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+		
+	global inline js void for: float from       // The integer to start iterating from (for exmaple "for 2 to 5: print ." prints 2, 3, 4)
+		                       -> inline void(
+		                           float i      // The iteration variable of the for-loop
+		                       ) do           // Do this for each value in the given range
+		                       label float to   // The exclusive upper bound to iterate towards (for exmaple "for 3: print ." prints 0, 1, 2)
+		for(let i=from; i<to; ++i) do(i)
+		
+	global inline js void for: float from       // The integer to start iterating from
+		                       <- inline void(
+		                           float i      // The iteration variable of the for-loop
+		                       ) do           // Do this for each value in the given range
+		                       label float to   // The exclusive upper bound to iterate towards
+		for(let i=to-1; i>=from; --i) do(i)
+		
+	global inline js void for: float to         // The exclusive upper bound to iterate towards
+		                       -> inline void(
+		                           float i      // The iteration variable of the for-loop
+		                       ) do           // Do this the given number of times
+		for(let i=0; i<to; ++i) do(i)
+		
+	global inline js void for: float to         // The exclusive upper bound to iterate towards
+		                       -> inline void(
+		                           float i      // The iteration variable of the for-loop
+		                       ) do           // Do this the given number of times
+							   label nocolon float step
+		for(let i=0; i<to; i+=step) do(i)
+		
+	global inline js void for: float to         // The exclusive upper bound to iterate towards
+		                       <- inline void(
+		                           float i      // The iteration variable of the for-loop
+		                       ) do           // Do this the given number of times
+		for(let i=to-1; i>=0; --i) do(i)
+		
+	// [a,b,c] -> (a, next:b), (b, next:c), (c, next:null)
+	global inline js void forLookAhead: T[] subject        // The list to iterate over
+		                                    -> inline void(
+		                                        T it,      // The current item of the list we are iterating over with forLookAhead
+		                                        T next,    // The next item of the list we are iterating over with forLookAhead
+		                                        float i      // The index of the current item of the list we are iterating over with forLookAhead
+		                                    ) do           // Do this for each consecutive pair in a list
+		for(let _subject=subject, _len=_subject.length, i=0; i<_len; ++i) do(_subject[i], i+1<_len ? _subject[i+1] : null, i)
+		
+	global inline js void forLookAhead: T[] subject        // The list to iterate over
+		                                    <- inline void(
+		                                        T it,      // The current item of the list we are iterating over with forLookAhead
+		                                        T next,    // The next item of the list we are iterating over with forLookAhead
+		                                        float i      // The index of the current item of the list we are iterating over with forLookAhead
+		                                    ) do           // Do this for each consecutive pair in a list
+		for(let _subject=subject, i=_subject.length-1; i>=0; --i) do(_subject[i], i>0 ? _subject[i-1] : null, i)
+		
+	// [a,b,c] -> (prev:null, a), (prev:a, b), (prev:b, c)
+	global inline js void forLookBack: T[] subject         // The list to iterate over
+		                                    -> inline void(
+		                                        T it,      // The current item of the list we are iterating over with forLookBack
+		                                        T prev,    // The previous item of the list we are iterating over with forLookBack
+		                                        float i      // The index of the current item of the list we are iterating over with forLookBack
+		                                    ) do           // Do this for each consecutive pair in a list
+		for(let _subject=subject, i=0, _len=_subject.length; i<_len; ++i) do(_subject[i], i>0 ? _subject[i-1] : null, i)
+		
+	global inline js void forLookBack: T[] subject         // The list to iterate over
+		                                    <- inline void(
+		                                        T it,      // The current item of the list we are iterating over with forLookBack
+		                                        T prev,    // The previous item of the list we are iterating over with forLookBack
+		                                        float i      // The index of the current item of the list we are iterating over with forLookBack
+		                                    ) do           // Do this for each consecutive pair in a list
+		for(let _subject=subject, _len=subject.length, i=_len-1; i>=0; --i) do(_subject[i], i+1<_len ? _subject[i+1] : null, i)
+		
+	// [a,b,c] -> (prev:null, a, next:b), (prev:a, b, next:c), (prev:b, c, next:null)
+	global inline js void forLookAheadAndBack: T[] subject // The list to iterate over
+		                              -> inline void(
+		                                  T it,            // The current item of the list we are iterating over with forLookAheadAndBack
+		                                  T prev,          // The previous item of the list we are iterating over with forLookAheadAndBack
+		                                  T next,          // The next item of the list we are iterating over with forLookAheadAndBack
+		                                  float i            // The index of the current item of the list we are iterating over with forLookAheadAndBack
+		                              ) do                 // Do this for each triple in a list
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) do(_subject[i], i>0 ? _subject[i-1] : null, i+1<_len ? _subject[i+1] : null, i)
+		
+	global inline js void forLookAheadAndBack: T[] subject // The list to iterate over
+		                              <- inline void(
+		                                  T it,            // The current item of the list we are iterating over with forLookAheadAndBack
+		                                  T prev,          // The previous item of the list we are iterating over with forLookAheadAndBack
+		                                  T next,          // The next item of the list we are iterating over with forLookAheadAndBack
+		                                  float i            // The index of the current item of the list we are iterating over with forLookAheadAndBack
+		                              ) do                 // Do this for each triple in a list
+		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) do(_subject[i], i+1<_len ? _subject[i+1] : null, i>0 ? _subject[i-1] : null, i)
+		
+	// [a,b,c] -> (a, next:b), (b, next:c)
+	global inline js void forPairs: T[] subject  // The list to iterate over
+		                            -> inline void(
+		                                T it,    // The current item of the list we are iterating over with forPairs
+		                                T next,  // The next item of the list we are iterating over with forPairs
+		                                float i    // The index of the current item of the list we are iterating over with forPairs
+		                            ) do         // Do this for each consecutive pair in a list
+		for(let i=0, _subject=subject, _len=_subject.length-1; i<_len; ++i) do(_subject[i], _subject[i+1], i)
+		
+	global inline js void forPairs: T[] subject  // The list to iterate over
+		                            <- inline void(
+		                                T it,    // The current item of the list we are iterating over with forPairs
+		                                T next,  // The next item of the list we are iterating over with forPairs
+		                                float i    // The index of the current item of the list we are iterating over with forPairs
+		                            ) do         // Do this for each consecutive pair in a list
+		for(let _subject=subject, i=_subject.length-1; i>0; --i) do(_subject[i], _subject[i-1], i)
+		
+	// [a,b,c] -> (a, next:b), (b, next:c), (c, next:a) 
+	global inline js void forWrappingPairs: T[] subject   // The list to iterate over
+		                                   -> inline void(
+		                                       T it,      // The current item of the list we are iterating over with forWrappingPairs
+		                                       T next,    // The next item of the list we are iterating over with forWrappingPairs
+		                                       float i      // The index of the current item of the list we are iterating over with forWrappingPairs
+		                                   ) do           // Do this for each consecutive pair in a list
+		for(let _subject=subject, i=0, _len=_subject.length; i<_len; ++i) do(_subject[i], _subject[(i+1)%_len], i)
+		
+	global inline js void forWrappingPairs: T[] subject   // The list to iterate over
+		                                   <- inline void(
+		                                       T it,      // The current item of the list we are iterating over with forWrappingPairs
+		                                       T next,    // The next item of the list we are iterating over with forWrappingPairs
+		                                       float i      // The index of the current item of the list we are iterating over with forWrappingPairs
+		                                   ) do           // Do this for each consecutive pair in a list
+		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) do(_subject[i], _subject[(((i-1)%_len)+_len)%_len], i)
+		
+	// [a,b,c] -> (prev:a, b, next:c)
+	global inline js void forTriples: T[] subject  // The list to iterate over
+		                              -> inline void(
+		                                  T it,    // The current item of the list we are iterating over with forTriple
+		                                  T prev,  // The previous item of the list we are iterating over with forTriple
+		                                  T next,  // The next item of the list we are iterating over with forTriple
+		                                  float i    // The index of the current item of the list we are iterating over with forTriple
+		                              ) do         // Do this for each triple in a list
+		for(let i=1, _subject=subject, _len=_subject.length-1; i<_len; ++i) do(_subject[i], _subject[i-1], _subject[i+1], i)
+		
+	global inline js void forTriples: T[] subject  // The list to iterate over
+		                              <- inline void(
+		                                  T it,    // The current item of the list we are iterating over with forTriple
+		                                  T prev,  // The previous item of the list we are iterating over with forTriple
+		                                  T next,  // The next item of the list we are iterating over with forTriple
+		                                  float i    // The index of the current item of the list we are iterating over with forTriple
+		                              ) do         // Do this for each triple in a list
+		for(let _subject=subject, i=_subject.length-2; i>=1; --i) do(_subject[i], _subject[i+1], _subject[i-1], i)
+		
+	// [a,b,c] -> (prev:c, a, next:b), (prev:a, b, next:c), (prev:b, c, next:a)
+	global inline js void forWrappingTriples: T[] subject // The list to iterate over
+		                                     -> inline void(
+		                                         T it,    // The current item of the list we are iterating over with forWrappingTriples
+		                                         T prev,  // The previous item of the list we are iterating over with forWrappingTriples
+		                                         T next,  // The next item of the list we are iterating over with forWrappingTriples
+		                                         float i    // The index of the current item of the list we are iterating over with forWrappingTriples
+		                                     ) do         // Do this for each triple in a list
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) do(_subject[i], _subject[(((i-1)%_len)+_len)%_len], _subject[(i+1)%_len], i)
+		
+	global inline js void forWrappingTriples: T[] subject // The list to iterate over
+		                                     <- inline void(
+		                                         T it,    // The current item of the list we are iterating over with forWrappingTriples
+		                                         T prev,  // The previous item of the list we are iterating over with forWrappingTriples
+		                                         T next,  // The next item of the list we are iterating over with forWrappingTriples
+		                                         float i    // The index of the current item of the list we are iterating over with forWrappingTriples
+		                                     ) do         // Do this for each triple in a list
+		for(let _subject=subject, _len=_subject.length, i=_len-1; i>=0; --i) do(_subject[i], _subject[(i+1)%_len], _subject[(((i-1)%_len)+_len)%_len], i)
+
+	// Prints a message to the console with date
+	// global js void print: logstring text // The text, variables or expressions to print
+	// 	                  SourceCodeLocation location
+	// 	let now = new Date()
+	// 	let time = now.getDate().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+(now.getMonth()+1).toLocaleString('en-US', {minimumIntegerDigits:2})+"."+now.getFullYear()+" "+now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2})+":"+now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2})+"."+now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3});
+	// 	(location ? log(time + " " +text, location.start, location.file) : log(time + " " +text))
+		
+	// js void log: dynamic value
+	// 	console.log(value)
+	
+	inline js void log: dynamic value
+		console.log(value)
+	
+	inline js void log: dynamic value, dynamic value2
+		console.log(value, value2)
+
+	inline js void log: dynamic value, dynamic value2, dynamic value3
+		console.log(value, value2, value3)
+	
+	inline js void logError: dynamic value
+		console.error(value)
+	
+	// Display a message in the timeline
+	global js void watch: logstring text // The text, variables or expressions to watch
+		                  SourceCodeLocation sourceCodeLocation
+		if(Platform.isDebug && core.frame >= core.frameWithNewWatches && sourceCodeLocation) {
+			Platform.sendWatch(core.frame, text, sourceCodeLocation.start, sourceCodeLocation.file)
+		}
+		
+	// Shows a dialog box with a given message
+	global inline js void alert: implicit string message // The message to show
+		alert(message)
+
+	inline js string prompt: implicit string message // The message to show
+		prompt(message)
+
+	global inline js void alert: implicit string message // The message to show
+	                             float delay             // Show the message after this delay in milliseconds
+		setTimeout(() => alert(message), delay)
+		
+	global inline js void break() break
+	global inline js void continue() continue
+		
+	global inline js void try: inline void() code
+		                       inline nocolon void(Error error) catch
+		try code() @catch(error) catch(error)
+		
+	global inline js void try: inline void() code
+		                       inline nocolon void(Error error) catch
+		                       inline nocolon void() finally
+		try code() @catch(error) catch(error) @finally finally()
+		
+	global inline js void try: inline void() code
+		                       inline nocolon void() finally
+		try code() @finally finally()
+
+	// Return an object that includes all global variables and functions
+	global inline js dynamic globals() window
+
+	global inline js void debugger() debugger
+	global inline js void throw(Error error) throw error
+
+	global inline js dynamic Capacitor => window.Capacitor
+		
+global transient priority low unit System		
+	global inline js void for: string subject // Iterate over every character of this string
+		                       -> inline void(
+		                           string it, // The current character of the string we are iterating over with the for-loop
+		                           float i      // The index of the current character of the string we are iterating over with the for-loop
+		                       ) do           // Do this for each character in the given string
+		for(let i=0, _subject=subject, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+	
+	global inline js void for: string subject // Iterate over every character of this string
+		                       <- inline void(
+		                           string it, // The current character of the string we are iterating over with the for-loop
+		                           float i      // The index of the current character of the string we are iterating over with the for-loop
+		                       ) do           // Do this for each character in the given string
+		for(let _subject=subject, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+				
+	// Do something a given number of times or for each item in a list
+	global inline js void forDynamic: dynamic subject // The list to iterate over
+		                              -> inline void(
+		                                  dynamic it, // The current item of the dynamic we are iterating over with the for-loop
+		                                  string key  // The current key of the dynamic we are iterating over with the for-loop
+		                              ) do            // Do this for each item in a list
+		{let _subject=subject; for(let key in _subject) {var _it = _subject[key]; if(typeof(_it) !== "function") do(_it, key)}}
+		
+	// Creates a new list populated with the results of calling a function on every element of the list
+	global inline js TResult[] for: T[] subject // The list to iterate over
+		                       -> TResult(
+		                           T it         // The current item of the list we are iterating over with the for-loop
+		                       ) do             // Select the field or expression to be included in the result
+		subject.map(do)
+		
+	// Creates a new list populated with the results of calling a function on every element of the list
+	global inline js TResult[] for: T[] subject // The list to iterate over
+		                       <- TResult(
+		                           T it         // The current item of the list we are iterating over with the for-loop
+		                       ) do             // Select the field or expression to be included in the result
+		subject.map(do).reverse()
+	
+	global inline js TResult[] for: float to,    // The exclusive upper bound to iterate towards
+		                            TResult(
+		                                float i  // The iteration variable of the for-loop
+		                            ) do       // Select the field or expression to be included in the result
+		float.enumerate(0, to, do)
+		
+	global inline js TResult[] for: float from,    // The integer to start iterating from
+		                            TResult(
+		                                float i    // The iteration variable of the for-loop
+		                            ) do         // Select the field or expression to be included in the result
+		                            label float to // The exclusive upper bound to iterate towards
+		                            nocolon label float step = 1
+		float.enumerate2(from, to, step, do)
+		
+// A collection of mathematical functions and constants
+global skipInit unit math
+	// Returns the absolute value
+	global inline js float abs: float value // The value to return the absolute value of
+		Math.abs(value)
+		
+	// Returns -1, 0, or 1 depending on the sign of the value
+	importance:5 inline js float sign: float value
+		Math.sign(value)
+		
+	// Returns the positive square root of the given value
+	importance:5 inline js float sqrt: float value // The value to return the square root of
+		Math.sqrt(value)
+		
+	inline js float hypot: float a
+		                   float b
+		Math.hypot(a, b)
+		
+	importance:3 moveTowards: float value
+		         float targetValue
+		         float speed = 1
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
+		
+	// ------------------------------------------------------- floor, ceil, round -------------------------------------------------------
+		
+	// Returns the largest integer less than or equal to the given value
+	global importance:5 inline js float floor: float value // The value to round down
+		Math.floor(value)
+				
+	// Returns the smallest integer greater than or equal to the given value 
+	global importance:5 inline js float ceil: float value // The value to round up
+		Math.ceil(value)
+		
+	// Returns the given value rounded to the nearest integer
+	global importance:5 inline js float round: float value // The value to round
+		Math.round(value)
+				
+	// ------------------------------------------------------- min, max -------------------------------------------------------
+	
+	inline js float min: float a // The first value
+		               float b // The second value
+		Math.min(a, b)
+
+	// Returns the largest of the given values
+	inline js float max: float a // The first value
+		               float b // The second value
+		Math.max(a, b)
+		
+	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
+	
+	// The angle of a half rotation (the ratio of a circle's circumference to its diameter)
+	global const float pi = 3.141592653589793
+
+	// The angle of a half rotation (pi)
+	const float halfCircle = 3.141592653589793
+	
+	// The angle of a full rotation (the ratio of a circle's radius to its diameter)
+	const float twoPi = 6.283185307179586
+
+	// The angle of a full rotation (2*pi)
+	const float fullCircle = 6.283185307179586
+
+	// The angle of a quarter rotation
+	const float halfPi = 1.5707963267948966
+
+	// The angle of a quarter rotation (pi/2)
+	const float quarterCircle = 1.5707963267948966
+	
+	// The angle of a eighth rotation
+	const float quarterPi = 0.7853981633974483
+
+	moveTowardsAngle: float value
+		              float targetValue
+		              float speed = 10
+		if targetValue > value	then return math.min(value + speed, targetValue) else
+		if targetValue < value	then return math.max(value - speed, targetValue)
+	
+	// Platform-indepentant sine of an angle in radians. Returns the exact same value on all platforms.
+	importance:5 global float sin: float angle // The angle in radians (one full rotation is 2*pi)
+		// Range reduction to [-pi, pi] using true modulo for stability
+		float x = angle mod math.twoPi
+		if x > math.pi then x -= math.twoPi
+		
+		// Use symmetries to fold into [-pi/2, pi/2]
+		bool negate = false
+		if x < 0
+			negate = true
+			x = -x
+		if x > math.halfPi
+			x = math.pi - x
+		
+		// 7th-order Taylor-like polynomial on [-pi/2, pi/2] in Horner form
+		// sin(x) ≈ x * (1 + x^2*(-1/6 + x^2*(1/120 + x^2*(-1/5040))))
+		float x2 = x * x
+		float s = x * (1 + x2 * (-0.16666666666666666 + x2 * (0.008333333333333333 + x2 * (-0.0001984126984126984))))
+		return negate ? -s : s
+
+	// Platform-indepentant cosine of an angle in radians. Returns the exact same value on all platforms.
+	importance:5 global float cos: float angle // The angle in radians (one full rotation is 2*pi)
+		// Range reduction to [-pi, pi]
+		float x = angle mod math.twoPi
+		if x > math.pi then x -= math.twoPi
+		
+		// Use even symmetry and fold to [0, pi/2]
+		x = math.abs(x)
+		bool negate = false
+		if x > math.halfPi
+			x = math.pi - x
+			negate = true
+		
+		// 8th-order polynomial (Taylor-like) on [0, pi/2]
+		// cos(x) ≈ 1 + x^2*(-1/2 + x^2*(1/24 + x^2*(-1/720 + x^2*(1/40320))))
+		float x2 = x * x
+		float c = 1 + x2 * (-0.5 + x2 * (0.041666666666666664 + x2 * (-0.001388888888888889 + x2 * (0.000024801587301587304))))
+		return negate ? -c : c
+	
+	// Platform-indepentant tangent of an angle in radians. Returns the exact same value on all platforms.
+	importance:5 global float tan: float angle // The angle in radians (one full rotation is 2*pi)
+		return sin(angle) / cos(angle)
+			
+	// Platform-indepentant inverse tangent of x in radians. Returns the exact same value on all platforms.
+	importance:5 global float atan: float x
+		// Uses polynomial approximation in z = x/(x + pi/3) space
+		// Max error: 4.07e-9 on [0, 1] interval
+		// https://stackoverflow.com/questions/42537957/fast-accurate-atan-arctan-approximation-algorithm
+
+		// Handle negative values using atan(-x) = -atan(x)
+		if x < 0 then return -atan(-x)
+		
+		// Handle large values using atan(x) = pi/2 - atan(1/x)
+		if x > 1 then return math.halfPi - atan(1 / x)
+		
+		// Transform to z-space: z = x / (x + pi/3)
+		float z = x / (x + 1.0471975511965976) // pi/3
+		
+		// Evaluate polynomial using Horner's method for efficiency
+		// Coefficients for 11th degree approximation
+		float result = 14.183376881192657             // z11
+		result = result * z - 60.11210171537528       // z10
+		result = result * z + 82.10190353000648       // z9
+		result = result * z - 49.09950369422959       // z8
+		result = result * z + 17.33961311116544       // z7
+		result = result * z - 5.8773286456840355      // z6
+		result = result * z - 0.33989938855441837     // z5
+		result = result * z - 0.16312555173050677     // z4
+		result = result * z + 0.6678082665364844      // z3
+		result = result * z + 1.047102380719068       // z2
+		result = result * z + 1.0471985201240248      // z1
+		result = result * z + 0.0                     // z0
+		
+		return result
+		
+	// Platform-indepentant inverse tangent of y/x in radians. Returns the exact same value on all platforms.
+	float atan2: float y
+	             float x
+		if (x >= 0) { // -pi/2 .. pi/2
+			if (y >= 0) { // 0 .. pi/2
+				if (y < x) { // 0 .. pi/4
+					return atan(y / x);
+				} else { // pi/4 .. pi/2
+					return math.halfPi - atan(x / y);
+				}
+			} else {
+				if (-y < x) { // -pi/4 .. 0
+					return atan(y / x);
+				} else { // -pi/2 .. -pi/4
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		} else { // -pi..-pi/2, pi/2..pi
+			if (y >= 0) { // pi/2 .. pi
+				if (y < -x) { // pi*3/4 .. pi
+					return atan(y / x) + math.pi;
+				} else { // pi/2 .. pi*3/4
+					return math.halfPi - atan(x / y);
+				}
+			} else { // -pi .. -pi/2
+				if (-y < -x) { // -pi .. -pi*3/4
+					return atan(y / x) - math.pi;
+				} else { // -pi*3/4 .. -pi/2
+					return -math.halfPi - atan(x / y);
+				}
+			}
+		}
+
+	// Platform-dependant sine of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeSin(float angleInRadians) Math.sin(angleInRadians)
+
+	// Platform-dependant cosine of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeCos(float angleInRadians) Math.cos(angleInRadians)
+
+	// Platform-dependant tangent of an angle in radians. Returns slightly different values on different platforms.
+	inline js float nativeTan(float angleInRadians) Math.tan(angleInRadians)
+
+	// Platform-dependant invers tangent of value in radians. Returns slightly different values on different platforms.
+	inline js float nativeAtan(float value) Math.atan(value)
+
+	// Platform-dependant invers tangent of y/x in radians. Returns slightly different values on different platforms.
+	inline js float nativeAtan2(float y, float x) Math.atan2(y, x)
+		
+	// ------------------------------------------------------- log, pow, exp -------------------------------------------------------
+	
+	// e raised to which power resuls in the given value?
+	importance:5 inline js float log: float value
+		Math.log(value)
+		
+	// 2 raised to which power resuls in the given value?
+	importance:5 inline js float log2: float value
+		Math.log2(value)
+		
+	// 10 raised to which power resuls in the given value?
+	importance:5 inline js float log10: float value
+		Math.log10(value)
+		
+	// Return the given base raised to the power of the given exponent
+	importance:5 inline js float pow: float base
+		                 float exponent
+		Math.pow(base, exponent)
+		
+	// Returns e raised to the power of a given number
+	importance:5 inline js float exp: float exponent
+		Math.exp(exponent)
+		
+	// ------------------------------------------------------- Bit shifts -------------------------------------------------------
+	
+	inline js float shiftLeft: float value
+		                     float count
+		(value << count)
+	
+	inline js float shiftRight: float value
+		                      float count
+		(value >> count)
+	
+	// ------------------------------------------------------- Random -------------------------------------------------------
+			
+	static randomString: float length = 16
+		string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+		string token
+		for length
+			token += chars[math.randomInteger chars.length-1]
+		return token
+		
+
+struct RollingList
+	float length = 30
+	float fractionDigits = 1
+	
+	private float[] values
+	private float index
+	
+	add: float value
+		values[(index++ mod length)] = value
+		
+	average
+		if values.length == 0 then return 0.0
+		float total
+		for values
+			total += .
+		return total / (values.length atMost length)
+	
+	max
+		if values.length == 0 then return 0.0
+		float max = float.minValue
+		for values
+			if . > max then max = .
+		return max
+	
+	min
+		if values.length == 0 then return 0.0
+		float min = float.maxValue
+		for values
+			if . < min then min = .
+		return min
+	
+	implicit string toString()
+		return average.format(fractionDigits)
+
+immutable Range
+	float from // The start of the range
+	float to   // The end of the range
+	
+	Range: float from       // The start of the range
+		   nocolon float to // The end of the range
+	
+	inline js bool includes: float value
+		(value >= this.from && value < this.from)
+	
+	inline js bool containsInclusively: float value
+		(value >= this.from && value <= this.from)
+		
+class File
+	float lastModified // The time the file was last modified in milliseconds
+	string lastModifiedDate
+	string name
+	string path
+	float size
+	string type
+	
+	inline js string objectUrl() URL.createObjectURL(this)
+
+enum Language: English, German, Spanish, French, Italian, Portuguese, Japanese, Chinese, Korean, Dutch, Turkish, Polish, Russian, Hindi, Arabic, Bengali, Urdu, Indonesian, Invariant
+
+unit Loca
+	private const string[] defaultLocaleForLanguage = ["en-001", "de-DE", "es-ES", "fr-FR", "it-IT", "pt-PT", "ja-JP", "zh-Hans-CN", "ko-KR", "nl-NL", "tr-TR", "pl-PL", "ru-RU", "hi-IN", "ar-001", "bn-BD", "ur-IN", "id-ID"]
+	
+	visible Language[] supportedLanguages = [English, German]
+	visible Language language = English
+	visible string locale = defaultLocaleForLanguage[language]
+	
+	internal init
+		setLanguage English
+	
+	js void setLanguage: Language language
+		                 string locale = null
+		Loca.language = language
+		Loca.locale = locale || Loca.defaultLocaleForLanguage[language]
+		
+	js string format: float id
+		let entry = _strings[Loca.language][id]
+		if(!entry || entry.s.length == 0) return "##########"
+		let strings = entry.s
+		let result = strings[0]
+		let stringIndex = 1
+		for(let placeholderNumber of entry.p) {
+			if(placeholderNumber >= 0) {
+				// Placeholder
+				//     "Step {currentStep}"                           {s:["Step "],p:[0]}
+				//            ^                                           ^           ^
+				let placeholderValue = arguments[placeholderNumber+1]
+				result += placeholderValue
+				if(stringIndex < strings.length) {
+					let str = strings[stringIndex++]
+					if(str) result += str
+				}
+			} else {
+				// Placeholder with pluralization
+				//     "Waiting for {playerCount} player[s]"          {s:["Waiting for ", " player.", " players."],p:[-1]}
+				//                   ^                                                    ^           ^               ^
+				// If the placeholder value is 1, we take the first string (sigular version), otherwise the second (plural version)
+				let placeholderValue = arguments[-placeholderNumber]
+				result += placeholderValue
+				let str = strings[placeholderValue == 1 ? stringIndex : stringIndex+1]
+				if(str) result += str
+				stringIndex += 2
+			}
+		}
+		return result
+	
+enum lowercase string NumberFormatLocaleMatcher
+	lookup // The locale matching algorithm to use.
+	bestFit = "best fit" // The locale matching algorithm to use.
+
+enum lowercase string NumberFormatStyle
+	decimal // For plain number formatting (default)
+	currency // For currency formatting
+	percent // For percent formatting.
+	unit // For unit formatting.
+
+enum lowercase string NumberFormatCurrencyDisplay
+	code // Use the ISO currency code.
+	symbol // Use a localized currency symbol such as €. (default)
+	narrowSymbol // Use a narrow format symbol ("$100" rather than "US$100").
+	name // Use a localized currency name such as "dollar".
+
+enum lowercase string NumberFormatCurrencySign
+	standard // Use standard minus sign for negative numbers. (default)
+	accounting // Wrap the number with parentheses instead of appending a minus sign.
+
+enum lowercase string NumberFormatUnitDisplay
+	short // E.g., 16 l. (default)
+	narrow // E.g., 16l.
+	long // E.g., 16 litres.
+
+enum lowercase string NumberFormatRoundingPriority
+	auto // The result from the significant digits property is used. (default)
+	morePrecision // The result from the property that results in more precision is used.
+	lessPrecision // The result from the property that results in less precision is used.
+
+enum lowercase string NumberFormatRoundingMode
+	ceil // Round toward +∞. Positive values round up. Negative values round "more positive".
+	floor // Round toward -∞. Positive values round down. Negative values round "more negative".
+	expand // Round away from 0. The magnitude of the value is always increased by rounding.
+	trunc // Round toward 0. This magnitude of the value is always reduced by rounding.
+	halfCeil // Ties toward +∞. Values above the half-increment round like "ceil", and below like "floor".
+	halfFloor // Ties toward -∞. Values above the half-increment round like "ceil", and below like "floor".
+	halfExpand // Ties away from 0. Values above the half-increment round like "expand", and below like "trunc". (default)
+	halfTrunc // Ties toward 0. Values above the half-increment round like "expand", and below like "trunc".
+	halfEven // Ties towards the nearest even integer.
+
+enum lowercase string NumberFormatTrailingZeroDisplay
+	auto // Keep trailing zeros according to minimumFractionDigits and minimumSignificantDigits. (default)
+	stripIfInteger // Remove the fraction digits if they are all zero.
+
+enum lowercase string NumberFormatNotation
+	standard // Plain number formatting. (default)
+	scientific // Return the order-of-magnitude for formatted number.
+	engineering // Return the exponent of ten when divisible by three.
+	compact // String representing exponent; defaults to using the "short" form.
+
+enum lowercase string NumberFormatCompactDisplay
+	short // E.g., 1K. (default)
+	long // E.g., 1 thousand.
+
+enum lowercase string NumberFormatSignDisplay
+	auto // Sign display for negative numbers only, including negative zero. (default)
+	always // Always display sign.
+	exceptZero // Sign display for positive and negative numbers, but not zero.
+	negative // Sign display for negative numbers only, excluding negative zero.
+	never // Never display sign.
+
+enum lowercase string NumberFormatUseGrouping
+	always // Display grouping separators even if the locale prefers otherwise.
+	auto // Display grouping separators based on the locale preference.
+	min2 // Display grouping separators when there are at least 2 digits in a group.
+	false = "false" // Display no grouping separators.
+
+dynamic NumberFormatOptions
+	NumberFormatLocaleMatcher localeMatcher // The locale matching algorithm to use. Possible values are "lookup" and "best fit"; the default is "best fit".
+	string numberingSystem // The numbering system to use for number formatting, such as "arab", "hans", "mathsans", and so on.
+	NumberFormatStyle style // The formatting style to use.
+	string currency // The currency to use in currency formatting. Possible values are the ISO 4217 currency codes, such as "USD" for the US dollar, "EUR" for the euro, or "CNY" for the Chinese RMB.
+	NumberFormatCurrencyDisplay currencyDisplay // How to display the currency in currency formatting.
+	NumberFormatCurrencySign currencySign // In many locales, accounting format means to wrap the number with parentheses instead of appending a minus sign.
+	string unit // The unit to use in unit formatting. Possible values: "acre", "bit", "byte", "celsius", "centimeter", "day", "degree", "fahrenheit", "fluid-ounce", "foot", "gallon", "gigabit", "gigabyte", "gram", "hectare", "hour", "inch", "kilobit", "kilobyte", "kilogram", "kilometer", "liter", "megabit", "megabyte", "meter", "mile", "mile-scandinavian", "milliliter", "millimeter", "millisecond", "minute", "month", "ounce", "percent", "petabyte", "pound", "second", "stone", "terabit", "terabyte", "week", "yard", "year". Pairs of simple units can be concatenated with "-per-".
+	NumberFormatUnitDisplay unitDisplay // The unit formatting style to use in unit formatting.
+	float minimumIntegerDigits // The minimum number of integer digits to use. Possible values are from 1 to 21; the default is 1.
+	float minimumFractionDigits // The minimum number of fraction digits to use. Possible values are from 0 to 100.
+	float maximumFractionDigits // The maximum number of fraction digits to use. Possible values are from 0 to 100.
+	float minimumSignificantDigits // The minimum number of significant digits to use. Possible values are from 1 to 21; the default is 1.
+	float maximumSignificantDigits // The maximum number of significant digits to use. Possible values are from 1 to 21; the default is 21.
+	NumberFormatRoundingPriority roundingPriority // Specify how rounding conflicts will be resolved if both "FractionDigits" and "SignificantDigits" are specified.
+	float roundingIncrement // Indicates the increment at which rounding should take place relative to the calculated rounding magnitude. Possible values: 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000.
+	NumberFormatRoundingMode roundingMode // How decimals should be rounded.
+	NumberFormatTrailingZeroDisplay trailingZeroDisplay // The strategy for displaying trailing zeros on whole numbers.
+	NumberFormatNotation notation // The formatting that should be displayed for the number.
+	NumberFormatCompactDisplay compactDisplay // Only used when notation is "compact".
+	NumberFormatUseGrouping useGrouping // Whether to use grouping separators, such as thousands separators or thousand/lakh/crore separators.
+	NumberFormatSignDisplay signDisplay // When to display the sign for the number.
+
+js Intl.NumberFormat
+NumberFormat
+	inline js NumberFormat(string locale, NumberFormatOptions options) new Intl.NumberFormat(locale, options)
+	inline js string format(float value) this.format(value)
+	
+class Grid<T>
+	Vector2 size
+	T[] items
+	transient void(T item, Vector2 pos)[string] itemForCharacter = null
+	
+	Grid
+		for size.x * size.y
+			items.add null
+	
+	get: Vector2 position // The vector to get the value from
+		return 0.0 <= position.x < size.x and 0.0 <= position.y < size.y ? items[floor(position.y)*size.x + position.x] : null
+	
+	get: float x // The column to get the value from
+		 float y // The row to get the value from
+		return 0.0 <= x < size.x and 0.0 <= y < size.y ? items[floor(y)*size.x + x] : null
+	
+	T set: Vector2 position // The grid position of the value to set
+		   T value             // The value to set
+		return items[floor(position.y)*size.x + position.x] = value
+
+	T set: float x   // The column of the value to set
+		   float y   // The row of the value to set
+		 T value // The value to set
+		return items[floor(y)*size.x + x] = value
+	
+	map: string character
+		 stored void(T item, Vector2 pos) to
+		if not itemForCharacter then itemForCharacter = {}
+		itemForCharacter.set(character, to)
+
+	create: string[] strings
+		for strings as line, y
+			for line as char, x
+				let itemFunction = itemForCharacter.get(char)
+					itemFunction(items[y*size.x + x], {x, y})
+		
+	// Do something for each item in the grid
+	inline js void each: inline -> void(
+		                     T it,      // The current item of the list we are iterating over with the for-loop
+		                     Vector2 pos,
+		                     float i      // The index of the current item of the list we are iterating over with the for-loop
+		                 ) do           // Do this for each item in a list
+		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new IntVector2(i%this.size.x, Math.floor(i/this.size.x)), i)}
+			
+	inline js void each: includeEmpty = false // Include items that are null
+		                 inline -> void(
+		                     T it,      // The current item of the list we are iterating over with the for-loop
+		                     Vector2 pos,
+		                     float i      // The index of the current item of the list we are iterating over with the for-loop
+		                 ) do           // Do this for each item in a list
+		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new Vector2(x,y), i)}
+
+	// The amount of items in the grid	
+	importance:4 inline float length() this.items.length
+
+	// Return a list that includes the selected field or expression for each item
+	importance:4 inline js TValue[] select: TValue(T it) selector
+		this.items.map(selector)
+		
+	// Get the selected field or expression for each item and flattens the result
+	inline js TValue[] flatten: TValue[](T it) selector
+		this.items.flatMap(selector)
+		
+	// Returns true if the given condition is true for all items in the list
+	inline js bool all
+		this.items.every(a => a)
+		
+	// Returns true if the given condition is true for any item in the list
+	inline js bool any
+		this.items.some(a => a)
+		
+	// Returns true if the given condition is true for any item in the list
+	importance:4 inline js bool any: bool(T a) predicate // The condition to check
+		this.items.some(predicate)
+		
+	importance:4 inline js T[] filter: bool(T a) predicate // The condition to check
+		this.items.filter(predicate)
+		
+	float count: bool(T a) predicate // The condition to check
+		float count = 0
+		for items
+			if predicate(.)
+				count++
+		return count
+		
+	// Returns true if the given condition is true for all items in the list
+	importance:4 inline js bool all: bool(T a) predicate // The condition to check
+		this.items.every(predicate)
+		
+	importance:4 bool isValid: Vector2 pos
+		return 0.0 <= pos.x < size.x and 0.0 <= pos.y < size.y
+
+	importance:4 withMin: float(T a) selector
+		               float threshold = float.maxValue
+		float resultValue = threshold
+		T resultItem
+		for items
+			let value = selector(.)
+			if value < resultValue
+				resultValue = value
+				resultItem = .
+		return resultValue != threshold ? resultItem : null
+
+	insertRows: float count = 1, float y = -1
+		if y == -1 then y = floor(size.y)
+		size.y += count
+		let baseIndex = y * size.x
+		for size.x * count
+			items.insert null index:floor(baseIndex + .)
+	
+	insertColumns: float count = 1, float x = -1
+		if x == -1 then x = floor(size.x)
+		size.x += count
+		for size.y as y
+			let rowIndex = y * size.x
+			for count
+				items.insert null index:floor(rowIndex + x + .)
+	
+global transient unit System
+	global inline js void for: Grid<T> subject    // The grid to iterate over
+		                       -> inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           Vector2 pos,
+		                           float i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new Vector2(i%subject.size.x, Math.floor(i/subject.size.x)), i)}
+			
+	global inline js void for: Grid<T> subject      // The grid to iterate over
+		                       includeEmpty = false // Include items that are null
+		                       -> inline void(
+		                           T it,      // The current item of the list we are iterating over with the for-loop
+		                           Vector2 pos,
+		                           float i      // The index of the current item of the list we are iterating over with the for-loop
+		                       ) do           // Do this for each item in a list
+		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)
+		

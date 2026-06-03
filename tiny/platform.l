@@ -10,7 +10,7 @@ transient skipInit unit Platform
 	public TickMode tickMode = Interval
 	bool isDebug
 	bool fastForward
-	int userCount
+	float userCount
 
 	// This is called when the application starts for the first time	
 	private start: bool isDebug
@@ -74,7 +74,7 @@ transient skipInit unit Platform
 	
 	internal home
 	internal clearHomeAndGoToEnd
-	internal goToFrame: int targetFrame, int interrruptAtOutputIndex, bool saveHome = false
+	internal goToFrame: float targetFrame, float interrruptAtOutputIndex, bool saveHome = false
 	internal stop
 	internal pause
 	internal record
@@ -87,13 +87,13 @@ transient skipInit unit Platform
 	internal inline js void sendStringToEditor: string message
 		if(Platform.isDebug) _sendStringToEditor(message)
 
-// In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
+// In LiveTime, the term "time" always means the float of milliseconds since 1 January 1970
 skipInit static class Time
-	// The number of milliseconds elapsed since 1 January 1970
+	// The float of milliseconds elapsed since 1 January 1970
 	static importance:5 float now
 	
 	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second)
-	static importance:5 int ticks
+	static importance:5 float ticks
 
 	js void startFrame
 		now = Date.now()

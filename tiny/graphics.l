@@ -2,21 +2,21 @@ BitmapFont
 	string name
 	Vector2 charSize
 	Vector2 gridSize
-	int charsPerRow
-	int startChar
-	int[] pixels
+	float charsPerRow
+	float startChar
+	float[] pixels
 
 class PaletteEntry
 	string letter
-	int red
-	int green
-	int blue
-	int alpha
+	float red
+	float green
+	float blue
+	float alpha
 	string name
-	int originalIndex
+	float originalIndex
 	string hex
 	string category
-	int index
+	float index
 
 Screen
 	Vector2 size
@@ -24,9 +24,9 @@ Screen
 	float scale
 	dynamic canvas, context
 	dynamic pixelData
-	Grid<int> pixels
+	Grid<float> pixels
 	bool smoothing
-	int clipX1, clipY1, clipX2, clipY2
+	float clipX1, clipY1, clipX2, clipY2
 	
 	js void setup: Vector2 size
 		this.size = size
@@ -59,19 +59,19 @@ Screen
 		clipY1 = 0
 		clipX2 = size.x.floor
 		clipY2 = size.y.floor
-		int[] target = this.pixels.items
-		int len = (size.x * size.y).floor
+		float[] target = this.pixels.items
+		float len = (size.x * size.y).floor
 		for len
 			target[i] = 0
 			
 	finishFrame
 		if Platform.fastForward then return
 		let len = size.x * size.y
-		int sourceIndex, targetIndex
+		float sourceIndex, targetIndex
 		let target = pixelData.data
 		let pixels = this.pixels.items
 		while sourceIndex < len
-			int paletteIndex = pixels[sourceIndex] * 4
+			float paletteIndex = pixels[sourceIndex] * 4
 			target[targetIndex] = graphics.palette[paletteIndex]
 			target[targetIndex+1] = graphics.palette[paletteIndex+1]
 			target[targetIndex+2] = graphics.palette[paletteIndex+2]
@@ -88,11 +88,11 @@ dynamic TileCollection
 	string Source
 	string Tags
 	string License
-	int startY, sizeY
+	float startY, sizeY
 
 transient global skipInit graphics
 	const Vector2 tileSize
-	const int tilesPerRow, tilesStride
+	const float tilesPerRow, tilesStride
 
 	private dynamic canvas
 	internal dynamic context
@@ -104,12 +104,12 @@ transient global skipInit graphics
 	Screen screen
 	Screen[] screens
 	
-	int[] palette
-	int[] colorReplacements
+	float[] palette
+	float[] colorReplacements
 	bool enableColorReplacements
 	PaletteEntry[string] paletteEntries
 
-	int[] tiles
+	float[] tiles
 	TileCollection[] tileCollections
 
 	js void initHandlers
@@ -132,7 +132,7 @@ transient global skipInit graphics
 		graphics.context = graphics.canvas.getContext("2d");
 		for(let screen of graphics.screens) screen.onResize()
 
-	js void initPalette: int size
+	js void initPalette: float size
 		graphics.palette = new Uint8ClampedArray(size)
 
 	setup
@@ -242,7 +242,7 @@ transient global skipInit graphics
 			"\}": new PaletteEntry("\}",	0,64,88,255,	"",	12,	"#004058","nes"),	// Closest color: 19 (difference: 38)
 			"~": new PaletteEntry("~",	228,0,88,255,	"",	21,	"#e40058","nes"),	// Closest color: 8 (difference: 38)
 		};
-		int index, paletteIndex
+		float index, paletteIndex
 		initPalette size:paletteEntries.length*4
 		for paletteEntries as entry
 			entry.index = index++
@@ -264,10 +264,10 @@ transient global skipInit graphics
 		tiles = []
 		tileCollections = []
 		TileCollection collection, prevCollection
-		int index = 0
+		float index = 0
 		for tilesData.split("\n") as line
 			if line.startsWith "#"
-				int colonIndex = line.indexOf ":"
+				float colonIndex = line.indexOf ":"
 				string key = line.substring(1, colonIndex).trim.toLowerCase
 				string value = line.substring(colonIndex+1).trim
 				if not collection then collection = {}
@@ -280,13 +280,13 @@ transient global skipInit graphics
 				index += tilesStride
 
 	private openFonts
-		int index = 0
+		float index = 0
 		for fontsData.split("\n") as line
-			int pixelOffset = floor(i*font.gridSize.x*font.charsPerRow)
+			float pixelOffset = floor(i*font.gridSize.x*font.charsPerRow)
 			for line.length as i
 				if line[i] != "0" then font.pixels[pixelOffset + i] = 1
 
-	global setSprite: int spriteIndex, string[] pixelsAsStrings
+	global setSprite: float spriteIndex, string[] pixelsAsStrings
 		let index = floor(spriteIndex / tilesPerRow) * tileSize.y * tilesStride + (spriteIndex mod tilesPerRow) * tileSize.x
 		for pixelsAsStrings as line
 			for line.length as i
@@ -301,47 +301,47 @@ transient global skipInit graphics
 	finishFrame
 		screen.finishFrame
 
-	global Grid<int> pixels
+	global Grid<float> pixels
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 
-	setZoom: int factor
+	setZoom: float factor
 		screen.setup {224,168}*factor
 		// screen.setup {192,144}*factor
 		pixels = screen.pixels
 		screenSize.create screen.size
 		screenGridSize.create screen.size / tileSize
 
-	global void setPixel: Vector2 pos, int color
+	global void setPixel: Vector2 pos, float color
 		if Platform.fastForward then return
 		if screen.clipX1 <= pos.x < screen.clipX2 and screen.clipY1 <= pos.y < screen.clipY2
 			screen.pixels.items[(pos.y * screen.size.x + pos.x).floor] = color
 
-	global int getPixel: Vector2 pos
+	global float getPixel: Vector2 pos
 		if Platform.fastForward then return
 		if 0 <= pos.x < screen.size.x and 0 <= pos.y < screen.size.y
 			return screen.pixels.items[(pos.y * screen.size.x + pos.x).floor]
 		return 0
 
-	copy: int[] source, int sourceStride, int sourceIndex, Vector2 pos = {0,0}, Vector2 size = {8,8}
+	copy: float[] source, float sourceStride, float sourceIndex, Vector2 pos = {0,0}, Vector2 size = {8,8}
 		if Platform.fastForward then return
-		int positionX = pos.x.floor, positionY = pos.y.floor
-		int startX = positionX
-		int endX = positionX + size.x.floor
-		int startY = positionY
-		int endY = positionY + size.y.floor
-		int targetStride = screen.size.x.floor
+		float positionX = pos.x.floor, positionY = pos.y.floor
+		float startX = positionX
+		float endX = positionX + size.x.floor
+		float startY = positionY
+		float endY = positionY + size.y.floor
+		float targetStride = screen.size.x.floor
 		if startX < screen.clipX1 then startX = screen.clipX1
 		if endX > screen.clipX2 then endX = screen.clipX2
 		if startY < screen.clipY1 then startY = screen.clipY1
 		if endY > screen.clipY2 then endY = screen.clipY2
 		if startX >= endX or startY >= endY then return
-		int sourceOffset = floor(((sourceIndex mod tilesPerRow) + math.floor(sourceIndex / tilesPerRow) * tilesStride) * tileSize.x)
+		float sourceOffset = floor(((sourceIndex mod tilesPerRow) + math.floor(sourceIndex / tilesPerRow) * tilesStride) * tileSize.x)
 		sourceOffset += (startY - positionY) * tilesStride + startX - positionX
-		int start = sourceOffset
-		int end = start + endX - startX
-		int offsetToTarget = startY * targetStride + startX - start
-		int[] target = screen.pixels.items
+		float start = sourceOffset
+		float end = start + endX - startX
+		float offsetToTarget = startY * targetStride + startX - start
+		float[] target = screen.pixels.items
 
 		if not enableColorReplacements
 			for startY to endY as y
@@ -362,22 +362,22 @@ transient global skipInit graphics
 
 	global drawSprite: Sprite sprite, Vector2 pos = {0,0}, void() onClick = null
 		if Platform.fastForward then return
-		int positionX = pos.x.floor, positionY = pos.y.floor
-		int startX = positionX
-		int endX = positionX + sprite.size.x.floor
-		int startY = positionY
-		int endY = positionY + sprite.size.y.floor
-		int targetStride = screen.size.x.floor
+		float positionX = pos.x.floor, positionY = pos.y.floor
+		float startX = positionX
+		float endX = positionX + sprite.size.x.floor
+		float startY = positionY
+		float endY = positionY + sprite.size.y.floor
+		float targetStride = screen.size.x.floor
 		if startX < screen.clipX1 then startX = screen.clipX1
 		if endX > screen.clipX2 then endX = screen.clipX2
 		if startY < screen.clipY1 then startY = screen.clipY1
 		if endY > screen.clipY2 then endY = screen.clipY2
 		if startX >= endX or startY >= endY then return
-		int spriteStride = sprite.stride
-		int start = (startY - positionY) * spriteStride + startX - positionX
-		int end = start + endX - startX
-		int offsetToTarget = startY * targetStride + startX - start
-		int[] source = sprite.pixels, target = screen.pixels.items
+		float spriteStride = sprite.stride
+		float start = (startY - positionY) * spriteStride + startX - positionX
+		float end = start + endX - startX
+		float offsetToTarget = startY * targetStride + startX - start
+		float[] source = sprite.pixels, target = screen.pixels.items
 
 		if not enableColorReplacements
 			for startY to endY as y
@@ -401,15 +401,15 @@ transient global skipInit graphics
 			if pos <= pointerPos < pos + sprite.size
 				onClick()
 
-	global drawText: string text, Vector2 pos = {0,0}, int color = 6
+	global drawText: string text, Vector2 pos = {0,0}, float color = 6
 		if Platform.fastForward then return
-		int stride = floor(screen.size.x)
-		int fontStride = floor(font.charsPerRow * font.gridSize.x)
+		float stride = floor(screen.size.x)
+		float fontStride = floor(font.charsPerRow * font.gridSize.x)
 		let target = screen.pixels.items
 		for text.length
-			int char = text.getCharCodeAt(i) - 32
-			int tileOffset = floor((char mod 16) * font.gridSize.x + math.floor(char / 16) * fontStride * font.gridSize.y)
-			int screenOffset = floor(pos.x + pos.y*stride)
+			float char = text.getCharCodeAt(i) - 32
+			float tileOffset = floor((char mod 16) * font.gridSize.x + math.floor(char / 16) * fontStride * font.gridSize.y)
+			float screenOffset = floor(pos.x + pos.y*stride)
 			for font.charSize.y as y
 				for font.charSize.x as x
 					if font.pixels[tileOffset + x] then target[screenOffset + x] = color
@@ -420,15 +420,15 @@ transient global skipInit graphics
 				pos.x = 0
 				pos.y += font.gridSize.y
 
-	global void drawRect: Vector2 pos = {0,0}, implicit Vector2 size = {8,8}, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
+	global void drawRect: Vector2 pos = {0,0}, implicit Vector2 size = {8,8}, float fillColor = -1, float outlineColor = -1, float outlineWidth = 1
 		if Platform.fastForward then return
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
 		let target = screen.pixels.items
 		if fillColor == -1 and outlineColor == -1 then fillColor = 6
 		if fillColor != -1
-			int stride = floor(screen.size.x)
-			int screenOffset = floor(x + y*stride)
+			float stride = floor(screen.size.x)
+			float screenOffset = floor(x + y*stride)
 			for sizeY as y
 				for sizeX as x
 					target[screenOffset + x] = fillColor
@@ -439,12 +439,12 @@ transient global skipInit graphics
 			drawRect {x, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 			drawRect {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 
-	global void drawCircle: Vector2 pos = {0,0}, Vector2 radius, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
+	global void drawCircle: Vector2 pos = {0,0}, Vector2 radius, float fillColor = -1, float outlineColor = -1, float outlineWidth = 1
 		if Platform.fastForward then return
 		if fillColor == -1 and outlineColor == -1 then fillColor = 6
 		// TODO: Implement draw circle
 
-	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
+	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, float fillColor = -1, float outlineColor = -1, float outlineWidth = 1
 		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor, outlineWidth
 
 	global clip: Vector2 pos = {0,0}, Vector2 size = {0,0}
@@ -459,7 +459,7 @@ transient global skipInit graphics
 		screen.clipX2 = screen.size.x.floor
 		screen.clipY2 = screen.size.y.floor
 
-	global replaceColor: int color, nocolon int with
+	global replaceColor: float color, nocolon float with
 		colorReplacements[color] = with
 		enableColorReplacements = true
 
@@ -469,11 +469,11 @@ transient global skipInit graphics
 		enableColorReplacements = false
 
 Sprite
-	int[] pixels
+	float[] pixels
 	Vector2 size
-	int frames = 1
-	int framesPerSecond = 15
-	int stride
+	float frames = 1
+	float framesPerSecond = 15
+	float stride
 	Vector2 sourcePos
 
 	Sprite: string[] pixelsAsStrings = null
@@ -481,10 +481,10 @@ Sprite
 		let maxWidth = pixelsAsStrings.max.length
 		pixels = []
 		size.create(maxWidth, pixelsAsStrings.length)
-		if frames == int.undefined then frames = 1
-		if framesPerSecond == int.undefined then framesPerSecond = 15
+		if frames == float.undefined then frames = 1
+		if framesPerSecond == float.undefined then framesPerSecond = 15
 		stride = maxWidth
-		int index
+		float index
 		for pixelsAsStrings as line
 			for line.length as i
 				PaletteEntry entry = graphics.paletteEntries[line[i]]
