@@ -1224,7 +1224,7 @@ class List<T>
 		
 	importance:5 shuffle
 		for 1 to length backwards
-			var j = math.floor(math.randomFloat * (i + 1))
+			var j = math.floor(math.random() * (i + 1))
 			var temp = this.get(i)
 			this.set(i, this.get(j))
 			this.set(j, temp)

@@ -21,7 +21,7 @@ global skipInit unit math
 		let targetRandomValueIndex = randomValueIndex
 		setRandomSeed randomSeed
 		for targetRandomValueIndex
-			randomFloat
+			random()
 	
 	js void setRandomSeed: string seed
 		math.randomSeed = seed
@@ -84,6 +84,9 @@ global skipInit unit math
 	global js float randomInteger: float from // The inclusive lower bound of the random integer
 		                         float to // The exclusive upper bound of the random integer
 		return from + Math.floor(math.randomGenerator() * (to-from))
+	
+	global js float randomInteger: float to = 9007199254740991// The exclusive upper bound of the random integer
+		return from + Math.floor(math.randomGenerator() * to)
 	
 	global js float random: float to = 1.0
 		return math.randomGenerator() * to
