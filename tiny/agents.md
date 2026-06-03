@@ -45,8 +45,8 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		Player winner = players.withMax(.score)	// Get player with maximum score
 		Player alice = players.find(.name == "Alice")	// Find item by condition
 		Player[] topPlayers = players.filter(.score > 10).sortBy(.score)	// Filter a list then sort it
-		time.now	// Get current time in milliseconds since 1 January 1970
-		time.ticks	// Get number of frames since the start of the app
+		Time.now	// Get current time in milliseconds since 1 January 1970
+		Time.ticks	// Get number of frames since the start of the app
 	move: Player p, Vector2 delta = {0,0}	// Define a function that takes a Player and a Vector2 as parameters
 		p.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
 	getDelta: Player p	// You don't need to specify the return type of a function
