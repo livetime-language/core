@@ -25,21 +25,21 @@ transient skipInit unit Platform
 		graphics.setup
 		initAll
 		for userCount input.internalUsers.add {}
-		app.start??()
+		app??.start()
 		startInterval
 				
 	// This is called after every code change to replay all inputs with the new code
 	private async replay: bool updateMedia
 		Time.ticks = 0
 		initAll
-		app.start??()
+		app??.start()
 			
 	dynamic interval
 	private js void startInterval
 		if(Platform.interval) clearInterval(Platform.interval)
 		if(window.tick) return
 			
-		if(Platform.intervalMode == 0) {
+		if(Platform.tickMode == 0) {
 			Platform.interval = setInterval(() => Platform.tick(), 1000/Platform.ticksPerSecond)
 		} else {
 			window.tick = function() {
@@ -54,13 +54,23 @@ transient skipInit unit Platform
 		Time.startFrame
 		graphics.startFrame
 		input.updateGamepads
-		app.tick
+		app??.tick()
 		graphics.finishFrame
 		input.internalUsers.each.finishFrame
 		Time.ticks++
 					
 	js void initAll
-		init()
+		init();
+		if(typeof _initJavaScriptApp === "function") {
+			try {
+				app = {
+					tick: _initJavaScriptApp(),
+					start: () => {}
+				}
+			} catch (error) {
+				console.error("Error initializing JavaScript app:", error);
+			}
+		}
 	
 	internal home
 	internal clearHomeAndGoToEnd

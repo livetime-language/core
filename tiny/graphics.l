@@ -472,16 +472,19 @@ Sprite
 	int[] pixels
 	Vector2 size
 	int frames = 1
-	int fps = 15
+	int framesPerSecond = 15
 	int stride
 	Vector2 sourcePos
 
 	Sprite: string[] pixelsAsStrings = null
 		if not pixelsAsStrings then return
-		int index
 		let maxWidth = pixelsAsStrings.max.length
-		size = {x:maxWidth, y:pixelsAsStrings.length}
+		pixels = []
+		size.create(maxWidth, pixelsAsStrings.length)
+		if frames == int.undefined then frames = 1
+		if framesPerSecond == int.undefined then framesPerSecond = 15
 		stride = maxWidth
+		int index
 		for pixelsAsStrings as line
 			for line.length as i
 				PaletteEntry entry = graphics.paletteEntries[line[i]]
