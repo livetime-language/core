@@ -31,10 +31,10 @@ function stopReplacingColors() {
 }
 
 // core/tiny/input.l
-const AButton = 0;
-const BButton = 1;
-const XButton = 2;
-const YButton = 3;
+const ButtonA = 0;
+const ButtonB = 1;
+const ButtonX = 2;
+const ButtonY = 3;
 const LeftBumper = 4;
 const RightBumper = 5;
 const LeftTrigger = 6;
