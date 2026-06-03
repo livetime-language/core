@@ -68,7 +68,7 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 		if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 		if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
-sprites	// src/sprites.l contains all available sprites. Add additional sprites as needed.
+sprites	// src/sprites.l contains all available sprites and colors. Add additional sprites as needed.
 	blueCircle = Sprite [	// SPACE:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, a:Yellow, b:Green, c:Blue, d:Indigo, e:Pink, f:Peach
 		"  cccc  "
 		" c    c "
