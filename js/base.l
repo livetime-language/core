@@ -403,12 +403,12 @@ immutable struct float
 	float remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
 		
-	inline js int toInt => Math.floor(this)
-		
 	// Returns true if the floot is not zero
 	inline js bool toBool => this
 	
-	importance:4 inline js string toString => this.toString()
+	implicit inline js string toString => this.toString()
+
+	implicit inline js int toInt => Math.floor(this)
 		
 	importance:3 inline js float moveTowards: float value
 		                                      float speed = 1
