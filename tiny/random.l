@@ -14,21 +14,21 @@ global skipInit unit math
 		}
 		
 	transient internal string randomSeed
-	internal float randomValueIndex
+	internal int randomValueIndex
 	transient internal float[] randomValues
 	
 	internal recreateRandomValues
 		let targetRandomValueIndex = randomValueIndex
 		setRandomSeed randomSeed
 		for targetRandomValueIndex
-			random()
+			randomFloat
 	
 	js void setRandomSeed: string seed
 		math.randomSeed = seed
 		math.randomValues = []
 		math.randomValueIndex = 0
 		
-		// Seeding the random float generator in Javascript
+		// Seeding the random number generator in Javascript
 		// https://stackoverflow.com/a/47593316
 		function xmur3(str) {
 		    for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
@@ -81,17 +81,17 @@ global skipInit unit math
 		}
 
 	// Generates a random integer
-	global js float randomInteger: float from // The inclusive lower bound of the random integer
-		                         float to // The exclusive upper bound of the random integer
+	global js int randomInteger: int from // The inclusive lower bound of the random integer
+		                         int to // The exclusive upper bound of the random integer
 		return from + Math.floor(math.randomGenerator() * (to-from))
 	
-	global js float randomInteger: float to = 9007199254740991// The exclusive upper bound of the random integer
-		return from + Math.floor(math.randomGenerator() * to)
+	global js int randomInteger: int to = 2147483647 // The exclusive upper bound of the random integer
+		return Math.floor(math.randomGenerator() * to)
 	
-	global js float random: float to = 1.0
-		return math.randomGenerator() * to
-
 	// Generates a random float
-	global js float random: float from
-		                    float to
+	global js int randomFloat: float from
+		                       float to
 		return from + math.randomGenerator() * (to-from)
+	
+	global js int randomFloat: float to = 1.0
+		return math.randomGenerator() * to

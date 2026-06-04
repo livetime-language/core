@@ -2,13 +2,14 @@
 // Write the simplest, most efficient code possible. Compile with "npm run compile".
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
 class Player	// Use capitalized name to define a class. Its members are public by default
-	number     score = 100.0	// Floating point numbers are 0.0 by default
+	int        index	// Integers are 0 by default
+	float      score = 100.0	// Floating point numbers are 0.0 by default
 	bool       isAlive = true	// Booleans are false by default
-	Vector2    pos = {1.5, 2.5}	// Vectors are {0,0} by default.
+	Vector2    pos = {1.5, 2.5}	// Vectors are {0,0} by default. Its fields x and y are floats.
 	string     name	// Strings are "" (the empty string) by default
 	Player[]   friends	// Lists are [] (the empty list) by default
 	PlayerRole role = Archer	// You can write "Archer" instead of "PlayerRole.Archer" if the type is known from context
-	Player: number index	// Constructor with parameter. If you don't write a constructor, one is created automatically
+	Player: int index	// Constructor with parameter. If you don't write a constructor, one is created automatically
 		this.index = index	// Assign member variable
 		pos = Vector2(index*8, 0)	// Calls the constructor of Vector2
 		pos = {index*8, 0}	// Also calls the constructor of Vector2
@@ -22,6 +23,7 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		players.clear	// Clear list
 		if not (x < 0 or x >= 10) then print "between 0 and 10"	// Use "then" in single-line if statements, leave out "then" in multi-line statements
 		if 0 <= x < 10 then print "between 0 and 10"	// Chained comparison
+		randomInteger(0 to 10)	// Random integer between 0 and 10
 		for 0 to 5 as i	// Iterate over range with inclusive start 0 and exclusive end 5
 			print i	// Prints 0 1 2 3 4
 		for players.length	// The lower bound defaults to 0, the iteration variable name defaults to i
@@ -30,12 +32,13 @@ app	// Use lowercase name to define a static class. Access its members with app.
 			players.removeAt i 	// Remove item at index
 		for players as p, i	// Iterate over list
 			print "The score of {p.name} is {p.score}"	// String interpolation
+		let x = 0, y = 0	// Numbers are floats by default. Use "int x" if you need an integer.
 		let max = x > y ? x : y	// Ternary operator
-		let level = floor(lineCount / 10)	// floor, ceil, round
-		let period = filename.indexOf(".")	// Get index of character in string
+		int level = floor(lineCount / 10)	// Dividing two integers results in a float. Use floor, ceil or round if you need an integer
+		int period = filename.indexOf(".")	// Get index of character in string
 		string name = filename.substring(0 to period)	// Get substring
 		Player p = players[index mod players.length]	// Modulo operator
-		random(0 to 1)	// Random number between 0 and 1
+		randomFloat(0 to 1)	// Random float between 0 and 1
 		abs(-5)	// The absolute value of a number
 		Vector2 pos = {cos(x*2*pi), sin(y*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
 		players.sortBy.score	// Sort list by score
@@ -52,11 +55,11 @@ app	// Use lowercase name to define a static class. Access its members with app.
 		move player, delta:getDelta(player)	// You don't need parenthesis when calling a function that doesn't return anything
 		pixels[vector] = color	// Set pixel at position between {0,0} and {224, 168} to color between 0 and 15
 		pixels[x,y] = color	// Pixels can also be accessed with a vector or two separate coordinates
-		let color = pixels[player.pos]	// Available colors: 0:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, 10:Yellow, 11:Green, 12:Blue, 13:Indigo, 14:Pink, 15:Peach
+		int color = pixels[player.pos]	// Available colors: 0:Black, 1:DarkBlue, 2:DarkPurple, 3:DarkGreen, 4:Brown, 5:DarkGray, 6:LightGray, 7:White, 8:Red, 9:Orange, 10:Yellow, 11:Green, 12:Blue, 13:Indigo, 14:Pink, 15:Peach
 		drawSprite sprites.blueCircle, pos:{x:0, y:0}	// Draw sprite
 		drawText "Hello World", pos:{x,y}, color:1	// Draw text
 		drawRect pos:{x,y}, size:{8,8}, fillColor:2, outlineColor:3	// Draw rectangle, omit fillColor for no fill, omit outlineColor for no outline
-		drawCircle pos:{x,y}, radius:8, fillColor:2, outlineColor:3	// Draw circle, radius can be a number or a vector for an ellipse
+		drawCircle pos:{x,y}, radius:8, fillColor:2, outlineColor:3	// Draw circle, radius can be a float or a vector for an ellipse
 		clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
 		replaceColor a with:b	// All drawing functions will replace color a with color b until stopReplacingColors is called
 		if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
@@ -195,9 +198,9 @@ app
 class Cell
 	Vector2 pos
 	Player player
-	number liberties
+	int liberties
 	bool visited
 		
 class Player
-	number index
-	number score
+	int index
+	int score

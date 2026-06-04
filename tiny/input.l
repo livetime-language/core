@@ -187,15 +187,15 @@ global transient input
 			}, {passive: false})
 		}
 
-	internal onPointerDown: float x, float y, float button
+	internal onPointerDown: float x, float y, int button
 		let pos = internalUsers[0].pointerPos
 		print type:Touch, "Clicked {pos}, button:{button}"
 		internalUsers[0].isPressing[InputButton.LeftMouseButton + button] = true
 
-	internal onPointerMove: float x, float y, float button
+	internal onPointerMove: float x, float y, int button
 		internalUsers[0].pointerPos = graphics.screen.getPixelPos {x, y}
 		
-	internal onPointerUp: float x, float y, float button
+	internal onPointerUp: float x, float y, int button
 		internalUsers[0].isPressing[InputButton.LeftMouseButton + button] = false
 
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
@@ -208,7 +208,7 @@ global transient input
 		InternalGamepad[] internalGamepads = getGamepads
 		if internalGamepads == null or internalGamepads.length == 0 then return
 			
-		float index
+		int index
 		for internalGamepads as internalGamepad
 			if internalGamepad
 				let user = internalUsers[index]
@@ -218,29 +218,29 @@ global transient input
 				index++
 
 	// Returns true if the player has just pressed the given button this frame (it was not pressed in the previous frame).
-	global justPressed: InputButton button, float player = 0
+	global justPressed: InputButton button, int player = 0
 		player = 0
 		let user = internalUsers[player]
 		return user.isPressing[button] and not user.wasPressing[button]
 
 	// Returns true if the player is currently pressing the given button.
-	global isPressed: InputButton button, float player = 0
+	global isPressed: InputButton button, int player = 0
 		player = 0
 		let user = internalUsers[player]
 		return user.isPressing[button]
 	
 	// Returns true if the player has just released the given button this frame (it was pressed in the previous frame).
-	global justReleased: InputButton button, float player = 0
+	global justReleased: InputButton button, int player = 0
 		player = 0
 		let user = internalUsers[player]
 		return not user.isPressing[button] and user.wasPressing[button]
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
-	global getPointer: float player = 0
+	global getPointer: int player = 0
 		player = 0
 		return internalUsers[player].pointerPos
 
 	// Returns the current scroll delta of the player's input device.
-	global getScrollDelta: float player = 0
+	global getScrollDelta: int player = 0
 		player = 0
 		return internalUsers[player].scrollDelta
