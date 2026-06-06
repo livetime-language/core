@@ -1821,7 +1821,10 @@ immutable ImmutableList<T>
 
 	inline js List<T> toList() [...this]
 	
-		
+class KeyValuePair<TKey, TValue>
+	TKey key
+	TValue value
+
 // A hashtable that maps keys to values
 js Map
 class Dictionary<TKey, TValue>
