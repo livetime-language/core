@@ -370,7 +370,7 @@ transient skipInit global unit graphics
 			core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback
 			Platform.isDebug	then showPointersMode = input.showPointersModeInEditor
 			default	then showPointersMode = input.showPointersMode
-		if showPointersMode != None then players.each drawPointer ., showPointersMode
+		if showPointersMode != None then input.players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
 			.videoElementIndex = 0
@@ -407,11 +407,11 @@ transient skipInit global unit graphics
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
 		
 	private Player[] getClickableBy: Player[] visibleFor, Player[] clickableBy
-		if not Platform.isOnlineMultiplayer return players
+		if not Platform.isOnlineMultiplayer return input.players
 		Player[] effectiveVisibleBy = visibleFor or currentlyVisibleFor
 		return effectiveVisibleBy and clickableBy
 		     ? effectiveVisibleBy intersectWith clickableBy 
-		     : effectiveVisibleBy or clickableBy or players
+		     : effectiveVisibleBy or clickableBy or input.players
 			
 	internal js void drawMargins
 		if(graphics.effectiveScaleMode == 1) {
@@ -1997,7 +1997,7 @@ transient skipInit global unit graphics
 		
 	private getScaleImagesAsPointerGetsCloserFactor: Vector2 position
 		if not scaleAsPointerGetsCloserRadius then return 1.0
-		let distance = scaleAsPointerGetsCloserBy ? scaleAsPointerGetsCloserBy.pointerPosition.distanceTo(position) : players.min.pointerPosition.distanceTo(position)
+		let distance = scaleAsPointerGetsCloserBy ? scaleAsPointerGetsCloserBy.pointerPosition.distanceTo(position) : input.players.min.pointerPosition.distanceTo(position)
 		// return math.map distance, 0, scaleAsPointerGetsCloserRadius, scaleAsPointerGetsCloserFactor, 1
 		return scaleAsPointerGetsCloserFactor interpolateTo 1 progress:distance 0..scaleAsPointerGetsCloserRadius
 		
@@ -2298,7 +2298,7 @@ awardScreen
 			active = not active
 		if active
 			let size = {720, 540}
-			forPositions players, grid:{2,2}, delta:size
+			forPositions input.players, grid:{2,2}, delta:size
 				drawVideo . position:pos, size
 				drawText .playerScore, pos * {2.13, 1.8}, font:ByTheWay
 				

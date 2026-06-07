@@ -34,7 +34,7 @@ skipInit transient unit statistics
 internal unit networkVisualizer
 	internal draw
 		if core.simulateInputsForTesting
-			for players as player
+			for input.players as player
 				drawCircle {1110+player.playerIndex*20, -540+posForPlayer[player.playerIndex]}, size:20, color:.playerColor
 		
 		// // AheadMin
@@ -43,7 +43,7 @@ internal unit networkVisualizer
 		// drawText cast core.aheadMin, {1110, minY}, size:20, align:Left
 		
 		// Draw bar to visualizue up to which frame we got input from each player
-		for players as player
+		for input.players as player
 			let internaluser = input.internalUsers[.id]
 				// BufferFrames
 				let bufferY = 510 - getHeightForFrame(core.frame-internaluser.bufferFrames+1)

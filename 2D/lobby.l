@@ -49,7 +49,7 @@ unit lobby
 		inLobby = true
 		showNameIndex = 1
 		editNames = false
-		players.each.isReadyInLobby = false
+		input.players.each.isReadyInLobby = false
 		audio.stop
 		
 	int counter
@@ -63,17 +63,17 @@ unit lobby
 			return
 		
 		// Control show names
-		onKeyDown by host
+		onKeyDown by input.host
 			let cmd = pressedBy.keysCurrentlyDown.includes LeftMetaKey
 			if key == E and cmd
 				setupFields newHost:pressedBy
 				
-			if not host then return
+			if not input.host then return
 			if key == Right
-				showName players[showNameIndex++ mod players.length]
+				showName input.players[showNameIndex++ mod input.players.length]
 			else
 			if key == Tab and cmd
-				showNameIndex = (showNameIndex+1) mod players.length
+				showNameIndex = (showNameIndex+1) mod input.players.length
 			else
 			if key == Enter or key == Tab or key == Right
 				switchFieldFocus 1
@@ -81,17 +81,17 @@ unit lobby
 			if key == Left
 				switchFieldFocus -1
 			
-		int count = players.length
+		int count = input.players.length
 			float videoWidth = count<2 ? 900.0 : 1920/count
 			float offset = -videoWidth*(count-1)/2
 			float halfVideoHeight = videoWidth*3/8
 			
-			for players as player, playerIndex
+			for input.players as player, playerIndex
 				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				onTouchDown position:pos size:{videoWidth, videoWidth*3/4}
 					cyclePlayer player
 					
-			for players as player, playerIndex
+			for input.players as player, playerIndex
 				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				drawVideo ., pos, videoWidth
 				
@@ -102,7 +102,7 @@ unit lobby
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
 					
-				if players.length.withinInclusively(Platform.supportedUserCount) and players.all(.isReadyInLobby)
+				if input.players.length.withinInclusively(Platform.supportedUserCount) and input.players.all(.isReadyInLobby)
 					fields.clear
 					restart
 						
@@ -116,20 +116,20 @@ unit lobby
 				
 				let field = fields.find.player == player
 					// Set field position
-					field.position = pos + {0, -halfVideoHeight-(players.length<=2 ? 85 : 120)}
+					field.position = pos + {0, -halfVideoHeight-(input.players.length<=2 ? 85 : 120)}
 					if field.effect then field.effect.position = field.position + {0,-190}
 					if field.particleSystem then field.particleSystem.position = field.position
 						
 					if editNames
 						// Suggestions
 						for nameSuggestions as name
-							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
+							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:input.host
 								fields[playerIndex].text = name
 								setPlayerName player, name
 								
 						// Circle indicating the first player name to show
 						if showNameIndex == playerIndex
-							drawCircle field.position+{0,60}, size:20, visibleFor:host
+							drawCircle field.position+{0,60}, size:20, visibleFor:input.host
 
 		// For testing, display to coordinates when we click the screen
 		if core.drawPointsForTesting
@@ -146,12 +146,12 @@ unit lobby
 		
 	setupFields: Player newHost
 		input.host = newHost
-		this.showNameIndex = host.playerIndex + 1
+		this.showNameIndex = input.host.playerIndex + 1
 		Framework.clear
 		fields.clear
 		if not editNames
 			editNames = true
-			players.each createField ., visibleFor:host
+			input.players.each createField ., visibleFor:input.host
 			fields[0].focus
 		else
 			editNames = false
@@ -174,7 +174,7 @@ unit lobby
 		// playSound LobbyImpact
 		
 	createField: Player player, implicit Player[] visibleFor = null
-		let field = LobbyTextField(text:player.playerName, player, visibleFor, editableBy:host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
+		let field = LobbyTextField(text:player.playerName, player, visibleFor, editableBy:input.host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
 		fields.add field
 		return field
 		
@@ -188,12 +188,12 @@ unit lobby
 	
 	cyclePlayer: Player player
 		watch "Cycle color {player.playerIndex}"
-		players.moveToBack player
+		input.players.moveToBack player
 		input.updatePlayers
 		player.colorPreferences = [player.playerIndex]
 	
 	tickSettings
-		for players as player
+		for input.players as player
 			graphics.visibleFor player
 				drawImage settingsIcon, {-920,-500}, size:32
 					player.showSettingsInLobby = !player.showSettingsInLobby
