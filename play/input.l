@@ -937,6 +937,16 @@ skipInit global unit input
 						c.B.name = "O"
 						c.X.name = "SQUARE"
 						c.Y.name = "TRIANGLE"
+
+					// Modern input
+					int bit = 1
+					for 16
+						bool isPressed = (buttons bitwiseAnd bit) != 0
+						bool wasPressed = internalUser.isPressed[i]
+						internalUser.isPressed[i] = isPressed
+						internalUser.justPressed[i] = isPressed and not wasPressed
+						internalUser.justReleased[i] = not isPressed and wasPressed
+						bit = bit shiftLeft 1
 				else
 				if inputType == String
 					int id = inputs.readInt
