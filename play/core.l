@@ -532,11 +532,10 @@ internal transient skipInit unit core
 			networkVisualizer.tick
 			
 		try
-			Framework.tick
+			Framework??.tick
 			tickTimes.add tickTime = PlainDate.measure
-				if lobby.inLobby	then lobby.tick; else
-				if awardScreen.active	then awardScreen.tick; else
-				                             appTick
+				if lobby.inLobby then	lobby.tick
+				else	appTick
 
 			// Advance frame
 			frame++
