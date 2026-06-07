@@ -439,31 +439,31 @@ skipInit global unit input
 	transient ControllerButtonPlayerAndIndex[Key] controllerButtonMap
 	
 	// A list of all players
-	global Player[] players
+	Player[] players
 		
 	bool active = true
 		
 	// The player hosting the current session
-	global Player host
+	Player host
 		
 	// Do something for every player
-	global inline js void everybody: void(Player it) do
+	inline js void everybody: void(Player it) do
 		for(let i=0, _len=input.players.length; i<_len; ++i) { let it = input.players[i]; do()}
 		
 	// Returns true if the given condition is true for every player
-	global inline js bool everybody: bool(Player it) predicate
+	inline js bool everybody: bool(Player it) predicate
 		input.players.every(predicate)
 		
 	// Returns true if the given condition is true for any player
-	global inline js bool anybody: bool(Player it) predicate
+	inline js bool anybody: bool(Player it) predicate
 		input.players.some(predicate)
 		
 	// Returns true if the given condition is true for no player
-	global inline js bool nobody: bool(Player it) predicate
+	inline js bool nobody: bool(Player it) predicate
 		!input.players.some(predicate)
 		
 	// All players
-	global inline js Player[] everybody() input.players
+	inline js Player[] everybody() input.players
 		
 	Player showPerspectiveOf
 		

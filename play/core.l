@@ -115,7 +115,7 @@ internal transient skipInit unit core
 	reset
 		outputIndex = 0
 		addOutput "start"
-		players.clear
+		input.players.clear
 		input.playersById.clear
 		input.host = null
 		input.playersToRemove.clear
@@ -147,7 +147,7 @@ internal transient skipInit unit core
 			for input.internalUsers as internalUser
 				Player user = {id:.id, playerIndex:i}
 				input.playersById[.id] = user
-				players.add user
+				input.players.add user
 				
 			// Set local user
 			let localUserId = input.localUser?.id < input.internalUsers.length ? input.localUser.id : 0
@@ -414,8 +414,8 @@ internal transient skipInit unit core
 	
 	collectStatistics
 		// Players
-		if mode == Connected and players.length > 1 and frame > joinFrame + 120
-			for players
+		if mode == Connected and input.players.length > 1 and frame > joinFrame + 120
+			for input.players
 				let internalUser = input.internalUsers[.id]
 				if not internalUser.local
 					internalUser.collectStatistics frame
@@ -641,7 +641,7 @@ internal transient skipInit unit core
 				snapshot.writeInt .inputs.readPos
 				
 		// Checksum
-		if players.length >= 2 and input.isCertain
+		if input.players.length >= 2 and input.isCertain
 			float myChecksum = snapshot.checksum
 			float theirChecksum = checksums[frame]
 			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
@@ -1065,7 +1065,7 @@ skipInit transient unit statistics
 		
 		// Compile server and peer pings to send
 		string[] connections
-		for players as p
+		for input.players as p
 			let internalUser = input.internalUsers[.id]
 			connections.add internalUser.connectionType
 			
@@ -1130,11 +1130,11 @@ unit networkVisualizer
 		
 	internal tick
 		if core.simulateInputsForTesting
-			for players
+			for input.players
 				if posForPlayer[.playerIndex] == -10000 then posForPlayer[.playerIndex] = posForPlayer[0]
 					
 			// Move circle with artificially created inputs to test the smoothness
-			for players as player
+			for input.players as player
 				core.smooth player
 					input.onKeyDown by:player
 						if (posForPlayer[player.playerIndex] += 2) > 1080

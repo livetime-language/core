@@ -6,7 +6,7 @@ tests
 	importance:5
 	void click: Vector2 position	// The screen position to click
 		        TouchType with = LeftMouseButton	// LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
-	            nocolon Player by = players[0]	// The player to click
+	            nocolon Player by = input.players[0]	// The player to click
 		let internalUser = input.internalUsers[by.id]
 		input.touchDown internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
 		input.touchUp internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
@@ -21,7 +21,7 @@ tests
 	           Vector2 to	// The screen position to drag to
 		       float duration = 100	// The duration of the drag in milliseconds
 		       TouchType with = LeftMouseButton	// LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
-		       nocolon Player by = players[0]	// The player to drag
+		       nocolon Player by = input.players[0]	// The player to drag
 		let internalUser = input.internalUsers[by.id]
 
 		// Down
@@ -47,7 +47,7 @@ tests
 	importance:5
 	void hover: Vector2 position	// The screen position to hover over
 	            TouchType with = LeftMouseButton	// LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
-	            nocolon Player by = players[0]	// The player to hover over the given screen position
+	            nocolon Player by = input.players[0]	// The player to hover over the given screen position
 		let internalUser = input.internalUsers[by.id]
 		input.touchMove internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
 		tick
@@ -58,7 +58,7 @@ tests
 	importance:5
 	void pressKey: Key key	// The key to press
 	               string character = ""	// The character to type
-		           nocolon Player by = players[0]	// The player
+		           nocolon Player by = input.players[0]	// The player
 		let internalUser = input.internalUsers[by.id]
 		input.keyDown internalUser, player:by, key, character
 		input.keyUp internalUser, player:by, key
@@ -69,7 +69,7 @@ tests
 	//     moveLeftStickTo {1,0} by redPlayer
 	importance:5
 	void moveLeftStickTo: Vector2 direction	// The direction to move the left stick to
-	                      nocolon Player by = players[0]	// The player
+	                      nocolon Player by = input.players[0]	// The player
 		by.gamepad.leftStick.assign(direction)
 		app.onGamepad??(by.gamepad)
 		by.onGamepad??(by.gamepad)
