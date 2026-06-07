@@ -66,12 +66,6 @@ skipInit immutable Sound
 	isPlaying
 		return audio.playingSounds.any.sound == this and .frame < Time.ticks
 
-	fadeOut: float duration = 3000 // The duration of the fade out in milliseconds
-		     float delay = 0       // The delay before the fade out starts in milliseconds
-		// Migrate to 3D
-		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
-		return this
-
 internal transient PlayingSound
 	immutable Sound sound
 	immutable int frame

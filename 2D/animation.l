@@ -188,6 +188,13 @@ Color
 		              float duration = 300 // The duration of the animation in milliseconds
 		fx.animateValue this, target, delay, duration, this = .
 
+Sound
+	fadeOut: float duration = 3000 // The duration of the fade out in milliseconds
+		     float delay = 0       // The delay before the fade out starts in milliseconds
+		// Migrate to 3D
+		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
+		return this
+
 transient global skipInit unit audio
 	global importance:4 playSound: Sound sound
 		              float delay = 0 // The delay before the sound starts in milliseconds
