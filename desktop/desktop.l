@@ -1,33 +1,33 @@
-transient skipInit unit Platform
+global transient skipInit unit system
 	inline js string resourcesPath => process.resourcesPath
 	
 	js void showIcon
-		if(!Platform.isDebug && window.require) {
+		if(!system.isDebug && window.require) {
 			const { remote } = require("electron")
 			remote.app.dock?.show()
 		}
 	
 	js void hideIcon
-		if(!Platform.isDebug && window.require) {
+		if(!system.isDebug && window.require) {
 			const { remote } = require("electron")
 			remote.app.dock?.hide()
 		}
 	
 	js void show
-		if(!Platform.isDebug && window.require) {
+		if(!system.isDebug && window.require) {
 			const { remote } = require("electron")
 			remote.getCurrentWindow().show()
 		}
 	
 	js void hide
-		if(!Platform.isDebug && window.require) {
+		if(!system.isDebug && window.require) {
 			const { remote } = require("electron")
 			remote.getCurrentWindow().hide()
 		}
 		
 	js void registerGlobalShotcut: string shortcut
 		                           void() do
-		if(!Platform.isDebug && window.require) {
+		if(!system.isDebug && window.require) {
 			const { remote } = require("electron")
 			remote.globalShortcut.unregister(shortcut)
 			remote.globalShortcut.register(shortcut, () => do())

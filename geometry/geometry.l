@@ -751,7 +751,7 @@ global skipInit unit math
 		if type == Segment and scalar > 1 then scalar = 1
 		return from + lineVector * scalar
 	
-global transient unit System
+global transient skipInit unit system
 	global inline js void forPositions: int to                            // The exclusive upper bound to iterate towards
 		                                Vector2 start = {0,0}             // Left or top align items at this position
 		                                implicit Vector2 delta = {300,0}  // Distance between items
@@ -952,7 +952,7 @@ immutable Rect
 		                 Vector2 size
 		return this.position - this.size/2 - size/2 <=  position < this.position + this.size/2 + size/2
 
-global transient unit System
+global transient skipInit unit system
 	global inline js void for: Vector2 subject  // The exclusive upper bound to iterate towards
 		                       -> inline void(
 		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop

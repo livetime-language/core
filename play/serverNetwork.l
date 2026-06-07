@@ -67,7 +67,7 @@ internal transient skipInit unit ServerNetwork
 	// Called when we first connec to the server or when we reconnect
 	private onConnectedToServer
 		core.log "#server Connected to Server", input.localUser.id, core.roomId
-		sendJoinMessage core.roomString, input.localUser.id, version:Platform.buildVersion
+		sendJoinMessage core.roomString, input.localUser.id, version:system.buildVersion
 		
 	js int bufferedAmount
 		return ServerNetwork.socket.bufferedAmount 
@@ -135,10 +135,10 @@ internal transient skipInit unit ServerNetwork
 	
 			if roomId != core.roomId
 				core.log "#server Received room id {roomId}"
-				Platform.pushState "/{core.gameId}/{roomId}"
+				system.pushState "/{core.gameId}/{roomId}"
 				core.roomId = roomId
 				
-			if version != Platform.buildVersion
+			if version != system.buildVersion
 				alert "You are using an old version of this application. Please refresh your browser."
 				
 			inputsSentPos = input.localUser.inputs.writePos
@@ -152,7 +152,7 @@ internal transient skipInit unit ServerNetwork
 			core.log "#server Joining room {roomId} as user {userId}"
 	
 			// The first person in the room triggers sending an notification with the link to everybody
-			// if userCount <= 1 and !Platform.isStaging: http.getStringDirectly "{Platform.protocolAndHost}:3114/sendGamedayNotification/{core.gameId}/{core.roomId}/hasStarted"
+			// if userCount <= 1 and !system.isStaging: http.getStringDirectly "{system.protocolAndHost}:3114/sendGamedayNotification/{core.gameId}/{core.roomId}/hasStarted"
 			
 			// Create an offer for each user already in the room
 			for input.internalUsers
@@ -305,4 +305,4 @@ internal transient skipInit unit ServerNetwork
 		let newUserId = buffer.readBool
 		let url = buffer.readString
 		if !newUserId then url += "u{input.localUser.id}"
-		Platform.setLocation url
+		system.setLocation url

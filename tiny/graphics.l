@@ -79,7 +79,7 @@ Screen
 			target[i] = 0
 			
 	finishFrame
-		if Platform.fastForward then return
+		if system.fastForward then return
 		let len = size.x * size.y
 		int sourceIndex, targetIndex
 		let target = pixelData.data
@@ -339,7 +339,7 @@ transient global skipInit graphics
 			index += tilesStride
 
 	startFrame
-		if Platform.fastForward then return
+		if system.fastForward then return
 		screen.clear
 
 	finishFrame
@@ -357,18 +357,18 @@ transient global skipInit graphics
 		screenGridSize.create screen.size / tileSize
 
 	global void setPixel: Vector2 pos, int color
-		if Platform.fastForward then return
+		if system.fastForward then return
 		if screen.clipX1 <= pos.x < screen.clipX2 and screen.clipY1 <= pos.y < screen.clipY2
 			screen.pixels.items[(pos.y * screen.size.x + pos.x).floor] = color
 
 	global int getPixel: Vector2 pos
-		if Platform.fastForward then return
+		if system.fastForward then return
 		if 0 <= pos.x < screen.size.x and 0 <= pos.y < screen.size.y
 			return screen.pixels.items[(pos.y * screen.size.x + pos.x).floor]
 		return 0
 
 	copy: int[] source, int sourceStride, int sourceIndex, Vector2 pos = {0,0}, Vector2 size = {8,8}
-		if Platform.fastForward then return
+		if system.fastForward then return
 		int positionX = pos.x.floor, positionY = pos.y.floor
 		int startX = positionX
 		int endX = positionX + size.x.floor
@@ -405,7 +405,7 @@ transient global skipInit graphics
 				offsetToTarget += targetStride - tilesStride
 
 	global drawSprite: Sprite sprite, Vector2 pos = {0,0}, void() onClick = null
-		if Platform.fastForward then return
+		if system.fastForward then return
 		int positionX = pos.x.floor, positionY = pos.y.floor
 		int startX = positionX
 		int endX = positionX + sprite.size.x.floor
@@ -446,7 +446,7 @@ transient global skipInit graphics
 				onClick()
 
 	global drawText: string text, Vector2 pos = {0,0}, int color = 6
-		if Platform.fastForward then return
+		if system.fastForward then return
 		int stride = floor(screen.size.x)
 		int fontStride = floor(font.charsPerRow * font.gridSize.x)
 		let target = screen.pixels.items
@@ -465,7 +465,7 @@ transient global skipInit graphics
 				pos.y += font.gridSize.y
 
 	global void drawRect: Vector2 pos = {0,0}, implicit Vector2 size = {8,8}, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
-		if Platform.fastForward then return
+		if system.fastForward then return
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
 		let target = screen.pixels.items
@@ -484,7 +484,7 @@ transient global skipInit graphics
 			drawRect {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 
 	global void drawCircle: Vector2 pos = {0,0}, Vector2 radius, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
-		if Platform.fastForward then return
+		if system.fastForward then return
 		if fillColor == -1 and outlineColor == -1 then fillColor = 6
 		// TODO: Implement draw circle
 		drawRect pos, size:{radius.x*2, radius.y*2}, fillColor, outlineColor, outlineWidth

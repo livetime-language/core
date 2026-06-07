@@ -590,7 +590,7 @@ unit Math
 	// 	var factor = (value-from) / (to-from)
 	// 	return start + (target-start) * ease.function(factor)
 	
-global transient unit System
+global transient skipInit unit system
 	// global inline js void forPositions: T[] subject                       // The list to iterate over
 	// 	                                Vector2 start = {0,0}             // Left or top align items at this position
 	// 	                                implicit Vector2 delta = {300,0}  // Distance between items
@@ -824,7 +824,7 @@ class Grid<T>
 		var _subject=this.items;
 		for(int _size=this.size, _y=0; _y<_size.y; ++_y) for(int _x=0; _x<_size.x; ++_x) { var _it = _subject[y*_size.x + x]; var _pos = new Vector2Int(x,y); do(_it, _pos)}
 			
-global transient unit System
+global transient skipInit unit system
 	global inline cs void for: ensureSingleExecution IntVector2 size // Iterate over all dimensions of this vector
 		                       -> void(
 		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop

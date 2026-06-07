@@ -14,10 +14,10 @@ skipInit immutable Sound
 			this.nextAudioElement = new Audio();
 			this.nextAudioElement.onloadedmetadata = () => resolve()
 			this.nextAudioElement.onerror = () => {
-				System.print(`Failed to load sound ${this.file}`)
+				system.print(`Failed to load sound ${this.file}`)
 				reject();
 			}
-			this.nextAudioElement.src = Platform.getAbsoluteUrl(this.file);			
+			this.nextAudioElement.src = system.getAbsoluteUrl(this.file);			
 		})
 		
 	js void volume: float value

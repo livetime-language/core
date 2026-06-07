@@ -1102,7 +1102,7 @@ class Error
 	implicit inline cs string toString => this.stack
 	
 // A collection of basic system functions
-global transient unit System
+global transient skipInit unit system
 	// Executes code depending on whether a given condition is true or false
 	global inline cs void if: implicit bool condition // The condition to check
 		                      void() then             // Do this if the condition is true

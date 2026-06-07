@@ -4,8 +4,8 @@ file
 		return result.data
 
 	getFileUrl: string filename, string cacheKey = null
-		if cacheKey then	return Platform.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename) + "&cacheKey=" + cacheKey
-		else	return Platform.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename)
+		if cacheKey then	return system.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename) + "&cacheKey=" + cacheKey
+		else	return system.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename)
 
 	readdir
 
@@ -141,7 +141,7 @@ file
 
 	void execute: string command
 
-unit Platform
+global transient skipInit unit system
 	//inline js string os() Capacitor.getPlatform()
 	openDevTools
 		print "Dev Tools"

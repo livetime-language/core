@@ -15,7 +15,7 @@ MonoBehaviour LiveTime
 		Input.collectTiltFiveEvents
 		Core.step
 		
-unit Platform
+global transient skipInit unit system
 	userCount = 2
 		
 skipInit unit Core
@@ -67,11 +67,11 @@ skipInit unit Core
 		// initAll
 		
 		if !startInLobby
-			// When the developer changed Platform.userCount, add or remove internal users accordingly
-			for Input.internalUsers.length to Platform.userCount
+			// When the developer changed system.userCount, add or remove internal users accordingly
+			for Input.internalUsers.length to system.userCount
 				Input.internalUsers.add {id:i, local:true, collectInputs:true}
-			if Input.internalUsers.length > Platform.userCount
-				Input.internalUsers.removeRange Platform.userCount, count: Input.internalUsers.length - Platform.userCount
+			if Input.internalUsers.length > system.userCount
+				Input.internalUsers.removeRange system.userCount, count: Input.internalUsers.length - system.userCount
 			
 			// We always recreating users, because developers might have added fields to NetworkUser or Touch
 			// By the time we call startApp, all users need to exist

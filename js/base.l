@@ -1934,10 +1934,10 @@ interface object
 	static inline js string constructorName(dynamic value) (value?.constructor?.name || "")
 	static inline js void deleteField(dynamic object, string field) delete object[field]
 
-skipInit global unit Platform
+global transient skipInit unit system
 	string libUrl
 	global inline js async dynamic import: string file
-		import((Platform.libUrl || _basePath || location.origin+"/")+file)
+		import((system.libUrl || _basePath || location.origin+"/")+file)
 		
 class Reference<T>
 	dynamic container
@@ -2021,7 +2021,7 @@ enum lowercase string PrintType
 	Gamepad
 	
 // A collection of basic system functions
-global transient priority unit System
+global transient priority unit system
 	// Executes code depending on whether a given condition is true or false
 	global inline js void if: implicit bool condition // The condition to check
 		                      inline void() then      // Do this if the condition is true
@@ -2280,8 +2280,8 @@ global transient priority unit System
 	// Display a message in the timeline
 	global js void watch: logstring text // The text, variables or expressions to watch
 		                  SourceCodeLocation sourceCodeLocation
-		if(Platform.isDebug && core.frame >= core.frameWithNewWatches && sourceCodeLocation) {
-			Platform.sendWatch(core.frame, text, sourceCodeLocation.start, sourceCodeLocation.file)
+		if(system.isDebug && core.frame >= core.frameWithNewWatches && sourceCodeLocation) {
+			system.sendWatch(core.frame, text, sourceCodeLocation.start, sourceCodeLocation.file)
 		}
 		
 	// Shows a dialog box with a given message
@@ -2319,7 +2319,7 @@ global transient priority unit System
 
 	global inline js dynamic Capacitor => window.Capacitor
 		
-global transient priority low unit System		
+global transient skipInit priority low unit system
 	global inline js void for: string subject // Iterate over every character of this string
 		                       -> inline void(
 		                           string it, // The current character of the string we are iterating over with the for-loop
@@ -2946,7 +2946,7 @@ class Grid<T>
 			for count
 				items.insert null index:floor(rowIndex + x + .)
 	
-global transient unit System
+global transient skipInit unit system
 	global inline js void for: Grid<T> subject    // The grid to iterate over
 		                       -> inline void(
 		                           T it,      // The current item of the list we are iterating over with the for-loop

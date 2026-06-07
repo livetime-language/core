@@ -39,7 +39,7 @@ http
 	js void get: string url
 		         stored void(dynamic result) code
 		let id = networkData.addCallback(code)
-		if(core.frame == 0 || Platform.waitingForInitialData) Platform.waitingForInitialData++
+		if(core.frame == 0 || system.waitingForInitialData) system.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
 			let data = await (await fetch(url)).text()
 			log("http.get "+url+" -> "+data?.length+" bytes")
@@ -49,8 +49,8 @@ http
 	js void getString: string url
 		               bool storeForDeterministicReplay = true
 		               stored void(string result) code
-		if(core.frame == 0 || Platform.waitingForInitialData) {
-			Platform.waitingForInitialData++
+		if(core.frame == 0 || system.waitingForInitialData) {
+			system.waitingForInitialData++
 			log("getString: "+url)
 		}
 		if(storeForDeterministicReplay) {
@@ -64,7 +64,7 @@ http
 				let data = await (await fetch(url)).text()
 				log("received: "+url)
 				code.invoke(data)
-				if(Platform.waitingForInitialData > 0) Platform.receivedInitialData++
+				if(system.waitingForInitialData > 0) system.receivedInitialData++
 			}
 		}
 		
@@ -124,7 +124,7 @@ http
 	js void post: string url
 		          stored void(dynamic result) code
 		let id = networkData.addCallback(code)
-		if(core.frame == 0) Platform.waitingForInitialData++
+		if(core.frame == 0) system.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
 			let data = await (await fetch(url, {method:"POST"})).text()
 			log("http.post "+url+" -> "+data?.length+" bytes")
@@ -136,7 +136,7 @@ http
 		          dynamic body
 		          stored void(dynamic result) code
 		let id = networkData.addCallback(code)
-		if(core.frame == 0) Platform.waitingForInitialData++
+		if(core.frame == 0) system.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
 			log("Actually fetching data: POST "+url)
 			let data = await (await fetch(url, {method:"POST", body:JSON.stringify(body)})).text()
@@ -154,7 +154,7 @@ http
 	js void put: string url
 		         stored void(dynamic result) code
 		let id = networkData.addCallback(code)
-		if(core.frame == 0) Platform.waitingForInitialData++
+		if(core.frame == 0) system.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
 			let data = await (await fetch(url, {method:"PUT"})).text()
 			log("http.put "+url+" -> "+data?.length+" bytes")
@@ -166,7 +166,7 @@ http
 		         dynamic body
 		         stored void(dynamic result) code
 		let id = networkData.addCallback(code)
-		if(core.frame == 0) Platform.waitingForInitialData++
+		if(core.frame == 0) system.waitingForInitialData++
 		if(core.isPremiere && input.isCertain) {
 			let data = await (await fetch(url, {method:"PUT", body:JSON.stringify(body)})).text()
 			log("http.put "+url+" -> "+data?.length+" bytes")

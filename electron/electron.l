@@ -1,4 +1,4 @@
-unit Platform
+global transient skipInit unit system
 	js void openDevTools
 		require('@electron/remote').getCurrentWindow().toggleDevTools()
 

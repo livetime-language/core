@@ -223,14 +223,14 @@ Object CircleObject
 	internal override tick
 		if alpha then drawCircle position, size, color:color, visibleFor, layer
 
-global transient unit System
+global transient skipInit unit system
 	global visualize: Vector2 position = {}
 		              Color color = White
 		              logstring text = ""
 		              SourceCodeLocation location
 		VisualizeObject(position, color, index:core.watchIndex, text)
-		if Platform.isDebug and core.frame >= core.frameWithNewWatches and location
-			Platform.sendWatch core.frame, text:text or position.toString, location.start, location.file
+		if system.isDebug and core.frame >= core.frameWithNewWatches and location
+			system.sendWatch core.frame, text:text or position.toString, location.start, location.file
 		core.watchIndex++
 
 Object VisualizeObject
@@ -419,7 +419,7 @@ Object Menu
 			items.insert {image:New,  "New Game",        onClick:core.restart}, 0
 			items.add    {image:Save, "Save Game"        onClick:core.saveEventStreamAndLogs}
 			items.add    {image:Back, "Back to Lobby",   onClick:lobby.show}
-			items.add    {image:Quit, "Exit Fullscreen", onClick:Platform.setFullscreen false, forPlayer:touch.by}
+			items.add    {image:Quit, "Exit Fullscreen", onClick:system.setFullscreen false, forPlayer:touch.by}
 		
 	internal override tick
 		bool doNotClose

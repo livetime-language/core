@@ -38,7 +38,7 @@ unit mail
 		                       string to
 		                       string subject
 		                       string message
-		if(Platform.isDebug) return "preview"
+		if(system.isDebug) return "preview"
 		try {
 			let result = await mail.ses.send(new mail.aws.SendEmailCommand({
 				Source: from,
@@ -69,7 +69,7 @@ unit mail
 		                       string subject
 		                       string message
 		                       MailAttachment[] attachments
-		if(Platform.isDebug) return "preview"
+		if(system.isDebug) return "preview"
 		try {
 			let rawEmail = `From: ${from}\nTo: ${to}\nSubject: ${subject}\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="NextPart"\n\n--NextPart\nContent-Type: text/html; charset="UTF-8"\n\n${message}\n\n--NextPart\n`
 				

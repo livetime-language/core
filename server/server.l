@@ -1,9 +1,9 @@
-skipInit unit Platform
+global transient skipInit unit system
 	visible bool isDebug
 	public inline js int buildVersion => _buildVersion
 		
 	inline js void initPlatform
-		Platform.init()
+		system.init()
 		PlainDate.init()
 		
 	inline js void initApplication
@@ -24,7 +24,7 @@ skipInit unit Platform
 		initApplication
 		
 	private inline js void sendEvaluateFinished
-		if(Platform.isDebug) _sendToEditor({type:"evaluateFinished"})
+		if(system.isDebug) _sendToEditor({type:"evaluateFinished"})
 	
 	inline js string basePath => __dirname + "/"
 	
@@ -40,12 +40,12 @@ skipInit unit Platform
 	public inline js string encodeURIComponent(string value) encodeURIComponent(value)
 	public inline js string decodeURIComponent(string value) decodeURIComponent(value)
 		
-global transient unit System
+global transient skipInit unit system
 	// Prints a message to the console
 	global js void print: logstring text // The text, variables or expressions to print
 		                  SourceCodeLocation location
 		console.log(text)
-		if(Platform.isDebug) {
+		if(system.isDebug) {
 			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
 			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location ? location.start : 0, file:location ? location.file: ""});
 		}
@@ -120,7 +120,7 @@ global unit http
 						onRequest(path, bodyText, bodyText ? JSON.parse(bodyText) : null, request, response);
 					} catch(e) {
 						console.error(e)
-						if(Platform.isDebug) _sendErrorToEditor(e);
+						if(system.isDebug) _sendErrorToEditor(e);
 						response.end(`{error:"${e.message}"}`)
 					}
 				})
@@ -151,14 +151,14 @@ global unit http
 						}
 					} catch(e) {
 						console.error(e)
-						if(Platform.isDebug) _sendErrorToEditor(e);
+						if(system.isDebug) _sendErrorToEditor(e);
 						response.end(`{error:"${e.message}"}`)
 					}
 				})
 			}
 		}
 		if(window.server) server.close();
-		if(certPath && keyPath && !Platform.isDebug) {
+		if(certPath && keyPath && !system.isDebug) {
 			window.server = require('https').createServer({
 				cert: fs.readFileSync(certPath),
 				key: fs.readFileSync(keyPath)

@@ -56,8 +56,8 @@ unit lobby
 	
 	tick
 		tickSettings
-		if Platform.isStaging then drawText "Version:{Platform.buildVersion}", size:20, position:{-940, 520}, align:Left
-		if (PeerNetwork.error or core.errorMessage) and Platform.isStaging
+		if system.isStaging then drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
+		if (PeerNetwork.error or core.errorMessage) and system.isStaging
 			drawText PeerNetwork.error, size:40
 			drawText core.errorMessage, size:14, position:{0,40}
 			return
@@ -98,11 +98,11 @@ unit lobby
 				// Start button
 				let text = not .isReadyInLobby ? "START" : Loca.language == German ? "Ich bin bereit" : "I'm ready"
 				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.playerColor, enabled:!.isReadyInLobby, clickableBy:player
-					if enableFullscreen then Platform.setFullscreen true forPlayer:touch.by
+					if enableFullscreen then system.setFullscreen true forPlayer:touch.by
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
 					
-				if input.players.length.withinInclusively(Platform.supportedUserCount) and input.players.all(.isReadyInLobby)
+				if input.players.length.withinInclusively(system.supportedUserCount) and input.players.all(.isReadyInLobby)
 					fields.clear
 					restart
 						
@@ -184,7 +184,7 @@ unit lobby
 			user.name = player.playerName
 		if player.id == input.localUser.id
 			core.account.name = player.playerName
-			Platform.setLocalStorageObject("user", core.account)
+			system.setLocalStorageObject("user", core.account)
 	
 	cyclePlayer: Player player
 		watch "Cycle color {player.playerIndex}"

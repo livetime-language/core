@@ -66,7 +66,7 @@ immutable Texture
 	transient dynamic imageOrCanvas, context
 	
 	Texture
-		if Platform.engineStarted and file
+		if system.engineStarted and file
 			open
 			
 	internal js bool ensureIsAvailable()
@@ -94,7 +94,7 @@ immutable Texture
 					console.log("Error loading image: ", this.file, e)
 					reject(e)
 				}
-				image.src = Platform.getAbsoluteUrl(this.file)
+				image.src = system.getAbsoluteUrl(this.file)
 			})
 		} else {
 			this.imageOrCanvas = image
@@ -118,7 +118,7 @@ immutable Texture
 			var prevPixelSizeX = graphics.pixelSize.x
 			var prevPixelSizeY = graphics.pixelSize.y
 			var prevItems = graphics.items
-			var prevFastForward = Platform.fastForward
+			var prevFastForward = system.fastForward
 			
 			// Create canvas
 			if(!this.context) {
@@ -133,7 +133,7 @@ immutable Texture
 			graphics.pixelSize.x = this.size.x
 			graphics.pixelSize.y = this.size.y
 			graphics.items = []
-			Platform.fastForward = false
+			system.fastForward = false
 			var a = graphics.localMatrix.matrix, b = graphics.totalMatrix.matrix
 			var a0 = graphics.localMatrix.m0, a1 = graphics.localMatrix.m1, a2 = graphics.localMatrix.m2, a3 = graphics.localMatrix.m3, a4 = graphics.localMatrix.m4, a5 = graphics.localMatrix.m5
 			var b0 = graphics.totalMatrix.m0, b1 = graphics.totalMatrix.m1, b2 = graphics.totalMatrix.m2, b3 = graphics.totalMatrix.m3, b4 = graphics.totalMatrix.m4, b5 = graphics.totalMatrix.m5
@@ -157,7 +157,7 @@ immutable Texture
 			graphics.pixelSize.x = prevPixelSizeX
 			graphics.pixelSize.y = prevPixelSizeY
 			graphics.items = prevItems
-			Platform.fastForward = Platform.fastForward
+			system.fastForward = system.fastForward
 		}
 		
 // A font that can be used to draw text
@@ -171,7 +171,7 @@ skipInit immutable Font
 		if(!window._fontCache) _fontCache = {}
 		let font = _fontCache[this.file]
 		if(!font) {
-			let font = new FontFace(this.name, "url("+Platform.getAbsoluteUrl(this.file)+")");
+			let font = new FontFace(this.name, "url("+system.getAbsoluteUrl(this.file)+")");
 			await font.load();
 			document.fonts.add(font);
 			_fontCache[this.file] = font;
@@ -284,7 +284,7 @@ transient skipInit global unit graphics
 	bool isDrawingDebugInfo
 	
 	async setup
-		if Platform.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
+		if system.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
@@ -307,7 +307,7 @@ transient skipInit global unit graphics
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
 	internal updateBaseMatrix
-		let statisticsMargin = Platform.showDebugInfo ? statistics.margin : {}
+		let statisticsMargin = system.showDebugInfo ? statistics.margin : {}
 		let referenceSizeWithMargin = referenceSize + statisticsMargin
 		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
 		float scale
@@ -334,7 +334,7 @@ transient skipInit global unit graphics
 		
 	internal js void startFrame
 		graphics.reset()
-		if(!Platform.fastForward && !Platform.waitingForInitialData) {
+		if(!system.fastForward && !system.waitingForInitialData) {
 			if(!graphics.backgroundColor || graphics.backgroundColor.hex == "#000000") {
 				graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			} else {
@@ -359,16 +359,16 @@ transient skipInit global unit graphics
 		items.clear
 
 	internal finishFrame
-		if(Platform.fastForward) return
+		if(system.fastForward) return
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
 		// if core.frame < core.frames or core.runningTest then	showPointersMode = input.showPointersDuringPlayback
-		// else if Platform.isDebug then	showPointersMode = input.showPointersModeInEditor
+		// else if system.isDebug then	showPointersMode = input.showPointersModeInEditor
 		// else	showPointersMode = input.showPointersMode
 		switch
 			core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback
-			Platform.isDebug	then showPointersMode = input.showPointersModeInEditor
+			system.isDebug	then showPointersMode = input.showPointersModeInEditor
 			default	then showPointersMode = input.showPointersMode
 		if showPointersMode != None then input.players.each drawPointer ., showPointersMode
 		
@@ -401,13 +401,13 @@ transient skipInit global unit graphics
 		graphics.context.globalAlpha = 1
 				
 	internal isVisibleFor: Player[] visibleFor
-		if(Platform.fastForward && !isDrawingDebugInfo) return false
+		if(system.fastForward && !isDrawingDebugInfo) return false
 		// Use currentlyVisibleFor when visibleFor is null or [null]
 		let effectiveVisibleFor = visibleFor and (visibleFor.length != 1 or visibleFor[0]) ? visibleFor : currentlyVisibleFor
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
 		
 	private Player[] getClickableBy: Player[] visibleFor, Player[] clickableBy
-		if not Platform.isOnlineMultiplayer return input.players
+		if not system.isOnlineMultiplayer return input.players
 		Player[] effectiveVisibleBy = visibleFor or currentlyVisibleFor
 		return effectiveVisibleBy and clickableBy
 		     ? effectiveVisibleBy intersectWith clickableBy 
@@ -2123,7 +2123,7 @@ internal skipInit transient unit gizmo
 		handleSize = 16 interpolateTo 32 progress:math.min(max.x-min.x, max.y-min.y) 64..256
 	
 	internal tick
-		if Platform.playMode != Manipulator then return
+		if system.playMode != Manipulator then return
 		findInfluencedItems
 		
 		if items and showSelection
@@ -2159,7 +2159,7 @@ internal skipInit transient unit gizmo
 		lastSendTime = 0
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
-		if Platform.playMode != Manipulator then return
+		if system.playMode != Manipulator then return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
@@ -2202,15 +2202,15 @@ internal skipInit transient unit gizmo
 					let selectedStackItem = overItems[locationIndex++ mod overItems.length]
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
-					Platform.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
+					system.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
 					showSelection = true
-					Platform.replay updateMedia:false
+					system.replay updateMedia:false
 				else
 					// Deselect
 					cursorLocation = null
 					locationIndex = 0
 					showSelection = false
-					Platform.replay updateMedia:false
+					system.replay updateMedia:false
 		
 		if cursorLocation
 			GizomInfluence[] influences
@@ -2266,17 +2266,17 @@ internal skipInit transient unit gizmo
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
 					aspectRatio = (max.y - min.y) / (max.x - min.x)
-					Platform.sendToEditor {type:"startManipulation", influences}
+					system.sendToEditor {type:"startManipulation", influences}
 					showSelection = true
 					
 				if isManipulating
 					// Move manipulation
-					Platform.sendToEditor {type:"moveManipulation", influences, codeId:++waitingForCodeId}
+					system.sendToEditor {type:"moveManipulation", influences, codeId:++waitingForCodeId}
 
 			if inputType == TouchUp && isManipulating
 				// End manipulation
 				isManipulating = false
-				Platform.sendToEditor {type:"endManipulation",  influences}
+				system.sendToEditor {type:"endManipulation",  influences}
 			
 	private js void setCursor: string cursor
 		document.body.style.cursor = cursor
@@ -2320,7 +2320,7 @@ internal transient immutable DisplayItem
 
 	DisplayItem: Matrix2D m
 		m0 = m.m0; m1 = m.m1; m2 = m.m2; m3 = m.m3; m4 = m.m4; m5 = m.m5
-		if Platform.isDebug and (w or h)
+		if system.isDebug and (w or h)
 			poly = [
 				{ x,   y   }.transform(m),
 				{ x+w, y   }.transform(m),

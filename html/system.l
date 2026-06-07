@@ -11,7 +11,7 @@ class ReferenceSize
 	
 enum TickMode: Interval, AnimationFrame
 	
-skipInit global unit Platform
+global transient skipInit unit system
 	public ticksPerSecond = 0
 	public TickMode tickMode = Interval
 	public resetWhenCodeChanged = true
@@ -37,7 +37,7 @@ skipInit global unit Platform
 	public inline js string locationHash	=> location.hash
 	public inline js string basePath	=> _basePath
 	public inline js string referrer	=> document.referrer
-	public inline js string protocolAndHost() (location.host && !Platform.isDebug ? location.origin : "http://localhost")
+	public inline js string protocolAndHost() (location.host && !system.isDebug ? location.origin : "http://localhost")
 	public inline js dynamic networkInformation() navigator.connection
 	public inline js void reload() location.reload(/*forceReload=*/true)
 
@@ -80,28 +80,28 @@ skipInit global unit Platform
 			this.resetWhenCodeChanged = true
 			
 			initMedia
-			Time.printTimer "Platform.start: initMedia"
+			Time.printTimer "system.start: initMedia"
 
 			await loadFont "OpenSans.woff2"
-			Time.printTimer "Platform.start: loadFont"
+			Time.printTimer "system.start: loadFont"
 			try
 				html.reset
 				initAll
-				Time.printTimer "Platform.start: initAll"
+				Time.printTimer "system.start: initAll"
 
 				html.resize
-				Time.printTimer "Platform.start: html.resize"
+				Time.printTimer "system.start: html.resize"
 
 				app.start??()
-				Time.printTimer "Platform.start: startApp"
+				Time.printTimer "system.start: startApp"
 
 				refresh
-				Time.printTimer "Platform.start: refresh"
+				Time.printTimer "system.start: refresh"
 
 				// Do we sill need this? In which case would it prevent "unwanted scrolling"?
 				// We need to call resize again after the first refresh to prevent unwanted scrolling
 				// html.resize
-				// Time.printTimer "Platform.start: resize"
+				// Time.printTimer "system.start: resize"
 
 				startTickInterval
 				sendToEditor {type:"startupComplete"}
@@ -150,12 +150,12 @@ skipInit global unit Platform
 		if(window._tickInterval) {
 			clearInterval(_tickInterval)
 		}
-		if(Platform.ticksPerSecond) {
-			if(Platform.tickMode == 0) {
-				_tickInterval = setInterval(() => Platform.tick(), 1000/Platform.ticksPerSecond)
+		if(system.ticksPerSecond) {
+			if(system.tickMode == 0) {
+				_tickInterval = setInterval(() => system.tick(), 1000/system.ticksPerSecond)
 			} else {
 				window.tick = function() {
-					Platform.tick();
+					system.tick();
 					window.requestAnimationFrame(window.tick);
 				}
 				window.tick();
@@ -163,18 +163,18 @@ skipInit global unit Platform
 		}
 
 	onError: Error error
-		System.logError error
+		system.logError error
 		sendStringToEditor("exception|{error.stack}||0")
 
 	internal inline js void sendToEditor: dynamic message
-		if(Platform.isDebug) _sendToEditor(message)
+		if(system.isDebug) _sendToEditor(message)
 		
 	internal inline js void sendStringToEditor: string message
-		if(Platform.isDebug) _sendStringToEditor(message)	
+		if(system.isDebug) _sendStringToEditor(message)	
 		
 	private inline js void sendFinished
 		console.log("[app] ----- Finished -----")
-		if(Platform.isDebug) _sendToEditor({type:"finished"})
+		if(system.isDebug) _sendToEditor({type:"finished"})
 		
 	js string generateObjectId
 		const timestamp = Math.floor(new Date().getTime() / 1000).toString(16);
@@ -261,7 +261,7 @@ skipInit global unit Platform
 	inline js void blur() document.activeElement.blur()
 	
 	js void setMenu: MenuItem[] menuTemplate
-		if(!Platform.electron || !document.hasFocus()) return;
+		if(!system.electron || !document.hasFocus()) return;
 		const remote = require('@electron/remote');
 		if (process.platform == 'darwin') {
 			menuTemplate.unshift({
@@ -335,7 +335,7 @@ skipInit global unit Platform
 		window.print()
 
 	internal updatePageIconAndTitle
-		System.log("Updating page title and icon")
+		system.log("Updating page title and icon")
 		if not isDebug then return
 		setPageTitle appName
 		
@@ -376,7 +376,7 @@ MenuItem
 	MenuItem[] submenu = null
 	bool checked
 	
-global transient unit System
+global transient skipInit unit system
 	// Prints a message to the console
 	global js void print: logstring text	// The text, variables or expressions to print
 	                      PrintType type = Info	// Action: Action performed by a player, Reaction: Consequence of an action, Debug: Temporary debug information, Info: Information, Error: Error, Warning: Warning
@@ -384,7 +384,7 @@ global transient unit System
 		                  SourceCodeLocation location
 		if(color) console.log(`%c${text}`, `color: ${color.colorString}`)
 		else      console.log(text)
-		if(Platform.isDebug && location) {
+		if(system.isDebug && location) {
 			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
 		}
 	

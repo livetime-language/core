@@ -38,7 +38,7 @@ skipInit unit core
 	reset
 		players.clear
 		frame = 0
-		for Platform.userCount
+		for system.userCount
 			players.add {index:i, id:i}
 		// input.playersById.clear
 		// errorMessage = ""
@@ -56,11 +56,11 @@ skipInit unit core
 		startApp
 		
 		// if !startInLobby
-		// 	// When the developer changed Platform.userCount, add or remove internal users accordingly
-		// 	for input.internalUsers.length to Platform.userCount
+		// 	// When the developer changed system.userCount, add or remove internal users accordingly
+		// 	for input.internalUsers.length to system.userCount
 		// 		input.internalUsers.add {id:i, local:true, collectInputs:true}
-		// 	if input.internalUsers.length > Platform.userCount
-		// 		input.internalUsers.removeRange Platform.userCount..input.internalUsers.length
+		// 	if input.internalUsers.length > system.userCount
+		// 		input.internalUsers.removeRange system.userCount..input.internalUsers.length
 			
 		// 	// We always recreating players, because developers might have added fields to Player or Touch
 		// 	// By the time we call startApp, all players need to exist

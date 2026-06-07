@@ -1594,7 +1594,7 @@ global transient priority unit system
 							inline nocolon void() finally
 		try code() @finally finally()
 		
-global transient priority low unit system
+global transient skipInit priority low unit system
 	// Creates a new list populated with the results of calling a function on every element of the list
 	// global inline cpp TResult[] for: T[] subject // The list to iterate over
 	// 	                       -> TResult(

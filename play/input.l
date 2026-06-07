@@ -484,7 +484,7 @@ skipInit global unit input
 	switchPerspectiveTo: Player player
 		watch "Switching to {player}"
 		showPerspectiveOf = player
-		if Platform.playMode == Play or Platform.playMode == Pause or Platform.playMode == Stop then core.switchToPlayer player
+		if system.playMode == Play or system.playMode == Pause or system.playMode == Stop then core.switchToPlayer player
 		
 	internal Player[] playersById
 	Cursor cursor
@@ -506,14 +506,14 @@ skipInit global unit input
 	
 	internal js Vector2 logicalToPixelPosition: Vector2 pos
 		let p = pos.getTransformed(graphics.totalMatrix)
-		return new Vector2(p.x/Platform.pixelRatio, p.y/Platform.pixelRatio, null)
+		return new Vector2(p.x/system.pixelRatio, p.y/system.pixelRatio, null)
 
 	private js void initHandlers
-		if(Platform.isHeadless) return
+		if(system.isHeadless) return
 		let pointerX = 0, pointerY = 0, clickWithAltKeyX = 0, clickWithAltKeyY = 0
 		window.onpointerdown = e => {
-			if(e.button == 0 && Platform.playMode <= 1 /*Stop,Pause*/) {
-				Platform.record();
+			if(e.button == 0 && system.playMode <= 1 /*Stop,Pause*/) {
+				system.record();
 				if(input.ignoreFirstClick) return;
 			}
 			input.handleTouchEvent(1, e.pageX, e.pageY, e.pointerType, e.pointerId, e.button, e.shiftKey, e.altKey, e.ctrlKey || e.metaKey);
@@ -535,7 +535,7 @@ skipInit global unit input
 			let key = e.key
 			let ctrlOrCmd = e.ctrlKey || e.metaKey
 			if(window.require && key == "t" && e.metaKey && e.shiftKey)
-				Platform.openDevTools();
+				system.openDevTools();
 			else
 			if(ctrlOrCmd && key == "s") {
 				// Save event steam
@@ -545,7 +545,7 @@ skipInit global unit input
 			else
 			if(ctrlOrCmd && key == "o") {
 				// Open event stream or state
-				if(Platform.isDebug) core.openEventStream();
+				if(system.isDebug) core.openEventStream();
 				else                 core.openState();
 				e.preventDefault();
 			}
@@ -557,7 +557,7 @@ skipInit global unit input
 				e.preventDefault();
 			}
 			else
-			if((key == "F1" || key == "F2" || key == "F3" || key == "F4") && !ctrlOrCmd && Platform.isDebug) {
+			if((key == "F1" || key == "F2" || key == "F3" || key == "F4") && !ctrlOrCmd && system.isDebug) {
 				let index = key[1] - "1"
 				core.switchToPlayer(input.players[index]);
 				e.preventDefault();
@@ -585,18 +585,18 @@ skipInit global unit input
 			if(ctrlOrCmd && key == "F10") {core.switchSendInputMode(1); e.preventDefault();} else
 			if(ctrlOrCmd && key == "F11") {core.switchSendInputMode(2); e.preventDefault();} else
 			
-			if(key == "F5" && Platform.isDebug) {
-				Platform.stop();
+			if(key == "F5" && system.isDebug) {
+				system.stop();
 				e.preventDefault();
-			} else if(key == "F7" && Platform.isDebug) {
-				Platform.togglePlay();
+			} else if(key == "F7" && system.isDebug) {
+				system.togglePlay();
 				e.preventDefault();
 			} else if(key == "F9") {
 				if(e.shiftKey) { core.saveLogs(); }
-				else           { Platform.toggleDebugInfo(); }
+				else           { system.toggleDebugInfo(); }
 				e.preventDefault();
 			} else if(key == "F10") { 
-				Platform.toggleSmallScreen();
+				system.toggleSmallScreen();
 			} else if(key == "F11") { 
 				graphics.copyScreenshotToClipboard();
 			} else if(key == "Alt" && input.enableClickingWithAltKey) {
@@ -625,7 +625,7 @@ skipInit global unit input
 			window.addEventListener('wheel', e => {
 				e.preventDefault();
 				e.stopPropagation();
-				if(e.button == 0 && Platform.playMode == 0) Platform.record();
+				if(e.button == 0 && system.playMode == 0) system.record();
 				input.handleWheelEvent(e.pageX, e.pageY, e.deltaX, e.deltaY, e.ctrlKey)
 				return false;			
 			}, {passive: false})
@@ -647,7 +647,7 @@ skipInit global unit input
 		return 0
 		
 	private handleTextInput: InputType type, string text
-		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -655,7 +655,7 @@ skipInit global unit input
 		inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, Key keyCode, string key
-		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 		
@@ -680,7 +680,7 @@ skipInit global unit input
 		Vector2 referencePos = graphics.getPixelPos(x, y)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return		
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return		
 		let inputs = localUser.inputs
 
 		if inputType == TouchMove
@@ -724,7 +724,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(referencePos.y)
 		
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
-		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
@@ -756,7 +756,7 @@ skipInit global unit input
 				
 	// Handles navigating back or forward in the browser	
 	internal handleNavigate: string url
-		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Navigate
@@ -952,21 +952,21 @@ skipInit global unit input
 					int id = inputs.readInt
 					string valueString = inputs.readString
 					networkData.call id, valueString
-					if Platform.waitingForInitialData > 0 then Platform.waitingForInitialData--
+					if system.waitingForInitialData > 0 then system.waitingForInitialData--
 				else
 				if inputType == Json
 					int id = inputs.readInt
 					string valueString = inputs.readString
 					dynamic object = valueString ? valueString.parseJson : null
 					networkData.call id, object
-					if Platform.waitingForInitialData > 0 then Platform.waitingForInitialData--
+					if system.waitingForInitialData > 0 then system.waitingForInitialData--
 				else
 				if inputType == Object
 					int id = inputs.readInt
 					string valueString = inputs.readString
 					dynamic object = valueString ? valueString.parseJson : null
 					networkData.call id, object
-					if Platform.waitingForInitialData > 0 then Platform.waitingForInitialData--
+					if system.waitingForInitialData > 0 then system.waitingForInitialData--
 				else
 				if inputType == SetState
 					// Set state
@@ -1033,9 +1033,9 @@ skipInit global unit input
 			app.onGamepad??(p.gamepad)
 			p.onGamepad??(p.gamepad)
 					
-		if Platform.receivedInitialData
-			Platform.waitingForInitialData -= Platform.receivedInitialData
-			Platform.receivedInitialData = 0
+		if system.receivedInitialData
+			system.waitingForInitialData -= system.receivedInitialData
+			system.receivedInitialData = 0
 
 	internal touchDown: InternalUser internalUser
 	                    Player player
@@ -1694,7 +1694,7 @@ skipInit global unit input
 		field.handleTextInput(7, value)
 		
 	js void updateCursor
-		// document.body.style.cursor = (input.showPointers == 2 && Platform.playMode == 4 ? "none" : input.cursor)
+		// document.body.style.cursor = (input.showPointers == 2 && system.playMode == 4 ? "none" : input.cursor)
 		document.body.style.cursor = input.cursor
 
 	onTextComposition: void(string characters) do

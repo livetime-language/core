@@ -53,7 +53,7 @@ global static class html
 				if nextNode then parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
 				if focusInitially
-					Platform.delay 0
+					system.delay 0
 						element.focus
 				nodesCreated++
 			else
@@ -212,7 +212,7 @@ global static class html
 		        SourceCodeLocation location
 		if not visible then return
 		if data == null then data = {}
-		data.src = Platform.basePath + image.src
+		data.src = system.basePath + image.src
 		let element = div tag:"img", attributes, style, data, location
 		element.onclick = onClick
 		return element
@@ -235,7 +235,7 @@ global static class html
 		        dynamic data = null               // The data attributes of the element
 		        SourceCodeLocation location
 		if data == null then data = {}
-		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") or src.startsWith("file:") ? src : Platform.basePath + src
+		data.src = src.startsWith("http") or src.startsWith("data:") or src.startsWith("blob:") or src.startsWith("file:") ? src : system.basePath + src
 		return div tag:"img", attributes, style, data, location
 
 	// Render a html button element within the draw function.
@@ -316,7 +316,7 @@ global static class html
 		         void() children = null	// The children of the HTML element
 		         SourceCodeLocation location
 		style.display = grid
-		if Platform.isMobile and mobileGridTemplateColumns then style.gridTemplateColumns = mobileGridTemplateColumns
+		if system.isMobile and mobileGridTemplateColumns then style.gridTemplateColumns = mobileGridTemplateColumns
 		return div attributes, style, children, location
 
 	// Render a html div element with a grid layout
@@ -327,7 +327,7 @@ global static class html
 		         void() children = null	// The children of the HTML element
 		         SourceCodeLocation location
 		style.display = grid
-		if Platform.isMobile and mobileGridTemplate then style.gridTemplate = mobileGridTemplate
+		if system.isMobile and mobileGridTemplate then style.gridTemplate = mobileGridTemplate
 		return div attributes, style, children, location
 
 	global gridArea: string gridArea
@@ -393,7 +393,7 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"img", attributes, style, data, location
 		element.style.opacity = model == value ? 1 : .3
-		element.src = Platform.basePath + image.src
+		element.src = system.basePath + image.src
 		element.onclick = model = value; changeHandler; refresh
 
 	// Render a html radio buttom element in the draw function.
@@ -410,7 +410,7 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"img", attributes, style, data, location
 		element.style.opacity = model == value ? 1 : .3
-		element.src = Platform.basePath + image.src
+		element.src = system.basePath + image.src
 		element.onclick = model = value; onInput; changeHandler; refresh
 
 	// Render a html element in the draw function that toggles between two images when the user click it.
@@ -424,7 +424,7 @@ global static class html
 		                       SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"img", attributes, style, data, location
-		element.src = Platform.basePath + images[model ? 1 : 0].src
+		element.src = system.basePath + images[model ? 1 : 0].src
 		element.onclick = model = !model; changeHandler; refresh
 
 	// Render a html element in the draw function that toggles between two images when the user click it.
@@ -439,7 +439,7 @@ global static class html
 		                       SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"img", attributes, style, data, location
-		element.src = Platform.basePath + images[model ? 1 : 0].src
+		element.src = system.basePath + images[model ? 1 : 0].src
 		element.onclick = model = !model; onInput; changeHandler; refresh
 
 	// ---------------------------------------- Input & TextArea ----------------------------------------
@@ -538,7 +538,7 @@ global static class html
 		else         
 			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
 		if focusTabIndex == tabIndex
-			Platform.delay 100
+			system.delay 100
 				element.focus
 
 	// Render a html editable text element in the draw function.
@@ -564,7 +564,7 @@ global static class html
 		else         
 			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
 		if focusTabIndex == tabIndex
-			Platform.delay 100
+			system.delay 100
 				element.focus
 
 	// Render a html textarea element in the draw function.
@@ -725,7 +725,7 @@ global static class html
 	importance:4 css: string src
 		dynamic element = cast div tag:"link"
 		element.rel = "stylesheet" 
-		if !element.href.endsWith(src) then element.href = Platform.basePath + src
+		if !element.href.endsWith(src) then element.href = system.basePath + src
 		
 		
 	// Render a html video element to display a video
@@ -735,7 +735,7 @@ global static class html
 		   expand Attributes attributes = {}	// The attributes of the HTML element 
 		   expand Style style = {}	// The css style of the HTML element 
 		   SourceCodeLocation location
-		src = src.startsWith("http") || src.startsWith("data:") || src.startsWith("blob:") ? src : Platform.basePath + src
+		src = src.startsWith("http") || src.startsWith("data:") || src.startsWith("blob:") ? src : system.basePath + src
 		let element = div tag:"video", attributes, style, location, data:{src}
 		element.muted = muted
 		element.autoplay = autoplay
