@@ -44,6 +44,18 @@ immutable Color
 		
 	Color withAlpha: float alpha
 		return {hex[1..7]+componentToHex(math.floor(alpha*255))}
+
+	// Interpolates to another color
+	Color interpolateTo: Color target
+		                 float progress
+		if progress <= 0	then return this
+		if progress >= 1	then return target
+		let iprogress = 1 - progress
+		return {
+			math.floor(red   * iprogress + target.red   * progress)
+			math.floor(green * iprogress + target.green * progress)
+			math.floor(blue  * iprogress + target.blue  * progress)
+		}
 		
 enum TextOverflow: Visible, Wrap, Scale, WrapAndScale, CutOff, Ellipsis
 
