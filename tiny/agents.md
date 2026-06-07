@@ -77,6 +77,7 @@ sprites	// src/sprites.l contains all available sprites and colors. Add addition
 		"  cccc  "
 	]
 // This is the full APT. Do not use any other functions!
+
 // The following is a complete example game: the board game "Go"
 sprites
 	Sprite emptyCell = Sprite([
@@ -111,6 +112,7 @@ sprites
 	])
 
 enum Phase: PlacePiece, GameOver
+
 app
 	Vector2 boardSize = {9, 9}
 	Vector2 boardOffset = ({224, 168} - boardSize*8) / 2 // Centers the board on the 224x168 screen
@@ -123,63 +125,81 @@ app
 	start
 		for boardSize.x as x
 			for boardSize.y as y
-				cells[y*boardSize.x + x] = new Cell(pos:{x,y}, player:null)
+				cells[y*boardSize.x + x] = new Cell(gridPos:{x,y}, player:null)
 		
 		players = [{index:0}, {index:1}]
 		currentPlayer = players[0]
+
+	nextTurn
+		currentPlayer = players[(currentPlayer.index + 1) mod players.length]
 				
 	tick
-		for boardSize.y as y
-			for boardSize.x as x
-				Cell cell = cells[y*boardSize.x + x]
-				Vector2 pos = boardOffset + {x,y}*8
-				if cell.player
-					drawSprite cell.player.index ? sprites.blackPiece : sprites.whitePiece, pos
-				else
-					drawSprite sprites.emptyCell, pos
+		cells.each.tick
+		currentPlayer.tick
+		
+	finishGame
+		Player winner = players.withMax.score
+		print "Player {winner.index} wins with {winner.score} points."
+		
+class Cell
+	Vector2 gridPos
+	Player player
+	int liberties
+	bool visited
 
-		if justPressed(LeftMouseButton, player:currentPlayer.index)
-			Vector2 gridPos = ((getPointer(player:currentPlayer.index) - boardOffset) / 8).floor
-			placePiece gridPos, player:currentPlayer
+	tick
+		Vector2 pos = app.boardOffset + gridPos*8
+		if player
+			drawSprite player.index ? sprites.blackPiece : sprites.whitePiece, pos
+		else
+			drawSprite sprites.emptyCell, pos
 		
-	placePiece: Vector2 gridPos, Player player
-		print "Player {player.index} places a piece at {gridPos}"
-		Cell cell = cells[gridPos.y * boardSize.x + gridPos.x]
-		cell.player = player
-		captureSurroundedPieces gridPos, player
-		
-		// Set current player to the next player
-		currentPlayer = players[(currentPlayer.index + 1) mod players.length]
+class Player
+	int index
+	int score
+
+	tick
+		if justPressed(LeftMouseButton, player:index)
+			Vector2 gridPos = ((getPointer(player:index) - app.boardOffset) / 8).floor
+			if {0,0} <= gridPos < app.boardSize
+				placePiece gridPos
+
+	placePiece: Vector2 gridPos
+		print "Player {index} places a piece at {gridPos}"
+		Cell cell = app.cells[gridPos.y * app.boardSize.x + gridPos.x]
+		cell.player = this
+		captureSurroundedPieces gridPos
+		app.nextTurn
 
 	const Vector2[] directions = [{0, -1}, {1, 0}, {0, 1}, {-1, 0}]
 
-	captureSurroundedPieces: Vector2 originPos, Player attacker
+	captureSurroundedPieces: Vector2 originPos
 		for directions as dir
 			Vector2 neighborPos = originPos + dir
-			Cell neighborCell = cells[neighborPos.y * boardSize.x + neighborPos.x]
+			Cell neighborCell = app.cells[neighborPos.y * app.boardSize.x + neighborPos.x]
 			
-			if neighborCell and neighborCell.player and neighborCell.player != attacker
-				Cell[] surroundesCells = collectSurroundesCells neighborPos, attacker
+			if neighborCell and neighborCell.player and neighborCell.player != this
+				Cell[] surroundesCells = collectSurroundesCells neighborPos, this
 				if surroundesCells
-					print "Player {attacker.index} surrounded {surroundesCells.length} cells"
+					print "Player {index} surrounded {surroundesCells.length} cells"
 					surroundesCells.each.player = null
 		
 	Cell[] collectSurroundesCells: Vector2 originPos, Player attacker
 		Vector2[] queue = [ originPos ]
-		Cell[] surroundedCells = [ cells[originPos.y * boardSize.x + originPos.x] ]
+		Cell[] surroundedCells = [ app.cells[originPos.y * app.boardSize.x + originPos.x] ]
 		
-		for cells as cell
+		for app.cells as cell
 			cell.visited = false
 		
 		while queue
 			Vector2 pos = queue.pop
-			Cell cell = cells[pos.y * boardSize.x + pos.x]
+			Cell cell = app.cells[pos.y * app.boardSize.x + pos.x]
 			surroundedCells.add cell
 			cell.visited = true
 			
 			for directions as dir
 				Vector2 neighborPos = pos + dir
-				Cell neighborCell = cells[neighborPos.y * boardSize.x + neighborPos.x]
+				Cell neighborCell = app.cells[neighborPos.y * app.boardSize.x + neighborPos.x]
 				if neighborCell and not neighborCell.visited
 					if neighborCell.player == null
 						return []
@@ -187,17 +207,3 @@ app
 						queue.add neighborPos
 						
 		return surroundedCells
-		
-	finishGame
-		Player winner = players.withMax.score
-		print "Player {winner.index} wins with {winner.score} points."
-		
-class Cell
-	Vector2 pos
-	Player player
-	int liberties
-	bool visited
-		
-class Player
-	int index
-	int score
