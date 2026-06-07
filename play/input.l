@@ -22,6 +22,10 @@ internal transient class InternalUser
 	visible string[] pressedKeys, textInputs, textCompositions
 	visible string[] navigations
 
+	// Modern Input
+	visible bool[] justPressed, isPressed, justReleased
+	Vector2 pointerPosition, scrollDelta
+
 	// Video + Audio
 	object mediaStream
 	object[] videoElements
@@ -50,6 +54,11 @@ internal transient class InternalUser
 	
 	int certainFrame
 	int prevCertainFrame
+
+	InternalUser
+		// Modern Input
+		for input.inputButtonCount
+			isPressed[i] = false
 	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
@@ -66,6 +75,11 @@ internal transient class InternalUser
 		upKeys.clear
 		pressedKeys.clear
 		navigations.clear
+
+		// Modern Input
+		for input.inputButtonCount
+			justPressed[i] = false
+			justReleased[i] = false
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -343,7 +357,6 @@ internal DigitalButton
 	string name
 	int index
 	Key key
-	Image image
 	
 	bool isPressed
 	bool wasJustPressed	=> isPressed and not wasPreviouslyPressed
@@ -664,7 +677,7 @@ skipInit global unit input
 			default	touchType = 4
 		
 		Vector2 pixelPos = {x*graphics.pixelRatio, y*graphics.pixelRatio}
-		Vector2 referencePos = graphics.getReferencePos(x, y)
+		Vector2 referencePos = graphics.getPixelPos(x, y)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
 		if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs then return		
@@ -717,7 +730,7 @@ skipInit global unit input
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
 		              + ((isPinch ? 1:0) shiftLeft 5)	// isPinch:   0 -   1 (1 bit)
 		
-		Vector2 referencePos = graphics.getReferencePos(x, y)
+		Vector2 referencePos = graphics.getPixelPos(x, y)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -1047,10 +1060,18 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}"
+
+		// Call handlers
 		app.onTouchHover??(touch);
 		player.onTouchHover??(touch);
 		app.onTouchDown??(touch)
 		player.onTouchDown??(touch)
+
+		// Modern Input
+		int buttonIndex = InputButton.LeftMouseButton + type
+		internalUser.justPressed[buttonIndex] = true
+		internalUser.isPressed[buttonIndex] = true
+		internalUser.pointerPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
 	                    Player player
@@ -1072,12 +1093,17 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.movingTouches.add touch
 		cursor = Auto
+
+		// Call handlers
 		if not touch.isDown
 			app.onTouchHover??(touch);
 			player.onTouchHover??(touch);
 		else
 			app.onTouchDrag??(touch);
 			player.onTouchDrag??(touch);
+
+		// Modern Input
+		internalUser.pointerPosition = referencePos
 
 	internal touchUp: InternalUser internalUser
 	                  Player player
@@ -1099,9 +1125,12 @@ skipInit global unit input
 		
 		player.pointerPosition = referencePos
 		internalUser.upTouches.add touch
+
+		// Call handlers
 		app.onTouchUp??(touch)
 		player.onTouchUp??(touch)
 
+		// Log
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.startPosition
 			let playerVariable = "players[{player.playerIndex}]"
@@ -1110,14 +1139,25 @@ skipInit global unit input
 			else
 				core.addOutput "code|drag {touch.startPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
 
+		// Modern Input
+		int buttonIndex = InputButton.LeftMouseButton + type
+		internalUser.justReleased[buttonIndex] = true
+		internalUser.isPressed[buttonIndex] = false
+		internalUser.pointerPosition = referencePos
+
 	internal scroll: InternalUser internalUser
 	                 Player player
 					 Vector2 delta
 					 bool isPinch
 					 Vector2 referencePosition
 		internalUser.wheelEvents.add {player.id, delta, isPinch, referencePosition}
+
+		// Call handlers
 		app.onScroll??(delta, isPinch, referencePosition)
 		player.onScroll??(delta, isPinch, referencePosition)
+
+		// Modern Input
+		internalUser.scrollDelta = delta
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
@@ -1751,4 +1791,57 @@ skipInit global unit input
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].navigations as url
 				do url
-				
+
+// ---------------------------------------------- Modern Input ----------------------------------------------
+
+enum InputButton
+	A
+	B
+	X
+	Y
+
+	LeftBumper
+	RightBumper
+	LeftTrigger
+	RightTrigger
+	Select
+	Start
+	LeftStickButton
+	RightStickButton
+
+	Up
+	Down
+	Left
+	Right
+
+	LeftMouseButton
+	MiddleMouseButton
+	RightMouseButton
+		
+input
+	const int inputButtonCount = 19
+
+	// Returns true if the player has just pressed the given button this frame (it was not pressed in the previous frame).
+	global justPressed: InputButton button, int player = 0
+		if button >= LeftMouseButton then player = 0
+		return internalUsers[player].justPressed[button]
+
+	// Returns true if the player is currently pressing the given button.
+	global isPressed: InputButton button, int player = 0
+		if button >= LeftMouseButton then player = 0
+		return internalUsers[player].isPressed[button]
+	
+	// Returns true if the player has just released the given button this frame (it was pressed in the previous frame).
+	global justReleased: InputButton button, int player = 0
+		if button >= LeftMouseButton then player = 0
+		return internalUsers[player].justReleased[button]
+
+	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
+	global getPointer: int player = 0
+		player = 0
+		return internalUsers[player].pointerPosition
+
+	// Returns the current scroll delta of the player's input device.
+	global getScrollDelta: int player = 0
+		player = 0
+		return internalUsers[player].scrollDelta
