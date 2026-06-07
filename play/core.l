@@ -848,6 +848,13 @@ internal transient skipInit unit core
 	private js void initAll
 		init()
 		graphics.updateBaseMatrix();
+		if(typeof _initJavaScriptApp === "function") {
+			try {
+				app = _initJavaScriptApp();
+			} catch (error) {
+				console.error("Error initializing JavaScript app:", error);
+			}
+		}		
 		
 	internal storeUserId
 		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id)
