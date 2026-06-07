@@ -1,3 +1,21 @@
+// Colors
+const Black = 0
+const DarkBlue = 1
+const DarkPurple = 2
+const DarkGreen = 3
+const Brown = 4
+const DarkGray = 5
+const LightGray = 6
+const White = 7
+const Red = 8
+const Orange = 9
+const Yellow = 10
+const Green = 11
+const Blue = 12
+const Indigo = 13
+const Pink = 14
+const Peach = 15
+
 // core/tiny/graphics.l
 function getPixel(x = 0, y = 0) {
 	return graphics.getPixel(new Vector2(x, y));
@@ -30,7 +48,7 @@ function stopReplacingColors() {
 	graphics.stopReplacingColors();
 }
 
-// core/tiny/input.l
+// Buttons
 const ButtonA = 0;
 const ButtonB = 1;
 const ButtonX = 2;
@@ -51,6 +69,7 @@ const LeftMouseButton = 16;
 const MiddleMouseButton = 17;
 const RightMouseButton = 18;
 
+// core/tiny/input.l
 function justPressed(button, player = 0) {
 	return input.justPressed(button, player);
 }
