@@ -681,8 +681,8 @@ skipInit global unit input
 				setLastTouchMoveIndex id, inputs.writePos+6
 			
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
-					+ math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
-					+ math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
+					+ (touchType shiftLeft 5)	// touchType: 0 -   7 (3 bit)
+					+ ((math.floor(math.abs(id)) mod 128) shiftLeft 8)	// id:        0 - 127 (7 bit)
 		
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
@@ -693,8 +693,8 @@ skipInit global unit input
 		let inputs = internalUsers[playerIndex]?.inputs
 		if !inputs then return
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(touchType, 5)	// touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
+		              + (cast touchType shiftLeft 5)	// touchType: 0 -   7 (3 bit)
+		              + ((math.floor(math.abs(id)) mod 128) shiftLeft 8)	// id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(x)
@@ -703,8 +703,8 @@ skipInit global unit input
 	internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 		let inputs = localUser.inputs
 		int composite = cast(InputType.TouchMove)	// inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(cast TouchType.LeftMouseButton, 5)	// touchType: 0 -   7 (3 bit)
-		              + math.shiftLeft((math.floor(math.abs(id)) mod 128), 8)	// id:        0 - 127 (7 bit)
+		              + (cast TouchType.LeftMouseButton shiftLeft 5)	// touchType: 0 -   7 (3 bit)
+		              + ((math.floor(math.abs(id)) mod 128) shiftLeft 8)	// id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt16 math.round(referencePos.x)
@@ -715,7 +715,7 @@ skipInit global unit input
 		let inputs = localUser.inputs
 		
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
-		              + math.shiftLeft(isPinch ? 1:0, 5)	// isPinch:   0 -   1 (1 bit)
+		              + ((isPinch ? 1:0) shiftLeft 5)	// isPinch:   0 -   1 (1 bit)
 		
 		Vector2 referencePos = graphics.getReferencePos(x, y)
 		inputs.writeInt32 localUser.inputFrame
