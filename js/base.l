@@ -57,9 +57,8 @@ immutable struct int
 	inline int * int value
 	inline float * float value
 	
-	inline float / int value
 	inline float / float value
-	
+		
 	inline int += int value
 	inline int -= int value
 	inline int *= int value
