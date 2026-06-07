@@ -1,3 +1,17 @@
+// A color comprised of a red, green, blue and alpha component
+immutable Color
+	global const Color White	= {"#ffffff", "White"}
+	global const Color Black	= {"#000000", "Black"}
+	global const Color Red	= {"#ef476f", "Red"}
+	global const Color Yellow	= {"#ffd166", "Yellow"}
+	global const Color Green	= {"#06d6a0", "Green"}
+	global const Color Blue	= {"#118ab2", "Blue"}
+	global const Color Gray	= {"#3d3d3d", "Gray"}
+
+	string hex
+	string name
+		
+	
 BitmapFont
 	string name
 	Vector2 charSize
@@ -90,6 +104,26 @@ dynamic TileCollection
 	string License
 	int startY, sizeY
 
+// --------------------------------------------- Compatibility ---------------------------------------------
+	
+internal skipInit transient unit gizmo
+	clear
+	
+media
+	openMedia: void() then
+		then()
+
+transient global skipInit graphics
+	updateBaseMatrix
+	
+	clearDebugInfo
+	finishDrawingDebugInfo
+	isDrawingDebugInfo = false
+	
+	getWhatIsOnScreen = ""
+
+// --------------------------------------------- Graphics ---------------------------------------------
+
 transient global skipInit graphics
 	const Vector2 tileSize
 	const int tilesPerRow, tilesStride
@@ -135,7 +169,7 @@ transient global skipInit graphics
 	js void initPalette: int size
 		graphics.palette = new Uint8ClampedArray(size)
 
-	setup
+	async setup
 		this.tileSize.create(8,8)
 		this.tilesPerRow = 16
 		this.tilesStride = floor(tilesPerRow * tileSize.x)
@@ -443,6 +477,7 @@ transient global skipInit graphics
 		if Platform.fastForward then return
 		if fillColor == -1 and outlineColor == -1 then fillColor = 6
 		// TODO: Implement draw circle
+		drawRect pos, size:{radius.x*2, radius.y*2}, fillColor, outlineColor, outlineWidth
 
 	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
 		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor, outlineWidth
