@@ -2604,16 +2604,6 @@ global skipInit unit math
 	// Returns e raised to the power of a given number
 	importance:5 inline js float exp: float exponent
 		Math.exp(exponent)
-		
-	// ------------------------------------------------------- Bit shifts -------------------------------------------------------
-	
-	inline js int shiftLeft: int value
-		                     int count
-		(value << count)
-	
-	inline js int shiftRight: int value
-		                      int count
-		(value >> count)
 	
 	// ------------------------------------------------------- Random -------------------------------------------------------
 			
