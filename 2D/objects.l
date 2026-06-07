@@ -410,7 +410,7 @@ Object Menu
 	includeDefaultItems = true
 	overlayColor = #000000b0
 	locked = true
-	layer = 1
+	layer = 1.0
 	
 	visible bool active
 		
