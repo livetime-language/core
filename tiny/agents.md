@@ -1,5 +1,7 @@
 // Full LiveTime API. IMPORTANT: Only use the following functions and features!
-// Write the simplest, most efficient code possible. Compile with "npm run compile".
+// Write all code in src/app.l. Create sprites in src/sprites.l.
+// Write the simplest, most efficient code possible.
+// Compile with "npm run compile".
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
 class Player	// Classes have capitalized names. Their members are public by default
 	int        index	// Integers are 0 by default
