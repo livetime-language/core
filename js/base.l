@@ -2370,11 +2370,11 @@ global transient priority low unit System
 // A collection of mathematical functions and constants
 global skipInit unit math
 	// Returns the absolute value
-	global inline js int abs: int value // The value to return the absolute value of
+	global inline js float abs: float value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns the absolute value
-	global inline js float abs: float value // The value to return the absolute value of
+	global inline js int abs: int value // The value to return the absolute value of
 		Math.abs(value)
 		
 	// Returns -1, 0, or 1 depending on the sign of the value
@@ -2411,23 +2411,23 @@ global skipInit unit math
 				
 	// ------------------------------------------------------- min, max -------------------------------------------------------
 	
-	inline js int min: int a // The first value
-		               int b // The second value
-		Math.min(a, b)
-		
 	// Returns the smallest of the given values
 	importance:5 inline js float min: float a // The first value
 		                              float b // The second value
 		Math.min(a, b)
 		
-	// Returns the largest of the given values
-	inline js int max: int a // The first value
+	inline js int min: int a // The first value
 		               int b // The second value
-		Math.max(a, b)
+		Math.min(a, b)
 		
 	// Returns the largest of the given values
 	importance:5 inline js float max: float a // The first value
 		                              float b // The second value
+		Math.max(a, b)
+		
+	// Returns the largest of the given values
+	inline js int max: int a // The first value
+		               int b // The second value
 		Math.max(a, b)
 		
 	// ------------------------------------------------------- Trigonometry -------------------------------------------------------
