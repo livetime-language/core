@@ -219,23 +219,28 @@ global transient input
 
 	// Returns true if the player has just pressed the given button this frame (it was not pressed in the previous frame).
 	global justPressed: InputButton button, int player = 0
+		if button >= LeftMouseButton then player = 0
 		let user = internalUsers[player]
 		return user.isPressing[button] and not user.wasPressing[button]
 
 	// Returns true if the player is currently pressing the given button.
 	global isPressed: InputButton button, int player = 0
+		if button >= LeftMouseButton then player = 0
 		let user = internalUsers[player]
 		return user.isPressing[button]
 	
 	// Returns true if the player has just released the given button this frame (it was pressed in the previous frame).
 	global justReleased: InputButton button, int player = 0
+		if button >= LeftMouseButton then player = 0
 		let user = internalUsers[player]
 		return not user.isPressing[button] and user.wasPressing[button]
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	global getPointer: int player = 0
+		player = 0
 		return internalUsers[player].pointerPos
 
 	// Returns the current scroll delta of the player's input device.
 	global getScrollDelta: int player = 0
+		player = 0
 		return internalUsers[player].scrollDelta
