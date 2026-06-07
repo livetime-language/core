@@ -329,7 +329,7 @@ transient skipInit global unit graphics
 		let offsetY = anchor > TopCenter ? pixelSize.y/2 : 0
 		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
 
-	Vector2 getReferencePos: float x, float y
+	Vector2 getPixelPos: float x, float y
 		return {x*pixelRatio, y*pixelRatio}.getRelativeTo(baseMatrix)
 		
 	internal js void startFrame

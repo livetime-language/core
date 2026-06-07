@@ -106,10 +106,16 @@ dynamic TileCollection
 
 // --------------------------------------------- Compatibility ---------------------------------------------
 	
+enum HorizontalAlignment: Left, Center, Right
+enum VerticalAlignment: Top, Middle, Bottom
+
 internal skipInit transient unit gizmo
+	init
 	clear
-	
+	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false
+
 media
+	init
 	openMedia: void() then
 		then()
 
@@ -119,8 +125,10 @@ transient global skipInit graphics
 	clearDebugInfo
 	finishDrawingDebugInfo
 	isDrawingDebugInfo = false
-	
-	getWhatIsOnScreen = ""
+	getWhatIsOnScreen => ""
+
+	const Color[] defaultColors = [{"#398CA9", "Blue"}, {"#C01352", "Red"}, {"#16C66E", "Green"}, {"#FFD166", "Yellow"}]
+	const Color[] darkDefaultColors = [{"#193742", "Dark Blue"}, {"#470B21", "Dark Red"}, {"#0A3620", "Dark Green"}, {"#4B3F21", "Dark Yellow"}]	
 
 // --------------------------------------------- Graphics ---------------------------------------------
 
@@ -132,7 +140,6 @@ transient global skipInit graphics
 	internal dynamic context
 	Vector2 windowSize
 	float pixelRatio
-	bool showVideos
 
 	BitmapFont font
 	Screen screen
@@ -165,6 +172,9 @@ transient global skipInit graphics
 		graphics.canvas.imageSmoothingQuality = "high";
 		graphics.context = graphics.canvas.getContext("2d");
 		for(let screen of graphics.screens) screen.onResize()
+
+	getPixelPos: int x, int y
+		return screen.getPixelPos({x, y})
 
 	js void initPalette: int size
 		graphics.palette = new Uint8ClampedArray(size)
