@@ -80,6 +80,7 @@ internal transient class InternalUser
 		for input.inputButtonCount
 			justPressed[i] = false
 			justReleased[i] = false
+		scrollDelta = {0,0}
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -1167,7 +1168,7 @@ skipInit global unit input
 		player.onScroll??(delta, isPinch, referencePosition)
 
 		// Modern Input
-		internalUser.scrollDelta = delta
+		internalUser.scrollDelta += delta
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
