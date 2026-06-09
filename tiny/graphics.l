@@ -133,8 +133,9 @@ transient global skipInit graphics
 // --------------------------------------------- Graphics ---------------------------------------------
 
 transient global skipInit graphics
-	const Vector2 tileSize
-	const int tilesPerRow, tilesStride
+	const Vector2 tileSize = {8,8}
+	const int tilesPerRow = 16
+	const int tilesStride = 128
 
 	private dynamic canvas
 	internal dynamic context
@@ -180,10 +181,6 @@ transient global skipInit graphics
 		graphics.palette = new Uint8ClampedArray(size)
 
 	async setup
-		this.tileSize.create(8,8)
-		this.tilesPerRow = 16
-		this.tilesStride = floor(tilesPerRow * tileSize.x)
-
 		screen = {}
 		screens = [screen]
 
