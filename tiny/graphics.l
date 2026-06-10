@@ -149,7 +149,8 @@ transient global skipInit graphics
 	int[] palette
 	int[] colorReplacements
 	bool enableColorReplacements
-	PaletteEntry[string] paletteEntries
+	PaletteEntry[string] colorByLetter
+	PaletteEntry[] colorByIndex
 
 	int[] tiles
 	TileCollection[] tileCollections
@@ -190,8 +191,8 @@ transient global skipInit graphics
 		setZoom 1
 		initHandlers
 
-		this.paletteEntries = {
-			"0": new PaletteEntry("0",	0, 0, 0, 255,	"black",	0,	"#000000", "pico-8"),
+		this.colorByLetter = {
+			" ": new PaletteEntry(" ",	0, 0, 0, 255,	"black",	0,	"#000000", "pico-8"),
 			"1": new PaletteEntry("1",	29, 43, 83, 255,	"dark blue",	1,	"#1D2B53", "pico-8"),
 			"2": new PaletteEntry("2",	126, 37, 83, 255,	"dark purple",	2,	"#7E2553", "pico-8"),
 			"3": new PaletteEntry("3",	0, 135, 81, 255,	"dark green",	3,	"#008751", "pico-8"),
@@ -284,15 +285,16 @@ transient global skipInit graphics
 			"~": new PaletteEntry("~",	228,0,88,255,	"",	21,	"#e40058","nes"),	// Closest color: 8 (difference: 38)
 		};
 		int index, paletteIndex
-		initPalette size:paletteEntries.length*4
-		for paletteEntries as entry
+		initPalette size:colorByLetter.length*4
+		for colorByLetter as entry
 			entry.index = index++
+			graphics.colorByIndex[entry.index] = entry
 			graphics.palette[paletteIndex++] = entry.red
 			graphics.palette[paletteIndex++] = entry.green
 			graphics.palette[paletteIndex++] = entry.blue
 			graphics.palette[paletteIndex++] = 255
 		colorReplacements = []
-		for paletteEntries.length
+		for colorByLetter.length
 			colorReplacements[i] = i
 		enableColorReplacements = false
 		openTiles
@@ -316,7 +318,7 @@ transient global skipInit graphics
 			else
 			if line.length > 0
 				for line.length as i
-					PaletteEntry entry = paletteEntries[line[i]]
+					PaletteEntry entry = colorByLetter[line[i]]
 					tiles[index + i] = entry ? entry.index : 0
 				index += tilesStride
 
@@ -331,7 +333,7 @@ transient global skipInit graphics
 		let index = floor(spriteIndex / tilesPerRow) * tileSize.y * tilesStride + (spriteIndex mod tilesPerRow) * tileSize.x
 		for pixelsAsStrings as line
 			for line.length as i
-				PaletteEntry entry = paletteEntries[line[i]]
+				PaletteEntry entry = colorByLetter[line[i]]
 				tiles[index + i] = entry ? entry.index : 0
 			index += tilesStride
 
@@ -364,7 +366,7 @@ transient global skipInit graphics
 			return screen.pixels.items[(pos.y * screen.size.x + pos.x).floor]
 		return 0
 
-	copy: int[] source, int sourceStride, int sourceIndex, Vector2 pos = {0,0}, Vector2 size = {8,8}
+	copy: int[] source, int sourceStride, int sourceOffset, Vector2 pos = {0,0}, Vector2 size = {8,8}
 		if system.fastForward then return
 		int positionX = pos.x.floor, positionY = pos.y.floor
 		int startX = positionX
@@ -377,7 +379,7 @@ transient global skipInit graphics
 		if startY < screen.clipY1 then startY = screen.clipY1
 		if endY > screen.clipY2 then endY = screen.clipY2
 		if startX >= endX or startY >= endY then return
-		int sourceOffset = floor(((sourceIndex mod tilesPerRow) + math.floor(sourceIndex / tilesPerRow) * tilesStride) * tileSize.x)
+		// int sourceOffset = floor(((sourceIndex mod tilesPerRow) + math.floor(sourceIndex / tilesPerRow) * tilesStride) * tileSize.x)
 		sourceOffset += (startY - positionY) * tilesStride + startX - positionX
 		int start = sourceOffset
 		int end = start + endX - startX
@@ -510,6 +512,9 @@ transient global skipInit graphics
 			colorReplacements[i] = i
 		enableColorReplacements = false
 
+enum string SpriteType: None, Tile, Object, Character
+enum string SpritePerspective: None, Side, TopDown
+
 Sprite
 	int[] pixels
 	Vector2 size
@@ -517,6 +522,11 @@ Sprite
 	int framesPerSecond = 15
 	int stride
 	Vector2 sourcePos
+	
+	SpriteType type = SpriteType.None
+	SpritePerspective perspective = SpritePerspective.None
+	string name
+	string tags
 
 	Sprite: string[] pixelsAsStrings = null
 		if not pixelsAsStrings then return
@@ -529,9 +539,21 @@ Sprite
 		int index
 		for pixelsAsStrings as line
 			for line.length as i
-				PaletteEntry entry = graphics.paletteEntries[line[i]]
+				PaletteEntry entry = graphics.colorByLetter[line[i]]
 				pixels[index + i] = entry ? entry.index : 0
 			index += maxWidth
+
+	toStrings
+		string[] result
+		for size.y as y
+			string line
+			for size.x as x
+				int pixelIndex = y * stride + x
+				int paletteIndex = pixels[pixelIndex]
+				let color = graphics.colorByIndex[paletteIndex]
+				line += color ? color.letter : " "
+			result.add line
+		return result
 
 	copyFromSource
 		// NEXT: Copy from graphics.tiles at sourcePos with size and frames, use in spriteEditor and tilePanel
