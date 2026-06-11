@@ -1,6 +1,9 @@
-enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, RequestState, State, Checksum
+// This enum must stay in sync with the NetworkMessageType enum in server/src/app.l (same members, same order)
+enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, ReadyForStateRequests, MakePrimary, RequestState, State, Checksum
 
 internal transient skipInit unit ServerNetwork
+	// Must match protocolVersion in server/src/app.l, sent in Join and verified in JoinResponse
+	const int protocolVersion = 1
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -99,6 +102,7 @@ internal transient skipInit unit ServerNetwork
 		sendBuffer.writeString roomId
 		sendBuffer.writeInt16 userId
 		sendBuffer.writeInt16 version
+		sendBuffer.writeInt16 protocolVersion
 		send sendBuffer
 		
 		
@@ -114,6 +118,9 @@ internal transient skipInit unit ServerNetwork
 			// let roomId = buffer.readInt32
 			let userId = buffer.readInt32
 			let version = buffer.readInt32
+			let serverProtocolVersion = buffer.readInt16
+			if serverProtocolVersion != protocolVersion
+				core.log "#server Protocol version mismatch: client uses {protocolVersion}, server uses {serverProtocolVersion}. Network messages may be misinterpreted."
 			let seed = buffer.readString
 			let serverStartTime = buffer.readFloat64
 			let userCount = buffer.readInt16
