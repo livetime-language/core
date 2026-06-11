@@ -70,6 +70,9 @@ internal transient skipInit unit ServerNetwork
 	// Called when we first connec to the server or when we reconnect
 	private onConnectedToServer
 		core.log "#server Connected to Server", input.localUser.id, core.roomId
+		// Ticks sent while the connection was down may be lost
+		// -> Resend our whole input history; the explicit position in each Tick makes the resend idempotent
+		inputsSentPos = 0
 		sendJoinMessage core.roomString, input.localUser.id, version:system.buildVersion
 		
 	js int bufferedAmount
@@ -246,27 +249,33 @@ internal transient skipInit unit ServerNetwork
 		
 	sendInputs: int inputFrame
 		let inputs = input.localUser.inputs
-		
+
 		let length = inputs.writePos - inputsSentPos
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast NetworkMessageType.Tick
 		sendBuffer.writeInt32 input.localUser.id
 		sendBuffer.writeInt32 inputFrame // You got all inputs up to and including this frame
+		sendBuffer.writeInt inputsSentPos // I send inputs starting from this pos in my stream
 		sendBuffer.writeBuffer inputs, inputsSentPos, length
 		sendBuffer.writeInt core.lastChecksumFrame                           // The last certain frame with inputs from everybody
 		sendBuffer.writeFloat64 core.checksums[core.lastChecksumFrame] || 0  // The checksum of the last certain frame
 		send sendBuffer
-		
+
 		inputsSentPos = inputs.writePos
-		core.tickMessageSize = sendBuffer.writePos	
-						
+		core.tickMessageSize = sendBuffer.writePos
+
 	private onTick: Buffer buffer
 		let senderId = buffer.readInt32
 		let sender = getOrCreateUser senderId
-		let prevWritePos = sender.inputs.writePos
-		
-		sender.inputFrame = buffer.readInt32
-		buffer.readBuffer sender.inputs, prevWritePos
+		let inputFrame = buffer.readInt32 // The sender sent inputs up to and including this frame
+
+		// Discard late or out-of-order messages: a newer message always contains the older message's bytes
+		if inputFrame >= sender.inputFrame
+			let incomingInputsWritePos = buffer.readInt // The sender sent inputs starting from this pos in its stream
+			sender.inputFrame = inputFrame
+
+			// Write the inputs at the explicit position so resent messages repair gaps and duplicates are idempotent
+			buffer.readBuffer sender.inputs, incomingInputsWritePos
 
 	sendSwitch: SendInputsMode mode, int sendInterval
 		sendBuffer.reset
