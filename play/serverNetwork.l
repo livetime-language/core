@@ -14,7 +14,7 @@ internal transient skipInit unit ServerNetwork
 		// We use a central place to reconnect and no intervals, timeouts or reloads to make it easier to reason about
 		if not connected and now > startToConnectTime + 5000
 			core.log "#server WebSocket not connected after {now - startToConnectTime} ms -> Reconnecting"
-			setup
+			setupServerConnection
 			retries++
 			
 		// Ping
@@ -25,7 +25,7 @@ internal transient skipInit unit ServerNetwork
 			send sendBuffer
 			nextPingTime = now + (core.mode == Ping ? 200 : pongCount < 20 ? 1000 : 30000)
 		
-	js void setup
+	js void setupServerConnection
 		ServerNetwork.startToConnectTime = Date.now()
 		ServerNetwork.connected = false
 		
@@ -40,7 +40,7 @@ internal transient skipInit unit ServerNetwork
 		
 		core.log("#server Creating Websocket");
 		if(location.href.indexOf("localhost") != -1) ServerNetwork.socket = new WebSocket("ws://localhost:3112");
-		else                                         ServerNetwork.socket = new WebSocket("wss://"+location.host+":3112");
+		else                                         ServerNetwork.socket = new WebSocket("wss://signal.up4playing.com");
 		ServerNetwork.socket.binaryType = "arraybuffer";
 		
 		ServerNetwork.socket.onopen = () => {
