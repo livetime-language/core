@@ -238,7 +238,7 @@ global transient skipInit unit system
 	// This is called every animation frame
 	private tick
 		if playMode == Play or playMode == Record or waitingForInitialData
-			core.animationFrame
+			core.onFrame
 				
 	private startManipulator:PlayMode playMode
 		this.playMode = playMode

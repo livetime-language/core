@@ -46,7 +46,7 @@ skipInit unit Core
 		isPremiere = true
 		// startTime = serverStartTime = currentTime
 		reset
-		// animationFrame
+		// onFrame
 				
 	// Keep inputs, call init functions, create the local users, reset read positions and start app
 	// This is called on startup, after every code change and when going backwards in the timeline
