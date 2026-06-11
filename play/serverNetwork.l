@@ -21,7 +21,8 @@ internal transient skipInit unit ServerNetwork
 			retries++
 			
 		// Ping
-		if (core.mode == Ping or core.mode == Connected) and now >= nextPingTime
+		// After a failed rejoin the server has us in the wrong room -> its pongs would corrupt core.startTime
+		if not rejoinFailed and (core.mode == Ping or core.mode == Connected) and now >= nextPingTime
 			sendBuffer.reset
 			sendBuffer.writeInt8 cast NetworkMessageType.Ping
 			sendBuffer.writeFloat64 now
@@ -70,6 +71,8 @@ internal transient skipInit unit ServerNetwork
 	// Called when we first connec to the server or when we reconnect
 	private onConnectedToServer
 		core.log "#server Connected to Server", input.localUser.id, core.roomId
+		// After a failed rejoin the server no longer knows our room (see onJoinResponse) -> don't join a different room
+		if rejoinFailed then return
 		// Ticks sent while the connection was down may be lost
 		// -> Resend our whole input history; the explicit position in each Tick makes the resend idempotent
 		inputsSentPos = 0
@@ -110,12 +113,15 @@ internal transient skipInit unit ServerNetwork
 		
 		
 	bool alreadyJoinedBefore
-		
+	// Set when a re-join after a WebSocket reconnect resolved to a different room or user (the server probably restarted)
+	// We then stop re-joining so our signaling isn't silently routed inside the wrong server-side room
+	bool rejoinFailed
+
 	private onJoinResponse: Buffer buffer
-		if alreadyJoinedBefore then return
-		alreadyJoinedBefore = true
-		
+		if rejoinFailed then return
+
 		try
+			// Read the fields in the exact order the server writes them in app.l
 			// Use float64 or string for roomId in future to support 20240603121500
 			int roomId = cast buffer.readFloat64
 			// let roomId = buffer.readInt32
@@ -127,6 +133,19 @@ internal transient skipInit unit ServerNetwork
 			let seed = buffer.readString
 			let serverStartTime = buffer.readFloat64
 			let userCount = buffer.readInt16
+
+			if alreadyJoinedBefore
+				// We re-joined after a WebSocket reconnect
+				// A signaling reconnect doesn't touch the WebRTC peer connections, so the first-join setup must not run again
+				if roomId == core.roomId and userId == input.localUser.id
+					core.log "#server Rejoined room {roomId} as user {userId}"
+				else
+					rejoinFailed = true
+					core.log "#server Rejoin failed: received room {roomId} user {userId}, expected room {core.roomId} user {input.localUser.id}"
+					alert "Connection to the room was lost (the server restarted). Please reload the page."
+				return
+			alreadyJoinedBefore = true
+
 			for userCount
 				let id = buffer.readInt32
 				InternalUser user
@@ -143,7 +162,11 @@ internal transient skipInit unit ServerNetwork
 				core.log "#server Received room id {roomId}"
 				system.pushState "/{core.gameId}/{roomId}"
 				core.roomId = roomId
-				
+
+			// Re-joins after a WebSocket reconnect must resolve to this exact room
+			// -> Replace the original room string (which may have been empty, "staging" or "latest") with the assigned room id
+			core.roomString = roomId.toString
+
 			if version != system.buildVersion
 				alert "You are using an old version of this application. Please refresh your browser."
 				
