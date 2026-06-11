@@ -829,10 +829,14 @@ internal transient skipInit unit core
 		// catch 
 		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
-		await PeerNetwork.setupLocalMedia 
+		// Connect to the signaling server in parallel with the media setup, because signaling doesn't need media
+		// A media failure must never abort the join: setupLocalMedia never throws and falls back to degraded media
+		// Peer connections wait in PeerNetwork.initiate and onReceivedOffer until the media setup settled,
+		// so the local tracks are always added when a peer connection is created
+		ServerNetwork.setupServerConnection
+		PeerNetwork.setupLocalMedia
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
-		ServerNetwork.setupServerConnection
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll

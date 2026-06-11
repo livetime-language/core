@@ -57,11 +57,20 @@ unit lobby
 	tick
 		tickSettings
 		if system.isStaging then drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
-		if (PeerNetwork.error or core.errorMessage) and system.isStaging
+		if core.errorMessage and system.isStaging
 			drawText PeerNetwork.error, size:40
 			drawText core.errorMessage, size:14, position:{0,40}
 			return
-		
+
+		// A failed or degraded media setup must not hide the lobby, because the join continues without media
+		// -> Show what is missing and a Retry button, in production too
+		if PeerNetwork.error
+			drawText PeerNetwork.error, position:{0,-512}, size:24, color:Yellow
+			let localPlayer = input.players.find.id == input.localUser.id
+				drawStandardButton "Retry", {0,-448}, clickableBy:localPlayer
+					print "Media setup retry clicked by {touch.by}", type:Action
+					PeerNetwork.retryMediaSetup
+
 		// Control show names
 		onKeyDown by input.host
 			let cmd = pressedBy.keysCurrentlyDown.includes LeftMetaKey
