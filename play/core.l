@@ -392,15 +392,6 @@ internal transient skipInit unit core
 		statistics.systemLogs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
-		
-		// !!! Temporary for debugging windows that are crashed or don't respond
-		// if(system.isStaging) {
-		// 	try {
-		// 		localStorage.setItem(`logs-${core.roomId}-${input.localUser ? input.localUser.id : "?"}`, core.logs)
-		// 	} catch(e) {
-		// 		console.error(e)
-		// 	}
-		// }
 			
 	internal string logs
 	internal bool hasErrors
@@ -510,8 +501,7 @@ internal transient skipInit unit core
 		
 		HTMLElement??.tickAll()
 		input.removePlayersIfNecessary
-			
-						
+				
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests

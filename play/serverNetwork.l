@@ -128,10 +128,6 @@ internal transient skipInit unit ServerNetwork
 				// buffer.readBuffer user.inputs
 				
 				core.log "#onJoinResponse", userCount, id, user.local, input.internalUsers.joinToString(. ? .id.toString : "null"), user.inputs
-				
-			// TEMP
-			// for input.internalUsers
-			// 	core.log "#onJoinResponse <{.id}>", .local, .inputs
 	
 			if roomId != core.roomId
 				core.log "#server Received room id {roomId}"
@@ -150,9 +146,6 @@ internal transient skipInit unit ServerNetwork
 			core.mode = Ping
 			core.storeUserId
 			core.log "#server Joining room {roomId} as user {userId}"
-	
-			// The first person in the room triggers sending an notification with the link to everybody
-			// if userCount <= 1 and !system.isStaging: http.getStringDirectly "{system.protocolAndHost}:3114/sendGamedayNotification/{core.gameId}/{core.roomId}/hasStarted"
 			
 			// Create an offer for each user already in the room
 			for input.internalUsers
@@ -176,11 +169,7 @@ internal transient skipInit unit ServerNetwork
 		float calculatedStartTime = now - pingPongTime/2 - timeSinceStart
 		
 		int deltaFromAverage = math.round(calculatedStartTime - core.startTime)
-		// int deltaFromReference = math.round(calculatedStartTime - referenceStartTime)
 		statistics.serverPings.add pingPongTime
-		// core.log "<<< Pong ({pongCount})", pingPongTime, calculatedStartTime
-		// core.log "average", core.startTime, deltaFromAverage 
-		// core.log "reference", referenceStartTime, deltaFromReference 
 		
 		// Ignore pings that took more than twice as long as the average
 		pongCount++
@@ -191,11 +180,6 @@ internal transient skipInit unit ServerNetwork
 			return
 			
 		statistics.addInfo "from average", deltaFromAverage
-		// statistics.addInfo "from reference", deltaFromReference
-		
-		// Ajust start time (currently disabled)
-		// calculatedStartTimes.add calculatedStartTime maxLength:20
-		// core.startTime = calculatedStartTimes.average
 			
 		// Use the fastest ping-pong-time we have ever seen to calculate the reference start time
 		if pingPongTime < fastestPingPongTime
