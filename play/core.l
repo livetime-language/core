@@ -160,8 +160,8 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.readPos = 0
 			
+		graphics.startFrame
 		if !startInLobby and not testLobby
-			graphics.startFrame
 			lobby.inLobby = false
 			app.start??()
 		if simulateRollback then checkSaveState
