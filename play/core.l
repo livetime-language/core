@@ -832,7 +832,7 @@ internal transient skipInit unit core
 		await PeerNetwork.setupLocalMedia 
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
-		ServerNetwork.setup
+		ServerNetwork.setupServerConnection
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll
