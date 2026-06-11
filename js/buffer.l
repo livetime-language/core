@@ -475,13 +475,3 @@ internal transient class Buffer
 		for(let i=0; i<this.writePos; i++)
 			result.push(this.dataView.getUint8(i))
 		return result
-		
-struct Vector2
-	serialize: Buffer buffer
-		buffer.writeFloat64(x)
-		buffer.writeFloat64(y)
-		
-	deserialize: Buffer buffer
-		x = buffer.readFloat64
-		y = buffer.readFloat64
-	

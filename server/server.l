@@ -256,7 +256,7 @@ unit websocket
 		                          void(Connection connection, int errorCode) onClose
 		                          void(Connection connection, Buffer buffer) onMessage
 		const uWS = require('uWebSockets.js')
-		const app =  process.platform == "win32" || process.platform == "darwin" ? uWS.App() :
+		const app =  process.platform == "win32" || process.platform == "darwin" || !keyPath || !certPath ? uWS.App() :
 			uWS.SSLApp({
 				key_file_name: keyPath,
 				cert_file_name: certPath,

@@ -99,7 +99,7 @@ internal transient skipInit unit core
 		isPremiere = true
 		startTime = serverStartTime = currentTime
 		reset
-		animationFrame
+		onFrame
 		
 	// Start recording (from the beginning or the middle of an existing event stream)
 	// We remove all future inputs
@@ -160,8 +160,8 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.readPos = 0
 			
+		graphics.startFrame
 		if !startInLobby and not testLobby
-			graphics.startFrame
 			lobby.inLobby = false
 			app.start??()
 		if simulateRollback then checkSaveState
@@ -307,16 +307,16 @@ internal transient skipInit unit core
 			
 	float lastPingTime
 
-	// animationFrame --> step --> tick
+	// onFrame --> step --> tick
 
-	// animationFrame  Send tick message, replay state, and call step
-	// step            Save state, parse inputs, step physics, process tick, and calculate checksum
-	// tick            Clear screen, process application tick, and draw all graphics
+	// onFrame	Send tick message, replay state, and call step
+	// step	Save state, parse inputs, step physics, process tick, and calculate checksum
+	// tick	Clear screen, process application tick, and draw all graphics
 		
 	// Send tick message, replay state, call step, and logging
 	// This is called by the requestAnimationFrame callback.
 	// We ensure that step is called every frameTime milliseconds.
-	internal animationFrame
+	internal onFrame
 		now = currentTime
 		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
@@ -341,7 +341,7 @@ internal transient skipInit unit core
 				for frame to targetFrame
 					input.handleKeyEvent KeyDown, cast Key.F24, ""
 				
-			animationStartFrame = frame
+			frameAtBeginningOfOnFrame = frame
 			
 			try
 				sendInputs targetFrame-1
@@ -378,8 +378,8 @@ internal transient skipInit unit core
 			lastPingTime = currentTime
 			PeerNetwork.ping
 			
-	private int animationStartFrame // The frame at the beginning of animationFrame, used to calculate iteration
-	private float now               // The time at the beginning of animationFrame
+	private int frameAtBeginningOfOnFrame	// The frame at the beginning of onFrame, used to calculate iteration
+	private float now	// The time at the beginning of onFrame
 	
 	private float prevLogTime
 	
@@ -392,15 +392,6 @@ internal transient skipInit unit core
 		statistics.systemLogs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
-		
-		// !!! Temporary for debugging windows that are crashed or don't respond
-		// if(system.isStaging) {
-		// 	try {
-		// 		localStorage.setItem(`logs-${core.roomId}-${input.localUser ? input.localUser.id : "?"}`, core.logs)
-		// 	} catch(e) {
-		// 		console.error(e)
-		// 	}
-		// }
 			
 	internal string logs
 	internal bool hasErrors
@@ -477,7 +468,7 @@ internal transient skipInit unit core
 		ServerNetwork.sendSwitch sendInputsMode, sendInterval
 
 	// Save state, parse inputs, step physics, process tick, and calculate checksum
-	// This is called in animationFrame and during replays. 
+	// This is called in onFrame and during replays. 
 	// All steps except the very last of an animation frame are fast forwared, which means that nothing is drawn.
 	// The frame is increment at the end of this function. This means that while processing the frame,
 	// frame will point to the current frame. After processing, frame will point to the next frame.
@@ -510,8 +501,7 @@ internal transient skipInit unit core
 		
 		HTMLElement??.tickAll()
 		input.removePlayersIfNecessary
-			
-						
+				
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
@@ -570,7 +560,7 @@ internal transient skipInit unit core
 	
 	private Buffer[] milestones
 	
-	// This is called at the begining of animationFrame before we start stepping.
+	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
 			
@@ -842,7 +832,7 @@ internal transient skipInit unit core
 		await PeerNetwork.setupLocalMedia 
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
-		ServerNetwork.setup
+		ServerNetwork.setupServerConnection
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll

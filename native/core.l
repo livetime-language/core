@@ -30,7 +30,7 @@ skipInit unit core
 		// isPremiere = true
 		// startTime = serverStartTime = currentTime
 		reset
-		// animationFrame
+		// onFrame
 		
 		
 	// Keep inputs, call init functions, create the local players, reset read positions and start app
@@ -89,7 +89,7 @@ skipInit unit core
 	private cpp void startApp
 		app::start();
 		
-	animationFrame
+	onFrame
 		Time.now = PlainDate.realTime
 		let targetFrame = math.floor((Time.now - startTime)/frameTime)+1
 		// print "animation frame", Time.now, startTime, Time.now - startTime, frame, targetFrame
