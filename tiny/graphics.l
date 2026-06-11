@@ -38,6 +38,7 @@ Screen
 	float scale
 	dynamic canvas, context
 	dynamic pixelData
+	dynamic pixelData32
 	Grid<int> pixels
 	bool smoothing
 	int clipX1, clipY1, clipX2, clipY2
@@ -49,6 +50,7 @@ Screen
 		this.canvas.height = this.size.y
 		this.context = this.canvas.getContext("2d")
 		this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
+		this.pixelData32 = new Uint32Array(this.pixelData.data.buffer)
 		this.pixels = new Grid(this.size, []);
 		this.clear();
 
@@ -80,20 +82,27 @@ Screen
 			
 	finishFrame
 		if system.fastForward then return
+		// let len = size.x * size.y
+		// int sourceIndex, targetIndex
+		// let target = pixelData.data
+		// let pixels = this.pixels.items
+		// while sourceIndex < len
+		// 	int paletteIndex = pixels[sourceIndex] * 4
+		// 	target[targetIndex] = graphics.palette[paletteIndex]
+		// 	target[targetIndex+1] = graphics.palette[paletteIndex+1]
+		// 	target[targetIndex+2] = graphics.palette[paletteIndex+2]
+		// 	target[targetIndex+3] = 255
+		// 	sourceIndex++
+		// 	targetIndex += 4
+		// context.putImageData(pixelData, 0, 0)
+
 		let len = size.x * size.y
 		int sourceIndex, targetIndex
-		let target = pixelData.data
-		let pixels = this.pixels.items
-		while sourceIndex < len
-			int paletteIndex = pixels[sourceIndex] * 4
-			target[targetIndex] = graphics.palette[paletteIndex]
-			target[targetIndex+1] = graphics.palette[paletteIndex+1]
-			target[targetIndex+2] = graphics.palette[paletteIndex+2]
-			target[targetIndex+3] = 255
-			sourceIndex++
-			targetIndex += 4
-
+		let target = this.pixelData32
+		for len
+			target[.] = 16777215;
 		context.putImageData(pixelData, 0, 0)
+
 		graphics.context.imageSmoothingEnabled = smoothing;
 		graphics.context.drawImage(canvas, activeOffset.x, activeOffset.y, activeSize.x, activeSize.y)
 
