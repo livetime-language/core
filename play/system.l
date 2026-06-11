@@ -48,7 +48,7 @@ global transient skipInit unit system
 		media.init();
 		
 	private js void initPlatform: bool isHeadless = false
-		Object.prototype.toString = function() { return object.stringify(this, 5) }
+		Object.prototype.toString = function() { return JSON.stringify(this) }
 		statistics.init();
 		IndexedDB?.init();
 		PlainDate.init();
