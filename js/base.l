@@ -423,7 +423,8 @@ immutable struct float
 	const inline js int undefined => undefined
 	const inline js int null => null
 	
-	
+enum EachDistinctSortBy: SortByInteger, SortByString
+
 // A sequence of characters
 js String
 immutable class string
