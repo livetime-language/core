@@ -30,6 +30,7 @@ internal transient skipInit unit core
 	public float startTime          // The time the room was created, syncroniced between all clients
 	public float serverStartTime     // Used to calculate the same Time.now from core.frame for all users in core.step
 	int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
+	int certainFrame = -1   // The last frame whose inputs are final from every user (min over users of min(inputFrame, smoothFrame), set in step)
 	internal int frames             // Total number of frames we have inputs for
 	internal int frameWithNewWatches// First frame with new watches, do not send watches for frames below this
 	int watchIndex
@@ -495,7 +496,7 @@ internal transient skipInit unit core
 
 		// Flags
 		system.fastForward = fastForward
-		int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) filter: . != null
+		certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) filter: . != null
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
@@ -633,28 +634,34 @@ internal transient skipInit unit core
 			Snapshot.serialize snapshot
 			if system.logSerialize
 				serializeLogs[frame mod 100] = Snapshot.serializeLog
-				
-		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
-		if simulateRollback
-			Snapshot.deserialize snapshot
-			Snapshot.serialize secondSnapshotForTesting
-			if(snapshot != secondSnapshotForTesting)
-				onError {"Inconsistent serialization"}
-												
-		snapshot.writeInt input.internalUsers.count . != null
-		for input.internalUsers
-			if .
-				snapshot.writeInt .id
-				snapshot.writeInt .inputs.readPos
-				
+
 		// Checksum
-		if input.players.length >= 2 and input.isCertain
+		// The snapshot is the state before this frame, so it is final once every frame below it is
+		// certain - that includes the steady-play snapshot at certainFrame+1, which the previous
+		// isCertain gate (frame <= certainFrame) skipped, so checksums never fired in smooth play (F35)
+		// Computed here, before the internalUsers section below is appended: user membership and
+		// readPos are local bookkeeping that depends on when signaling created each user, not on
+		// the simulation - including them made the checksum differ between clients around joins
+		if input.players.length >= 2 and frame <= certainFrame + 1
 			float myChecksum = snapshot.checksum
 			float theirChecksum = checksums[frame]
 			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
 			if !theirChecksum                             checksums[frame] = myChecksum; else
 			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
 			lastChecksumFrame = frame
+
+		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
+		if simulateRollback
+			Snapshot.deserialize snapshot
+			Snapshot.serialize secondSnapshotForTesting
+			if(snapshot != secondSnapshotForTesting)
+				onError {"Inconsistent serialization"}
+
+		snapshot.writeInt input.internalUsers.count . != null
+		for input.internalUsers
+			if .
+				snapshot.writeInt .id
+				snapshot.writeInt .inputs.readPos
 				
 	// Monotonic milliseconds anchored to the wall clock at page load: frame pacing must not follow
 	// Date.now(), which steps arbitrarily on NTP corrections, manual clock changes and resume (F20)
@@ -887,7 +894,7 @@ internal transient skipInit unit core
 		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id)
 		
 	string snapshotLogWithWrongChecksum
-		
+
 	onWrongChecksum: int frame, float mine, float theirs
 		string message = " Out of sync. frame:{frame} mine:{mine} theirs:{theirs}"
 		string serializeLog = serializeLogs[frame mod 100]
