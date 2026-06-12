@@ -82,6 +82,15 @@ internal transient skipInit unit PeerNetwork
 						else
 							core.log "#peer Recreate peer connection (offer by me)"
 							initiate user
+					else
+						// The answerer must not wait for a new offer forever: the offerer may be gone for good,
+						// or both peers ended up as answerers after crossing offers
+						// Give the offerer one full silence period to reconnect us first, then take over as the offerer
+						// If our offer crosses theirs, the politeness rule in onReceivedOffer resolves it
+						if ++user.silentPeriods >= 2
+							retries++
+							core.log "#peer Recreate peer connection (answer by me, taking over as offerer)"
+							initiate user
 	
 	private js object setupPeerConnection: InternalUser user, bool offerByMe
 		if(user.peerConnection) {
@@ -100,6 +109,10 @@ internal transient skipInit unit PeerNetwork
 		try {
 			user.startToConnectTime = user.lastIncomingMessageTime = Date.now();
 			user.offerByMe = offerByMe;
+			// A fresh connection has no answer yet and no silence history
+			// While offerByMe && !receivedAnswer our offer counts as outstanding -> the impolite peer ignores crossing offers (see onReceivedOffer)
+			user.receivedAnswer = false;
+			user.silentPeriods = 0;
 			
 			let options = {
 				// We use the ice transport policy "relay" to test our turn server
@@ -278,6 +291,19 @@ internal transient skipInit unit PeerNetwork
 		
 	js void onReceivedOffer: InternalUser user, string sdp
 		try {
+			// Crossing offers (glare): when both sides offer at the same time and each receives the other's
+			// offer, both would flip to answerer below and wait for an answer forever. Politeness is
+			// deterministic: the peer with the lower id is impolite and ignores the crossing offer (its own
+			// offer stays outstanding and the polite peer answers it); the peer with the higher id is polite
+			// and answers as usual. An offer counts as outstanding from setupPeerConnection/createOffer until
+			// the answer arrives (receivedAnswer). Liveness: if our outstanding offer was lost on the way,
+			// the silence timeout in tick re-offers within 10s and the polite peer answers that one.
+			let polite = input.localUser.id > user.id;
+			if(!polite && user.offerByMe && !user.receivedAnswer && user.peerConnection) {
+				core.log("#peer <"+user.id+"> Ignoring crossing offer: my own offer is outstanding and I'm the impolite peer");
+				return;
+			}
+
 			// This offer starts a new connection generation (runs synchronously, before the first await):
 			// - candidates queued earlier belong to the previous connection -> discard them
 			//   (signaling is ordered, so candidates for this offer can only arrive after the offer itself)
@@ -364,6 +390,7 @@ internal transient skipInit unit PeerNetwork
 	
 	private onMessage: InternalUser user, Buffer buffer
 		user.lastIncomingMessageTime = PlainDate.realTime
+		user.silentPeriods = 0
 		NetworkMessageType type = cast buffer.readInt8
 		switch type
 			Tick	onTick user, buffer

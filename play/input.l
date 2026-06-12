@@ -42,6 +42,7 @@ internal transient class InternalUser
 	bool receivedAnswer
 	bool connected
 	int connectionTries
+	int silentPeriods // Consecutive 10s periods without any incoming peer message (see PeerNetwork.tick)
 	string connectionState
 	
 	float startToConnectTime = float.maxValue
