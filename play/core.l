@@ -893,6 +893,14 @@ internal transient skipInit unit core
 	internal storeUserId
 		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id)
 		
+	// A checksum received over the network (carried in the trailing fields of every peer and
+	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
+	// saveState compares against it once its own snapshot reaches that frame
+	internal onRemoteChecksum: int checksumFor, float checksum
+		float myChecksum = checksums[checksumFor]
+		if !myChecksum                           checksums[checksumFor] = checksum; else
+		if !myChecksum.isApproximately(checksum) onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
+
 	string snapshotLogWithWrongChecksum
 
 	onWrongChecksum: int frame, float mine, float theirs

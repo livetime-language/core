@@ -475,10 +475,7 @@ internal transient skipInit unit PeerNetwork
 		// Checksum
 		int checksumFor = buffer.readInt
 		float checksum = buffer.readFloat64
-
-		let myChecksum = core.checksums[checksumFor]
-		if !myChecksum                           core.checksums[checksumFor] = checksum; else
-		if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine: myChecksum theirs:checksum
+		core.onRemoteChecksum checksumFor, checksum
 
 		// Store incoming inputs
 		if length then core.storeInputsToDB sender
@@ -688,30 +685,6 @@ internal transient skipInit unit PeerNetwork
 		float pingPongTime = now - pingTime
 		let player = input.players.find.id == user.id
 			statistics.add "pingPongTime" userIndex:player.playerIndex, color:player.playerColor, value:pingPongTime, set:3, isPerFrame:false
-				
-	// --------------------------------------------- Checksum ---------------------------------------------
-	
-	sendChecksum: int checksumFor, float checksum
-		sendBuffer.reset
-		sendBuffer.writeInt8 cast NetworkMessageType.Checksum
-		sendBuffer.writeInt checksumFor
-		sendBuffer.writeFloat64 checksum
-		
-		for input.internalUsers as user
-			if user and user.dataChannels
-				send ., sendBuffer
-
-	onChecksum: InternalUser user, Buffer buffer
-		int checksumFor = buffer.readInt
-		float checksum = buffer.readFloat64
-		if core.verbose then core.log "<{user.id}> #{checksumFor} {checksum}"
-		
-		let myChecksum = core.checksums[checksumFor]
-		if !myChecksum
-			core.checksums[checksumFor] = checksum
-		else
-		if !myChecksum.isApproximately(checksum)
-			core.onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
 				
 	// --------------------------------------------- Media Setup ---------------------------------------------
 	

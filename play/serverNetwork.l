@@ -354,6 +354,11 @@ internal transient skipInit unit ServerNetwork
 			// Write the inputs at the explicit position so resent messages repair gaps and duplicates are idempotent
 			buffer.readBuffer sender.inputs, incomingInputsWritePos
 
+			// Checksum: the same trailing fields as the peer Tick, only read for accepted messages (F21)
+			int checksumFor = buffer.readInt
+			float checksum = buffer.readFloat64
+			core.onRemoteChecksum checksumFor, checksum
+
 	sendSwitch: SendInputsMode mode, int sendInterval
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast NetworkMessageType.Switch
