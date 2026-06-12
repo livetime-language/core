@@ -430,11 +430,35 @@ internal transient skipInit unit PeerNetwork
 	js void onIce: InternalUser user, string candidate
 		core.log("#peer <"+user.id+"> Received Ice Candidate");
 		try {
+			// Candidates routinely arrive before the peer connection exists or before setRemoteDescription
+			// has completed; adding them now would fail, so queue them until the remote description is set
+			if(!user.peerConnection || !user.peerConnection.remoteDescription) {
+				user.pendingIceCandidates.push(JSON.parse(candidate));
+				core.log("#peer <"+user.id+"> Queued Early Ice Candidate ("+user.pendingIceCandidates.length+" pending)");
+				return;
+			}
 			await user.peerConnection.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)));
 		}
 		catch(e) {
 			core.log("#peer <"+user.id+"> onIce failed " + e.message)
 			core.log(e.stack);
+		}
+
+	// Add the ICE candidates that arrived before the remote description was set
+	// Called right after setRemoteDescription resolved in onReceivedOffer and onReceivedAnswer
+	private js void addPendingIceCandidates: InternalUser user
+		let pendingIceCandidates = user.pendingIceCandidates;
+		if(pendingIceCandidates.length == 0) return;
+		user.pendingIceCandidates = [];
+		for(let candidate of pendingIceCandidates) {
+			try {
+				core.log("#peer <"+user.id+"> Adding Queued Ice Candidate");
+				await user.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+			}
+			catch(e) {
+				core.log("#peer <"+user.id+"> addPendingIceCandidates failed " + e.message)
+				core.log(e.stack);
+			}
 		}
 		
 	private js void logConnectionType: InternalUser user
