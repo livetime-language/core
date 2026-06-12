@@ -135,6 +135,7 @@ unit lobby
 		if core.drawPointsForTesting
 			onTouchDown
 				points.add .position.clone
+				print "Adding point at {.position} total points: {points.length}", input.isCertain
 			points.each drawText text:. position:. size:30; drawCircle . outlineColor:White size:200
 			drawText ++counter, {0, -480}, size:100
 		

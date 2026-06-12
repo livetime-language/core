@@ -983,6 +983,7 @@ internal immutable StatisticsInfo
 	int frame
 				
 skipInit transient unit statistics
+	const url = "signal.up4playing.com"
 	const Vector2 margin = {224,126}
 	const Vector2 position = {-960, 540}
 	const Vector2 size = {1920+margin.x, margin.y}
@@ -1036,7 +1037,8 @@ skipInit transient unit statistics
 		id = core.roomId*100 + userId
 		int sendingSystemLogsUntil = systemLogs.length
 
-		http.postDirectly "{system.protocolAndHost}:3114/startSession", body:{
+		if system.isDebug then return
+		http.postDirectly "{url}/startSession", body:{
 			id
 			gameId: core.gameId
 			roomId: core.roomId
@@ -1075,7 +1077,7 @@ skipInit transient unit statistics
 		int sendingGameLogsUntil = gameLogs.length
 			
 		// Send statistics to server
-		http.postDirectly "{system.protocolAndHost}:3114/saveStatistics", body:{
+		http.postDirectly "{url}/saveStatistics", body:{
 			id
 			connections
 			graphLabels: graphs.map.label
