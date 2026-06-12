@@ -36,6 +36,7 @@ internal transient class InternalUser
 	dynamic peerConnection
 	dynamic[] dataChannels
 	dynamic[] pendingIceCandidates // ICE candidates that arrived before the remote description was set
+	bool settingRemoteDescription  // A received offer/answer is being applied; queue ICE candidates until setRemoteDescription resolved
 	string connectionType
 	bool offerByMe
 	bool receivedAnswer

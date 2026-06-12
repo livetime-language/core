@@ -278,6 +278,13 @@ internal transient skipInit unit PeerNetwork
 		
 	js void onReceivedOffer: InternalUser user, string sdp
 		try {
+			// This offer starts a new connection generation (runs synchronously, before the first await):
+			// - candidates queued earlier belong to the previous connection -> discard them
+			//   (signaling is ordered, so candidates for this offer can only arrive after the offer itself)
+			// - candidates arriving from now on belong to this offer -> queue them until the remote description is set
+			user.pendingIceCandidates.length = 0;
+			user.settingRemoteDescription = true;
+
 			// The media setup runs in parallel with the signaling connection
 			// Wait until it settled so the local tracks are added when the peer connection is created
 			await PeerNetwork.whenLocalMediaSettled();
@@ -322,11 +329,14 @@ internal transient skipInit unit PeerNetwork
 			// Answer
 			let peerConnection = user.peerConnection;
 			await peerConnection.setRemoteDescription(new RTCSessionDescription({type: "offer", sdp}));
+			user.settingRemoteDescription = false;
+			await PeerNetwork.addPendingIceCandidates(user);
 			let answer = await peerConnection.createAnswer();
 			await peerConnection.setLocalDescription(answer);
 			ServerNetwork.sendSignal(user.id, "answer", peerConnection.localDescription.sdp);
 		}
 		catch(e) {
+			user.settingRemoteDescription = false;
 			core.log("#peer <"+user.id+"> onReceivedOffer failed " + e.message)
 			console.error(e)
 			core.log(e.stack);
@@ -406,20 +416,29 @@ internal transient skipInit unit PeerNetwork
 	js void onReceivedAnswer: InternalUser user, string sdp
 		core.log("#peer <"+user.id+"> Received Answer");
 		try {
+			// Candidates queued before this answer belong to a previous connection generation -> discard them
+			// (signaling is ordered and the remote sends its answer before it gathers any candidate,
+			// so candidates for this generation can only arrive after the answer itself)
+			user.pendingIceCandidates.length = 0;
+			user.settingRemoteDescription = true;
 			await user.peerConnection.setRemoteDescription(new RTCSessionDescription({type: "answer", sdp}));
+			user.settingRemoteDescription = false;
 			user.receivedAnswer = true
+			await PeerNetwork.addPendingIceCandidates(user);
 		}
 		catch(e) {
+			user.settingRemoteDescription = false;
 			core.log("#peer <"+user.id+"> onReceivedAnswer failed " + e.message)
 			core.log(e.stack);
-		}	
+		}
 			
 	js void onIce: InternalUser user, string candidate
 		core.log("#peer <"+user.id+"> Received Ice Candidate");
 		try {
 			// Candidates routinely arrive before the peer connection exists or before setRemoteDescription
-			// has completed; adding them now would fail, so queue them until the remote description is set
-			if(!user.peerConnection || !user.peerConnection.remoteDescription) {
+			// has completed; adding them now would fail (or feed a connection that is being replaced),
+			// so queue them until the remote description is set
+			if(!user.peerConnection || !user.peerConnection.remoteDescription || user.settingRemoteDescription) {
 				user.pendingIceCandidates.push(JSON.parse(candidate));
 				core.log("#peer <"+user.id+"> Queued Early Ice Candidate ("+user.pendingIceCandidates.length+" pending)");
 				return;
