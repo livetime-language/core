@@ -353,12 +353,11 @@ internal transient skipInit unit core
 			frameAtBeginningOfOnFrame = frame
 			
 			try
-				sendInputs targetFrame-1
 				// Replay all frames from the first uncertain frame until the current frame
 				// when we received all inputs for frames that we were uncertain about before
 				checkRewindAndReplayState
-			
-			catch 
+
+			catch
 				onError error
 					
 			// Ensure that step is called every frameTime milliseconds
@@ -371,9 +370,18 @@ internal transient skipInit unit core
 					if not system.isDebug then collectStatistics
 			catch
 				onError .
-				
+
 				lastNetworkFrame = now
-				
+
+			// Send inputs after the step loop: stepping writes gamepad records stamped frame+1,
+			// so a claim sent before the loop would cover bytes that only travel in a later message.
+			// localUser.inputFrame-1 claims exactly the frames no future write can be stamped with
+			// (at least -1: receivers drop claims below their initial inputFrame of -1)
+			try
+				sendInputs math.max(input.localUser.inputFrame-1, -1)
+			catch
+				onError .
+
 			// Store local inputs
 			if IndexedDB.isReady
 				core.storeInputsToDB input.localUser
