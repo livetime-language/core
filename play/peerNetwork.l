@@ -56,6 +56,11 @@ internal transient skipInit unit PeerNetwork
 	private object mediaSetupPromise
 	private bool retryingMedia
 
+	// Restore of our own input stream after a rejoin with the same userId (see startRestore)
+	bool restoring
+	private float restoreDeadline
+	private float nextRestoreRequestTime
+
 	initiate: InternalUser user
 		// The media setup runs in parallel with the signaling connection
 		// Wait until it settled so the local tracks are added when the peer connection is created
@@ -65,7 +70,11 @@ internal transient skipInit unit PeerNetwork
 		
 	tick
 		let now = PlainDate.realTime
-		
+
+		// After a rejoin, restore our previous session's input stream from our peers
+		// before the session starts (ServerNetwork.onPong waits until this settled)
+		if restoring then tickRestore now
+
 		for input.internalUsers as user
 			if . and not .local
 				// Reconnect to peer is we haven't received anything for a while
@@ -396,6 +405,8 @@ internal transient skipInit unit PeerNetwork
 			Tick	onTick user, buffer
 			Ping	onPing user, buffer
 			Pong	onPong user, buffer
+			RequestHistory	onRequestHistory user, buffer
+			History	onHistory user, buffer
 			
 	sendInputs: int inputFrame
 		let inputs = input.localUser.inputs
@@ -405,6 +416,8 @@ internal transient skipInit unit PeerNetwork
 			if not receiver.local and receiver.dataChannels
 				sendBuffer.reset
 				sendBuffer.writeInt8 cast NetworkMessageType.Tick
+				sendBuffer.writeInt input.localUser.epoch            // The epoch of my stream, changes when I restart with a fresh session
+				sendBuffer.writeInt input.localUser.epochStartPos    // My bytes below this pos are history restored from before this epoch
 				sendBuffer.writeInt inputFrame                       // I send inputs up to and including this frame
 				sendBuffer.writeInt receiver.receivedMyInputsUpToPos // I send inputs starting from the last pos you received
 				sendBuffer.writeInt receiver.inputs.writePos         // I received your inputs up to this pos
@@ -417,28 +430,58 @@ internal transient skipInit unit PeerNetwork
 				if length > 0 then core.log "[{inputFrame}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {receiver.receivedMyInputsUpToPos} and I'm <{input.localUser.id}> sending {length} bytes, from {receiver.receivedMyInputsUpToPos} to {inputs.writePos}"
 		
 	private onTick: InternalUser sender, Buffer buffer
+		let epoch = buffer.readInt                          // The epoch of the sender's stream, changes when the sender restarts with a fresh session
+		let epochStartPos = buffer.readInt                  // The sender's bytes below this pos are history restored from before this epoch
 		let inputFrame = buffer.readInt                     // The sender sent inputs up to and including this frame
-		
-		if inputFrame >= sender.inputFrame
-			let prevInputFrame = sender.inputFrame         
-			let incomingInputsWritePos = buffer.readInt     // The sender sent inputs starting from the last pos I received
-			sender.receivedMyInputsUpToPos = buffer.readInt // The sender received my inputs up to this pos
-			
-			sender.inputFrame = inputFrame
-			let length = buffer.readBuffer sender.inputs, incomingInputsWritePos
-			
-			if length > 0 then core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
-			
-			// Checksum
-			int checksumFor = buffer.readInt
-			float checksum = buffer.readFloat64
-			
-			let myChecksum = core.checksums[checksumFor]
-			if !myChecksum                           core.checksums[checksumFor] = checksum; else
-			if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine: myChecksum theirs:checksum
-				
-			// Store incoming inputs
-			if length then core.storeInputsToDB sender
+
+		// A new epoch means the sender restarted and lost its in-memory stream (page refresh with
+		// the same userId). Its stream only continues the one we stored if it restored at least
+		// everything we hold - otherwise its writes would retroactively change history that our
+		// snapshots and read positions reference, so we offer it its own history back instead
+		if epoch != sender.epoch
+			if sender.epoch != 0 and epochStartPos < sender.inputs.writePos
+				sendHistory sender // Rate-limited, see onHistory on the receiving side
+				return
+			core.log "[{inputFrame}] <{sender.id}> #epoch Accepting new stream epoch {epoch} (was {sender.epoch}), continued from {epochStartPos}, we stored {sender.inputs.writePos}"
+			sender.epoch = epoch
+
+		// Discard late or out-of-order messages: a newer message always contains the older message's bytes
+		if inputFrame < sender.inputFrame then return
+
+		let incomingInputsWritePos = buffer.readInt     // The sender sent inputs starting from the last pos I received
+		let ackPos = buffer.readInt                     // The sender received my inputs up to this pos
+
+		// Peek the length to validate the write before it happens (readBuffer reads the length itself)
+		let savedReadPos = buffer.readPos
+		let length = buffer.readInt
+		buffer.readPos = savedReadPos
+
+		// Only contiguous appends are allowed: the stream is append-only within an epoch and snapshots
+		// reference positions in it, so a write must neither leave a gap nor shrink what we already have
+		// (dropped bytes are repaired by the cumulative resend of the next Tick)
+		if incomingInputsWritePos > sender.inputs.writePos
+			core.log "[{inputFrame}] <{sender.id}> #receive Dropped: bytes start at {incomingInputsWritePos} but we only have {sender.inputs.writePos}"
+			return
+		if incomingInputsWritePos + length < sender.inputs.writePos
+			core.log "[{inputFrame}] <{sender.id}> #receive Dropped: bytes end at {incomingInputsWritePos + length}, shrinking below our {sender.inputs.writePos}"
+			return
+
+		sender.inputFrame = inputFrame
+		sender.receivedMyInputsUpToPos = ackPos
+		buffer.readBuffer sender.inputs, incomingInputsWritePos
+
+		if length > 0 then core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
+
+		// Checksum
+		int checksumFor = buffer.readInt
+		float checksum = buffer.readFloat64
+
+		let myChecksum = core.checksums[checksumFor]
+		if !myChecksum                           core.checksums[checksumFor] = checksum; else
+		if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine: myChecksum theirs:checksum
+
+		// Store incoming inputs
+		if length then core.storeInputsToDB sender
 		
 	js void onReceivedAnswer: InternalUser user, string sdp
 		core.log("#peer <"+user.id+"> Received Answer");
@@ -513,6 +556,115 @@ internal transient skipInit unit PeerNetwork
 			}
 		}, 10000)
 		
+	// --------------------------------------------- Restoring our stream after a rejoin ---------------------------------------------
+
+	// When we rejoin a room with the same userId after a page refresh, our in-memory input stream
+	// is gone, but every peer still stores a copy of it. We ask all peers for that copy and resume
+	// the longest one we receive, so our outgoing Ticks continue the old stream instead of
+	// overwriting it from position 0 on every peer (which would corrupt their snapshots)
+
+	// A random non-zero id for this session's input stream, assigned in core.join (0 means unknown)
+	js int generateEpoch
+		return Math.floor(Math.random() * 0x3fffffff) + 1
+
+	// Called from ServerNetwork.onJoinResponse when we joined with a preassigned userId and other
+	// users exist in the room. While restoring is set, ServerNetwork.onPong delays startConnected,
+	// so we neither append new inputs to our stream nor send Ticks until the restore settled
+	startRestore
+		restoring = true
+		restoreDeadline = PlainDate.realTime + 5000
+		nextRestoreRequestTime = 0
+		core.log "#restore Joined with a preassigned userId -> requesting our previous session's input stream from all peers"
+
+	private tickRestore: float now
+		// Request our history from every peer that hasn't answered yet (repeated every second:
+		// the data channel is unreliable and the channels open at different times)
+		if now >= nextRestoreRequestTime
+			nextRestoreRequestTime = now + 1000
+			for input.internalUsers as user
+				if . and not .local and .dataChannels and .historyTotalLength == -1
+					core.log "#restore <{.id}> Requesting our input history"
+					sendBuffer.reset
+					sendBuffer.writeInt8 cast NetworkMessageType.RequestHistory
+					send ., sendBuffer
+
+		// Finished when every peer answered (we keep the longest history received), or when the
+		// deadline passed (a peer is unreachable or its reply was too large -> start fresh; our
+		// new epoch keeps peers that still hold more of our old stream from being corrupted)
+		bool allAnswered = true
+		for input.internalUsers as user
+			if . and not .local and .historyTotalLength == -1 then allAnswered = false
+
+		if allAnswered
+			finishRestore "all peers answered"
+		else
+		if now > restoreDeadline
+			finishRestore "timeout"
+
+	private finishRestore: string reason
+		restoring = false
+		input.localUser.epochStartPos = input.localUser.inputs.writePos
+		core.log "#restore Restore finished ({reason}): our own new inputs continue at {input.localUser.epochStartPos}"
+
+	// A peer rejoined with a fresh session and asks for its own input stream as we stored it.
+	// It also has none of our inputs any more -> resend our own stream from position 0
+	// (the explicit position in every Tick makes the resend idempotent)
+	private onRequestHistory: InternalUser user, Buffer buffer
+		core.log "#restore <{user.id}> Received history request -> resend our inputs from 0 and reply with {user.inputs.writePos} bytes of its history"
+		user.receivedMyInputsUpToPos = 0
+		user.lastHistorySentTime = 0 // Answer a fresh request immediately
+		sendHistory user
+
+	// Send this user its own input stream as we stored it (the answer to RequestHistory, also
+	// pushed from onTick when the user announces an epoch we can't accept). Rate-limited because
+	// onTick can trigger it for every Tick of a rejoined sender
+	private sendHistory: InternalUser user
+		let now = PlainDate.realTime
+		if now < user.lastHistorySentTime + 1000 then return
+		user.lastHistorySentTime = now
+
+		let length = user.inputs.writePos
+		// Sent as a single message: longer streams exceed the data channel message size limit
+		// -> the rejoiner times out and starts fresh (chunked transfer comes with state transfer)
+		if length > 262144
+			core.log "#restore <{user.id}> Can't send its history of {length} bytes, too large for a single message"
+			return
+
+		core.log "#restore <{user.id}> Sending {length} bytes of its own input history"
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast NetworkMessageType.History
+		sendBuffer.writeInt length // The total length of the stored stream
+		sendBuffer.writeInt 0      // The position where this part starts (always 0 until chunking exists)
+		sendBuffer.writeBuffer user.inputs, 0, length
+		send user, sendBuffer
+
+	// Our own previous-session input stream as this peer stored it.
+	// Bytes are append-only: we may only adopt a longer history while our stream is still exactly
+	// the restored prefix - once we appended our own new inputs, nothing below writePos may change
+	// any more (our snapshots and the other peers already reference it)
+	private onHistory: InternalUser user, Buffer buffer
+		let totalLength = buffer.readInt // The total length of our stream as this peer stored it
+		let startPos = buffer.readInt    // The position where this part starts
+
+		// Peek the length to validate the write before it happens (readBuffer reads the length itself)
+		let savedReadPos = buffer.readPos
+		let length = buffer.readInt
+		buffer.readPos = savedReadPos
+
+		user.historyTotalLength = math.max user.historyTotalLength, totalLength
+		let localUser = input.localUser
+		core.log "#restore <{user.id}> Received {length} bytes of our own history at {startPos} of {totalLength}, we have {localUser.inputs.writePos}"
+
+		if startPos > localUser.inputs.writePos then return           // Would leave a gap
+		if startPos + length <= localUser.inputs.writePos then return // Nothing new
+		if not restoring and localUser.inputs.writePos != localUser.epochStartPos
+			core.log "#restore <{user.id}> Peer stored {startPos + length} bytes of our previous stream, but we already appended new inputs after {localUser.epochStartPos} -> can't restore"
+			return
+
+		buffer.readBuffer localUser.inputs, startPos
+		if not restoring then localUser.epochStartPos = localUser.inputs.writePos
+		core.log "#restore <{user.id}> Restored our input stream to {localUser.inputs.writePos} bytes"
+
 	// --------------------------------------------- Ping/Pong ---------------------------------------------
 	
 	ping

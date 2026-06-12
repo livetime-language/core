@@ -1,5 +1,5 @@
 // This enum must stay in sync with the NetworkMessageType enum in server/src/app.l (same members, same order)
-enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, ReadyForStateRequests, MakePrimary, RequestState, State, Checksum
+enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, ReadyForStateRequests, MakePrimary, RequestState, State, Checksum, RequestHistory, History
 
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/src/app.l, sent in Join and verified in JoinResponse
@@ -184,6 +184,12 @@ internal transient skipInit unit ServerNetwork
 			for input.internalUsers
 				if . and not .local
 					PeerNetwork.initiate .
+
+			// When we join with a preassigned userId, we may be rejoining after a page refresh and
+			// the other users may still hold our previous session's input stream -> restore it from
+			// them before the session starts (onPong delays startConnected until the restore settled)
+			if core.localUserId != -1 and userCount > 1
+				PeerNetwork.startRestore
 		catch 
 			core.onError error
 		
@@ -224,7 +230,9 @@ internal transient skipInit unit ServerNetwork
 			
 			core.log "#server New fastest pingPongTime", pongCount, now, pingPongTime, timeSinceStart, core.startTime, referenceStartTime
 			
-		if pongCount >= 5
+		// While we restore our previous session's input stream from our peers after a rejoin,
+		// we keep pinging and only start the session when the restore settled (PeerNetwork.tickRestore)
+		if pongCount >= 5 and not PeerNetwork.restoring
 			core.startConnected frame:math.floor((now - core.startTime)/core.frameTime)+1
 			
 	sendSignal:	int receiverId, string type, string sdp
@@ -295,6 +303,17 @@ internal transient skipInit unit ServerNetwork
 		// Discard late or out-of-order messages: a newer message always contains the older message's bytes
 		if inputFrame >= sender.inputFrame
 			let incomingInputsWritePos = buffer.readInt // The sender sent inputs starting from this pos in its stream
+
+			// Peek the length to validate the write before it happens (readBuffer reads the length itself)
+			let savedReadPos = buffer.readPos
+			let length = buffer.readInt
+			buffer.readPos = savedReadPos
+
+			// Only contiguous appends are allowed: the stream is append-only and snapshots reference
+			// positions in it, so a write must neither leave a gap nor shrink what we already have
+			if incomingInputsWritePos > sender.inputs.writePos then return
+			if incomingInputsWritePos + length < sender.inputs.writePos then return
+
 			sender.inputFrame = inputFrame
 
 			// Write the inputs at the explicit position so resent messages repair gaps and duplicates are idempotent

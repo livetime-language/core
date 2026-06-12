@@ -55,9 +55,15 @@ internal transient skipInit unit core
 				
 		log "startConnected", joinFrame, this.frame, this.frames
 		if this.frames == 0
-			log "handleJoin", frame
-			input.localUser.startInputFrame 0
-			input.handleJoin frame, account
+			if input.localUser.epochStartPos > 0
+				// We restored our previous session's input stream after a rejoin: it already contains
+				// our Join event, so we resume that player instead of joining again - the replay from
+				// frame 0 recreates our player from the restored stream
+				log "resume", input.localUser.epochStartPos
+			else
+				log "handleJoin", frame
+				input.localUser.startInputFrame 0
+				input.handleJoin frame, account
 		
 		mode = Connected
 		input.localUser.collectInputs = true
@@ -834,6 +840,9 @@ internal transient skipInit unit core
 		// catch 
 		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		// Each session tags its input stream with a fresh random epoch: peers use it to detect
+		// that we restarted and lost our in-memory stream (see PeerNetwork.onTick)
+		input.localUser.epoch = PeerNetwork.generateEpoch
 		// Connect to the signaling server in parallel with the media setup, because signaling doesn't need media
 		// A media failure must never abort the join: setupLocalMedia never throws and falls back to degraded media
 		// Peer connections wait in PeerNetwork.initiate and onReceivedOffer until the media setup settled,
