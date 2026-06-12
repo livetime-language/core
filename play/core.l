@@ -830,6 +830,15 @@ internal transient skipInit unit core
 		this.roomString = roomString
 		this.roomId = cast roomString
 		this.localUserId = userId
+		// A page refresh must not turn us into a new player - the old player would freeze as a
+		// permanent ghost. When the URL doesn't preassign a userId, reuse the one stored for this
+		// room (storeUserId); the restore started in onJoinResponse then recovers our previous
+		// input stream from our peers
+		if this.localUserId == -1 and this.roomId > 0
+			RoomInfo info = system.getLocalStorageObject("room"+this.roomId)
+			if info and currentTime - info.time < 24 hours
+				this.localUserId = info.userId
+				log "Rejoining room {this.roomId} as stored user {this.localUserId}"
 		this.frame = 0
 		this.frames = 0
 		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
