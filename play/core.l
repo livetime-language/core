@@ -284,9 +284,12 @@ internal transient skipInit unit core
 	addOutput: string value
 		value += "|{outputIndex}|{frame}"
 		output[outputIndex] = value
-		
+
 		// Throw an exception when we reach interrruptAtOutputIndex
-		if outputIndex++ == interrruptAtOutputIndex
+		// interrruptAtOutputIndex is -1 when no interrupt is armed. outputIndex also starts at -1
+		// in connected sessions, so without the -1 check the first output (the first local click)
+		// would throw a spurious interrupt that silently aborts the step between parseInputs and tick
+		if outputIndex++ == interrruptAtOutputIndex and interrruptAtOutputIndex != -1
 			throw {"interrrupt"}
 
 	sendOutputToEditor: int frame = core.frame
@@ -823,6 +826,8 @@ internal transient skipInit unit core
 		this.localUserId = userId
 		this.frame = 0
 		this.frames = 0
+		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
+		this.outputIndex = 0
 		// TEMP: Storing event stream in database is disabled for now
 		// try
 		// 	await openFromDB
