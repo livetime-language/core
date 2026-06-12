@@ -377,13 +377,7 @@ internal transient skipInit unit PeerNetwork
 				
 				core.tickMessageSize = send ., sendBuffer
 				
-				if core.verbose
-					if receiver.receivedMyInputsUpToPos > inputs.writePos
-						core.log "[{inputFrame}] <{receiver.id}> #send -->> {receiver.receivedMyInputsUpToPos}->{inputs.writePos} id:{receiver.dataChannels[0]._id}"
-					else
-						core.log "[{inputFrame}] <{receiver.id}> #send -->>"
-				
-				core.log "[{inputFrame}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {receiver.receivedMyInputsUpToPos} and I'm <{input.localUser.id}> sending {length} bytes, from {receiver.receivedMyInputsUpToPos} to {inputs.writePos}"
+				if length > 0 then core.log "[{inputFrame}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {receiver.receivedMyInputsUpToPos} and I'm <{input.localUser.id}> sending {length} bytes, from {receiver.receivedMyInputsUpToPos} to {inputs.writePos}"
 		
 	private onTick: InternalUser sender, Buffer buffer
 		let inputFrame = buffer.readInt                     // The sender sent inputs up to and including this frame
@@ -396,18 +390,11 @@ internal transient skipInit unit PeerNetwork
 			sender.inputFrame = inputFrame
 			let length = buffer.readBuffer sender.inputs, incomingInputsWritePos
 			
-			core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
-			
-			if core.verbose
-				if sender.inputs.writePos > incomingInputsWritePos
-					core.log "[{inputFrame}] <{sender.id}> #receive <<-- writePos: {incomingInputsWritePos}->{sender.inputs.writePos}"
-				else
-					core.log "[{inputFrame}] <{sender.id}> #receive <<--"
+			if length > 0 then core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
 			
 			// Checksum
 			int checksumFor = buffer.readInt
 			float checksum = buffer.readFloat64
-			if core.verbose then core.log "<{sender.id}> #{checksumFor} {checksum}"
 			
 			let myChecksum = core.checksums[checksumFor]
 			if !myChecksum                           core.checksums[checksumFor] = checksum; else

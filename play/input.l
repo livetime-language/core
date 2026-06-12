@@ -1071,7 +1071,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		print type:Touch message or "Click {referencePos} by {player}"
+		print type:Touch message or "Click {referencePos} by {player}", input.isCertain
 
 		// Call handlers
 		app.onTouchHover??(touch);
