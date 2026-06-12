@@ -228,16 +228,19 @@ internal transient class Buffer
 		this.dataView.setInt32(this.writePos, value)
 		this.writePos += 4
 	
+	// Both float writers replace any NaN with the canonical NaN: JS engines do not keep NaN payload
+	// bits stable (they can change on heap moves and differ between clients), and snapshot bytes are
+	// checksummed across clients - a payload flip would be a false "Out of sync" (F36)
 	js void writeFloat32: float value
 		if(this.writePos+4 > this.buffer.byteLength)
 			this.expandBuffer(this.writePos+4)
-		this.dataView.setFloat32(this.writePos, value)
+		this.dataView.setFloat32(this.writePos, value === value ? value : NaN)
 		this.writePos += 4
-		
+
 	js void writeFloat64: float value
 		if(this.writePos+8 > this.buffer.byteLength)
 			this.expandBuffer(this.writePos+8)
-		this.dataView.setFloat64(this.writePos, value)
+		this.dataView.setFloat64(this.writePos, value === value ? value : NaN)
 		this.writePos += 8
 		
 	js void writeBool: bool value
