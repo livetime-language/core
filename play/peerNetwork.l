@@ -77,8 +77,12 @@ internal transient skipInit unit PeerNetwork
 
 		for input.internalUsers as user
 			if . and not .local
+				// A leaving peer is gone on purpose (tab closed or navigated away) - reconnect
+				// attempts would be pointless churn; any later message clears the flag (F6)
+				if .leaving then continue
 				// Reconnect to peer is we haven't received anything for a while
-				if now > .lastIncomingMessageTime + 10000					
+				// A hidden tab is throttled and may fall silent - tolerate a longer silence (F6)
+				if now > .lastIncomingMessageTime + (.hidden ? 60000 : 10000)
 					core.log "[{Time.ticks}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
 					.startToConnectTime = user.lastIncomingMessageTime = PlainDate.realTime
 					statistics.scheduleSendIn 3 seconds
@@ -116,6 +120,8 @@ internal transient skipInit unit PeerNetwork
 			} catch {}
 		}
 		try {
+			// A pending connection-type report belongs to the connection being replaced (F30)
+			clearTimeout(user.logConnectionTypeTimer);
 			user.startToConnectTime = user.lastIncomingMessageTime = Date.now();
 			user.offerByMe = offerByMe;
 			// A fresh connection has no answer yet and no silence history
@@ -258,6 +264,7 @@ internal transient skipInit unit PeerNetwork
 			
 	disconnect: InternalUser user
 		core.log "####### disconnect"
+		cancelLogConnectionType user
 		user.dataChannels.each.close()
 		if user.peerConnection != null then user.peerConnection.close
 		input.internalUsers[user.id] = null
@@ -400,6 +407,7 @@ internal transient skipInit unit PeerNetwork
 	private onMessage: InternalUser user, Buffer buffer
 		user.lastIncomingMessageTime = PlainDate.realTime
 		user.silentPeriods = 0
+		user.leaving = false // Any message proves the user is still there (e.g. restored from the back/forward cache)
 		NetworkMessageType type = cast buffer.readInt8
 		switch type
 			Tick	onTick user, buffer
@@ -407,27 +415,100 @@ internal transient skipInit unit PeerNetwork
 			Pong	onPong user, buffer
 			RequestHistory	onRequestHistory user, buffer
 			History	onHistory user, buffer
+			Status	onStatus user, buffer
+			Leaving	onLeaving user, buffer
 			
+	// A single Tick must stay well below the smallest cross-browser SCTP message size limit:
+	// a peer that is gone for minutes (or a fresh peer acking from 0 after a long game) would
+	// otherwise make the cumulative delta exceed it, channel.send would throw on every frame and
+	// the transfer would never succeed - both sides stall (F12). Larger backlogs are sent as one
+	// chunk per Tick; the ack-driven cumulative resend delivers the rest over the following
+	// frames (~16 KB at 30 Hz = 480 KB/s)
+	const int maxTickBytes = 16384
+
 	sendInputs: int inputFrame
 		let inputs = input.localUser.inputs
+		recordClaimSample inputs.writePos, inputFrame
 		for input.internalUsers as receiver if receiver
-			let length = inputs.writePos - receiver.receivedMyInputsUpToPos
-			
 			if not receiver.local and receiver.dataChannels
+				// Don't pile onto a congested channel - the cumulative resend covers these bytes later
+				if bufferedAmount(receiver) > 1048576 then continue
+
+				let startPos = receiver.receivedMyInputsUpToPos
+				int length = inputs.writePos - startPos
+				int claim = inputFrame
+				if length > maxTickBytes
+					if ++receiver.stalledChunkSends <= 90
+						// The receiver is far behind: send one chunk. The claim may only cover frames
+						// whose bytes are fully inside what the receiver will then have (invariant 3),
+						// so it comes from the position->frame samples, not the live inputFrame
+						length = maxTickBytes
+						claim = claimForPos startPos + length
+					else
+						// No ack progress for ~3s of chunked sends: the receiver's stored claim may
+						// predate our samples (it held our stream from before our restore). Fall back
+						// to one uncapped send - exactly the pre-chunking behavior, which works
+						// whenever the whole delta fits into a message at all
+						receiver.stalledChunkSends = 0
+				else
+					receiver.stalledChunkSends = 0
+
 				sendBuffer.reset
 				sendBuffer.writeInt8 cast NetworkMessageType.Tick
 				sendBuffer.writeInt input.localUser.epoch            // The epoch of my stream, changes when I restart with a fresh session
 				sendBuffer.writeInt input.localUser.epochStartPos    // My bytes below this pos are history restored from before this epoch
-				sendBuffer.writeInt inputFrame                       // I send inputs up to and including this frame
-				sendBuffer.writeInt receiver.receivedMyInputsUpToPos // I send inputs starting from the last pos you received
+				sendBuffer.writeInt claim                            // I send inputs up to and including this frame
+				sendBuffer.writeInt startPos                         // I send inputs starting from the last pos you received
 				sendBuffer.writeInt receiver.inputs.writePos         // I received your inputs up to this pos
-				sendBuffer.writeBuffer inputs, receiver.receivedMyInputsUpToPos, length
-				sendBuffer.writeInt core.lastChecksumFrame                           // The last certain frame with inputs from everybody
-				sendBuffer.writeFloat64 core.checksums[core.lastChecksumFrame] || 0  // The checksum of the last certain frame
-				
+				sendBuffer.writeBuffer inputs, startPos, length
+				sendBuffer.writeInt core.lastChecksumFrame                      // The last certain frame with inputs from everybody
+				sendBuffer.writeFloat64 core.getChecksum core.lastChecksumFrame // The checksum of the last certain frame
+
 				core.tickMessageSize = send ., sendBuffer
-				
-				if length > 0 then core.log "[{inputFrame}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {receiver.receivedMyInputsUpToPos} and I'm <{input.localUser.id}> sending {length} bytes, from {receiver.receivedMyInputsUpToPos} to {inputs.writePos}"
+
+				if core.verbose and length > 0 then core.log "[{claim}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {startPos} and I'm <{input.localUser.id}> sending {length} bytes, from {startPos} to {startPos + length} of {inputs.writePos}"
+
+	// --------------------------------------------- Claims for chunked Ticks ---------------------------------------------
+
+	// Sparse samples of "bytes [0, claimSamplePositions[i]) of my stream contain all my inputs up
+	// to and including frame claimSampleFrames[i]" - exactly what a claim promises, and true at
+	// every send because the claim core.onFrame passes in only covers bytes already written (F19).
+	// A chunked Tick looks up the newest sample fully covered by its bytes, so its claim can never
+	// cover bytes the receiver doesn't have; a lower claim is always safe, it only delays certainty.
+	// Sampled every ~2 KB or ~30 frames - the granularity costs at most about a second of certainty
+	// during a catch-up. Never pruned: it grows orders of magnitude slower than the input stream
+	// itself, which is append-only until state transfer exists (F17.3)
+	private int[] claimSamplePositions
+	private int[] claimSampleFrames
+
+	private recordClaimSample: int writePos, int inputFrame
+		let count = claimSamplePositions.length
+		if count > 0 and claimSamplePositions[count-1] == writePos
+			// Same bytes, newer claim: keep the newest claim for this position
+			claimSampleFrames[count-1] = inputFrame
+		else
+		if count == 0 or writePos >= claimSamplePositions[count-1] + 2048 or inputFrame >= claimSampleFrames[count-1] + 30
+			claimSamplePositions.add writePos
+			claimSampleFrames.add inputFrame
+
+	// The newest sampled claim whose bytes lie fully below pos; -1 when no sample qualifies
+	// (start of a session, or restored history from before this session - restored bytes were
+	// never sampled). Receivers start at inputFrame -1, so -1 is accepted by every fresh peer
+	private int claimForPos: int pos
+		int low = 0
+		int high = claimSamplePositions.length - 1
+		int result = -1
+		while low <= high
+			int mid = math.floor((low + high) / 2)
+			if claimSamplePositions[mid] <= pos
+				result = claimSampleFrames[mid]
+				low = mid + 1
+			else
+				high = mid - 1
+		return result
+
+	private js int bufferedAmount: InternalUser user
+		return user.dataChannels[0].bufferedAmount || 0
 		
 	private onTick: InternalUser sender, Buffer buffer
 		let epoch = buffer.readInt                          // The epoch of the sender's stream, changes when the sender restarts with a fresh session
@@ -467,10 +548,12 @@ internal transient skipInit unit PeerNetwork
 			return
 
 		sender.inputFrame = inputFrame
+		// Ack progress: the receiver is consuming our chunked catch-up (see sendInputs)
+		if ackPos > sender.receivedMyInputsUpToPos then sender.stalledChunkSends = 0
 		sender.receivedMyInputsUpToPos = ackPos
 		buffer.readBuffer sender.inputs, incomingInputsWritePos
 
-		if length > 0 then core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
+		if core.verbose and length > 0 then core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
 
 		// Checksum
 		int checksumFor = buffer.readInt
@@ -535,23 +618,35 @@ internal transient skipInit unit PeerNetwork
 		}
 		
 	private js void logConnectionType: InternalUser user
-		setTimeout(async () => {
-			let stats = await user.peerConnection.getStats()
-			let candidatePairs = [...stats.values()].filter(s => s.type == "candidate-pair" && s.state == "succeeded")
-			let candidatePair = candidatePairs.find(a => a.selected) || candidatePairs[0]
-			if(candidatePair) {
-				let candidate = stats.get(candidatePair.localCandidateId);
-				let ip = candidate.ip || candidate.address
-				user.connectionType = candidate.candidateType + " " + ip
-				core.log("#connection <"+user.id+"> connection "+user.connectionType)
-			} else {
-				core.log("#connection <"+user.id+"> connection: no candidate pair for "+user.id)
-				window.stats = [...stats.values()]
-				console.log(window.stats)
-				try  { core.log(JSON.stringify(window.stats)) }
-				catch{ }
+		// One pending timer per user: a re-initiate within the 10s window would otherwise report
+		// stats for a connection that no longer exists (F30); also cancelled in setupPeerConnection
+		clearTimeout(user.logConnectionTypeTimer);
+		let peerConnection = user.peerConnection;
+		user.logConnectionTypeTimer = setTimeout(async () => {
+			try {
+				if(user.peerConnection != peerConnection) return; // The connection was replaced in the meantime
+				let stats = await peerConnection.getStats()
+				let candidatePairs = [...stats.values()].filter(s => s.type == "candidate-pair" && s.state == "succeeded")
+				let candidatePair = candidatePairs.find(a => a.selected) || candidatePairs[0]
+				if(candidatePair) {
+					let candidate = stats.get(candidatePair.localCandidateId);
+					let ip = candidate.ip || candidate.address
+					user.connectionType = candidate.candidateType + " " + ip
+					core.log("#connection <"+user.id+"> connection "+user.connectionType)
+				} else {
+					core.log("#connection <"+user.id+"> connection: no succeeded candidate pair for "+user.id);
+					if(core.verbose) {
+						try  { core.log(JSON.stringify([...stats.values()])) }
+						catch{ }
+					}
+				}
+			} catch(e) {
+				core.log("#connection <"+user.id+"> logConnectionType failed: " + e.message)
 			}
 		}, 10000)
+
+	private js void cancelLogConnectionType: InternalUser user
+		clearTimeout(user.logConnectionTypeTimer)
 		
 	// --------------------------------------------- Restoring our stream after a rejoin ---------------------------------------------
 
@@ -685,7 +780,81 @@ internal transient skipInit unit PeerNetwork
 		float pingPongTime = now - pingTime
 		let player = input.players.find.id == user.id
 			statistics.add "pingPongTime" userIndex:player.playerIndex, color:player.playerColor, value:pingPongTime, set:3, isPerFrame:false
-				
+
+	// --------------------------------------------- Background tab ---------------------------------------------
+
+	// While the tab is hidden, requestAnimationFrame stops and timers are throttled (Chrome fires
+	// them once per minute after 5 minutes in background; iOS Safari suspends JS entirely), so the
+	// main loop falls silent and peers would start reconnect churn - ICE restarts, re-initiates,
+	// video teardown - even though the hidden player is fine (F6). Three measures:
+	// - peers are told when our tab hides (Status), so they show us as away and raise our silence
+	//   tolerance instead of reconnecting (see tick)
+	// - a Web Worker timer (throttled far less than main-thread timers) wakes the main thread so
+	//   heartbeats, acks and the signaling connection stay alive while hidden (onHeartbeat)
+	// - pagehide sends a best-effort Leaving so peers stop reconnect attempts immediately instead
+	//   of discovering the silence 10 seconds later
+	private object heartbeatWorker
+
+	js void setupBackgroundBehaviour
+		try {
+			if(PeerNetwork.heartbeatWorker) return;
+			let workerUrl = URL.createObjectURL(new Blob(["setInterval(() => postMessage(0), 5000)"], {type: "application/javascript"}));
+			PeerNetwork.heartbeatWorker = new Worker(workerUrl);
+			PeerNetwork.heartbeatWorker.onmessage = () => PeerNetwork.onHeartbeat();
+
+			document.addEventListener("visibilitychange", () => {
+				core.log("#background Visibility changed to " + document.visibilityState);
+				PeerNetwork.sendStatus(document.hidden);
+			});
+			// pagehide is the last reliable event before the tab closes, navigates away or enters
+			// the back/forward cache; pageshow with persisted is the return from that cache
+			window.addEventListener("pagehide", () => PeerNetwork.sendLeaving());
+			window.addEventListener("pageshow", e => { if(e.persisted) PeerNetwork.sendStatus(document.hidden); });
+		} catch(e) {
+			core.log("#background Setup failed: " + e.message);
+		}
+
+	private inline js bool isPageHidden => document.hidden
+
+	// Called by the worker timer; only does work while the tab is hidden - in the foreground
+	// core.onFrame already does all of this on every animation frame
+	private onHeartbeat
+		if not isPageHidden or core.mode != Connected then return
+		// Keep the signaling connection alive (reconnect + ping), keep our peers' silence timers
+		// fresh, and keep acking the inputs that still arrive while we are hidden (the data
+		// channel's onmessage is event-driven and not throttled)
+		ServerNetwork.tick
+		ping
+		sendInputs math.max(input.localUser.inputFrame-1, -1)
+
+	// Tell every peer whether our tab is hidden, so they can show us as away and relax our
+	// silence tolerance instead of reconnecting
+	private sendStatus: bool hidden
+		core.log "#background Sending status hidden:{hidden}"
+		for input.internalUsers as user
+			if . and not .local and .dataChannels
+				sendBuffer.reset
+				sendBuffer.writeInt8 cast NetworkMessageType.Status
+				sendBuffer.writeBool hidden
+				send ., sendBuffer
+
+	// Best-effort goodbye when our page is closing, navigating away or entering the back/forward cache
+	private sendLeaving
+		core.log "#background Sending leaving"
+		for input.internalUsers as user
+			if . and not .local and .dataChannels
+				sendBuffer.reset
+				sendBuffer.writeInt8 cast NetworkMessageType.Leaving
+				send ., sendBuffer
+
+	private onStatus: InternalUser user, Buffer buffer
+		user.hidden = buffer.readBool
+		core.log "#background <{user.id}> is now {user.hidden ? "hidden" : "visible"}"
+
+	private onLeaving: InternalUser user, Buffer buffer
+		user.leaving = true
+		core.log "#background <{user.id}> is leaving"
+
 	// --------------------------------------------- Media Setup ---------------------------------------------
 	
 	MediaDevices devices = {}

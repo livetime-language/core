@@ -1,5 +1,5 @@
 // This enum must stay in sync with the NetworkMessageType enum in server/src/app.l (same members, same order)
-enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, ReadyForStateRequests, MakePrimary, RequestState, State, Checksum, RequestHistory, History
+enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Switch, Reload, ReadyForStateRequests, MakePrimary, RequestState, State, Checksum, RequestHistory, History, Status, Leaving
 
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/src/app.l, sent in Join and verified in JoinResponse
@@ -323,8 +323,8 @@ internal transient skipInit unit ServerNetwork
 		sendBuffer.writeInt32 inputFrame // You got all inputs up to and including this frame
 		sendBuffer.writeInt inputsSentPos // I send inputs starting from this pos in my stream
 		sendBuffer.writeBuffer inputs, inputsSentPos, length
-		sendBuffer.writeInt core.lastChecksumFrame                           // The last certain frame with inputs from everybody
-		sendBuffer.writeFloat64 core.checksums[core.lastChecksumFrame] || 0  // The checksum of the last certain frame
+		sendBuffer.writeInt core.lastChecksumFrame                      // The last certain frame with inputs from everybody
+		sendBuffer.writeFloat64 core.getChecksum core.lastChecksumFrame // The checksum of the last certain frame
 		send sendBuffer
 
 		inputsSentPos = inputs.writePos

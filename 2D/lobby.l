@@ -116,7 +116,13 @@ unit lobby
 					restart
 						
 				Vector2 closePos = pos+{videoWidth/2-15,-halfVideoHeight-25}
-				let state = input.internalUsers[player.id]?.connectionState
+				let internalUser = input.internalUsers[player.id]
+				let state = internalUser?.connectionState
+				// A hidden tab or a closed page is not a connection problem - show it as such (F6)
+				if internalUser and not internalUser.local
+					if internalUser.leaving then state = "left"
+					else
+					if internalUser.hidden then state = "away"
 				if state && state != "connected"
 					drawText state, size:80, color:state == "failed" ? Red : Yellow, position:pos+{0, -halfVideoHeight-40}
 					drawText "x", size:50, color:#808080, position:closePos
@@ -237,6 +243,11 @@ unit lobby
 						
 Player
 	bool showSettingsInLobby
+
+internal transient skipInit unit core
+	// Called by core.tick while a Connected session catches up after a long pause (F5)
+	internal drawCatchUpOverlay
+		drawText "Catching up... {math.round(catchUpProgress*100)}%", size:40, color:White
 	
 internal Object LobbyTextField
 	string text

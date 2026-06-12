@@ -40,8 +40,30 @@ internal transient skipInit unit core
 	UserAccount account
 	
 	// Checksum
-	public float[] checksums
+	// Kept in a fixed-size ring keyed by frame instead of a flat float[frame] array, which grew
+	// for the whole session (F29). Each slot remembers the frame it belongs to, so a stale entry
+	// can never be mistaken for the requested frame - it just reads as missing
+	const checksumWindow = 4096
+	private float[] checksumValues
+	private int[] checksumFrames
 	public int lastChecksumFrame
+
+	float getChecksum: int frame
+		if frame < 0 then return 0
+		return checksumFrames[frame mod checksumWindow] == frame ? checksumValues[frame mod checksumWindow] : 0
+
+	private setChecksum: int frame, float value
+		if frame < 0 then return // Peers send checksumFrame -1 until their first checksum exists
+		checksumFrames[frame mod checksumWindow] = frame
+		checksumValues[frame mod checksumWindow] = value
+
+	// Catch-up after a long pause in Connected mode (background tab, laptop sleep, late join):
+	// stepping is budgeted per animation frame so the tab never blocks for seconds, and the
+	// progress is exposed so the app can draw an overlay instead of looking frozen (F5)
+	visible bool catchingUp
+	visible float catchUpProgress
+	private int catchUpFromFrame
+	const maxCatchUpMillisPerFrame = 100
 	
 	IndexedDBStore inputStore = {"input", indices:[{"roomId"}]}
 	IndexedDBStore roomStore  = {"room"}
@@ -135,8 +157,10 @@ internal transient skipInit unit core
 		lobby.inLobby = startInLobby
 		Time.now = serverStartTime
 		snapshotFrame = -1
-		checksums.clear
+		checksumValues.clear
+		checksumFrames.clear
 		lastChecksumFrame = -1
+		catchingUp = false
 		audio.stop
 		graphics.clearDebugInfo
 		initAll
@@ -344,6 +368,10 @@ internal transient skipInit unit core
 			targetFrame = frame
 			startTime = math.round(now - targetFrame*frameTime)
 			log "Paused {prevTargetFrame-frame} frames, adjusting startTime. prevTargetTime:{prevTargetFrame} frame:{frame} targetFrame:{math.floor((now - startTime)/frameTime)}"
+
+		// A backwards clock re-anchor (F20) can drop targetFrame below frame mid-catch-up;
+		// the step loop then doesn't run, so the flag must be cleared here (F5)
+		if catchingUp and frame >= targetFrame then catchingUp = false
 		
 		if frame < targetFrame
 			// Create artificial inputs to test the smoothness
@@ -352,7 +380,17 @@ internal transient skipInit unit core
 					input.handleKeyEvent KeyDown, cast Key.F24, ""
 				
 			frameAtBeginningOfOnFrame = frame
-			
+
+			// A long pause (background tab, sleep, late join) leaves us many frames behind.
+			// Stepping them all in one synchronous loop would freeze the tab for seconds and
+			// silence our Ticks (peers would start reconnect churn), so the loop below is
+			// budgeted and the catch-up is spread over several animation frames, with Ticks,
+			// acks and pings still going out in between (F5)
+			if mode == Connected and not catchingUp and targetFrame - frame > ticksPerSecond*2
+				catchingUp = true
+				catchUpFromFrame = frame
+				log "#catchup {targetFrame - frame} frames behind -> catching up in budgeted chunks"
+
 			try
 				// Replay all frames from the first uncertain frame until the current frame
 				// when we received all inputs for frames that we were uncertain about before
@@ -360,17 +398,28 @@ internal transient skipInit unit core
 
 			catch
 				onError error
-					
+
 			// Ensure that step is called every frameTime milliseconds
 			try
+				let catchUpDeadline = now + maxCatchUpMillisPerFrame
 				while frame < targetFrame
 					if system.playMode == Record
 						for input.internalUsers as user
 							if user?.local then user.startInputFrame frame+1
-					step fastForward:false, draw:frame == targetFrame-1
+					// While catching up, stop stepping when the budget is used up and draw the
+					// chunk's last frame so the player sees progress instead of a frozen canvas
+					bool lastStepOfChunk = frame == targetFrame-1 or (catchingUp and currentTime >= catchUpDeadline)
+					step fastForward:false, draw:lastStepOfChunk
 					if not system.isDebug then collectStatistics
+					if lastStepOfChunk then break
 			catch
 				onError .
+
+			if catchingUp
+				catchUpProgress = math.min((frame - catchUpFromFrame) / math.max(targetFrame - catchUpFromFrame, 1), 1)
+				if frame >= targetFrame
+					catchingUp = false
+					log "#catchup Caught up at frame {frame}"
 
 			// Send inputs after the step loop: stepping writes gamepad records stamped frame+1,
 			// so a claim sent before the loop would cover bytes that only travel in a later message.
@@ -403,11 +452,21 @@ internal transient skipInit unit core
 	js void log: logstring text
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
-		
+
 		let str = new Date().toString() + " " + text
 		statistics.systemLogs.push(str)
+		// Bound the unsent backlog: in debug mode, or when the statistics server is unreachable,
+		// nothing ever flushes it (F28). The sent prefix is trimmed in statistics.trimSentData
+		if(statistics.systemLogs.length > 20000) {
+			statistics.systemLogs.splice(0, 10000);
+			statistics.successfullySentSystemLogs = Math.max(0, statistics.successfullySentSystemLogs - 10000);
+		}
 		console.log(str)
 		core.logs += str + "\n"
+		// Bound the in-memory log: drop the oldest half once it exceeds ~2 MB (F28)
+		if(core.logs.length > 2097152) {
+			core.logs = core.logs.substring(core.logs.indexOf("\n", core.logs.length - 1048576) + 1);
+		}
 			
 	internal string logs
 	internal bool hasErrors
@@ -536,7 +595,11 @@ internal transient skipInit unit core
 		if system.showDebugInfo
 			if draw then statistics.tickGraph
 			networkVisualizer.tick
-			
+
+		// Show the progress while catching up after a long pause, instead of looking frozen (F5)
+		// Implemented in the 2D layer (lib/core/2D/lobby.l), missing in headless builds
+		if draw and catchingUp then this.drawCatchUpOverlay??()
+
 		try
 			Framework??.tick
 			tickTimes.add tickTime = PlainDate.measure
@@ -642,9 +705,9 @@ internal transient skipInit unit core
 		// the simulation - including them made the checksum differ between clients around joins
 		if input.players.length >= 2 and frame <= certainFrame + 1
 			float myChecksum = snapshot.checksum
-			float theirChecksum = checksums[frame]
+			float theirChecksum = getChecksum frame
 			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
-			if !theirChecksum                             checksums[frame] = myChecksum; else
+			if !theirChecksum                             setChecksum frame, myChecksum; else
 			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
 			lastChecksumFrame = frame
 
@@ -875,6 +938,8 @@ internal transient skipInit unit core
 		PeerNetwork.setupLocalMedia
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
+		// Background-tab behaviour: status messages to peers and a worker heartbeat (F6)
+		PeerNetwork.setupBackgroundBehaviour
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll
@@ -895,8 +960,8 @@ internal transient skipInit unit core
 	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
 	// saveState compares against it once its own snapshot reaches that frame
 	internal onRemoteChecksum: int checksumFor, float checksum
-		float myChecksum = checksums[checksumFor]
-		if !myChecksum                           checksums[checksumFor] = checksum; else
+		float myChecksum = getChecksum checksumFor
+		if !myChecksum                           setChecksum checksumFor, checksum; else
 		if !myChecksum.isApproximately(checksum) onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
 
 	string snapshotLogWithWrongChecksum
@@ -1070,11 +1135,39 @@ skipInit transient unit statistics
 			if not sessionStarted then startSession
 			else                   saveStatistics
 			nextSendTime = PlainDate.realTime + core.sendStatisticsEvery
-	
+
+		// Only outside an active send: a send in flight references absolute indices
+		if not currentlySendingStatistics then trimSentData
+
+	// Drop data that was already flushed to the statistics server, so logs, pings and graph
+	// values don't grow for the whole session (F28/F29). A tail of the graph values is kept
+	// for the on-screen debug graphs, and a hard cap bounds the graphs even when the
+	// statistics server is unreachable for a long time
+	private trimSentData
+		if successfullySentSystemLogs > 0
+			systemLogs.removeRange 0..successfullySentSystemLogs
+			successfullySentSystemLogs = 0
+		if successfullySentGameLogs > 0
+			gameLogs.removeRange 0..successfullySentGameLogs
+			successfullySentGameLogs = 0
+		if successfullySentServerPings > 0
+			serverPings.removeRange 0..successfullySentServerPings
+			successfullySentServerPings = 0
+		for graphs as graph
+			int removeCount = math.min(graph.successfullySentUntil, graph.values.length - 150)
+			if graph.values.length > 10000 then removeCount = graph.values.length - 5000
+			if removeCount > 0
+				graph.values.removeRange 0..removeCount
+				graph.successfullySentUntil = math.max(graph.successfullySentUntil - removeCount, 0)
+
 	// Log game events (like scores, playtimes, etc)
 	log: dynamic value
 		value.frame = Time.ticks
 		this.gameLogs.add value
+		// Bound the unsent backlog when the statistics server is unreachable (F29)
+		if gameLogs.length > 10000
+			gameLogs.removeRange 0..5000
+			successfullySentGameLogs = math.max(successfullySentGameLogs - 5000, 0)
 	
 	private startSession
 		core.log "#statistics Start Session"
@@ -1158,6 +1251,8 @@ skipInit transient unit statistics
 		int index = infoNames.indexOf name
 		if index == -1 then index = infoNames.length; infoNames.add name
 		infos.add {value, index, frame:core.frame}
+		// Only the recent infos are ever drawn (F29)
+		if infos.length > 1000 then infos.removeRange 0..500
 		
 	internal tickGraph
 		input.onTouchDown position, size, align:Left, valign:Top

@@ -18,6 +18,7 @@ internal transient class InternalUser
 	int epochStartPos           // Local user only: bytes below this pos were restored from peers after a rejoin, our own new bytes start here
 	int historyTotalLength = -1 // While we restore our stream after a rejoin: how many bytes of it this peer reported to hold (-1 = no reply yet, see PeerNetwork.tickRestore)
 	float lastHistorySentTime   // When we last sent this user its own stored history (rate limit, see PeerNetwork.sendHistory)
+	int stalledChunkSends       // Chunked catch-up Ticks sent to this user without ack progress (fallback valve, see PeerNetwork.sendInputs)
 	
 	// List of inputs filled by parseInput and used by onTouchDown, onWheel, onKeyDown, ...
 	visible Touch[] downTouches, movingTouches, upTouches
@@ -48,6 +49,9 @@ internal transient class InternalUser
 	int connectionTries
 	int silentPeriods // Consecutive 10s periods without any incoming peer message (see PeerNetwork.tick)
 	string connectionState
+	bool hidden                    // The user's tab is hidden: it is throttled and may fall silent, tolerate a longer silence (F6, see PeerNetwork.tick)
+	bool leaving                   // The user's page is closing or navigating away: don't burn reconnect attempts; cleared by any incoming message (F6)
+	dynamic logConnectionTypeTimer // Pending connection-type report, cancelled when the connection is recreated (F30, see PeerNetwork.logConnectionType)
 	
 	float startToConnectTime = float.maxValue
 	float startDataChannelTime = float.maxValue
