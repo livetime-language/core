@@ -372,8 +372,6 @@ internal transient skipInit unit core
 			catch
 				onError .
 
-				lastNetworkFrame = now
-
 			// Send inputs after the step loop: stepping writes gamepad records stamped frame+1,
 			// so a claim sent before the loop would cover bytes that only travel in a later message.
 			// localUser.inputFrame-1 claims exactly the frames no future write can be stamped with
@@ -413,7 +411,7 @@ internal transient skipInit unit core
 			
 	internal string logs
 	internal bool hasErrors
-	private float lastNetworkFrame, lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
+	private float lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
 	internal int displayItems
 	int tickMessageSize
 	bool verbose = false
