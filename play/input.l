@@ -837,6 +837,10 @@ skipInit global unit input
 			
 	internal parseInputs: int frame
 		for internalUsers as internalUser if internalUser
+			// Events are normally cleared at the end of core.tick, but when an exception aborts
+			// the step after parsing, stale events survive in these transient lists. Clear them
+			// here so a frame that is stepped again after a rewind can't apply an event twice.
+			internalUser.clearEvent
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
