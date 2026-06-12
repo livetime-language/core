@@ -656,7 +656,9 @@ internal transient skipInit unit core
 			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
 			lastChecksumFrame = frame
 				
-	inline js int currentTime => Date.now()
+	// Monotonic milliseconds anchored to the wall clock at page load: frame pacing must not follow
+	// Date.now(), which steps arbitrarily on NTP corrections, manual clock changes and resume (F20)
+	inline js int currentTime => Math.round(performance.timeOrigin + performance.now())
 		
 	private adjustStartTime
 		startTime = math.round(currentTime - frame*frameTime - (frameTime*.5))

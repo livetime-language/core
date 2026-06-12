@@ -12,7 +12,18 @@ internal transient skipInit unit ServerNetwork
 	int retries
 	
 	tick
-		let now = PlainDate.realTime
+		// Use core.currentTime (monotonic) like onPong: the ping time below round-trips through the
+		// server and is subtracted from core.currentTime there, so both must share one clock (F20)
+		let now = core.currentTime
+
+		// While playing, a better ping estimate must not snap core.startTime - targetFrame would
+		// jump or stall - so onPong only updates referenceStartTime once we are Connected and we
+		// slew startTime toward it here, at most about one frame per second
+		if core.mode == Connected and referenceStartTime
+			let maxAdjust = (now - lastSlewTime) * core.frameTime / 1000
+			core.startTime += math.max(math.min(referenceStartTime - core.startTime, maxAdjust), -maxAdjust)
+		lastSlewTime = now
+
 		// Reconnect to server: Try to connect again if we aren't connected 5 seconds after starting to connect
 		// We use a central place to reconnect and no intervals, timeouts or reloads to make it easier to reason about
 		if not connected and now > startToConnectTime + 5000
@@ -30,7 +41,8 @@ internal transient skipInit unit ServerNetwork
 			nextPingTime = now + (core.mode == Ping ? 200 : pongCount < 20 ? 1000 : 30000)
 		
 	js void setupServerConnection
-		ServerNetwork.startToConnectTime = Date.now()
+		// Same monotonic clock as core.currentTime (inlined here: js blocks can't call inline functions)
+		ServerNetwork.startToConnectTime = Math.round(performance.timeOrigin + performance.now())
 		ServerNetwork.connected = false
 		
 		if(ServerNetwork.socket) {
@@ -51,7 +63,7 @@ internal transient skipInit unit ServerNetwork
 			core.log("#server Websocket Open");
 			ServerNetwork.connected = true;
 			if(!ServerNetwork.firstConnectionTime)
-				ServerNetwork.firstConnectionTime = Date.now() - ServerNetwork.startToConnectTime;
+				ServerNetwork.firstConnectionTime = Math.round(performance.timeOrigin + performance.now()) - ServerNetwork.startToConnectTime;
 			ServerNetwork.onConnectedToServer();
 		}
 		ServerNetwork.socket.onclose = ev => {
@@ -199,6 +211,9 @@ internal transient skipInit unit ServerNetwork
 	float[] calculatedStartTimes
 	float referenceStartTime
 	float[] pingPongTimes
+	private float lastSlewTime
+	// Accepted pongs in a row whose start-time estimate was far off core.startTime (clock-step suspicion)
+	private int driftedPongs
 			
 	private onPong: Buffer buffer
 		float now = core.currentTime
@@ -219,15 +234,35 @@ internal transient skipInit unit ServerNetwork
 			return
 			
 		statistics.addInfo "from average", deltaFromAverage
-			
+
+		// An accepted pong's start-time estimate is off by at most pingPongTime/2 (< 200ms), so a much
+		// larger deviation means the clock domains shifted: the machine slept or was suspended and
+		// performance.now paused while the server clock kept running. Slewing can't absorb minutes
+		// -> relearn the reference and snap startTime (the catch-up burst after the snap is F5 territory)
+		if core.mode == Connected and math.abs(calculatedStartTime - core.startTime) > 1000
+			driftedPongs++
+			if driftedPongs == 1
+				// A single pong could be a fluke -> confirm with an immediate second ping before re-anchoring
+				nextPingTime = 0
+			else
+				core.log "#server Clock step of {math.round(calculatedStartTime - core.startTime)} ms detected -> re-anchoring startTime"
+				driftedPongs = 0
+				fastestPingPongTime = pingPongTime
+				referenceStartTime = calculatedStartTime
+				core.startTime = calculatedStartTime
+			return
+		driftedPongs = 0
+
 		// Use the fastest ping-pong-time we have ever seen to calculate the reference start time
 		if pingPongTime < fastestPingPongTime
 			fastestPingPongTime = pingPongTime
 			referenceStartTime = calculatedStartTime
-			
-			// For testing
-			core.startTime = referenceStartTime
-			
+
+			// Snapping startTime is only safe while the frame loop isn't pacing yet
+			// Once Connected, tick slews startTime gently toward the reference instead (F20)
+			if core.mode != Connected
+				core.startTime = referenceStartTime
+
 			core.log "#server New fastest pingPongTime", pongCount, now, pingPongTime, timeSinceStart, core.startTime, referenceStartTime
 			
 		// While we restore our previous session's input stream from our peers after a rejoin,
