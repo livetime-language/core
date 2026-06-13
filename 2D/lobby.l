@@ -56,7 +56,7 @@ unit lobby
 	
 	tick
 		tickSettings
-		if system.isStaging then drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
+		drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
 		if core.errorMessage and system.isStaging
 			drawText PeerNetwork.error, size:40
 			drawText core.errorMessage, size:14, position:{0,40}
