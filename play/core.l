@@ -390,8 +390,9 @@ internal transient skipInit unit core
 	js void log: logstring text
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
-		
-		let str = new Date().toString() + " " + text
+
+		let now = new Date()
+		let str = now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2}) + "." + now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3}) + " " + text
 		statistics.systemLogs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
@@ -816,8 +817,8 @@ internal transient skipInit unit core
 		statistics.scheduleSendIn 30 seconds
 		isPremiere = true
 		initAll
+		log "v{system.buildVersion} {Date.realtime.dayOfWeekDayMonthAtHourMinuteString}"
 		log "{system.url}"
-		log "{Date.realtime.dayMonthNameYearString} {Date.realtime.hourMinuteSecondString} v{system.buildVersion}"
 		log "{system.userAgent}"
 		startInLobby = true
 		this.gameId = gameId
