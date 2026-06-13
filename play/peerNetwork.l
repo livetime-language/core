@@ -261,6 +261,9 @@ internal transient skipInit unit PeerNetwork
 			if input.internalUsers.none.offerByMe and not .connected
 				statistics.connectTime = PlainDate.preciseTime - statistics.startTime
 				core.log "#peer All my offers are connected after {statistics.connectTime} ms and {retries} retries"
+		
+		user.connectionTries = 0
+		user.silentPeriods = 0
 			
 	disconnect: InternalUser user
 		core.log "####### disconnect"
