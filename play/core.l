@@ -453,7 +453,8 @@ internal transient skipInit unit core
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 
-		let str = new Date().toString() + " " + text
+		let now = new Date()
+		let str = now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2}) + "." + now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3}) + " " + text
 		statistics.systemLogs.push(str)
 		// Bound the unsent backlog: in debug mode, or when the statistics server is unreachable,
 		// nothing ever flushes it (F28). The sent prefix is trimmed in statistics.trimSentData
@@ -900,8 +901,8 @@ internal transient skipInit unit core
 		statistics.scheduleSendIn 30 seconds
 		isPremiere = true
 		initAll
+		log "v{system.buildVersion} {Date.realtime.dayOfWeekDayMonthAtHourMinuteString}"
 		log "{system.url}"
-		log "{Date.realtime.dayMonthNameYearString} {Date.realtime.hourMinuteSecondString} v{system.buildVersion}"
 		log "{system.userAgent}"
 		startInLobby = true
 		this.gameId = gameId
