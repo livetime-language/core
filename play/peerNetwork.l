@@ -53,6 +53,7 @@ internal transient skipInit unit PeerNetwork
 	visible string error
 	int retries
 	int dataChannelId
+	string iceServersJson
 	private object mediaSetupPromise
 	private bool retryingMedia
 
@@ -120,6 +121,32 @@ internal transient skipInit unit PeerNetwork
 			&& user.peerConnection.signalingState === "stable"
 		);
 
+	private js object getIceServers
+		let iceServers = null;
+		if(PeerNetwork.iceServersJson) {
+			try {
+				iceServers = JSON.parse(PeerNetwork.iceServersJson);
+			}
+			catch(e) {
+				core.log("#peer Failed to parse ICE server configuration: " + e.message);
+			}
+		}
+		if(!Array.isArray(iceServers) || iceServers.length == 0) {
+			iceServers = [{
+				urls: [
+					"stun:stun1.l.google.com:19302",
+					"stun:stun2.l.google.com:19302",
+				],
+			}];
+		}
+		return iceServers;
+
+	private js bool hasTurnServer: object iceServers
+		return Array.isArray(iceServers) && iceServers.some(server => {
+			let urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+			return urls.some(url => typeof url == "string" && (url.startsWith("turn:") || url.startsWith("turns:")));
+		});
+
 	private js void restartIce: InternalUser user
 		try {
 			if(!user.peerConnection) return;
@@ -170,30 +197,15 @@ internal transient skipInit unit PeerNetwork
 			user.receivedAnswer = false;
 			user.silentPeriods = 0;
 			
+			let iceServers = PeerNetwork.getIceServers();
+			if(PeerNetwork.relayMode > 0 && !PeerNetwork.hasTurnServer(iceServers))
+				core.log("#peer Relay mode requested, but the signaling server did not provide a TURN server");
 			let options = {
 				// We use the ice transport policy "relay" to test our turn server
 				iceTransportPolicy: PeerNetwork.relayMode == 2 ? "relay" : "all",
-				iceServers: [],
+				iceServers,
 				// iceCandidatePoolSize: 10,
 			}
-			if(PeerNetwork.relayMode > 0) {
-				// OVH turn server
-				options.iceServers.push({
-					urls: 'turn:193.70.81.132:39571',
-					username: 'play-user-x8env28gx41odbxzwjyut2oq871987syq8ovyuqp128djbsjue',
-					credential: 'qoy91n981vlplabb1873jdcgsouz2qm87qmmakqpc2t8hbeyjsyaqkuz'
-				});	
-			}
-			options.iceServers.push({
-				urls: [
-					// OVH stun server
-					// "stun:193.70.81.132:39571",
-					
-					// Google stun server
-					"stun:stun1.l.google.com:19302",
-					"stun:stun2.l.google.com:19302",
-				],
-			});
 			core.log(`#peer <${user.id}> Setup Peer Connection offerByMe: ${offerByMe}`);
 			let peerConnection = user.peerConnection = new RTCPeerConnection(options);
 			

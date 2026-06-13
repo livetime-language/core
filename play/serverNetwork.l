@@ -3,7 +3,7 @@ enum NetworkMessageType: Join, JoinResponse, Ping, Pong, Signal, Ice, Tick, Swit
 
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/src/app.l, sent in Join and verified in JoinResponse
-	const int protocolVersion = 1
+	const int protocolVersion = 2
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -144,6 +144,8 @@ internal transient skipInit unit ServerNetwork
 				core.log "#server Protocol version mismatch: client uses {protocolVersion}, server uses {serverProtocolVersion}. Network messages may be misinterpreted."
 			let seed = buffer.readString
 			let serverStartTime = buffer.readFloat64
+			if serverProtocolVersion >= 2
+				PeerNetwork.iceServersJson = buffer.readString
 			let userCount = buffer.readInt16
 
 			if alreadyJoinedBefore
