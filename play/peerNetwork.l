@@ -113,7 +113,7 @@ internal transient skipInit unit PeerNetwork
 				user.peerConnection.onsignalingstatechange = null;
 				user.peerConnection.onconnectionstatechange = null;
 				user.peerConnection.onicecandidate = null;
-				user.peerConnection.icecandidateerror = null;
+				user.peerConnection.onicecandidateerror = null;
 				user.peerConnection.oniceconnectionstatechange = null;
 				user.peerConnection.onicegatheringstatechange = null;
 				user.peerConnection.close();
@@ -182,8 +182,8 @@ internal transient skipInit unit PeerNetwork
 					core.log(`#peer <${user.id}> Gathered Local Ice Candidates Complete`);
 				}
 			}
-			peerConnection.icecandidateerror = e => {
-				core.log(`#peer <${user.id}> IDE Candidate Error: ${e.errorText}`);
+			peerConnection.onicecandidateerror = e => {
+				core.log(`#peer <${user.id}> ICE Candidate Error: ${e.errorText}`);
 			}
 			
 			return peerConnection;
@@ -223,15 +223,15 @@ internal transient skipInit unit PeerNetwork
 			
 			// Close, Error
 			dataChannel.onclosing = e => {
-				user.dataChannels.remove();
+				user.dataChannels.remove(dataChannel);
 				core.log("#peer <"+user.id+"> Data Channel Closing (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
 			}
 			dataChannel.onclose = e => {
-				user.dataChannels.remove();
+				user.dataChannels.remove(dataChannel);
 				core.log("#peer <"+user.id+"> Data Channel Close (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
 			}
 			dataChannel.onerror = e => {
-				core.log("#peer <"+user.id+"> Data Channel Error " + ev.error.message+" (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
+				core.log("#peer <"+user.id+"> Data Channel Error " + e.error.message+" (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
 			}
 			
 			// Message
