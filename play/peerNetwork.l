@@ -89,9 +89,17 @@ internal transient skipInit unit PeerNetwork
 					
 					if user.offerByMe
 						retries++
+						if canRecreateDataChannel user
+							if ++user.connectionTries < 3
+								core.log "#peer Recreate data channel (peer connection still connected)"
+								setupDataChannel user
+							else
+								core.log "#peer Recreate peer connection after data channel retries (offer by me)"
+								initiate user
+						else
 						if ++user.connectionTries < 3
 							core.log "#peer Restarting ICE (offer by me)"
-							user.peerConnection.restartIce()
+							restartIce user
 						else
 							core.log "#peer Recreate peer connection (offer by me)"
 							initiate user
@@ -104,6 +112,39 @@ internal transient skipInit unit PeerNetwork
 							retries++
 							core.log "#peer Recreate peer connection (answer by me, taking over as offerer)"
 							initiate user
+
+	private js bool canRecreateDataChannel: InternalUser user
+		return (
+			user.peerConnection
+			&& user.peerConnection.connectionState === "connected"
+			&& user.peerConnection.signalingState === "stable"
+		);
+
+	private js void restartIce: InternalUser user
+		try {
+			if(!user.peerConnection) return;
+			user.peerConnection.restartIce();
+		}
+		catch(e) {
+			core.log("#peer <"+user.id+"> restartIce failed " + e.message);
+			console.error(e);
+			core.log(e.stack);
+		}
+
+	private onIceConnectionFailed: InternalUser user
+		user.startToConnectTime = user.lastIncomingMessageTime = PlainDate.realTime
+		statistics.scheduleSendIn 3 seconds
+		retries++
+		if user.offerByMe
+			if ++user.connectionTries < 3
+				core.log "#peer Restarting ICE after failure (offer by me)"
+				restartIce user
+			else
+				core.log "#peer Recreate peer connection after ICE failure (offer by me)"
+				initiate user
+		else
+			core.log "#peer Recreate peer connection after ICE failure (answer by me, taking over as offerer)"
+			initiate user
 	
 	private js object setupPeerConnection: InternalUser user, bool offerByMe
 		if(user.peerConnection) {
@@ -170,6 +211,11 @@ internal transient skipInit unit PeerNetwork
 				if(user.connected) PeerNetwork.onConnected(user);
 				if(peerConnection.connectionState == "disconnected")
 					setTimeout(() => statistics.saveStatistics(), 7000);
+			}
+			peerConnection.oniceconnectionstatechange = e => {
+				core.log(`#peer <${user.id}> ICE Connection State Change: ${peerConnection.iceConnectionState}`);
+				if(user.peerConnection != peerConnection) return;
+				if(peerConnection.iceConnectionState == "failed") PeerNetwork.onIceConnectionFailed(user);
 			}
 			
 			// ICE: Candidate, Error, Connection, Gathering
@@ -409,6 +455,7 @@ internal transient skipInit unit PeerNetwork
 	
 	private onMessage: InternalUser user, Buffer buffer
 		user.lastIncomingMessageTime = PlainDate.realTime
+		user.connectionTries = 0
 		user.silentPeriods = 0
 		user.leaving = false // Any message proves the user is still there (e.g. restored from the back/forward cache)
 		NetworkMessageType type = cast buffer.readInt8
@@ -1057,11 +1104,6 @@ internal transient skipInit unit PeerNetwork
 		audio.reload();
 		
 	private js void setupRemoteMedia: InternalUser user
-		// Remove old video elements
-		for(let videoElement of user.videoElements)
-			videoElement.remove()
-		user.videoElements.length = 0
-		
 		if(!PeerNetwork.enableVideo && !PeerNetwork.enableAudio) return
 
 		// Add local tracks to peer connection
@@ -1085,9 +1127,15 @@ internal transient skipInit unit PeerNetwork
 		// Add incoming tracks to media stream for remote player
 		user.peerConnection.ontrack = event => {
 			core.log("#peer <"+user.id+"> Add track");
-			event.streams[0].getTracks().forEach(track => {
-				user.mediaStream.addTrack(track);
-			});
+			let tracks = event.streams[0]?.getTracks() || [event.track];
+			for(let track of tracks) {
+				if(!user.mediaStream.getTracks().includes(track)) user.mediaStream.addTrack(track);
+			}
+			if(!PeerNetwork.enableVideo || user.mediaStream.getVideoTracks().length > 0) {
+				for(let videoElement of user.videoElements) {
+					videoElement.srcObject = user.mediaStream;
+				}
+			}
 		}
 		user.peerConnection.onremovetrack = event => {
 			core.log("#peer <"+user.id+"> Remove track");
