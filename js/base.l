@@ -353,6 +353,10 @@ immutable struct float
 	inline js float ** float value
 		Math.pow(this, value)
 		
+	inline js bool isNumber
+		!isNaN(this)
+		
+		
 	// The largest possible floating point value
 	const importance:5 inline js
 	float maxValue => Number.MAX_VALUE
@@ -419,7 +423,8 @@ immutable struct float
 	const inline js int undefined => undefined
 	const inline js int null => null
 	
-	
+enum EachDistinctSortBy: SortByInteger, SortByString
+
 // A sequence of characters
 js String
 immutable class string
@@ -1272,6 +1277,30 @@ class List<T>
 	//     let youngestPlayers = (players.sortBy.age).take 3
 	importance:4 inline js T[] take: int count
 		this.slice(0, count)
+		
+	js TValue[][] groupBy: TKey(T it) selector
+		                   EachDistinctSortBy sortBy = SortByInteger
+		
+		let listOfLists = [];
+		if(this.length > 0) {
+			let _subject = this
+			let defaultValue;
+			if(sortBy == 1) {defaultValue = 0; _subject = [...this].sort((a,b) => (selector(a) || 0) - (selector(b) || 0)); } else
+			if(sortBy == 2) {defaultValue = ""; _subject = [...this].sort((a,b) => (selector(a) || "").localeCompare(selector(b) || "")); }
+			let it = selector(_subject[0]) || defaultValue, i=0;
+			for(let _nextIndex=1; _nextIndex<_subject.length; ++_nextIndex) { 
+				let _nextIt = selector(_subject[_nextIndex]) || defaultValue;
+				if(_nextIt != it) {
+					listOfLists.push(_subject.slice(i, _nextIndex));
+					it = _nextIt;
+					i = _nextIndex;
+				}
+			}
+			listOfLists.push(_subject.slice(i, _subject.length));
+		}		
+		
+		return listOfLists;
+			
 		
 	// ------------------------------------------- Find -------------------------------------------
 		
