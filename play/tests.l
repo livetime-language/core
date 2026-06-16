@@ -71,8 +71,10 @@ tests
 	void moveLeftStickTo: Vector2 direction	// The direction to move the left stick to
 	                      nocolon Player by = input.players[0]	// The player
 		by.gamepad.leftStick.assign(direction)
-		app.onGamepad??(by.gamepad)
-		by.onGamepad??(by.gamepad)
+
+		// Call input handlers
+		// app.onGamepad??(by.gamepad)
+		// by.onGamepad??(by.gamepad)
 		tick
 
 	// Wait for a given amount of time

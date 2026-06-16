@@ -1030,8 +1030,9 @@ skipInit global unit input
 				if p.controllerKeyDownFrame[i]
 					.isPressed = true
 
-			app.onGamepad??(p.gamepad)
-			p.onGamepad??(p.gamepad)
+			// Call input handlers
+			// app.onGamepad??(p.gamepad)
+			// p.onGamepad??(p.gamepad)
 					
 		if system.receivedInitialData
 			system.waitingForInitialData -= system.receivedInitialData
@@ -1071,11 +1072,11 @@ skipInit global unit input
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}"
 
-		// Call handlers
-		app.onTouchHover??(touch);
-		player.onTouchHover??(touch);
-		app.onTouchDown??(touch)
-		player.onTouchDown??(touch)
+		// Call input handlers
+		// app.onTouchHover??(touch);
+		// player.onTouchHover??(touch);
+		// app.onTouchDown??(touch)
+		// player.onTouchDown??(touch)
 
 		// Modern Input
 		int buttonIndex = InputButton.LeftMouseButton + type
@@ -1104,13 +1105,13 @@ skipInit global unit input
 		internalUser.movingTouches.add touch
 		cursor = Auto
 
-		// Call handlers
-		if not touch.isDown
-			app.onTouchHover??(touch);
-			player.onTouchHover??(touch);
-		else
-			app.onTouchDrag??(touch);
-			player.onTouchDrag??(touch);
+		// Call input handlers
+		// if not touch.isDown
+		// 	app.onTouchHover??(touch);
+		// 	player.onTouchHover??(touch);
+		// else
+		// 	app.onTouchDrag??(touch);
+		// 	player.onTouchDrag??(touch);
 
 		// Modern Input
 		internalUser.pointerPosition = referencePos
@@ -1136,9 +1137,9 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.upTouches.add touch
 
-		// Call handlers
-		app.onTouchUp??(touch)
-		player.onTouchUp??(touch)
+		// Call input handlers
+		// app.onTouchUp??(touch)
+		// player.onTouchUp??(touch)
 
 		// Log
 		if player == input.localPlayer
@@ -1162,9 +1163,9 @@ skipInit global unit input
 					 Vector2 referencePosition
 		internalUser.wheelEvents.add {player.id, delta, isPinch, referencePosition}
 
-		// Call handlers
-		app.onScroll??(delta, isPinch, referencePosition)
-		player.onScroll??(delta, isPinch, referencePosition)
+		// Call input handlers
+		// app.onScroll??(delta, isPinch, referencePosition)
+		// player.onScroll??(delta, isPinch, referencePosition)
 
 		// Modern Input
 		internalUser.scrollDelta = delta
@@ -1180,16 +1181,20 @@ skipInit global unit input
 			print type:Key "Press key {character} by {player}"
 		else
 			print type:Key "Press key {key} by {player}"
-		app.onKeyDown??(key, character)
-		player.onKeyDown??(key, character)
+
+		// Call input handlers
+		// app.onKeyDown??(key, character)
+		// player.onKeyDown??(key, character)
 
 	internal keyUp: InternalUser internalUser
 	                Player player
 					Key key
 		internalUser.upKeys.add key
 		player.keysCurrentlyDown.remove key
-		app.onKeyUp??(key)
-		player.onKeyUp??(key)
+
+		// Call input handlers
+		// app.onKeyUp??(key)
+		// player.onKeyUp??(key)
 						
 	internal updatePlayers
 		players.sortBy.id
