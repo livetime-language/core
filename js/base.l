@@ -2343,7 +2343,7 @@ global transient priority unit system
 		try code() @finally finally()
 
 	// Return an object that includes all global variables and functions
-	global inline js dynamic globals() window
+	global dynamic globals
 
 	global inline js void debugger() debugger
 	global inline js void throw(Error error) throw error
