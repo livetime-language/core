@@ -163,7 +163,7 @@ internal transient skipInit unit core
 		if !startInLobby and not testLobby
 			graphics.startFrame
 			lobby.inLobby = false
-			app.start??()
+			if globals.app?.start then globals.app.start()
 		if simulateRollback then checkSaveState
 		
 	// Keep event stream running, recreate players, call init function and start app
@@ -188,7 +188,7 @@ internal transient skipInit unit core
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
 		input.updatePlayers
 		lobby.inLobby = false
-		app.start??()
+		if globals.app?.start then globals.app.start()
 	
 	// Steps forward when going to a frame in the future
 	// or replays from the beginning when going to a frame in the past

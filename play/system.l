@@ -78,7 +78,7 @@ global transient skipInit unit system
 				graphics.onResize();
 				if(system.playMode <= 3/*Stop,Pause,Manipulator,Slide*/ && system.engineStarted) core.tick(/*draw*/true);
 			}
-		if(app.init) app.init();
+		if(global.app?.init) app.init();
 			
 	private async inline js void initBackend
 		if(typeof(backend) != "undefined") await backend.connect2()
@@ -126,7 +126,7 @@ global transient skipInit unit system
 					userId = cast roomId.substring(dashIndex+1)
 					roomId = roomId.substring(0,dashIndex)
 				
-			await preload
+			if(globals.app?.preload) await globals.app.preload()
 			media.openMedia
 				try
 					this.engineStarted = true
@@ -151,9 +151,6 @@ global transient skipInit unit system
 		catch
 			core.onError .
 			updatePageIconAndTitle
-	
-	private async js void preload
-		if(app.preload) await app.preload();
 		
 	string runningTestFunction = null
 	private runTest: string testFunctionName, int id
