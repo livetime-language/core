@@ -99,7 +99,7 @@ internal transient skipInit unit core
 		isPremiere = true
 		startTime = serverStartTime = currentTime
 		reset
-		animationFrame
+		onFrame
 		
 	// Start recording (from the beginning or the middle of an existing event stream)
 	// We remove all future inputs
@@ -160,8 +160,8 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.readPos = 0
 			
+		graphics.startFrame
 		if !startInLobby and not testLobby
-			graphics.startFrame
 			lobby.inLobby = false
 			if globals.app?.start then globals.app.start()
 		if simulateRollback then checkSaveState
@@ -284,9 +284,12 @@ internal transient skipInit unit core
 	addOutput: string value
 		value += "|{outputIndex}|{frame}"
 		output[outputIndex] = value
-		
+
 		// Throw an exception when we reach interrruptAtOutputIndex
-		if outputIndex++ == interrruptAtOutputIndex
+		// interrruptAtOutputIndex is -1 when no interrupt is armed. outputIndex also starts at -1
+		// in connected sessions, so without the -1 check the first output (the first local click)
+		// would throw a spurious interrupt that silently aborts the step between parseInputs and tick
+		if outputIndex++ == interrruptAtOutputIndex and interrruptAtOutputIndex != -1
 			throw {"interrrupt"}
 
 	sendOutputToEditor: int frame = core.frame
@@ -307,16 +310,16 @@ internal transient skipInit unit core
 			
 	float lastPingTime
 
-	// animationFrame --> step --> tick
+	// onFrame --> step --> tick
 
-	// animationFrame  Send tick message, replay state, and call step
-	// step            Save state, parse inputs, step physics, process tick, and calculate checksum
-	// tick            Clear screen, process application tick, and draw all graphics
+	// onFrame	Send tick message, replay state, and call step
+	// step	Save state, parse inputs, step physics, process tick, and calculate checksum
+	// tick	Clear screen, process application tick, and draw all graphics
 		
 	// Send tick message, replay state, call step, and logging
 	// This is called by the requestAnimationFrame callback.
 	// We ensure that step is called every frameTime milliseconds.
-	internal animationFrame
+	internal onFrame
 		now = currentTime
 		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
@@ -341,7 +344,7 @@ internal transient skipInit unit core
 				for frame to targetFrame
 					input.handleKeyEvent KeyDown, cast Key.F24, ""
 				
-			animationStartFrame = frame
+			frameAtBeginningOfOnFrame = frame
 			
 			try
 				sendInputs targetFrame-1
@@ -378,8 +381,8 @@ internal transient skipInit unit core
 			lastPingTime = currentTime
 			PeerNetwork.ping
 			
-	private int animationStartFrame // The frame at the beginning of animationFrame, used to calculate iteration
-	private float now               // The time at the beginning of animationFrame
+	private int frameAtBeginningOfOnFrame	// The frame at the beginning of onFrame, used to calculate iteration
+	private float now	// The time at the beginning of onFrame
 	
 	private float prevLogTime
 	
@@ -387,20 +390,12 @@ internal transient skipInit unit core
 	js void log: logstring text
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
-		
-		let str = new Date().toString() + " " + text
+
+		let now = new Date()
+		let str = now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2}) + "." + now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3}) + " " + text
 		statistics.systemLogs.push(str)
 		console.log(str)
 		core.logs += str + "\n"
-		
-		// !!! Temporary for debugging windows that are crashed or don't respond
-		// if(system.isStaging) {
-		// 	try {
-		// 		localStorage.setItem(`logs-${core.roomId}-${input.localUser ? input.localUser.id : "?"}`, core.logs)
-		// 	} catch(e) {
-		// 		console.error(e)
-		// 	}
-		// }
 			
 	internal string logs
 	internal bool hasErrors
@@ -423,7 +418,7 @@ internal transient skipInit unit core
 					statistics.add "smooth", userIndex:.playerIndex, value:frame - internalUser.smoothFrame, .playerColor, set:1
 					statistics.add "delta", userIndex:.playerIndex, value:internalUser.certainFrame - internalUser.prevCertainFrame, .playerColor, set:2
 
-			if replayFrom != -1 then statistics.add "replay", value:frame - replayFrom, color:Gray
+			if replayFrom != -1 then statistics.add "replay", value:frame - replayFrom, color:LightGrey
 		else
 		if mode == Local and simulateRollback
 			input.internalUsers.each.simulateRollback frame
@@ -477,7 +472,7 @@ internal transient skipInit unit core
 		ServerNetwork.sendSwitch sendInputsMode, sendInterval
 
 	// Save state, parse inputs, step physics, process tick, and calculate checksum
-	// This is called in animationFrame and during replays. 
+	// This is called in onFrame and during replays. 
 	// All steps except the very last of an animation frame are fast forwared, which means that nothing is drawn.
 	// The frame is increment at the end of this function. This means that while processing the frame,
 	// frame will point to the current frame. After processing, frame will point to the next frame.
@@ -510,8 +505,7 @@ internal transient skipInit unit core
 		
 		HTMLElement??.tickAll()
 		input.removePlayersIfNecessary
-			
-						
+				
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
@@ -570,7 +564,7 @@ internal transient skipInit unit core
 	
 	private Buffer[] milestones
 	
-	// This is called at the begining of animationFrame before we start stepping.
+	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
 			
@@ -823,8 +817,8 @@ internal transient skipInit unit core
 		statistics.scheduleSendIn 30 seconds
 		isPremiere = true
 		initAll
+		log "v{system.buildVersion} {Date.realtime.dayOfWeekDayMonthAtHourMinuteString}"
 		log "{system.url}"
-		log "{Date.realtime.dayMonthNameYearString} {Date.realtime.hourMinuteSecondString} v{system.buildVersion}"
 		log "{system.userAgent}"
 		startInLobby = true
 		this.gameId = gameId
@@ -833,6 +827,8 @@ internal transient skipInit unit core
 		this.localUserId = userId
 		this.frame = 0
 		this.frames = 0
+		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
+		this.outputIndex = 0
 		// TEMP: Storing event stream in database is disabled for now
 		// try
 		// 	await openFromDB
@@ -842,7 +838,7 @@ internal transient skipInit unit core
 		await PeerNetwork.setupLocalMedia 
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
-		ServerNetwork.setup
+		ServerNetwork.setupServerConnection
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll
@@ -993,6 +989,7 @@ internal immutable StatisticsInfo
 	int frame
 				
 skipInit transient unit statistics
+	const url = "signal.up4playing.com"
 	const Vector2 margin = {224,126}
 	const Vector2 position = {-960, 540}
 	const Vector2 size = {1920+margin.x, margin.y}
@@ -1046,7 +1043,8 @@ skipInit transient unit statistics
 		id = core.roomId*100 + userId
 		int sendingSystemLogsUntil = systemLogs.length
 
-		http.postDirectly "{system.protocolAndHost}:3114/startSession", body:{
+		if system.isDebug then return
+		http.postDirectly "{url}/startSession", body:{
 			id
 			gameId: core.gameId
 			roomId: core.roomId
@@ -1085,7 +1083,7 @@ skipInit transient unit statistics
 		int sendingGameLogsUntil = gameLogs.length
 			
 		// Send statistics to server
-		http.postDirectly "{system.protocolAndHost}:3114/saveStatistics", body:{
+		http.postDirectly "{url}/saveStatistics", body:{
 			id
 			connections
 			graphLabels: graphs.map.label

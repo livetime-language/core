@@ -107,6 +107,8 @@ immutable struct int
 	importance:4 inline js string toString => this?.toString()
 		
 	inline js int fromHex(string value) parseInt(value, 16)
+
+	inline js string toHex => this.toString(16)
 		
 	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 
@@ -353,6 +355,10 @@ immutable struct float
 	inline js float ** float value
 		Math.pow(this, value)
 		
+	inline js bool isNumber
+		!isNaN(this)
+		
+		
 	// The largest possible floating point value
 	const importance:5 inline js
 	float maxValue => Number.MAX_VALUE
@@ -419,7 +425,8 @@ immutable struct float
 	const inline js int undefined => undefined
 	const inline js int null => null
 	
-	
+enum EachDistinctSortBy: SortByInteger, SortByString
+
 // A sequence of characters
 js String
 immutable class string
@@ -1272,6 +1279,30 @@ class List<T>
 	//     let youngestPlayers = (players.sortBy.age).take 3
 	importance:4 inline js T[] take: int count
 		this.slice(0, count)
+		
+	js TValue[][] groupBy: TKey(T it) selector
+		                   EachDistinctSortBy sortBy = SortByInteger
+		
+		let listOfLists = [];
+		if(this.length > 0) {
+			let _subject = this
+			let defaultValue;
+			if(sortBy == 1) {defaultValue = 0; _subject = [...this].sort((a,b) => (selector(a) || 0) - (selector(b) || 0)); } else
+			if(sortBy == 2) {defaultValue = ""; _subject = [...this].sort((a,b) => (selector(a) || "").localeCompare(selector(b) || "")); }
+			let it = selector(_subject[0]) || defaultValue, i=0;
+			for(let _nextIndex=1; _nextIndex<_subject.length; ++_nextIndex) { 
+				let _nextIt = selector(_subject[_nextIndex]) || defaultValue;
+				if(_nextIt != it) {
+					listOfLists.push(_subject.slice(i, _nextIndex));
+					it = _nextIt;
+					i = _nextIndex;
+				}
+			}
+			listOfLists.push(_subject.slice(i, _subject.length));
+		}		
+		
+		return listOfLists;
+			
 		
 	// ------------------------------------------- Find -------------------------------------------
 		
@@ -2818,149 +2849,3 @@ js Intl.NumberFormat
 NumberFormat
 	inline js NumberFormat(string locale, NumberFormatOptions options) new Intl.NumberFormat(locale, options)
 	inline js string format(float value) this.format(value)
-	
-class Grid<T>
-	Vector2 size
-	T[] items
-	transient void(T item, Vector2 pos)[string] itemForCharacter = null
-	
-	Grid
-		for size.x * size.y
-			items.add null
-	
-	get: Vector2 position // The vector to get the value from
-		return 0.0 <= position.x < size.x and 0.0 <= position.y < size.y ? items[floor(position.y)*size.x + position.x] : null
-	
-	get: float x // The column to get the value from
-		 float y // The row to get the value from
-		return 0.0 <= x < size.x and 0.0 <= y < size.y ? items[floor(y)*size.x + x] : null
-	
-	get: int x // The column to get the value from
-		 int y // The row to get the value from
-		return 0 <= x < size.x and 0 <= y < size.y ? items[y*size.x + x] : null
-	
-	T set: Vector2 position // The grid position of the value to set
-		   T value             // The value to set
-		return items[floor(position.y)*size.x + position.x] = value
-
-	T set: float x   // The column of the value to set
-		   float y   // The row of the value to set
-		 T value // The value to set
-		return items[floor(y)*size.x + x] = value
-	
-	T set: int x   // The column of the value to set
-		   int y   // The row of the value to set
-		 T value // The value to set
-		return items[y*size.x + x] = value
-	
-	map: string character
-		 stored void(T item, Vector2 pos) to
-		if not itemForCharacter then itemForCharacter = {}
-		itemForCharacter.set(character, to)
-
-	create: string[] strings
-		for strings as line, y
-			for line as char, x
-				let itemFunction = itemForCharacter.get(char)
-					itemFunction(items[y*size.x + x], {x, y})
-		
-	// Do something for each item in the grid
-	inline js void each: inline -> void(
-		                     T it,      // The current item of the list we are iterating over with the for-loop
-		                     Vector2 pos,
-		                     int i      // The index of the current item of the list we are iterating over with the for-loop
-		                 ) do           // Do this for each item in a list
-		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new IntVector2(i%this.size.x, Math.floor(i/this.size.x)), i)}
-			
-	inline js void each: includeEmpty = false // Include items that are null
-		                 inline -> void(
-		                     T it,      // The current item of the list we are iterating over with the for-loop
-		                     Vector2 pos,
-		                     int i      // The index of the current item of the list we are iterating over with the for-loop
-		                 ) do           // Do this for each item in a list
-		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new Vector2(x,y), i)}
-
-	// The amount of items in the grid	
-	importance:4 inline int length() this.items.length
-
-	// Return a list that includes the selected field or expression for each item
-	importance:4 inline js TValue[] select: TValue(T it) selector
-		this.items.map(selector)
-		
-	// Get the selected field or expression for each item and flattens the result
-	inline js TValue[] flatten: TValue[](T it) selector
-		this.items.flatMap(selector)
-		
-	// Returns true if the given condition is true for all items in the list
-	inline js bool all
-		this.items.every(a => a)
-		
-	// Returns true if the given condition is true for any item in the list
-	inline js bool any
-		this.items.some(a => a)
-		
-	// Returns true if the given condition is true for any item in the list
-	importance:4 inline js bool any: bool(T a) predicate // The condition to check
-		this.items.some(predicate)
-		
-	importance:4 inline js T[] filter: bool(T a) predicate // The condition to check
-		this.items.filter(predicate)
-		
-	int count: bool(T a) predicate // The condition to check
-		int count = 0
-		for items
-			if predicate(.)
-				count++
-		return count
-		
-	// Returns true if the given condition is true for all items in the list
-	importance:4 inline js bool all: bool(T a) predicate // The condition to check
-		this.items.every(predicate)
-		
-	importance:4 bool isValid: Vector2 pos
-		return 0.0 <= pos.x < size.x and 0.0 <= pos.y < size.y
-
-	importance:4 withMin: float(T a) selector
-		               float threshold = float.maxValue
-		float resultValue = threshold
-		T resultItem
-		for items
-			let value = selector(.)
-			if value < resultValue
-				resultValue = value
-				resultItem = .
-		return resultValue != threshold ? resultItem : null
-
-	insertRows: int count = 1, int y = -1
-		if y == -1 then y = floor(size.y)
-		size.y += count
-		let baseIndex = y * size.x
-		for size.x * count
-			items.insert null index:floor(baseIndex + .)
-	
-	insertColumns: int count = 1, int x = -1
-		if x == -1 then x = floor(size.x)
-		size.x += count
-		for size.y as y
-			let rowIndex = y * size.x
-			for count
-				items.insert null index:floor(rowIndex + x + .)
-	
-global transient skipInit unit system
-	global inline js void for: Grid<T> subject    // The grid to iterate over
-		                       -> inline void(
-		                           T it,      // The current item of the list we are iterating over with the for-loop
-		                           Vector2 pos,
-		                           int i      // The index of the current item of the list we are iterating over with the for-loop
-		                       ) do           // Do this for each item in a list
-		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new Vector2(i%subject.size.x, Math.floor(i/subject.size.x)), i)}
-			
-	global inline js void for: Grid<T> subject      // The grid to iterate over
-		                       includeEmpty = false // Include items that are null
-		                       -> inline void(
-		                           T it,      // The current item of the list we are iterating over with the for-loop
-		                           Vector2 pos,
-		                           int i      // The index of the current item of the list we are iterating over with the for-loop
-		                       ) do           // Do this for each item in a list
-		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)
-		

@@ -44,11 +44,12 @@ global transient skipInit unit system
 	
 	private inline js void initMedia
 		_constCache = [null]
+		Colors.init();
 		audio.init();
 		media.init();
 		
 	private js void initPlatform: bool isHeadless = false
-		Object.prototype.toString = function() { return object.stringify(this, 5) }
+		Object.prototype.toString = function() { return JSON.stringify(this) }
 		statistics.init();
 		IndexedDB?.init();
 		PlainDate.init();
@@ -235,7 +236,7 @@ global transient skipInit unit system
 	// This is called every animation frame
 	private tick
 		if playMode == Play or playMode == Record or waitingForInitialData
-			core.animationFrame
+			core.onFrame
 				
 	private startManipulator:PlayMode playMode
 		this.playMode = playMode
@@ -296,9 +297,6 @@ global transient skipInit unit system
 	internal inline js void sendStringToEditor: string message
 		if(system.isDebug) _sendStringToEditor(message)
 	
-	// sendFinished
-	// 	if system.isDebug then sendToEditor({type:"finished", frame:core.frame, frames:core.frames, playMode:(int)system.playMode, output:core.output})
-			
 	private void toggleDebugInfo
 		showDebugInfo = !showDebugInfo;
 		setLocalStorageObject("showDebugInfo", showDebugInfo ? "true" : "false")

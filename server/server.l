@@ -73,7 +73,7 @@ global skipInit unit math
 
 	js string generateUUID
 		return 'xxxx-xxxx-xxx-xxxx'.replace(/[x]/g, (c) => {  
-			return math.floor(math.random() * 16).toString(16);  
+			return Math.floor(Math.random() * 16).toString(16);  
 		}); 
 	
 PlainDate
@@ -206,6 +206,7 @@ class Request
 		
 class Response
 	inline js void sendText(string result, int code = 200, filename = "") this.writeHead(code, {'Content-Type': http.contentTypeMap[filename.getExtension()] || "text/plain; charset=utf-8"}); response.end(result);
+	inline js void sendHtml(ensureSingleExecution dynamic result, int code = 200, filename = "") this.writeHead(code, {'Content-Type': "text/html; charset=utf-8"}); response.end(result);
 	inline js void send(ensureSingleExecution dynamic result, int code = 200) if(result) { if(typeof result == "string") {this.writeHead(code, {"Content-Type": "text/plain; charset=utf-8"}); response.end(result);} else {this.writeHead(code, {"Content-Type": "application/json; charset=utf-8"}); response.end(JSON.stringify(result)); }}
 	inline js void redirect(string url, int code = 302) this.writeHead(code, {Location: url}); response.end();
 		
@@ -254,9 +255,10 @@ unit websocket
 		                          void() onStart
 		                          void(Connection connection) onOpen
 		                          void(Connection connection, int errorCode) onClose
-		                          void(Connection connection, Buffer buffer) onMessage
+		                          void(Connection connection, Buffer buffer) onMessage = null
+		                          void(Connection connection, string message) onStringMessage = null
 		const uWS = require('uWebSockets.js')
-		const app =  process.platform == "win32" || process.platform == "darwin" ? uWS.App() :
+		const app =  process.platform == "win32" || process.platform == "darwin" || !keyPath || !certPath ? uWS.App() :
 			uWS.SSLApp({
 				key_file_name: keyPath,
 				cert_file_name: certPath,
@@ -270,7 +272,13 @@ unit websocket
 				onOpen(ws);
 			},
 			message: (ws, message, isBinary) => {
-				onMessage(ws, new Buffer(message, 0, 0, 0))
+				if (isBinary) {
+					onMessage(ws, new Buffer(message, 0, 0, 0))
+				}
+				else {
+					onStringMessage(ws, new TextDecoder("utf-8").decode(message));
+				}
+				
 			},
 			drain: (ws) => {
 				log('WebSocket backpressure: ' + ws.getBufferedAmount());
@@ -305,6 +313,7 @@ class WebsocketHttpResponse
 		
 class Connection
 	inline js bool send(Buffer buffer) this.send(buffer.toByteArray(), /*isBinary*/true, /*compress*/false)
+	inline js bool sendJson(dynamic data) this.send(new TextEncoder("utf-8").encode(JSON.stringify(data)))
 	inline js int bufferedAmount() this.getBufferedAmount()
 	inline js object data => this.data
 	inline js void data(object value) this.data = value

@@ -1,17 +1,139 @@
+static skipInit class Colors
+
+	global const Color Black 	= { "#000000", " ", 0 }
+	global const Color DarkGrey 	= { "#5F574F", "5", 5 }
+	global const Color LightGrey 	= { "#C2C3C7", "6", 6 }
+	global const Color White 	= { "#FFF1E8", "7", 7 }
+	global const Color Blue 	= { "#29ADFF", "c", 12 }
+	global const Color Red 	= { "#FF004D", "8", 8 }
+	global const Color Green 	= { "#00E436", "b", 11 }
+	global const Color Yellow 	= { "#FFEC27", "a", 10 }
+
+	global const Color Brown 	= { "#AB5236", "4", 4 }
+	global const Color LightPeach 	= { "#FFCCAA", "f", 15 }
+	global const Color Pink 	= { "#FF77A8", "e", 14 }
+	global const Color Lavender 	= { "#83769C", "d", 13 }
+	global const Color DarkBlue 	= { "#1D2B53", "1", 1 }
+	global const Color DarkPurple 	= { "#7E2553", "2", 2 }
+	global const Color DarkGreen 	= { "#008751", "3", 3 }
+	global const Color Orange 	= { "#FFA300", "9", 9 }
+
+	global const Color BrownishBlack 	= { "#291814", "g", -16 }
+	global const Color DarkerBlue 	= { "#111D35", "h", -15 }
+	global const Color DarkerPurple 	= { "#422136", "i", -14 }
+	global const Color BlueGreen 	= { "#125359", "j", -13 }
+	global const Color DarkBrown 	= { "#742F29", "k", -12 }
+	global const Color DarkerGrey 	= { "#49333B", "l", -11 }
+	global const Color MediumGrey 	= { "#A28879", "m", -10 }
+	global const Color LightYellow 	= { "#F3EF7D", "n", -9 }
+
+	global const Color DarkRed 	= { "#BE1250", "o", -8 }
+	global const Color DarkOrange 	= { "#FF6C24", "p", -7 }
+	global const Color LimeGreen 	= { "#A8E72E", "q", -6 }
+	global const Color MediumGreen 	= { "#00B543", "r", -5 }
+	global const Color TrueBlue 	= { "#065AB5", "s", -4 }
+	global const Color Mauve 	= { "#754665", "t", -3 }
+	global const Color DarkPeach 	= { "#FF6E59", "u", -2 }
+	global const Color Peach 	= { "#FF9D81", "v", -1 }
+
+	// 	"A": new PaletteEntry("A",	0, 0, 0, 255,	"black",	0,	"#000000", "c64"),
+	// 	"B": new PaletteEntry("B",	255, 255, 255, 255,	"white",	1,	"#FFFFFF", "c64"),
+	// 	"C": new PaletteEntry("C",	146, 74, 64, 255,	"red",	2,	"#880000", "c64"),
+	// 	"D": new PaletteEntry("D",	132, 197, 204, 255,	"cyan",	3,	"#AAFFEE", "c64"),
+	// 	"E": new PaletteEntry("E",	147, 81, 182, 255,	"purple",	4,	"#CC44CC", "c64"),
+	// 	"F": new PaletteEntry("F",	114, 177, 75, 255,	"green",	5,	"#00CC55", "c64"),
+	// 	"G": new PaletteEntry("G",	72, 58, 170, 255,	"blue",	6,	"#0000AA", "c64"),
+	// 	"H": new PaletteEntry("H",	213, 223, 124, 255,	"yellow",	7,	"#EEEE77", "c64"),
+	// 	"I": new PaletteEntry("I",	153, 105, 45, 255,	"orange",	8,	"#DD8855", "c64"),
+	// 	"J": new PaletteEntry("J",	103, 82, 0, 255,	"brown",	9,	"#664400", "c64"),
+	// 	"K": new PaletteEntry("K",	193, 129, 120, 255,	"pink",	10,	"#FF7777", "c64"),
+	// 	"L": new PaletteEntry("L",	96, 96, 96, 255,	"dark grey",	11,	"#333333", "c64"),
+	// 	"M": new PaletteEntry("M",	138, 138, 138, 255,	"grey",	12,	"#777777", "c64"),
+	// 	"N": new PaletteEntry("N",	179, 236, 145, 255,	"light green",	13,	"#AAFF66", "c64"),
+	// 	"O": new PaletteEntry("O",	134, 122, 222, 255,	"light blue",	14,	"#0088FF", "c64"),
+	// 	"P": new PaletteEntry("P",	179, 179, 179, 255,	"light grey",	15,	"#BBBBBB", "c64"),
+	// 	"Q": new PaletteEntry("Q",	0,0,252,255,	"",	1,	"#0000fc","nes"),	// Closest color: 28 (difference: 167)
+	// 	"R": new PaletteEntry("R",	216,0,204,255,	"",	20,	"#d800cc","nes"),	// Closest color: 8 (difference: 166)
+	// 	"S": new PaletteEntry("S",	0,232,216,255,	"",	44,	"#00e8d8","nes"),	// Closest color: 12 (difference: 139)
+	// 	"T": new PaletteEntry("T",	0,252,252,255,	"",	60,	"#00fcfc","nes"),	// Closest color: 12 (difference: 123)
+	// 	"U": new PaletteEntry("U",	104,68,252,255,	"",	19,	"#6844fc","nes"),	// Closest color: 46 (difference: 114)
+	// 	"V": new PaletteEntry("V",	164,228,252,255,	"",	49,	"#a4e4fc","nes"),	// Closest color: 35 (difference: 111)
+	// 	"W": new PaletteEntry("W",	88,248,152,255,	"",	43,	"#58f898","nes"),	// Closest color: 45 (difference: 110)
+	// 	"X": new PaletteEntry("X",	148,0,132,255,	"",	4,	"#940084","nes"),	// Closest color: 2 (difference: 108)
+	// 	"Y": new PaletteEntry("Y",	168,16,0,255,	"",	6,	"#a81000","nes"),	// Closest color: 24 (difference: 104)
+	// 	"Z": new PaletteEntry("Z",	0,104,0,255,	"",	10,	"#006800","nes"),	// Closest color: 0 (difference: 104)
+	// 	"w": new PaletteEntry("w",	0,0,188,255,	"",	2,	"#0000bc","nes"),	// Closest color: 28 (difference: 103)
+	// 	"x": new PaletteEntry("x",	0,120,248,255,	"",	17,	"#0078f8","nes"),	// Closest color: 12 (difference: 101)
+	// 	"y": new PaletteEntry("y",	0,120,0,255,	"",	9,	"#007800","nes"),	// Closest color: 3 (difference: 96)
+	// 	"z": new PaletteEntry("z",	248,56,0,255,	"",	22,	"#f83800","nes"),	// Closest color: 25 (difference: 95)
+	// 	"!": new PaletteEntry("!",	168,0,32,255,	"",	5,	"#a80020","nes"),	// Closest color: 24 (difference: 88)
+	// 	"#": new PaletteEntry("#",	136,20,0,255,	"",	7,	"#881400","nes"),	// Closest color: 20 (difference: 88)
+	// 	"$": new PaletteEntry("$",	0,88,0,255,	"",	11,	"#005800","nes"),	// Closest color: 0 (difference: 88)
+	// 	"%": new PaletteEntry("%",	248,120,248,255,	"",	36,	"#f878f8","nes"),	// Closest color: 14 (difference: 88)
+	// 	"&": new PaletteEntry("&",	172,124,0,255,	"",	24,	"#ac7c00","nes"),	// Closest color: 40 (difference: 83)
+	// 	"'": new PaletteEntry("'",	216,184,248,255,	"",	51,	"#d8b8f8","nes"),	// Closest color: 6 (difference: 82)
+	// 	"(": new PaletteEntry("(",	0,168,0,255,	"",	26,	"#00a800","nes"),	// Closest color: 27 (difference: 80)
+	// 	")": new PaletteEntry(")",	248,184,248,255,	"",	52,	"#f8b8f8","nes"),	// Closest color: 7 (difference: 80)
+	// 	"*": new PaletteEntry("*",	184,248,216,255,	"",	59,	"#b8f8d8","nes"),	// Closest color: 6 (difference: 80)
+	// 	"+": new PaletteEntry("+",	0,88,248,255,	"",	18,	"#0058f8","nes"),	// Closest color: 28 (difference: 75)
+	// 	",": new PaletteEntry(",",	104,136,252,255,	"",	34,	"#6888fc","nes"),	// Closest color: 46 (difference: 74)
+	// 	"-": new PaletteEntry("-",	88,216,84,255,	"",	42,	"#58d854","nes"),	// Closest color: 37 (difference: 74)
+	// 	".": new PaletteEntry(".",	0,184,0,255,	"",	25,	"#00b800","nes"),	// Closest color: 27 (difference: 70)
+	// 	"/": new PaletteEntry("/",	184,184,248,255,	"",	50,	"#b8b8f8","nes"),	// Closest color: 6 (difference: 70)
+	// 	":": new PaletteEntry(":",	248,164,192,255,	"",	53,	"#f8a4c0","nes"),	// Closest color: 15 (difference: 69)
+	// 	";": new PaletteEntry(";",	252,160,68,255,	"",	39,	"#fca044","nes"),	// Closest color: 31 (difference: 67)
+	// 	"<": new PaletteEntry("<",	228,92,16,255,	"",	23,	"#e45c10","nes"),	// Closest color: 25 (difference: 63)
+	// 	"=": new PaletteEntry("=",	80,48,0,255,	"",	8,	"#503000","nes"),	// Closest color: 41 (difference: 57)
+	// 	">": new PaletteEntry(">",	0,136,136,255,	"",	28,	"#008888","nes"),	// Closest color: 3 (difference: 56)
+	// 	"?": new PaletteEntry("?",	184,248,184,255,	"",	58,	"#b8f8b8","nes"),	// Closest color: 45 (difference: 56)
+	// 	"@": new PaletteEntry("@",	184,248,24,255,	"",	41,	"#b8f818","nes"),	// Closest color: 26 (difference: 55)
+	// 	"[": new PaletteEntry("[",	248,88,152,255,	"",	37,	"#f85898","nes"),	// Closest color: 14 (difference: 54)
+	// 	"]": new PaletteEntry("]",	120,120,120,255,	"",	45,	"#787878","nes"),	// Closest color: 13 (difference: 49)
+	// 	"^": new PaletteEntry("^",	248,216,248,255,	"",	61,	"#f8d8f8","nes"),	// Closest color: 7 (difference: 48)
+	// 	"_": new PaletteEntry("_",	152,120,248,255,	"",	35,	"#9878f8","nes"),	// Closest color: 46 (difference: 46)
+	// 	"\{": new PaletteEntry("\{",	124,124,124,255,	"",	0,	"#7c7c7c","nes"),	// Closest color: 44 (difference: 42)
+	// 	"|": new PaletteEntry("|",	68,40,188,255,	"",	3,	"#4428bc","nes"),	// Closest color: 38 (difference: 40)
+	// 	"\}": new PaletteEntry("\}",	0,64,88,255,	"",	12,	"#004058","nes"),	// Closest color: 19 (difference: 38)
+	// 	"~": new PaletteEntry("~",	228,0,88,255,	"",	21,	"#e40058","nes"),	// Closest color: 8 (difference: 38)
+
 // A color comprised of a red, green, blue and alpha component
 immutable Color
-	global const Color White	= {"#ffffff", "White"}
-	global const Color Black	= {"#000000", "Black"}
-	global const Color Red	= {"#ef476f", "Red"}
-	global const Color Yellow	= {"#ffd166", "Yellow"}
-	global const Color Green	= {"#06d6a0", "Green"}
-	global const Color Blue	= {"#118ab2", "Blue"}
-	global const Color Gray	= {"#3d3d3d", "Gray"}
-
-	string hex
+	string letter
+	int index
 	string name
+	int value
+	int red, green, blue, alpha
+
+	Color: string hex
+		if hex.length >= 1 and hex[0] == "#" then hex = hex.substring(1)
+		red = hex.length >= 2 ? hex.substring(0,2).parseInt(16) : 0
+		green = hex.length >= 4 ? hex.substring(2,4).parseInt(16) : 0
+		blue = hex.length >= 6 ? hex.substring(4,6).parseInt(16) : 0
+		alpha = hex.length >= 8 ? hex.substring(6,8).parseInt(16) : 255
+		value = (red shiftLeft 0) + (green * 256) + (blue * 65536) + (alpha * 16777216)
+
+	Color: int hex
+		if(hex <= 0xffffff)
+			red = hex.shiftRight(16) bitwiseAnd 0xff
+			green = hex.shiftRight(8) bitwiseAnd 0xff
+			blue = hex bitwiseAnd 0xff
+			alpha = 255
+		else
+			red = hex.shiftRight(24) bitwiseAnd 0xff
+			green = hex.shiftRight(16) bitwiseAnd 0xff
+			blue = hex.shiftRight(8) bitwiseAnd 0xff
+			alpha = hex bitwiseAnd 0xff
+		value = (red shiftLeft 0) + (green * 256) + (blue * 65536) + (alpha * 16777216)
+
+	Color: int value
+		red = value shiftRight 0 bitwiseAnd 0xff
+		green = value shiftRight 8 bitwiseAnd 0xff
+		blue = value shiftRight 16 bitwiseAnd 0xff
+		alpha = value shiftRight 24 bitwiseAnd 0xff
+
+struct int
+	inline Color toColor => new Color(value:this)
 		
-	
 BitmapFont
 	string name
 	Vector2 charSize
@@ -20,25 +142,14 @@ BitmapFont
 	int startChar
 	int[] pixels
 
-class PaletteEntry
-	string letter
-	int red
-	int green
-	int blue
-	int alpha
-	string name
-	int originalIndex
-	string hex
-	string category
-	int index
-
 Screen
 	Vector2 size
 	Vector2 activeSize, activeOffset
 	float scale
 	dynamic canvas, context
 	dynamic pixelData
-	Grid<int> pixels
+	int[] pixels
+
 	bool smoothing
 	int clipX1, clipY1, clipX2, clipY2
 	
@@ -49,7 +160,7 @@ Screen
 		this.canvas.height = this.size.y
 		this.context = this.canvas.getContext("2d")
 		this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
-		this.pixels = new Grid(this.size, []);
+		this.pixels = new Uint32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
 		this.clear();
 
 	onResize
@@ -73,26 +184,13 @@ Screen
 		clipY1 = 0
 		clipX2 = size.x.floor
 		clipY2 = size.y.floor
-		int[] target = this.pixels.items
+		int[] target = this.pixels
 		int len = (size.x * size.y).floor
 		for len
 			target[i] = 0
 			
 	finishFrame
 		if system.fastForward then return
-		let len = size.x * size.y
-		int sourceIndex, targetIndex
-		let target = pixelData.data
-		let pixels = this.pixels.items
-		while sourceIndex < len
-			int paletteIndex = pixels[sourceIndex] * 4
-			target[targetIndex] = graphics.palette[paletteIndex]
-			target[targetIndex+1] = graphics.palette[paletteIndex+1]
-			target[targetIndex+2] = graphics.palette[paletteIndex+2]
-			target[targetIndex+3] = 255
-			sourceIndex++
-			targetIndex += 4
-
 		context.putImageData(pixelData, 0, 0)
 		graphics.context.imageSmoothingEnabled = smoothing;
 		graphics.context.drawImage(canvas, activeOffset.x, activeOffset.y, activeSize.x, activeSize.y)
@@ -127,28 +225,30 @@ transient global skipInit graphics
 	isDrawingDebugInfo = false
 	getWhatIsOnScreen => ""
 
-	const Color[] defaultColors = [{"#398CA9", "Blue"}, {"#C01352", "Red"}, {"#16C66E", "Green"}, {"#FFD166", "Yellow"}]
-	const Color[] darkDefaultColors = [{"#193742", "Dark Blue"}, {"#470B21", "Dark Red"}, {"#0A3620", "Dark Green"}, {"#4B3F21", "Dark Yellow"}]	
+	const Color[] defaultColors = [{"#398CA9", name:"Blue"}, {"#C01352", name:"Red"}, {"#16C66E", name:"Green"}, {"#FFD166", name:"Yellow"}]
+	const Color[] darkDefaultColors = [{"#193742", name:"Dark Blue"}, {"#470B21", name:"Dark Red"}, {"#0A3620", name:"Dark Green"}, {"#4B3F21", name:"Dark Yellow"}]	
 
 // --------------------------------------------- Graphics ---------------------------------------------
 
 transient global skipInit graphics
-	const Vector2 tileSize
-	const int tilesPerRow, tilesStride
+	const Vector2 tileSize = {8,8}
+	const int tilesPerRow = 16
+	const int tilesStride = 128
 
 	private dynamic canvas
 	internal dynamic context
 	Vector2 windowSize
 	float pixelRatio
-
 	BitmapFont font
+	
 	Screen screen
 	Screen[] screens
 	
-	int[] palette
-	int[] colorReplacements
+	int[int] colorReplacements
 	bool enableColorReplacements
-	PaletteEntry[string] paletteEntries
+
+	int[string] colorByLetter
+	Color[] colors
 
 	int[] tiles
 	TileCollection[] tileCollections
@@ -172,171 +272,75 @@ transient global skipInit graphics
 		graphics.canvas.imageSmoothingQuality = "high";
 		graphics.context = graphics.canvas.getContext("2d");
 		for(let screen of graphics.screens) screen.onResize()
+		this.screen?.finishFrame()
 
 	getPixelPos: int x, int y
 		return screen.getPixelPos({x, y})
 
-	js void initPalette: int size
-		graphics.palette = new Uint8ClampedArray(size)
-
 	async setup
-		this.tileSize.create(8,8)
-		this.tilesPerRow = 16
-		this.tilesStride = floor(tilesPerRow * tileSize.x)
-
 		screen = {}
 		screens = [screen]
-
-		// font = {name: "commodore", gridSize: {8,8}, charSize: {8,8}, charsPerRow: 16, startChar: 32 }
-		font = {name: "monogram", gridSize: {6,12}, charSize:{5,9}, charsPerRow: 16, startChar: 32 }
 
 		setZoom 1
 		initHandlers
 
-		this.paletteEntries = {
-			"0": new PaletteEntry("0",	0, 0, 0, 255,	"black",	0,	"#000000", "pico-8"),
-			"1": new PaletteEntry("1",	29, 43, 83, 255,	"dark blue",	1,	"#1D2B53", "pico-8"),
-			"2": new PaletteEntry("2",	126, 37, 83, 255,	"dark purple",	2,	"#7E2553", "pico-8"),
-			"3": new PaletteEntry("3",	0, 135, 81, 255,	"dark green",	3,	"#008751", "pico-8"),
-			"4": new PaletteEntry("4",	171, 82, 54, 255,	"brown",	4,	"#AB5236", "pico-8"),
-			"5": new PaletteEntry("5",	95, 87, 79, 255,	"dark grey",	5,	"#5F574F", "pico-8"),
-			"6": new PaletteEntry("6",	194, 195, 199, 255,	"light grey",	6,	"#C2C3C7", "pico-8"),
-			"7": new PaletteEntry("7",	255, 241, 232, 255,	"white",	7,	"#FFF1E8", "pico-8"),
-			"8": new PaletteEntry("8",	255, 0, 77, 255,	"red",	8,	"#FF004D", "pico-8"),
-			"9": new PaletteEntry("9",	255, 163, 0, 255,	"orange",	9,	"#FFA300", "pico-8"),
-			"a": new PaletteEntry("a",	255, 236, 39, 255,	"yellow",	10,	"#FFEC27", "pico-8"),
-			"b": new PaletteEntry("b",	0, 228, 54, 255,	"green",	11,	"#00E436", "pico-8"),
-			"c": new PaletteEntry("c",	41, 173, 255, 255,	"blue",	12,	"#29ADFF", "pico-8"),
-			"d": new PaletteEntry("d",	131, 118, 156, 255,	"lavender",	13,	"#83769C", "pico-8"),
-			"e": new PaletteEntry("e",	255, 119, 168, 255,	"pink",	14,	"#FF77A8", "pico-8"),
-			"f": new PaletteEntry("f",	255, 204, 170, 255,	"light peach",	15,	"#FFCCAA", "pico-8"),
-			"g": new PaletteEntry("g",	41,24,20, 255,	"brownish black",	-16,	"#291814", "pico-8 extended"),
-			"h": new PaletteEntry("h",	17,29,53, 255,	"darker blue",	-15,	"#111D35", "pico-8 extended"),
-			"i": new PaletteEntry("i",	66,33,54, 255,	"darker purple",	-14,	"#422136", "pico-8 extended"),
-			"j": new PaletteEntry("j",	18,83,89, 255,	"blue green",	-13,	"#125359", "pico-8 extended"),
-			"k": new PaletteEntry("k",	116,47,41, 255,	"dark brown",	-12,	"#742F29", "pico-8 extended"),
-			"l": new PaletteEntry("l",	73,51,59, 255,	"darker grey",	-11,	"#49333B", "pico-8 extended"),
-			"m": new PaletteEntry("m",	162,136,121, 255,	"medium grey",	-10,	"#A28879", "pico-8 extended"),
-			"n": new PaletteEntry("n",	243,239,125, 255,	"light yellow",	-9,	"#F3EF7D", "pico-8 extended"),
-			"o": new PaletteEntry("o",	190,18,80, 255,	"dark red",	-8,	"#BE1250", "pico-8 extended"),
-			"p": new PaletteEntry("p",	255,108,36, 255,	"dark orange",	-7,	"#FF6C24", "pico-8 extended"),
-			"q": new PaletteEntry("q",	168,231,46, 255,	"lime green",	-6,	"#A8E72E", "pico-8 extended"),
-			"r": new PaletteEntry("r",	0,181,67, 255,	"medium green",	-5,	"#00B543", "pico-8 extended"),
-			"s": new PaletteEntry("s",	6,90,181, 255,	"true blue",	-4,	"#065AB5", "pico-8 extended"),
-			"t": new PaletteEntry("t",	117,70,101, 255,	"mauve",	-3,	"#754665", "pico-8 extended"),
-			"u": new PaletteEntry("u",	255,110,89, 255,	"dark peach",	-2,	"#FF6E59", "pico-8 extended"),
-			"v": new PaletteEntry("v",	255,157,129, 255,	"peach",	-1,	"#FF9D81", "pico-8 extended"),
-			"A": new PaletteEntry("A",	0, 0, 0, 255,	"black",	0,	"#000000", "c64"),
-			"B": new PaletteEntry("B",	255, 255, 255, 255,	"white",	1,	"#FFFFFF", "c64"),
-			"C": new PaletteEntry("C",	146, 74, 64, 255,	"red",	2,	"#880000", "c64"),
-			"D": new PaletteEntry("D",	132, 197, 204, 255,	"cyan",	3,	"#AAFFEE", "c64"),
-			"E": new PaletteEntry("E",	147, 81, 182, 255,	"purple",	4,	"#CC44CC", "c64"),
-			"F": new PaletteEntry("F",	114, 177, 75, 255,	"green",	5,	"#00CC55", "c64"),
-			"G": new PaletteEntry("G",	72, 58, 170, 255,	"blue",	6,	"#0000AA", "c64"),
-			"H": new PaletteEntry("H",	213, 223, 124, 255,	"yellow",	7,	"#EEEE77", "c64"),
-			"I": new PaletteEntry("I",	153, 105, 45, 255,	"orange",	8,	"#DD8855", "c64"),
-			"J": new PaletteEntry("J",	103, 82, 0, 255,	"brown",	9,	"#664400", "c64"),
-			"K": new PaletteEntry("K",	193, 129, 120, 255,	"pink",	10,	"#FF7777", "c64"),
-			"L": new PaletteEntry("L",	96, 96, 96, 255,	"dark grey",	11,	"#333333", "c64"),
-			"M": new PaletteEntry("M",	138, 138, 138, 255,	"grey",	12,	"#777777", "c64"),
-			"N": new PaletteEntry("N",	179, 236, 145, 255,	"light green",	13,	"#AAFF66", "c64"),
-			"O": new PaletteEntry("O",	134, 122, 222, 255,	"light blue",	14,	"#0088FF", "c64"),
-			"P": new PaletteEntry("P",	179, 179, 179, 255,	"light grey",	15,	"#BBBBBB", "c64"),
-			"Q": new PaletteEntry("Q",	0,0,252,255,	"",	1,	"#0000fc","nes"),	// Closest color: 28 (difference: 167)
-			"R": new PaletteEntry("R",	216,0,204,255,	"",	20,	"#d800cc","nes"),	// Closest color: 8 (difference: 166)
-			"S": new PaletteEntry("S",	0,232,216,255,	"",	44,	"#00e8d8","nes"),	// Closest color: 12 (difference: 139)
-			"T": new PaletteEntry("T",	0,252,252,255,	"",	60,	"#00fcfc","nes"),	// Closest color: 12 (difference: 123)
-			"U": new PaletteEntry("U",	104,68,252,255,	"",	19,	"#6844fc","nes"),	// Closest color: 46 (difference: 114)
-			"V": new PaletteEntry("V",	164,228,252,255,	"",	49,	"#a4e4fc","nes"),	// Closest color: 35 (difference: 111)
-			"W": new PaletteEntry("W",	88,248,152,255,	"",	43,	"#58f898","nes"),	// Closest color: 45 (difference: 110)
-			"X": new PaletteEntry("X",	148,0,132,255,	"",	4,	"#940084","nes"),	// Closest color: 2 (difference: 108)
-			"Y": new PaletteEntry("Y",	168,16,0,255,	"",	6,	"#a81000","nes"),	// Closest color: 24 (difference: 104)
-			"Z": new PaletteEntry("Z",	0,104,0,255,	"",	10,	"#006800","nes"),	// Closest color: 0 (difference: 104)
-			"w": new PaletteEntry("w",	0,0,188,255,	"",	2,	"#0000bc","nes"),	// Closest color: 28 (difference: 103)
-			"x": new PaletteEntry("x",	0,120,248,255,	"",	17,	"#0078f8","nes"),	// Closest color: 12 (difference: 101)
-			"y": new PaletteEntry("y",	0,120,0,255,	"",	9,	"#007800","nes"),	// Closest color: 3 (difference: 96)
-			"z": new PaletteEntry("z",	248,56,0,255,	"",	22,	"#f83800","nes"),	// Closest color: 25 (difference: 95)
-			"!": new PaletteEntry("!",	168,0,32,255,	"",	5,	"#a80020","nes"),	// Closest color: 24 (difference: 88)
-			"#": new PaletteEntry("#",	136,20,0,255,	"",	7,	"#881400","nes"),	// Closest color: 20 (difference: 88)
-			"$": new PaletteEntry("$",	0,88,0,255,	"",	11,	"#005800","nes"),	// Closest color: 0 (difference: 88)
-			"%": new PaletteEntry("%",	248,120,248,255,	"",	36,	"#f878f8","nes"),	// Closest color: 14 (difference: 88)
-			"&": new PaletteEntry("&",	172,124,0,255,	"",	24,	"#ac7c00","nes"),	// Closest color: 40 (difference: 83)
-			"'": new PaletteEntry("'",	216,184,248,255,	"",	51,	"#d8b8f8","nes"),	// Closest color: 6 (difference: 82)
-			"(": new PaletteEntry("(",	0,168,0,255,	"",	26,	"#00a800","nes"),	// Closest color: 27 (difference: 80)
-			")": new PaletteEntry(")",	248,184,248,255,	"",	52,	"#f8b8f8","nes"),	// Closest color: 7 (difference: 80)
-			"*": new PaletteEntry("*",	184,248,216,255,	"",	59,	"#b8f8d8","nes"),	// Closest color: 6 (difference: 80)
-			"+": new PaletteEntry("+",	0,88,248,255,	"",	18,	"#0058f8","nes"),	// Closest color: 28 (difference: 75)
-			",": new PaletteEntry(",",	104,136,252,255,	"",	34,	"#6888fc","nes"),	// Closest color: 46 (difference: 74)
-			"-": new PaletteEntry("-",	88,216,84,255,	"",	42,	"#58d854","nes"),	// Closest color: 37 (difference: 74)
-			".": new PaletteEntry(".",	0,184,0,255,	"",	25,	"#00b800","nes"),	// Closest color: 27 (difference: 70)
-			"/": new PaletteEntry("/",	184,184,248,255,	"",	50,	"#b8b8f8","nes"),	// Closest color: 6 (difference: 70)
-			":": new PaletteEntry(":",	248,164,192,255,	"",	53,	"#f8a4c0","nes"),	// Closest color: 15 (difference: 69)
-			";": new PaletteEntry(";",	252,160,68,255,	"",	39,	"#fca044","nes"),	// Closest color: 31 (difference: 67)
-			"<": new PaletteEntry("<",	228,92,16,255,	"",	23,	"#e45c10","nes"),	// Closest color: 25 (difference: 63)
-			"=": new PaletteEntry("=",	80,48,0,255,	"",	8,	"#503000","nes"),	// Closest color: 41 (difference: 57)
-			">": new PaletteEntry(">",	0,136,136,255,	"",	28,	"#008888","nes"),	// Closest color: 3 (difference: 56)
-			"?": new PaletteEntry("?",	184,248,184,255,	"",	58,	"#b8f8b8","nes"),	// Closest color: 45 (difference: 56)
-			"@": new PaletteEntry("@",	184,248,24,255,	"",	41,	"#b8f818","nes"),	// Closest color: 26 (difference: 55)
-			"[": new PaletteEntry("[",	248,88,152,255,	"",	37,	"#f85898","nes"),	// Closest color: 14 (difference: 54)
-			"]": new PaletteEntry("]",	120,120,120,255,	"",	45,	"#787878","nes"),	// Closest color: 13 (difference: 49)
-			"^": new PaletteEntry("^",	248,216,248,255,	"",	61,	"#f8d8f8","nes"),	// Closest color: 7 (difference: 48)
-			"_": new PaletteEntry("_",	152,120,248,255,	"",	35,	"#9878f8","nes"),	// Closest color: 46 (difference: 46)
-			"\{": new PaletteEntry("\{",	124,124,124,255,	"",	0,	"#7c7c7c","nes"),	// Closest color: 44 (difference: 42)
-			"|": new PaletteEntry("|",	68,40,188,255,	"",	3,	"#4428bc","nes"),	// Closest color: 38 (difference: 40)
-			"\}": new PaletteEntry("\}",	0,64,88,255,	"",	12,	"#004058","nes"),	// Closest color: 19 (difference: 38)
-			"~": new PaletteEntry("~",	228,0,88,255,	"",	21,	"#e40058","nes"),	// Closest color: 8 (difference: 38)
-		};
-		int index, paletteIndex
-		initPalette size:paletteEntries.length*4
-		for paletteEntries as entry
-			entry.index = index++
-			graphics.palette[paletteIndex++] = entry.red
-			graphics.palette[paletteIndex++] = entry.green
-			graphics.palette[paletteIndex++] = entry.blue
-			graphics.palette[paletteIndex++] = 255
-		colorReplacements = []
-		for paletteEntries.length
+		colorByLetter = {}
+		colors = []
+		forDynamic Colors as color
+			colors.add color
+			colorByLetter[color.letter] = color.value
+
+		colorReplacements = {}
+		for colorByLetter.length
 			colorReplacements[i] = i
 		enableColorReplacements = false
-		openTiles
+		// openTiles
 		openFonts
+
+	getClosestColor: int value
+		let r = value bitwiseAnd 0xff
+		let g = (value shiftRight 8) bitwiseAnd 0xff
+		let b = (value shiftRight 16) bitwiseAnd 0xff
+		let a = (value shiftRight 24) bitwiseAnd 0xff
+		Color closestColor
+		let closestColorDifference = int.maxValue
+		for colors
+			let difference = math.abs(r - .red) + math.abs(g - .green) + math.abs(b - .blue) + math.abs(a - .alpha)
+			if difference == 0 then return .
+			if difference < closestColorDifference
+				closestColorDifference = difference
+				closestColor = .
+		return closestColor
 
 	inline js string fontsData => (typeof _data_fonts === "string" ? _data_fonts : "")
 	inline js string tilesData => (typeof _data_tiles === "string" ? _data_tiles : "")
 
-	private openTiles
-		tiles = []
-		tileCollections = []
-		TileCollection collection, prevCollection
-		int index = 0
-		for tilesData.split("\n") as line
-			if line.startsWith "#"
-				int colonIndex = line.indexOf ":"
-				string key = line.substring(1, colonIndex).trim.toLowerCase
-				string value = line.substring(colonIndex+1).trim
-				if not collection then collection = {}
-				collection[key] = value
-			else
-			if line.length > 0
-				for line.length as i
-					PaletteEntry entry = paletteEntries[line[i]]
-					tiles[index + i] = entry ? entry.index : 0
-				index += tilesStride
+	// private openTiles
+	// 	tiles = []
+	// 	tileCollections = []
+	// 	TileCollection collection, prevCollection
+	// 	int index = 0
+	// 	for tilesData.split("\n") as line
+	// 		if line.startsWith "#"
+	// 			int colonIndex = line.indexOf ":"
+	// 			string key = line.substring(1, colonIndex).trim.toLowerCase
+	// 			string value = line.substring(colonIndex+1).trim
+	// 			if not collection then collection = {}
+	// 			collection[key] = value
+	// 		else
+	// 		if line.length > 0
+	// 			for line.length as i
+	// 				PaletteEntry entry = colorByLetter[line[i]]
+	// 				tiles[index + i] = entry ? entry.index : 0
+	// 			index += tilesStride
 
 	private openFonts
+		font = {name: "monogram", gridSize: {6,12}, charSize:{5,9}, charsPerRow: 16, startChar: 32 }
 		int index = 0
 		for fontsData.split("\n") as line
 			int pixelOffset = floor(i*font.gridSize.x*font.charsPerRow)
 			for line.length as i
 				if line[i] != "0" then font.pixels[pixelOffset + i] = 1
-
-	global setSprite: int spriteIndex, string[] pixelsAsStrings
-		let index = floor(spriteIndex / tilesPerRow) * tileSize.y * tilesStride + (spriteIndex mod tilesPerRow) * tileSize.x
-		for pixelsAsStrings as line
-			for line.length as i
-				PaletteEntry entry = paletteEntries[line[i]]
-				tiles[index + i] = entry ? entry.index : 0
-			index += tilesStride
 
 	startFrame
 		if system.fastForward then return
@@ -345,7 +349,7 @@ transient global skipInit graphics
 	finishFrame
 		screen.finishFrame
 
-	global Grid<int> pixels
+	global int[] pixels
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 
@@ -356,18 +360,19 @@ transient global skipInit graphics
 		screenSize.create screen.size
 		screenGridSize.create screen.size / tileSize
 
-	global void setPixel: Vector2 pos, int color
+	global void setPixel: Vector2 pos
+		                  implicit Color color
 		if system.fastForward then return
 		if screen.clipX1 <= pos.x < screen.clipX2 and screen.clipY1 <= pos.y < screen.clipY2
-			screen.pixels.items[(pos.y * screen.size.x + pos.x).floor] = color
+			screen.pixels[(pos.y * screen.size.x + pos.x).floor] = color.value
 
 	global int getPixel: Vector2 pos
 		if system.fastForward then return
 		if 0 <= pos.x < screen.size.x and 0 <= pos.y < screen.size.y
-			return screen.pixels.items[(pos.y * screen.size.x + pos.x).floor]
+			return screen.pixels[(pos.y * screen.size.x + pos.x).floor]
 		return 0
 
-	copy: int[] source, int sourceStride, int sourceIndex, Vector2 pos = {0,0}, Vector2 size = {8,8}
+	copy: int[] source, int sourceStride, int sourceOffset, Vector2 pos = {0,0}, Vector2 size = {8,8}
 		if system.fastForward then return
 		int positionX = pos.x.floor, positionY = pos.y.floor
 		int startX = positionX
@@ -380,18 +385,18 @@ transient global skipInit graphics
 		if startY < screen.clipY1 then startY = screen.clipY1
 		if endY > screen.clipY2 then endY = screen.clipY2
 		if startX >= endX or startY >= endY then return
-		int sourceOffset = floor(((sourceIndex mod tilesPerRow) + math.floor(sourceIndex / tilesPerRow) * tilesStride) * tileSize.x)
+		// int sourceOffset = floor(((sourceIndex mod tilesPerRow) + math.floor(sourceIndex / tilesPerRow) * tilesStride) * tileSize.x)
 		sourceOffset += (startY - positionY) * tilesStride + startX - positionX
 		int start = sourceOffset
 		int end = start + endX - startX
 		int offsetToTarget = startY * targetStride + startX - start
-		int[] target = screen.pixels.items
+		int[] target = screen.pixels
 
 		if not enableColorReplacements
 			for startY to endY as y
 				for start to end as i
 					let sourceValue = source[i]
-					if sourceValue then target[i + offsetToTarget] = sourceValue
+					if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
 				start += tilesStride
 				end += tilesStride
 				offsetToTarget += targetStride - tilesStride
@@ -399,12 +404,14 @@ transient global skipInit graphics
 			for startY to endY as y
 				for start to end as i
 					let sourceValue = colorReplacements[source[i]]
-					if sourceValue then target[i + offsetToTarget] = sourceValue
+					if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
 				start += tilesStride
 				end += tilesStride
 				offsetToTarget += targetStride - tilesStride
 
-	global drawSprite: Sprite sprite, Vector2 pos = {0,0}, void() onClick = null
+	global drawSprite: Sprite sprite
+	                   Vector2 pos = {0,0}
+					   void() onClick = null
 		if system.fastForward then return
 		int positionX = pos.x.floor, positionY = pos.y.floor
 		int startX = positionX
@@ -421,21 +428,21 @@ transient global skipInit graphics
 		int start = (startY - positionY) * spriteStride + startX - positionX
 		int end = start + endX - startX
 		int offsetToTarget = startY * targetStride + startX - start
-		int[] source = sprite.pixels, target = screen.pixels.items
-
+		int[] source = sprite.pixels, target = screen.pixels
 		if not enableColorReplacements
 			for startY to endY as y
 				for start to end as i
 					let sourceValue = source[i]
-					if sourceValue then target[i + offsetToTarget] = sourceValue
+					if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
 				start += spriteStride
 				end += spriteStride
 				offsetToTarget += targetStride - spriteStride
 		else
 			for startY to endY as y
 				for start to end as i
-					let sourceValue = colorReplacements[source[i]]
-					if sourceValue then target[i + offsetToTarget] = sourceValue
+					let sourceValue = source[i]
+					let replacementValue = colorReplacements[source[i]] or sourceValue
+					if replacementValue != 0xff000000 then target[i + offsetToTarget] = replacementValue
 				start += spriteStride
 				end += spriteStride
 				offsetToTarget += targetStride - spriteStride
@@ -445,18 +452,21 @@ transient global skipInit graphics
 			if pos <= pointerPos < pos + sprite.size
 				onClick()
 
-	global drawText: string text, Vector2 pos = {0,0}, int color = 6
+	global drawText: string text
+	                Vector2 pos = {0,0}
+					implicit Color color = Colors.White
 		if system.fastForward then return
 		int stride = floor(screen.size.x)
 		int fontStride = floor(font.charsPerRow * font.gridSize.x)
-		let target = screen.pixels.items
+		let target = screen.pixels
+		int colorValue = color.value
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
 			int tileOffset = floor((char mod 16) * font.gridSize.x + math.floor(char / 16) * fontStride * font.gridSize.y)
 			int screenOffset = floor(pos.x + pos.y*stride)
 			for font.charSize.y as y
 				for font.charSize.x as x
-					if font.pixels[tileOffset + x] then target[screenOffset + x] = color
+					if font.pixels[tileOffset + x] then target[screenOffset + x] = colorValue
 				screenOffset += stride
 				tileOffset += fontStride
 			pos.x += font.gridSize.x
@@ -464,35 +474,44 @@ transient global skipInit graphics
 				pos.x = 0
 				pos.y += font.gridSize.y
 
-	global void drawRect: Vector2 pos = {0,0}, implicit Vector2 size = {8,8}, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
+	global void drawRect: Vector2 pos = {0,0}
+		                  implicit Vector2 size = {8,8}
+						  implicit Color fillColor = null
+						  implicit Color outlineColor = null
+						  int outlineWidth = 1
 		if system.fastForward then return
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
-		let target = screen.pixels.items
-		if fillColor == -1 and outlineColor == -1 then fillColor = 6
-		if fillColor != -1
+		let target = screen.pixels
+		if fillColor == null and outlineColor == null then fillColor = White
+		if fillColor != null
 			int stride = floor(screen.size.x)
 			int screenOffset = floor(x + y*stride)
 			for sizeY as y
 				for sizeX as x
-					target[screenOffset + x] = fillColor
+					target[screenOffset + x] = fillColor.value
 				screenOffset += stride
-		if outlineColor != -1 and outlineWidth > 0 and outlineColor != fillColor
+		if outlineColor != null and outlineWidth > 0 and outlineColor != fillColor
 			drawRect {x,y}, {sizeX, outlineWidth}, fillColor:outlineColor
 			drawRect {x, y + sizeY - outlineWidth}, {sizeX, outlineWidth}, fillColor:outlineColor
 			drawRect {x, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 			drawRect {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 
-	global void drawCircle: Vector2 pos = {0,0}, Vector2 radius, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
+	global void drawCircle: Vector2 pos = {0,0}
+		                    Vector2 radius
+							implicit Color fillColor = null
+							implicit Color outlineColor = null
+							int outlineWidth = 1
 		if system.fastForward then return
-		if fillColor == -1 and outlineColor == -1 then fillColor = 6
+		if fillColor == null and outlineColor == null then fillColor = Colors.White
 		// TODO: Implement draw circle
 		drawRect pos, size:{radius.x*2, radius.y*2}, fillColor, outlineColor, outlineWidth
 
-	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, int fillColor = -1, int outlineColor = -1, int outlineWidth = 1
+	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null, int outlineWidth = 1
 		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor, outlineWidth
 
-	global clip: Vector2 pos = {0,0}, Vector2 size = {0,0}
+	global clip: Vector2 pos = {0,0}
+		         Vector2 size = {0,0}
 		screen.clipX1 = pos.x.floor
 		screen.clipY1 = pos.y.floor
 		screen.clipX2 = (pos.x + size.x).floor
@@ -504,14 +523,17 @@ transient global skipInit graphics
 		screen.clipX2 = screen.size.x.floor
 		screen.clipY2 = screen.size.y.floor
 
-	global replaceColor: int color, nocolon int with
-		colorReplacements[color] = with
+	global replaceColor: implicit Color color
+		                 implicit nocolon Color with
+		colorReplacements[color.value] = with.value
 		enableColorReplacements = true
 
 	global stopReplacingColors
-		for colorReplacements.length
-			colorReplacements[i] = i
+		colorReplacements.clear
 		enableColorReplacements = false
+
+enum string SpriteType: None, Tile, Object, Character
+enum string SpritePerspective: None, Side, TopDown
 
 Sprite
 	int[] pixels
@@ -520,6 +542,11 @@ Sprite
 	int framesPerSecond = 15
 	int stride
 	Vector2 sourcePos
+	
+	SpriteType type = SpriteType.None
+	SpritePerspective perspective = SpritePerspective.None
+	string name
+	string tags
 
 	Sprite: string[] pixelsAsStrings = null
 		if not pixelsAsStrings then return
@@ -532,9 +559,19 @@ Sprite
 		int index
 		for pixelsAsStrings as line
 			for line.length as i
-				PaletteEntry entry = graphics.paletteEntries[line[i]]
-				pixels[index + i] = entry ? entry.index : 0
+				pixels[index + i] = graphics.colorByLetter[line[i]]
 			index += maxWidth
+
+	toStrings
+		string[] result
+		for size.y as y
+			string line
+			for size.x as x
+				int pixelIndex = y * stride + x
+				Color color = graphics.getClosestColor(pixels[pixelIndex])
+				line += color ? color.letter : " "
+			result.add line
+		return result
 
 	copyFromSource
 		// NEXT: Copy from graphics.tiles at sourcePos with size and frames, use in spriteEditor and tilePanel

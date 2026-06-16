@@ -80,6 +80,7 @@ internal transient class InternalUser
 		for input.inputButtonCount
 			justPressed[i] = false
 			justReleased[i] = false
+		scrollDelta = {0,0}
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -835,6 +836,10 @@ skipInit global unit input
 			
 	internal parseInputs: int frame
 		for internalUsers as internalUser if internalUser
+			// Events are normally cleared at the end of core.tick, but when an exception aborts
+			// the step after parsing, stale events survive in these transient lists. Clear them
+			// here so a frame that is stepped again after a rewind can't apply an event twice.
+			internalUser.clearEvent
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
@@ -1070,7 +1075,7 @@ skipInit global unit input
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
-		print type:Touch message or "Click {referencePos} by {player}"
+		print type:Touch message or "Click {referencePos} by {player}", input.isCertain
 
 		// Call input handlers
 		// app.onTouchHover??(touch);
@@ -1168,7 +1173,7 @@ skipInit global unit input
 		// player.onScroll??(delta, isPinch, referencePosition)
 
 		// Modern Input
-		internalUser.scrollDelta = delta
+		internalUser.scrollDelta += delta
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
