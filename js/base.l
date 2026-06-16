@@ -107,6 +107,8 @@ immutable struct int
 	importance:4 inline js string toString => this?.toString()
 		
 	inline js int fromHex(string value) parseInt(value, 16)
+
+	inline js string toHex => this.toString(16)
 		
 	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 

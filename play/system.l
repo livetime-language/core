@@ -44,6 +44,7 @@ global transient skipInit unit system
 	
 	private inline js void initMedia
 		_constCache = [null]
+		Colors.init();
 		audio.init();
 		media.init();
 		
