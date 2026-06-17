@@ -186,8 +186,7 @@ Screen
 		clipY2 = size.y.floor
 		int[] target = this.pixels
 		int len = (size.x * size.y).floor
-		for len
-			target[i] = 0
+		for len target[.] = 0xff000000
 			
 	finishFrame
 		if system.fastForward then return
