@@ -1,15 +1,16 @@
-// A color comprised of a red, green, blue and alpha component
-immutable Color
-	global const Color White       = {"#ffffff", "White"}
-	global const Color Black       = {"#000000", "Black"}
-	global const Color Red         = {"#ef476f", "Red"}
-	global const Color Yellow      = {"#ffd166", "Yellow"}
-	global const Color Green       = {"#06d6a0", "Green"}
-	global const Color Blue        = {"#118ab2", "Blue"}
-	global const Color Gray        = {"#3d3d3d", "Gray"}
-		
-	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
+static class Colors
+	global const Color White	=  {"#ffffff", "White"}
+	global const Color Black	= { "#000000", "Black"}
+	global const Color Red	= { "#ef476f", "Red"}
+	global const Color Yellow	= { "#ffd166", "Yellow"}
+	global const Color Green	= { "#06d6a0", "Green"}
+	global const Color Blue	= { "#118ab2", "Blue"}
+	global const Color DarkGrey 	= { "#5F574F", "Dark Grey" }
+	global const Color LightGrey 	= { "#C2C3C7", "Light Grey" }
+	const Color TransparentRed	= { "#ff000080", "Transparent Red"}
 	
+// A color comprised of a red, green, blue and alpha component
+immutable Color	
 	importance:4 string hex
 	string name
 	
