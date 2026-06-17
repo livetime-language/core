@@ -1,22 +1,22 @@
 static skipInit class Colors
 
 	global const Color Black 	= { "#000000", " ", 0 }
-	global const Color DarkGrey 	= { "#5F574F", "5", 5 }
-	global const Color LightGrey 	= { "#C2C3C7", "6", 6 }
-	global const Color White 	= { "#FFF1E8", "7", 7 }
-	global const Color Blue 	= { "#29ADFF", "c", 12 }
-	global const Color Red 	= { "#FF004D", "8", 8 }
-	global const Color Green 	= { "#00E436", "b", 11 }
-	global const Color Yellow 	= { "#FFEC27", "a", 10 }
+	global const Color DarkGrey 	= { "#5F574F", "d", 5 }
+	global const Color LightGrey 	= { "#C2C3C7", "l", 6 }
+	global const Color White 	= { "#FFF1E8", "w", 7 }
+	global const Color Blue 	= { "#29ADFF", "b", 12 }
+	global const Color Red 	= { "#FF004D", "r", 8 }
+	global const Color Green 	= { "#00E436", "g", 11 }
+	global const Color Yellow 	= { "#FFEC27", "y", 10 }
 
-	global const Color Brown 	= { "#AB5236", "4", 4 }
-	global const Color LightPeach 	= { "#FFCCAA", "f", 15 }
-	global const Color Pink 	= { "#FF77A8", "e", 14 }
-	global const Color Lavender 	= { "#83769C", "d", 13 }
-	global const Color DarkBlue 	= { "#1D2B53", "1", 1 }
-	global const Color DarkPurple 	= { "#7E2553", "2", 2 }
-	global const Color DarkGreen 	= { "#008751", "3", 3 }
-	global const Color Orange 	= { "#FFA300", "9", 9 }
+	global const Color Earth 	= { "#AB5236", "e", 4 }
+	global const Color Sand 	= { "#FFCCAA", "s", 15 }
+	global const Color Pink 	= { "#FF77A8", "p", 14 }
+	global const Color Violet 	= { "#83769C", "v", 13 }
+	global const Color DarkBlue 	= { "#1D2B53", "B", 1 }
+	global const Color DarkRed 	= { "#7E2553", "R", 2 }
+	global const Color DarkGreen 	= { "#008751", "G", 3 }
+	global const Color Orange 	= { "#FFA300", "o", 9 }
 
 	global const Color BrownishBlack 	= { "#291814", "g", -16 }
 	global const Color DarkerBlue 	= { "#111D35", "h", -15 }
@@ -27,7 +27,7 @@ static skipInit class Colors
 	global const Color MediumGrey 	= { "#A28879", "m", -10 }
 	global const Color LightYellow 	= { "#F3EF7D", "n", -9 }
 
-	global const Color DarkRed 	= { "#BE1250", "o", -8 }
+	global const Color DarkerRed 	= { "#BE1250", "o", -8 }
 	global const Color DarkOrange 	= { "#FF6C24", "p", -7 }
 	global const Color LimeGreen 	= { "#A8E72E", "q", -6 }
 	global const Color MediumGreen 	= { "#00B543", "r", -5 }
