@@ -18,23 +18,23 @@ static skipInit class Colors
 	global const Color DarkGreen 	= { "#008751", "G", 3 }
 	global const Color Orange 	= { "#FFA300", "o", 9 }
 
-	global const Color BrownishBlack 	= { "#291814", "g", -16 }
-	global const Color DarkerBlue 	= { "#111D35", "h", -15 }
-	global const Color DarkerPurple 	= { "#422136", "i", -14 }
-	global const Color BlueGreen 	= { "#125359", "j", -13 }
-	global const Color DarkBrown 	= { "#742F29", "k", -12 }
-	global const Color DarkerGrey 	= { "#49333B", "l", -11 }
+	global const Color BrownishBlack 	= { "#291814", "k", -16 }
+	global const Color DarkerBlue 	= { "#111D35", "D", -15 }
+	global const Color DarkerPurple 	= { "#422136", "u", -14 }
+	global const Color BlueGreen 	= { "#125359", "c", -13 }
+	global const Color DarkBrown 	= { "#742F29", "n", -12 }
+	global const Color DarkerGrey 	= { "#49333B", "a", -11 }
 	global const Color MediumGrey 	= { "#A28879", "m", -10 }
-	global const Color LightYellow 	= { "#F3EF7D", "n", -9 }
+	global const Color LightYellow 	= { "#F3EF7D", "Y", -9 }
 
-	global const Color DarkerRed 	= { "#BE1250", "o", -8 }
-	global const Color DarkOrange 	= { "#FF6C24", "p", -7 }
-	global const Color LimeGreen 	= { "#A8E72E", "q", -6 }
-	global const Color MediumGreen 	= { "#00B543", "r", -5 }
-	global const Color TrueBlue 	= { "#065AB5", "s", -4 }
-	global const Color Mauve 	= { "#754665", "t", -3 }
-	global const Color DarkPeach 	= { "#FF6E59", "u", -2 }
-	global const Color Peach 	= { "#FF9D81", "v", -1 }
+	global const Color DarkerRed 	= { "#BE1250", "E", -8 }
+	global const Color DarkOrange 	= { "#FF6C24", "O", -7 }
+	global const Color LimeGreen 	= { "#A8E72E", "L", -6 }
+	global const Color MediumGreen 	= { "#00B543", "M", -5 }
+	global const Color TrueBlue 	= { "#065AB5", "T", -4 }
+	global const Color Mauve 	= { "#754665", "V", -3 }
+	global const Color DarkPeach 	= { "#FF6E59", "H", -2 }
+	global const Color Peach 	= { "#FF9D81", "P", -1 }
 
 	// 	"A": new PaletteEntry("A",	0, 0, 0, 255,	"black",	0,	"#000000", "c64"),
 	// 	"B": new PaletteEntry("B",	255, 255, 255, 255,	"white",	1,	"#FFFFFF", "c64"),
