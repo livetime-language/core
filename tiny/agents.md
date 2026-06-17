@@ -1,15 +1,15 @@
 // Full LiveTime API. IMPORTANT: Only use the following functions and features!
 // Write simple, short, efficient code. Create beautiful sprites in "src/static class sprites.l". Compile with "livetime compile".
 // File: class Player.l	// Create file "src/class Player.l" to declare class Player
-enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
-int        index	// Integers are 0 by default
+enum PlayerRole: Knight, Archer	// Enums are global and can be accessed from anywhere
+int        index	// Member variable of class Player. Public by default. Integers are 0 by default
 float      score = 100.0	// Floating point numbers are 0.0 by default
 bool       isAlive = true	// Booleans are false by default
 Vector2    pos = {1.5, 2.5}	// Vectors are {0,0} by default. Its fields x and y are floats.
 string     name	// Strings are "" (the empty string) by default
 Player[]   friends	// Lists are [] (the empty list) by default
 PlayerRole role = Archer	// You can write "Archer" instead of "PlayerRole.Archer" if the type is known from context
-Player: int index	// Constructor with parameter. If you don't write a constructor, one is created automatically
+Player: int index	// Constructor of class Player. If you don't write a constructor, one is created automatically
 	this.index = index	// Assign member variable
 	pos = {index*8, 0}	// Call constructor of Vector2
 // File: static class app.l	// Create file "src/static class app.l" to declare static class app. Access its members with app.players, app.start, etc.
@@ -27,6 +27,7 @@ start	// app.start is called once when the app starts
 	for players.length	// Start index is 0 if left out, iteration variable is . if left out
 		let player = players[.]	// Get item by index
 	for players.length backwards as i	// Iterate backwards
+		print i	// Prints 4 3 2 1 0
 		players.removeAt i 	// Remove item at index
 	for players as p	// Iterate over list
 		print "The score of {p.name} is {p.score}"	// String interpolation
