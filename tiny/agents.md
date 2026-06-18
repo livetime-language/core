@@ -1,8 +1,8 @@
 // Full LiveTime API. IMPORTANT: Only use the following functions and features!
-// Write simple, short, efficient code. Create beautiful sprites in "src/static class sprites.l". Compile with "livetime compile".
-// File: class Player.l	// Create file "src/class Player.l" to declare class Player
+// Write simple, short, efficient code. Create beautiful sprites in "classes/sprites.l". Compile with "livetime compile".
+// File: classes/Player.l	// Create file "classes/Player.l" to declare class Player. Members are public by default
 enum PlayerRole: Knight, Archer	// Enums are global and can be accessed from anywhere
-int        index	// Member variable of class Player. Public by default. Integers are 0 by default
+int        index	// Member variable of class Player. Integers are 0 by default
 float      score = 100.0	// Floating point numbers are 0.0 by default
 bool       isAlive = true	// Booleans are false by default
 Vector2    pos = {1.5, 2.5}	// Vectors are {0,0} by default. Its fields x and y are floats.
@@ -12,7 +12,7 @@ PlayerRole role = Archer	// You can write "Archer" instead of "PlayerRole.Archer
 Player: int index	// Constructor of class Player. If you don't write a constructor, one is created automatically
 	this.index = index	// Assign member variable
 	pos = {index*8, 0}	// Call constructor of Vector2
-// File: static class app.l	// Create file "src/static class app.l" to declare static class app. Access its members with app.players, app.start, etc.
+// File: classes/app.l	// Create file "classes/app.l" to declare static class app. Lowercase name makes it static. Access its members with app.players, app.start, etc.
 Player[] players	// List of players
 start	// app.start is called once when the app starts
 	let a = Player(pos:{x,y}, name:"Alice")	// Call constructor of Player
@@ -62,7 +62,7 @@ tick	// app.tick is called every frame (30 times per second by default)
 	if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 	if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 	if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
-// File: static class sprites.l	// static class sprites.l contains available sprites. Add sprites as needed.
+// File: classes/sprites.l	// Contains available sprites. Add sprites as needed.
 blueCircle = Sprite [	// Each letter represets a color:
 	"  bbbb  "	//   Black
 	" b    b "	// d DarkGrey
@@ -86,7 +86,7 @@ redSquare = Sprite [	// s Sand
 // This is the full APT. Do not use any other functions!
 
 // The following is a complete example game: the board game "Go"
-// File: static class sprites.l
+// File: classes/sprites.l
 Sprite emptyCell = Sprite([
 	"        "
 	"        "
@@ -118,7 +118,7 @@ Sprite whitePiece = Sprite([
 	"        "
 ])
 
-// File: static class app.l
+// File: classes/app.l
 enum Phase: PlacePiece, GameOver
 
 Vector2 boardSize = {9, 9}
@@ -148,7 +148,7 @@ finishGame
 	Player winner = players.withMax.score
 	print "Player {winner.index} wins with {winner.score} points."
 
-// File: class Cell.l		
+// File: classes/Cell.l		
 Vector2 gridPos
 Player player
 int liberties
@@ -161,7 +161,7 @@ tick
 	else
 		drawSprite sprites.emptyCell, pos
 		
-// File: class Player.l
+// File: classes/Player.l
 int index
 int score
 
