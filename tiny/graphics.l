@@ -411,40 +411,40 @@ transient global skipInit graphics
 	global drawSprite: Sprite sprite
 	                   Vector2 pos = {0,0}
 					   void() onClick = null
-		if system.fastForward then return
-		int positionX = pos.x.floor, positionY = pos.y.floor
-		int startX = positionX
-		int endX = positionX + sprite.size.x.floor
-		int startY = positionY
-		int endY = positionY + sprite.size.y.floor
-		int targetStride = screen.size.x.floor
-		if startX < screen.clipX1 then startX = screen.clipX1
-		if endX > screen.clipX2 then endX = screen.clipX2
-		if startY < screen.clipY1 then startY = screen.clipY1
-		if endY > screen.clipY2 then endY = screen.clipY2
-		if startX >= endX or startY >= endY then return
-		int spriteStride = sprite.stride
-		int start = (startY - positionY) * spriteStride + startX - positionX
-		int end = start + endX - startX
-		int offsetToTarget = startY * targetStride + startX - start
-		int[] source = sprite.pixels, target = screen.pixels
-		if not enableColorReplacements
-			for startY to endY as y
-				for start to end as i
-					let sourceValue = source[i]
-					if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
-				start += spriteStride
-				end += spriteStride
-				offsetToTarget += targetStride - spriteStride
-		else
-			for startY to endY as y
-				for start to end as i
-					let sourceValue = source[i]
-					let replacementValue = colorReplacements[source[i]] or sourceValue
-					if replacementValue != 0xff000000 then target[i + offsetToTarget] = replacementValue
-				start += spriteStride
-				end += spriteStride
-				offsetToTarget += targetStride - spriteStride
+		if not system.fastForward 
+			int positionX = pos.x.floor, positionY = pos.y.floor
+			int startX = positionX
+			int endX = positionX + sprite.size.x.floor
+			int startY = positionY
+			int endY = positionY + sprite.size.y.floor
+			int targetStride = screen.size.x.floor
+			if startX < screen.clipX1 then startX = screen.clipX1
+			if endX > screen.clipX2 then endX = screen.clipX2
+			if startY < screen.clipY1 then startY = screen.clipY1
+			if endY > screen.clipY2 then endY = screen.clipY2
+			if startX >= endX or startY >= endY then return
+			int spriteStride = sprite.stride
+			int start = (startY - positionY) * spriteStride + startX - positionX
+			int end = start + endX - startX
+			int offsetToTarget = startY * targetStride + startX - start
+			int[] source = sprite.pixels, target = screen.pixels
+			if not enableColorReplacements
+				for startY to endY as y
+					for start to end as i
+						let sourceValue = source[i]
+						if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
+					start += spriteStride
+					end += spriteStride
+					offsetToTarget += targetStride - spriteStride
+			else
+				for startY to endY as y
+					for start to end as i
+						let sourceValue = source[i]
+						let replacementValue = colorReplacements[source[i]] or sourceValue
+						if replacementValue != 0xff000000 then target[i + offsetToTarget] = replacementValue
+					start += spriteStride
+					end += spriteStride
+					offsetToTarget += targetStride - spriteStride
 		
 		if onClick != null and justPressed LeftMouseButton
 			let pointerPos = getPointer()
