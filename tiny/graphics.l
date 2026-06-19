@@ -348,7 +348,7 @@ transient global skipInit graphics
 	finishFrame
 		screen.finishFrame
 
-	global int[] pixels
+	int[] pixels
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 
