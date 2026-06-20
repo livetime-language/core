@@ -1,5 +1,4 @@
 static skipInit class Colors
-
 	global const Color Black 	= { "#000000", " ", 0 }
 	global const Color DarkGrey 	= { "#5F574F", "d", 5 }
 	global const Color LightGrey 	= { "#C2C3C7", "l", 6 }
@@ -285,7 +284,8 @@ transient global skipInit graphics
 
 		colorByLetter = {}
 		colors = []
-		forDynamic Colors as color
+		forDynamic Colors as color, name
+			color.name = name
 			colors.add color
 			colorByLetter[color.letter] = color.value
 
@@ -344,6 +344,7 @@ transient global skipInit graphics
 	startFrame
 		if system.fastForward then return
 		screen.clear
+		helpText = ""
 
 	finishFrame
 		screen.finishFrame
@@ -351,6 +352,7 @@ transient global skipInit graphics
 	int[] pixels
 	global Vector2 screenSize
 	global Vector2 screenGridSize
+	global string helpText
 
 	setZoom: int factor
 		screen.setup {224,168}*factor
@@ -408,9 +410,23 @@ transient global skipInit graphics
 				end += tilesStride
 				offsetToTarget += targetStride - tilesStride
 
+	private handleClickAndHelp: void() onClick, string help, Vector2 pos, Vector2 size = {1,1}, Vector2 margin = {2,2}
+		bool isClick = onClick != null and justPressed LeftMouseButton
+		if not isClick and not help then return
+
+		let pointerPos = getPointer()
+		// if help == "x" print help, pos - margin, pointerPos, pos + size + margin*2, pos - margin <= pointerPos < pos + size + margin*2
+		if pos - margin <= pointerPos < pos + size + margin*2
+			if help then helpText = help
+			if isClick then onClick()
+
 	global drawSprite: Sprite sprite
 	                   Vector2 pos = {0,0}
+					   Color replaceColor = null
+					   nocolon Color with = null
 					   void() onClick = null
+					   string help = ""
+					   Vector2 margin = {2,2}
 		if not system.fastForward 
 			int positionX = pos.x.floor, positionY = pos.y.floor
 			int startX = positionX
@@ -428,7 +444,7 @@ transient global skipInit graphics
 			int end = start + endX - startX
 			int offsetToTarget = startY * targetStride + startX - start
 			int[] source = sprite.pixels, target = screen.pixels
-			if not enableColorReplacements
+			if with == null or replaceColor == with
 				for startY to endY as y
 					for start to end as i
 						let sourceValue = source[i]
@@ -437,47 +453,66 @@ transient global skipInit graphics
 					end += spriteStride
 					offsetToTarget += targetStride - spriteStride
 			else
+			if replaceColor
+				int fromColor = replaceColor.value
+				int toColor = with.value
 				for startY to endY as y
 					for start to end as i
 						let sourceValue = source[i]
-						let replacementValue = colorReplacements[source[i]] or sourceValue
-						if replacementValue != 0xff000000 then target[i + offsetToTarget] = replacementValue
+						if sourceValue == fromColor then sourceValue = toColor
+						if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
 					start += spriteStride
 					end += spriteStride
 					offsetToTarget += targetStride - spriteStride
-		
-		if onClick != null and justPressed LeftMouseButton
-			let pointerPos = getPointer()
-			if pos <= pointerPos < pos + sprite.size
-				onClick()
+			else
+				int singleColor = with.value
+				for startY to endY as y
+					for start to end as i
+						let sourceValue = source[i]
+						if sourceValue != 0xff000000 then target[i + offsetToTarget] = singleColor
+					start += spriteStride
+					end += spriteStride
+					offsetToTarget += targetStride - spriteStride
+
+		handleClickAndHelp onClick, help, pos, sprite.size, margin
 
 	global drawText: string text
 	                Vector2 pos = {0,0}
 					implicit Color color = Colors.White
+					void() onClick = null
+					string help = ""
+					Vector2 margin = {2,2}
 		if system.fastForward then return
 		int stride = floor(screen.size.x)
 		int fontStride = floor(font.charsPerRow * font.gridSize.x)
 		let target = screen.pixels
 		int colorValue = color.value
+		Vector2 p = pos
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
 			int tileOffset = floor((char mod 16) * font.gridSize.x + math.floor(char / 16) * fontStride * font.gridSize.y)
-			int screenOffset = floor(pos.x + pos.y*stride)
+			int screenOffset = floor(p.x + p.y*stride)
 			for font.charSize.y as y
 				for font.charSize.x as x
 					if font.pixels[tileOffset + x] then target[screenOffset + x] = colorValue
 				screenOffset += stride
 				tileOffset += fontStride
-			pos.x += font.gridSize.x
-			if pos.x >= screen.size.x
-				pos.x = 0
-				pos.y += font.gridSize.y
+			p.x += font.gridSize.x
+			if p.x >= screen.size.x
+				p.x = 0
+				p.y += font.gridSize.y
+
+		// if help then print pos, {font.gridSize.x * text.length, font.gridSize.y}, margin
+		handleClickAndHelp onClick, help, pos, {font.gridSize.x * text.length, font.gridSize.y}, margin
 
 	global void drawRect: Vector2 pos = {0,0}
 		                  implicit Vector2 size = {8,8}
 						  implicit Color fillColor = null
 						  implicit Color outlineColor = null
 						  int outlineWidth = 1
+					      void() onClick = null
+					      string help = ""
+					      Vector2 margin = {2,2}
 		if system.fastForward then return
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
@@ -490,21 +525,29 @@ transient global skipInit graphics
 				for sizeX as x
 					target[screenOffset + x] = fillColor.value
 				screenOffset += stride
+
 		if outlineColor != null and outlineWidth > 0 and outlineColor != fillColor
 			drawRect {x,y}, {sizeX, outlineWidth}, fillColor:outlineColor
 			drawRect {x, y + sizeY - outlineWidth}, {sizeX, outlineWidth}, fillColor:outlineColor
 			drawRect {x, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 			drawRect {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 
+		handleClickAndHelp onClick, help, pos, size, margin
+
 	global void drawCircle: Vector2 pos = {0,0}
 		                    Vector2 radius
 							implicit Color fillColor = null
 							implicit Color outlineColor = null
 							int outlineWidth = 1
+					        void() onClick = null
+					        string help = ""
+					        Vector2 margin = {2,2}
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
 		// TODO: Implement draw circle
 		drawRect pos, size:{radius.x*2, radius.y*2}, fillColor, outlineColor, outlineWidth
+		
+		handleClickAndHelp onClick, help, pos, radius*2, margin
 
 	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null, int outlineWidth = 1
 		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor, outlineWidth
@@ -531,7 +574,8 @@ transient global skipInit graphics
 		colorReplacements.clear
 		enableColorReplacements = false
 
-enum string SpriteType: None, Tile, Object, Character
+enum SpriteType: None, Character, Object, Tile
+enum CollisionType: None, Solid, Hazard, OneWayPlatform
 
 Sprite
 	int[] pixels
@@ -541,6 +585,7 @@ Sprite
 	int stride
 	
 	SpriteType type = SpriteType.None
+	CollisionType collisionType = CollisionType.None
 	string name
 	string tags
 	
