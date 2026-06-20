@@ -532,7 +532,6 @@ transient global skipInit graphics
 		enableColorReplacements = false
 
 enum string SpriteType: None, Tile, Object, Character
-enum string SpritePerspective: None, Side, TopDown
 
 Sprite
 	int[] pixels
@@ -540,12 +539,14 @@ Sprite
 	int frames = 1
 	int framesPerSecond = 15
 	int stride
-	Vector2 sourcePos
 	
 	SpriteType type = SpriteType.None
-	SpritePerspective perspective = SpritePerspective.None
 	string name
 	string tags
+	
+	string sourceFile
+	Vector2 sourcePos
+	int set = -1
 
 	Sprite: string[] pixelsAsStrings = null
 		if not pixelsAsStrings then return
