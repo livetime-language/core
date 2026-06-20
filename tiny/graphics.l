@@ -353,6 +353,7 @@ transient global skipInit graphics
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 	global string helpText
+	global string focus
 
 	setZoom: int factor
 		screen.setup {224,168}*factor

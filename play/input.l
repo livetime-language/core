@@ -25,6 +25,7 @@ internal transient class InternalUser
 	// Modern Input
 	visible bool[] justPressed, isPressed, justReleased
 	Vector2 pointerPosition, scrollDelta
+	string typedCharacters
 
 	// Video + Audio
 	object mediaStream
@@ -81,6 +82,7 @@ internal transient class InternalUser
 			justPressed[i] = false
 			justReleased[i] = false
 		scrollDelta = {0,0}
+		typedCharacters = ""
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -662,8 +664,9 @@ skipInit global unit input
 		
 		let controllerButton = controllerButtonMap[keyCode]
 			composite += controllerButton.buttonIndex shiftLeft 5 // buttonIndex: 0 - 15 (4 bit)
-			if core.mode == Local and not core.simulateConnection
-				inputs = internalUsers[controllerButton.userId].inputs
+			// TODO: Typed keys vs. 2nd player WASD
+			// if core.mode == Local and not core.simulateConnection
+			// 	inputs = internalUsers[controllerButton.userId].inputs
 			
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
@@ -1077,6 +1080,8 @@ skipInit global unit input
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}", input.isCertain
 
+		graphics.focus = ""
+		
 		// Call input handlers
 		// app.onTouchHover??(touch);
 		// player.onTouchHover??(touch);
@@ -1190,6 +1195,13 @@ skipInit global unit input
 		// Call input handlers
 		// app.onKeyDown??(key, character)
 		// player.onKeyDown??(key, character)
+
+		// Modern Input
+		if character
+			internalUser.typedCharacters += character
+		else
+		if key == Backspace
+			internalUser.typedCharacters += "\b"
 
 	internal keyUp: InternalUser internalUser
 	                Player player
@@ -1837,6 +1849,17 @@ enum InputButton
 	LeftMouseButton
 	MiddleMouseButton
 	RightMouseButton
+
+global static class keys
+	global const Backspace	= "\b"
+	global const Enter	= "\n"
+	global const Tab	= "\t"
+	global const Space	= " "
+	global const Esc 	= "\x1b"
+	global const Shift	= "shift"
+	global const Ctrl	= "ctrl"
+	global const Alt	= "alt"
+	global const CmdOrCtrl	= "cmd/ctrl"
 		
 input
 	const int inputButtonCount = 19
@@ -1865,3 +1888,7 @@ input
 	global getScrollDelta: int player = 0
 		player = 0
 		return internalUsers[player].scrollDelta
+
+	global getTypedCharacters: int player = 0
+		player = 0
+		return internalUsers[player].typedCharacters
