@@ -485,6 +485,12 @@ enum string AlignSelf
 	safe // If the size of the item overflows the alignment container, the item is instead aligned as if the alignment mode were start.
 	unsafe // Regardless of the relative sizes of the item and alignment container, the given alignment value is honored.
 	
+enum string ImageRendering
+	auto // The scaling algorithm is UA dependent. Since version 1.9 (Firefox 3.0), Gecko uses bilinear resampling (high quality).
+	smooth // The image should be scaled with an algorithm that maximizes the appearance of the image. In particular, scaling algorithms that "smooth" colors are acceptable, such as bilinear interpolation. This is intended for images such as photos.
+	crispEdges = "crisp-edges" // The image is scaled with an algorithm such as "nearest neighbor" that preserves contrast and edges in the image. Generally intended for images such as pixel art or line drawings, no blurring or color smoothing occurs.
+	pixelated // The image is scaled with the "nearest neighbor" or similar algorithm to the nearest integer multiple of the original image size, then uses smooth interpolation to bring the image to the final desired size. This is intended to preserve a "pixelated" look without introducing scaling artifacts when the upscaled resolution isn't an integer multiple of the original.
+
 importance:5 dynamic Style
 	// Align the individual items along the cross axis. 
 	// Possible values: start, center, end, stretch, normal, selfStart, selfEnd, baseline, firstBaseline, flexStart, flexEnd
@@ -753,4 +759,5 @@ importance:5 dynamic Style
 	bool overlay
 	
 	string gridArea
+	ImageRendering imageRendering
 		
