@@ -590,8 +590,8 @@ Sprite
 	string name
 	string tags
 	
-	string sourceFile
-	Vector2 sourcePos
+	string srcFile
+	Vector2 srcPos = Vector2.none
 	int set = -1
 
 	Sprite: string[] pixelsAsStrings = null
