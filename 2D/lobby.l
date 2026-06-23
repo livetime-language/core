@@ -49,31 +49,31 @@ unit lobby
 		inLobby = true
 		showNameIndex = 1
 		editNames = false
-		players.each.isReadyInLobby = false
+		input.players.each.isReadyInLobby = false
 		audio.stop
 		
 	int counter
 	
 	tick
 		tickSettings
-		if Platform.isStaging then drawText "Version:{Platform.buildVersion}", size:20, position:{-940, 520}, align:Left
-		if (PeerNetwork.error or core.errorMessage) and Platform.isStaging
+		drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
+		if (PeerNetwork.error or core.errorMessage) and system.isStaging
 			drawText PeerNetwork.error, size:40
 			drawText core.errorMessage, size:14, position:{0,40}
 			return
 		
 		// Control show names
-		onKeyDown by host
-			let cmd = pressedBy.keysCurrentlyDown.contains LeftMetaKey
+		onKeyDown by input.host
+			let cmd = pressedBy.keysCurrentlyDown.includes LeftMetaKey
 			if key == E and cmd
 				setupFields newHost:pressedBy
 				
-			if not host then return
+			if not input.host then return
 			if key == Right
-				showName players[showNameIndex++ mod players.length]
+				showName input.players[showNameIndex++ mod input.players.length]
 			else
 			if key == Tab and cmd
-				showNameIndex = (showNameIndex+1) mod players.length
+				showNameIndex = (showNameIndex+1) mod input.players.length
 			else
 			if key == Enter or key == Tab or key == Right
 				switchFieldFocus 1
@@ -81,28 +81,28 @@ unit lobby
 			if key == Left
 				switchFieldFocus -1
 			
-		int count = players.length
+		int count = input.players.length
 			float videoWidth = count<2 ? 900.0 : 1920/count
 			float offset = -videoWidth*(count-1)/2
 			float halfVideoHeight = videoWidth*3/8
 			
-			for players as player, playerIndex
+			for input.players as player, playerIndex
 				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				onTouchDown position:pos size:{videoWidth, videoWidth*3/4}
 					cyclePlayer player
 					
-			for players as player, playerIndex
+			for input.players as player, playerIndex
 				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
 				drawVideo ., pos, videoWidth
 				
 				// Start button
 				let text = not .isReadyInLobby ? "START" : Loca.language == German ? "Ich bin bereit" : "I'm ready"
 				drawStandardButton text, pos+{0,halfVideoHeight+90}, accentColor:.playerColor, enabled:!.isReadyInLobby, clickableBy:player
-					if enableFullscreen then Platform.setFullscreen true forPlayer:touch.by
+					if enableFullscreen then system.setFullscreen true forPlayer:touch.by
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
 					
-				if players.length.withinInclusively(Platform.supportedUserCount) and players.all(.isReadyInLobby)
+				if input.players.length.withinInclusively(system.supportedUserCount) and input.players.all(.isReadyInLobby)
 					fields.clear
 					restart
 						
@@ -116,25 +116,26 @@ unit lobby
 				
 				let field = fields.find.player == player
 					// Set field position
-					field.position = pos + {0, -halfVideoHeight-(players.length<=2 ? 85 : 120)}
+					field.position = pos + {0, -halfVideoHeight-(input.players.length<=2 ? 85 : 120)}
 					if field.effect then field.effect.position = field.position + {0,-190}
 					if field.particleSystem then field.particleSystem.position = field.position
 						
 					if editNames
 						// Suggestions
 						for nameSuggestions as name
-							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:host
+							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:input.host
 								fields[playerIndex].text = name
 								setPlayerName player, name
 								
 						// Circle indicating the first player name to show
 						if showNameIndex == playerIndex
-							drawCircle field.position+{0,60}, size:20, visibleFor:host
+							drawCircle field.position+{0,60}, size:20, visibleFor:input.host
 
 		// For testing, display to coordinates when we click the screen
 		if core.drawPointsForTesting
 			onTouchDown
 				points.add .position.clone
+				print "Adding point at {.position} total points: {points.length}", input.isCertain
 			points.each drawText text:. position:. size:30; drawCircle . outlineColor:White size:200
 			drawText ++counter, {0, -480}, size:100
 		
@@ -146,12 +147,12 @@ unit lobby
 		
 	setupFields: Player newHost
 		input.host = newHost
-		this.showNameIndex = host.playerIndex + 1
+		this.showNameIndex = input.host.playerIndex + 1
 		Framework.clear
 		fields.clear
 		if not editNames
 			editNames = true
-			players.each createField ., visibleFor:host
+			input.players.each createField ., visibleFor:input.host
 			fields[0].focus
 		else
 			editNames = false
@@ -174,7 +175,7 @@ unit lobby
 		// playSound LobbyImpact
 		
 	createField: Player player, implicit Player[] visibleFor = null
-		let field = LobbyTextField(text:player.playerName, player, visibleFor, editableBy:host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
+		let field = LobbyTextField(text:player.playerName, player, visibleFor, editableBy:input.host, color:White, size:100, font:ByTheWay, angle:-.01, onChanged:setPlayerName player, .)
 		fields.add field
 		return field
 		
@@ -184,16 +185,16 @@ unit lobby
 			user.name = player.playerName
 		if player.id == input.localUser.id
 			core.account.name = player.playerName
-			Platform.setLocalStorageObject("user", core.account)
+			system.setLocalStorageObject("user", core.account)
 	
 	cyclePlayer: Player player
 		watch "Cycle color {player.playerIndex}"
-		players.moveToBack player
+		input.players.moveToBack player
 		input.updatePlayers
 		player.colorPreferences = [player.playerIndex]
 	
 	tickSettings
-		for players as player
+		for input.players as player
 			graphics.visibleFor player
 				drawImage settingsIcon, {-920,-500}, size:32
 					player.showSettingsInLobby = !player.showSettingsInLobby

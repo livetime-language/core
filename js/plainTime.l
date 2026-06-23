@@ -120,8 +120,8 @@ immutable skipInit class PlainDate
 		const daysSinceEpoch = math.floor(outputTime / 86400000)
 		
 		// Year
-		let currentYear = 1970;
-		let daysLeft = daysSinceEpoch;
+		int currentYear = 1970;
+		int daysLeft = daysSinceEpoch;
 		
 		loop
 			let daysInYear = ((currentYear remainder 4) == 0 && (currentYear remainder 100) != 0) || (currentYear remainder 400 == 0) ? 366 : 365;
@@ -131,7 +131,7 @@ immutable skipInit class PlainDate
 		
 		// Month and Day
 		let daysInMonth = ((currentYear remainder 4) == 0 && (currentYear remainder 100) != 0) || (currentYear remainder 400 == 0) ? daysInMonthLeap : daysInMonthCommon
-		let currentMonth = 0
+		int currentMonth = 0
 		
 		while daysLeft >= daysInMonth[currentMonth]
 			daysLeft -= daysInMonth[currentMonth]
@@ -178,7 +178,7 @@ immutable skipInit class PlainDate
 		const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 		
 		// Calculate the number of days since the epoch for full years
-		let days = 0;
+		int days = 0;
 		for 1970 to year
 		    days += (.remainder(4) == 0 && .remainder(100) != 0) || (.remainder(400) == 0) ? 366 : 365;
 		

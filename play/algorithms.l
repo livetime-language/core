@@ -89,7 +89,7 @@ internal class BinaryHeap
 			
 			// This is used to store the new position of the element, if any.
 			int swap = -1
-			int child1Score
+			float child1Score
 			
 			// If the first child exists (is inside the array)...
 			if child1N < length

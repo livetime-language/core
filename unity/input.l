@@ -272,7 +272,7 @@ skipInit unit Input
 		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.LeftMouseButton, 0, mousePosition);
 			
 	private handleKeyEvent: InputType type, int keyCode, string key
-		// if Core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+		// if Core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -281,7 +281,7 @@ skipInit unit Input
 		if type == KeyDown: inputs.writeString key
 		
 	internal handleTouchEvent: InputType inputType, TouchType touchType, int id, Vector2 screenPosition
-		// if Core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+		// if Core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		let worldPosition = graphics.toGroundPlane screenPosition
 		let inputs = localUser.inputs
 		int composite = cast(inputType)                   // inputType: 0 -  31 (5 bit)
@@ -522,7 +522,7 @@ skipInit unit Input
 		// 		                    or Math.abs(.gamepad.leftStick.y) >= Gamepad.deadZone
 						
 	updateUserIndices
-	// 	users.orderBy.id
+	// 	users.sortBy.id
 	// 	for users
 	// 		.index = i
 	// 		internalUsers[.id].index = i
@@ -581,7 +581,7 @@ skipInit unit Input
 	// 		userId = null
 			
 	// 	for users -> user
-	// 		if userId == null or userId.contains(.id)
+	// 		if userId == null or userId.includes(.id)
 	// 			for internalUsers[user.id].downTouches -> touch
 	// 				if !touch.handled and (user.enableTouch or touch.type != Touch)
 	// 				and touch.referencePosition.isInsidePoygon(poly)
@@ -650,7 +650,7 @@ skipInit unit Input
 	// 		userId = null
 			
 	// 	for users -> user
-	// 		if userId == null or userId.contains(.id)
+	// 		if userId == null or userId.includes(.id)
 	// 			for internalUsers[user.id].downTouches -> touch
 	// 				if !touch.handled and (user.enableTouch or touch.type != Touch)
 	// 				and touch.referencePosition.isInsidePoygon(poly)
@@ -782,7 +782,7 @@ skipInit unit Input
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
 	// 	for internalUsers -> user
-	// 		if user and (userId == null or userId.contains(.id))
+	// 		if user and (userId == null or userId.includes(.id))
 	// 			for user.upTouches -> touch
 	// 				if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 					log "up", touch.referencePosition
@@ -999,7 +999,7 @@ skipInit unit Input
 	// 		userId = null
 
 	// 	for internalUsers -> user
-	// 		if user and (userId == null or userId.contains(.id))
+	// 		if user and (userId == null or userId.includes(.id))
 	// 			for user.wheelEvents -> event
 	// 				if !event.handled && event.referencePosition.isInsidePoygon(poly)
 	// 					log "wheel", event.referencePosition
@@ -1085,7 +1085,7 @@ skipInit unit Input
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
 	// 	for internalUsers -> user
-	// 		if user and (userId == null or userId.contains(.id))
+	// 		if user and (userId == null or userId.includes(.id))
 	// 			for user.downKeys
 	// 				if . == key
 	// 					do key, user.id

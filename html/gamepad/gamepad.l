@@ -8,14 +8,14 @@ unit html
 		if internalGamepads == null or internalGamepads.length == 0 then return
 		int index
 		for internalGamepads as internalGamepad
-			if internalGamepad and not internalGamepad.id.contains(ignore)
+			if internalGamepad and not internalGamepad.id.includes(ignore)
 				let gp = gamepads[index]
 				if not gp then gamepads[index] = gp = {}
 
 				gp.id	= .id
 				gp.leftStick	= {x: internalGamepad.axes[0], y: internalGamepad.axes[1]}
 				gp.inMotion	= gp.leftStick.length > Gamepad.deadZone
-				gp.type	= internalGamepad.id.contains("054c") or internalGamepad.id.contains("810") ? PlayStation : internalGamepad.id.contains("retro") ? Nintendo : Xbox
+				gp.type	= internalGamepad.id.includes("054c") or internalGamepad.id.includes("810") ? PlayStation : internalGamepad.id.includes("retro") ? Nintendo : Xbox
 
 				// Controller button names
 				switch gp.type

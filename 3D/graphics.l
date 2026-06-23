@@ -6,7 +6,7 @@ class Texture
 	transient dynamic texture
 	
 	Texture
-		if Platform.engineStarted
+		if system.engineStarted
 			open
 			
 	js bool ensureIsAvailable()
@@ -172,7 +172,7 @@ transient skipInit global unit graphics
 		graphics.renderer.setSize(window.innerWidth, window.innerHeight);
 		
 	internal updateBaseMatrix
-		let statisticsMargin = Platform.showDebugInfo ? statistics.margin : {}
+		let statisticsMargin = system.showDebugInfo ? statistics.margin : {}
 		let referenceSizeWithMargin = referenceSize + statisticsMargin
 		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
 		float scale
@@ -242,7 +242,7 @@ transient skipInit global unit graphics
 	private Player[] currentlyVisibleFor = null
 	
 	private isVisibleFor: Player[] visibleFor
-		if(Platform.fastForward or !Platform.isDrawing) return false
+		if(system.fastForward or !system.isDrawing) return false
 		let effectiveVisibleFor = visibleFor or currentlyVisibleFor
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
 	

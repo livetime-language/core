@@ -57,7 +57,7 @@ transient global unit graphics
 		// 	return false
 		let videoObject = getVideoObject player
 			
-		// if !videoObject or Framework.toBeRemoved.contains(videoObject): videoObject = VideoObject(userId)
+		// if !videoObject or Framework.toBeRemoved.includes(videoObject): videoObject = VideoObject(userId)
 		if not videoObject then videoObject = VideoObject(player)
 		videoObject.position = pos
 		videoObject.size = size
@@ -81,7 +81,7 @@ class Object
 	float angle
 	float alpha = 1
 	implicit Player[] visibleFor = null
-	int layer = 0
+	float layer = 0
 	bool locked
 	SourceCodeLocation location
 	
@@ -145,7 +145,7 @@ class Object
 	moveAlongCurveTo: Vector2 targetPosition
 		              float curvature = 1.0
 					  float smoothness = 1.0
-					  implicit Vector2 targetSize = Vector2.None
+					  implicit Vector2 targetSize = Vector2.none
 					  float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
 		              float delay = 0       // After this time in milliseconds, the object should start moving
 					  bool removeWhenDone = false
@@ -223,14 +223,14 @@ Object CircleObject
 	internal override tick
 		if alpha then drawCircle position, size, color:color, visibleFor, layer
 
-global transient unit System
+global transient skipInit unit system
 	global visualize: Vector2 position = {}
 		              Color color = White
 		              logstring text = ""
 		              SourceCodeLocation location
 		VisualizeObject(position, color, index:core.watchIndex, text)
-		if Platform.isDebug and core.frame >= core.frameWithNewWatches and location
-			Platform.sendWatch core.frame, text:text or position.toString, location.start, location.file
+		if system.isDebug and core.frame >= core.frameWithNewWatches and location
+			system.sendWatch core.frame, text:text or position.toString, location.start, location.file
 		core.watchIndex++
 
 Object VisualizeObject
@@ -359,7 +359,7 @@ Object ParticleSystem
 	maxRotationSpeed  = .05
 	mode = ParticleMode.Burst
 	angleSpread = math.twoPi
-	layer = int.maxValue
+	layer = float.maxValue
 	
 	private int burst
 	internal debugString => "(ParticleSystem {position.x} {position.y} {particles.length})"
@@ -410,7 +410,7 @@ Object Menu
 	includeDefaultItems = true
 	overlayColor = #000000b0
 	locked = true
-	layer = 1
+	layer = 1.0
 	
 	visible bool active
 		
@@ -419,7 +419,7 @@ Object Menu
 			items.insert {image:New,  "New Game",        onClick:core.restart}, 0
 			items.add    {image:Save, "Save Game"        onClick:core.saveEventStreamAndLogs}
 			items.add    {image:Back, "Back to Lobby",   onClick:lobby.show}
-			items.add    {image:Quit, "Exit Fullscreen", onClick:Platform.setFullscreen false, forPlayer:touch.by}
+			items.add    {image:Quit, "Exit Fullscreen", onClick:system.setFullscreen false, forPlayer:touch.by}
 		
 	internal override tick
 		bool doNotClose

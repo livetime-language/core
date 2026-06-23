@@ -101,7 +101,7 @@ static class app {
 	}
 	static IntVector2 getGridPos(Vector2 pos) {
 		let gridPos = ((pos - cellOffset) / cellSize).round();
-		if(!isValidGridPos(gridPos)) return IntVector2.None;
+		if(!isValidGridPos(gridPos)) return IntVector2.none;
 		return gridPos;
 	}
 	static Vector2 getPixelPos(IntVector2 gridPos) {
@@ -137,7 +137,7 @@ class Player {
 	void calculatePossibleMoves(IntVector2 gridPos) {
 		possibleMoves.clear();
 		possibleCaptures.clear();
-		if(gridPos == IntVector2.None || app.getPieceAt(gridPos)?.owner != this) return;
+		if(gridPos == IntVector2.none || app.getPieceAt(gridPos)?.owner != this) return;
 		var directions = [new IntVector2(1, moveDirection), new IntVector2(-1, moveDirection)];
 		foreach(dir in directions) {
 			var pos = gridPos;

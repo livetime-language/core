@@ -21,7 +21,7 @@ class IndexedDBStore<T>
 			try {
 				let trans = IndexedDB.db.transaction(this.name, "readwrite")
 				trans.onerror = e => {
-					System.print("Error in IndexedDBStore.put: "+trans.error)
+					system.print("Error in IndexedDBStore.put: "+trans.error)
 					reject(trans.error)
 				}
 				trans.objectStore(this.name).put(item).onsuccess = e => {
@@ -39,11 +39,11 @@ class IndexedDBStore<T>
 				let req = trans.objectStore(this.name).get(id);
 				req.onsuccess = async e => resolve(req.result)
 				req.onerror = e => { 
-					System.print("Error in IndexedDBStore.get: "+e)
+					system.print("Error in IndexedDBStore.get: "+e)
 					reject(e)
 				}
 			} catch(e) {
-				System.print("Error in IndexedDBStore.get: "+e)
+				system.print("Error in IndexedDBStore.get: "+e)
 				reject(e)
 			}
 		})
@@ -55,11 +55,11 @@ class IndexedDBStore<T>
 				let req = trans.objectStore(this.name).getAll();
 				req.onsuccess = e => resolve(req.result)
 				req.onerror = e => { 
-					System.print("Error in IndexedDBStore.getAll: "+e)
+					system.print("Error in IndexedDBStore.getAll: "+e)
 					reject(e)
 				}
 			} catch(e) {
-				System.print("Error in IndexedDBStore.getAll: "+e)
+				system.print("Error in IndexedDBStore.getAll: "+e)
 				reject(e)
 			}
 		})
@@ -71,11 +71,11 @@ class IndexedDBStore<T>
 				let req = trans.objectStore(this.name).index(index).getAll(query);
 				req.onsuccess = async e => resolve(req.result)
 				req.onerror = e => { 
-					System.print("Error in IndexedDBStore.getAllFromIndex: "+e)
+					system.print("Error in IndexedDBStore.getAllFromIndex: "+e)
 					reject(e)
 				}
 			} catch(e) {
-				System.print("Error in IndexedDBStore.getAllFromIndex: "+e)
+				system.print("Error in IndexedDBStore.getAllFromIndex: "+e)
 				reject(e)
 			}
 		})
@@ -90,7 +90,7 @@ class IndexedDBStore<T>
 					resolve(new IndexedDBCursor(cursor, cursor.value))
 				}
 			} catch(e) {
-				System.print("Error in IndexedDBStore.openCursor: "+e)
+				system.print("Error in IndexedDBStore.openCursor: "+e)
 				reject(e)
 			}
 		})
@@ -115,7 +115,7 @@ class IndexedDBStore<T>
 					}
 				}
 			} catch(e) {
-				System.print("Error in IndexedDBStore.getAtPosition: "+e)
+				system.print("Error in IndexedDBStore.getAtPosition: "+e)
 				reject(e)
 			}
 		})
@@ -125,7 +125,7 @@ class IndexedDBStore<T>
 			try {
 				let trans = IndexedDB.db.transaction(this.name, "readwrite")
 				trans.onerror = e => {
-					System.print("Error in IndexedDBStore.clear: "+trans.error)
+					system.print("Error in IndexedDBStore.clear: "+trans.error)
 					reject(trans.error)
 				}
 				trans.objectStore(this.name).clear().onsuccess = e => {
@@ -145,11 +145,11 @@ class IndexedDBStore<T>
 				let req = trans.objectStore(this.name).delete(id);
 				req.onsuccess = e => resolve()
 				req.onerror = e => { 
-					System.print("Error in IndexedDBStore.delete: "+e)
+					system.print("Error in IndexedDBStore.delete: "+e)
 					reject(e)
 				}
 			} catch(e) {
-				System.print("Error in IndexedDBStore.delete: "+e)
+				system.print("Error in IndexedDBStore.delete: "+e)
 				reject(e)
 			}
 		})
@@ -181,7 +181,7 @@ class IndexedDBCursor<T>
 				}
 				this.cursor.continue()
 			} catch(e) {
-				System.print("Error in IndexedDBCursor.getRange: "+e)
+				system.print("Error in IndexedDBCursor.getRange: "+e)
 				reject(e)
 			}
 		})
@@ -198,21 +198,21 @@ internal transient skipInit unit IndexedDB
 			try {
 				var request = indexedDB.open(databaseName, version)
 				request.onupgradeneeded = e => {
-					System.print("IndexedDB: upgrade needed");
+					system.print("IndexedDB: upgrade needed");
 					IndexedDB.db = e.target.result;
 					for(let store of IndexedDB.stores) {
-						if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
+						if(!IndexedDB.db.objectStoreNames.includes(store.name)) {
 							let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
-							System.print("IndexedDB: created store "+store.name)
+							system.print("IndexedDB: created store "+store.name)
 							for(let index of store.indices) {
 								storeObject.createIndex(index.name, index.keyPaths.length == 1 ? index.keyPaths[0] : index.keyPaths)
 							}
 						}
 					}
-					System.print("IndexedDB: successfully upgraded to version "+version)
+					system.print("IndexedDB: successfully upgraded to version "+version)
 				}
 				request.onsuccess = e => {
-					System.print("IndexedDB: success");
+					system.print("IndexedDB: success");
 					IndexedDB.db = e.target.result;
 					for(let store of IndexedDB.stores) {
 						store.db = IndexedDB.db
@@ -220,11 +220,11 @@ internal transient skipInit unit IndexedDB
 					resolve();
 				}
 				request.onerror = e => {
-					System.print("Error in IndexedDB.start: "+request.error)
+					system.print("Error in IndexedDB.start: "+request.error)
 					reject(request.error);
 				}
 			} catch(e) {
-				System.print("Error in IndexedDB.start: "+e)
+				system.print("Error in IndexedDB.start: "+e)
 				reject(e);
 			}
 		})

@@ -672,7 +672,7 @@ skipInit global unit input
 	// 	return 0
 		
 	// private handleTextInput: InputType type, string text
-	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
 	// 	inputs.writeInt32 localUser.inputFrame
@@ -680,7 +680,7 @@ skipInit global unit input
 	// 	inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, int scanCode, Key keyCode
-		// if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+		// if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		// let inputs = localUser.inputs
 		// int composite = cast inputType                                  // inputType:   0 - 31 (5 bit)
 		
@@ -707,7 +707,7 @@ skipInit global unit input
 	// 	Vector2 referencePos = pixelPos.getRelativeTo(graphics.baseMatrix)
 	// 	gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 
 	// 	if inputType == TouchMove
@@ -742,7 +742,7 @@ skipInit global unit input
 	// 	inputs.writeInt16 math.round(referencePos.y)
 	
 	// private handleWheelEvent: float x, float y, float deltaX, float deltaY
-	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
 	// 	Vector2 referencePos = {x*graphics.pixelRatio, y*graphics.pixelRatio}.getRelativeTo(graphics.baseMatrix)
@@ -767,7 +767,7 @@ skipInit global unit input
 				
 	// // Handles navigating back or forward in the browser	
 	// internal handleNavigate: string url
-	// 	if core.mode == None || Platform.playMode != Record || !localUser || !localUser.collectInputs: return
+	// 	if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
 	// 	inputs.writeInt16 cast InputType.Navigate
@@ -798,7 +798,7 @@ skipInit global unit input
 	// 				internalUser.nextLostMessageAtFrame = core.frame + core.ticksPerSecond * 12
 					
 	// 				// Send logfiles to server
-	// 				Platform.setTimeout 7 seconds: statistics.saveStatistics
+	// 				system.setTimeout 7 seconds: statistics.saveStatistics
 	
 	// private handleStillConnected: int userId
 	// 	let inputs = localUser.inputs
@@ -839,7 +839,7 @@ skipInit global unit input
 	// 	InternalGamepad gp = gamepads[0]
 	// 	if !gp or gp.axes.length < 2: return
 			
-	// 	let isPlayStation = gp.id.contains("54c") or gp.id.contains("810")
+	// 	let isPlayStation = gp.id.includes("54c") or gp.id.includes("810")
 		
 	// 	// Controller axis
 	// 	let axes = gp.axes
@@ -949,7 +949,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " move {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " move(new) {id} {referencePos} {type}"
 								
@@ -968,7 +968,7 @@ skipInit global unit input
 	// 						if isSmoothPosition: touch.smoothPosition = referencePos
 	// 						if core.logging: core.parseLog += " up {id} {referencePos} {type}"
 	// 					else
-	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.None, referencePos, isDown:false}
+	// 						touch = {id, player, cast inputType, type, referencePos, referenceStartPosition:Vector2.none, referencePos, isDown:false}
 	// 						player.touches.add touch
 	// 						if core.logging: core.parseLog += " up(new) {id} {referencePos} {type}"
 								
@@ -1085,7 +1085,7 @@ skipInit global unit input
 	// 				string valueString = inputs.readString
 	// 				if core.logging: core.parseLog += " string {id}: {valueString}"
 	// 				networkData.call id, valueString
-	// 				if Platform.waitingForInitialData > 0: Platform.waitingForInitialData--
+	// 				if system.waitingForInitialData > 0: system.waitingForInitialData--
 	// 			else
 	// 			if inputType == Json
 	// 				int id = inputs.readInt
@@ -1093,7 +1093,7 @@ skipInit global unit input
 	// 				if core.logging: core.parseLog += " json {id}: {valueString}"
 	// 				dynamic object = Json.parse valueString
 	// 				networkData.call id, object
-	// 				if Platform.waitingForInitialData > 0: Platform.waitingForInitialData--
+	// 				if system.waitingForInitialData > 0: system.waitingForInitialData--
 	// 			else
 	// 			if inputType == Object
 	// 				int id = inputs.readInt
@@ -1101,7 +1101,7 @@ skipInit global unit input
 	// 				if core.logging: core.parseLog += " object {id}: {valueString}"
 	// 				dynamic object = Json.parse valueString
 	// 				networkData.call id, object
-	// 				if Platform.waitingForInitialData > 0: Platform.waitingForInitialData--
+	// 				if system.waitingForInitialData > 0: system.waitingForInitialData--
 	
 		for players -> p
 			// Left stick
@@ -1139,7 +1139,7 @@ skipInit global unit input
 				player.controllerKeyDownFrame.add 0
 		
 	internal #keyboard updatePlayers
-		// players.orderBy.id
+		// players.sortBy.id
 		for players
 			.playerIndex = i
 			// .playerColor = graphics.defaultColors[i]
@@ -1734,9 +1734,9 @@ skipInit global unit input
 	// 	       Player by = null // Only consider keys pressed by this player 
 	// 	if (core.mode == Connected || core.simulateConnection) && by
 	// 		let player = playersById[by.id]
-	// 			return player.keysCurrentlyDown.contains key
+	// 			return player.keysCurrentlyDown.includes key
 	// 	else
-	// 		return players.any.keysCurrentlyDown.contains key
+	// 		return players.any.keysCurrentlyDown.includes key
 	// 	return false
 		
 	// // ---------------------------------------------- Navigate ----------------------------------------------

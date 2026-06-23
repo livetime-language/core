@@ -188,6 +188,13 @@ Color
 		              float duration = 300 // The duration of the animation in milliseconds
 		fx.animateValue this, target, delay, duration, this = .
 
+Sound
+	fadeOut: float duration = 3000 // The duration of the fade out in milliseconds
+		     float delay = 0       // The delay before the fade out starts in milliseconds
+		// Migrate to 3D
+		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
+		return this
+
 transient global skipInit unit audio
 	global importance:4 playSound: Sound sound
 		              float delay = 0 // The delay before the sound starts in milliseconds
@@ -266,7 +273,7 @@ internal Animation BezierAnimation
 
 	static getPointOnBezierCurve: Vector2[] points, float progress, float smoothness = 1.0
 		// Handle edge cases
-		if points.length == 0	then return Vector2.Zero
+		if points.length == 0	then return Vector2.zero
 		if points.length == 1	then return points[0]
 		if progress <= 0	then return points[0]
 		if progress >= 1	then return points.last

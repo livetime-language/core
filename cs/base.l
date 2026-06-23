@@ -260,7 +260,7 @@ class string
 	inline cs int indexOf(string str) this.indexOf(str)
 	inline cs int indexOf(string str, int startPos) this.indexOf(str, startPos)
 		
-	inline cs bool contains(string str) (this.indexOf(str) != -1)
+	inline cs bool includes(string str) (this.indexOf(str) != -1)
 		
 	inline cs int getCharCodeAt(int index) this.charCodeAt(index)
 		
@@ -419,7 +419,7 @@ class List<T>
 	inline cs void addRange: T[] items
 		this.AddRange(items)
 			
-	inline cs bool contains: T item
+	inline cs bool includes: T item
 		this.Contains(item)
 		
 	inline cs int indexOf: T item
@@ -510,11 +510,11 @@ class List<T>
 	// 	return this.get((index+1)%length)
 		
 	// T next: T currentItem
-	// 	    label bool(T item) where
+	// 	    label bool(T item) filter
 	// 	int baseIndex = indexOf(currentItem)
 	// 	for this.length
 	// 		let item = this.get((baseIndex+i+1)%length)
-	// 		if(where(item)) return item
+	// 		if(filter(item)) return item
 	// 	return null
 		
 	// T prev: T currentItem
@@ -580,14 +580,14 @@ class List<T>
 	// 	this.sort(comparer)
 	
 	// // Sort the list by a given expression
-	// T[] orderBy: float(T a) expression // First order by this expression
+	// T[] sortBy: float(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) - expression(b))
 		
-	// T[] orderBy: float(T it) expression           // First order by this expression
+	// T[] sortBy: float(T it) expression           // First order by this expression
 	// 	         label nocolon float(T it) thenBy // Then order by this expression
 	// 	return this.sort(expression(a) - expression(b) || thenBy(a) - thenBy(b))
 		
-	// T[] orderBy: string(T a) expression // First order by this expression
+	// T[] sortBy: string(T a) expression // First order by this expression
 	// 	return this.sort(expression(a) compareTo expression(b))
 		
 	// Returns true if the given condition is true for any item in the list
@@ -619,7 +619,7 @@ class List<T>
 	// 			return i
 	// 	return -1
 		
-	// inline cs T[] where: bool(T a) condition // The condition to check
+	// inline cs T[] filter: bool(T a) condition // The condition to check
 	// 	this.filter(condition)
 		
 	// inline cs T[] take: int count
@@ -690,10 +690,10 @@ class List<T>
 	// min: int(T a) selector 
 	// 	 int threshold = int.maxValue
 	// 	 int default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -701,10 +701,10 @@ class List<T>
 	// min: float(T a) selector 
 	// 	 float threshold = float.maxValue
 	// 	 float default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -730,10 +730,10 @@ class List<T>
 	// max: int(T a) selector
 	// 	 int threshold = int.minValue
 	// 	 int default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	for this 
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -741,10 +741,10 @@ class List<T>
 	// max: float(T a) selector
 	// 	 float threshold = float.minValue
 	// 	 float default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -795,11 +795,11 @@ class List<T>
 		
 	// withMin: int(T a) selector
 	// 	     int threshold = int.maxValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue
 	// 				resultValue = value
@@ -808,11 +808,11 @@ class List<T>
 		
 	// withMin: float(T a) selector
 	// 	     float threshold = float.maxValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue
 	// 				resultValue = value
@@ -873,11 +873,11 @@ class List<T>
 		
 	// withMax: int(T a) selector
 	// 	     int threshold = int.minValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue
 	// 				resultValue = value
@@ -886,11 +886,11 @@ class List<T>
 		
 	// withMax: float(T a) selector
 	// 	     float threshold = float.minValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue
 	// 				resultValue = value
@@ -1102,7 +1102,7 @@ class Error
 	implicit inline cs string toString => this.stack
 	
 // A collection of basic system functions
-global transient unit System
+global transient skipInit unit system
 	// Executes code depending on whether a given condition is true or false
 	global inline cs void if: implicit bool condition // The condition to check
 		                      void() then             // Do this if the condition is true
@@ -1890,7 +1890,7 @@ class Range
 	Range: int from       // The start of the range
 		   nocolon int to // The end of the range
 	
-	inline cs bool contains: int value
+	inline cs bool includes: int value
 		(value >= this.from && value < this.from)
 	
 	inline cs bool containsInclusively: int value

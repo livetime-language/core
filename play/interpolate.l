@@ -128,19 +128,6 @@ struct Vector2
 		if progress >= to	then return target
 		let factor = ease.function((progress-from) / (to-from))
 		return new Vector2(x + (target.x-x)*factor, y + (target.y-y)*factor)
-		
-Color
-	// Interpolates to another color
-	Color interpolateTo: Color target
-		                 float progress
-		if progress <= 0	then return this
-		if progress >= 1	then return target
-		let iprogress = 1 - progress
-		return {
-			math.floor(red   * iprogress + target.red   * progress)
-			math.floor(green * iprogress + target.green * progress)
-			math.floor(blue  * iprogress + target.blue  * progress)
-		}
 
 global skipInit unit math
 	// Maps a value from an input range to an output range
@@ -182,9 +169,4 @@ global skipInit unit math
 		if value <= 0	then return from
 		if value >= duration	then return to
 		return from + (to-from) * (value/duration)
-		
-	global interpolate: Color from
-		                Color to
-		                float startTime = 0 // The start time in milliseconds
-		                float duration = 1  // The duration in milliseconds
-		return from interpolateTo to, (Time.now - startTime)/duration
+

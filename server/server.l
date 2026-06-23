@@ -1,9 +1,9 @@
-skipInit unit Platform
+global transient skipInit unit system
 	visible bool isDebug
 	public inline js int buildVersion => _buildVersion
 		
 	inline js void initPlatform
-		Platform.init()
+		system.init()
 		PlainDate.init()
 		
 	inline js void initApplication
@@ -24,7 +24,7 @@ skipInit unit Platform
 		initApplication
 		
 	private inline js void sendEvaluateFinished
-		if(Platform.isDebug) _sendToEditor({type:"evaluateFinished"})
+		if(system.isDebug) _sendToEditor({type:"evaluateFinished"})
 	
 	inline js string basePath => __dirname + "/"
 	
@@ -40,12 +40,12 @@ skipInit unit Platform
 	public inline js string encodeURIComponent(string value) encodeURIComponent(value)
 	public inline js string decodeURIComponent(string value) decodeURIComponent(value)
 		
-global transient unit System
+global transient skipInit unit system
 	// Prints a message to the console
 	global js void print: logstring text // The text, variables or expressions to print
 		                  SourceCodeLocation location
 		console.log(text)
-		if(Platform.isDebug) {
+		if(system.isDebug) {
 			var stringValue = typeof text === "string" ? text : JSON.stringify(text);
 			if(stringValue) _sendToEditor({type:"log", value:stringValue, location:location ? location.start : 0, file:location ? location.file: ""});
 		}
@@ -73,7 +73,7 @@ global skipInit unit math
 
 	js string generateUUID
 		return 'xxxx-xxxx-xxx-xxxx'.replace(/[x]/g, (c) => {  
-			return math.floor(math.random() * 16).toString(16);  
+			return Math.floor(Math.random() * 16).toString(16);  
 		}); 
 	
 PlainDate
@@ -120,7 +120,7 @@ global unit http
 						onRequest(path, bodyText, bodyText ? JSON.parse(bodyText) : null, request, response);
 					} catch(e) {
 						console.error(e)
-						if(Platform.isDebug) _sendErrorToEditor(e);
+						if(system.isDebug) _sendErrorToEditor(e);
 						response.end(`{error:"${e.message}"}`)
 					}
 				})
@@ -151,14 +151,14 @@ global unit http
 						}
 					} catch(e) {
 						console.error(e)
-						if(Platform.isDebug) _sendErrorToEditor(e);
+						if(system.isDebug) _sendErrorToEditor(e);
 						response.end(`{error:"${e.message}"}`)
 					}
 				})
 			}
 		}
 		if(window.server) server.close();
-		if(certPath && keyPath && !Platform.isDebug) {
+		if(certPath && keyPath && !system.isDebug) {
 			window.server = require('https').createServer({
 				cert: fs.readFileSync(certPath),
 				key: fs.readFileSync(keyPath)
@@ -206,6 +206,7 @@ class Request
 		
 class Response
 	inline js void sendText(string result, int code = 200, filename = "") this.writeHead(code, {'Content-Type': http.contentTypeMap[filename.getExtension()] || "text/plain; charset=utf-8"}); response.end(result);
+	inline js void sendHtml(ensureSingleExecution dynamic result, int code = 200, filename = "") this.writeHead(code, {'Content-Type': "text/html; charset=utf-8"}); response.end(result);
 	inline js void send(ensureSingleExecution dynamic result, int code = 200) if(result) { if(typeof result == "string") {this.writeHead(code, {"Content-Type": "text/plain; charset=utf-8"}); response.end(result);} else {this.writeHead(code, {"Content-Type": "application/json; charset=utf-8"}); response.end(JSON.stringify(result)); }}
 	inline js void redirect(string url, int code = 302) this.writeHead(code, {Location: url}); response.end();
 		
@@ -254,9 +255,10 @@ unit websocket
 		                          void() onStart
 		                          void(Connection connection) onOpen
 		                          void(Connection connection, int errorCode) onClose
-		                          void(Connection connection, Buffer buffer) onMessage
+		                          void(Connection connection, Buffer buffer) onMessage = null
+		                          void(Connection connection, string message) onStringMessage = null
 		const uWS = require('uWebSockets.js')
-		const app =  process.platform == "win32" || process.platform == "darwin" ? uWS.App() :
+		const app =  process.platform == "win32" || process.platform == "darwin" || !keyPath || !certPath ? uWS.App() :
 			uWS.SSLApp({
 				key_file_name: keyPath,
 				cert_file_name: certPath,
@@ -270,7 +272,13 @@ unit websocket
 				onOpen(ws);
 			},
 			message: (ws, message, isBinary) => {
-				onMessage(ws, new Buffer(message, 0, 0, 0))
+				if (isBinary) {
+					onMessage(ws, new Buffer(message, 0, 0, 0))
+				}
+				else {
+					onStringMessage(ws, new TextDecoder("utf-8").decode(message));
+				}
+				
 			},
 			drain: (ws) => {
 				log('WebSocket backpressure: ' + ws.getBufferedAmount());
@@ -305,6 +313,7 @@ class WebsocketHttpResponse
 		
 class Connection
 	inline js bool send(Buffer buffer) this.send(buffer.toByteArray(), /*isBinary*/true, /*compress*/false)
+	inline js bool sendJson(dynamic data) this.send(new TextEncoder("utf-8").encode(JSON.stringify(data)))
 	inline js int bufferedAmount() this.getBufferedAmount()
 	inline js object data => this.data
 	inline js void data(object value) this.data = value

@@ -14,10 +14,10 @@ skipInit immutable Sound
 			this.nextAudioElement = new Audio();
 			this.nextAudioElement.onloadedmetadata = () => resolve()
 			this.nextAudioElement.onerror = () => {
-				System.print(`Failed to load sound ${this.file}`)
+				system.print(`Failed to load sound ${this.file}`)
 				reject();
 			}
-			this.nextAudioElement.src = Platform.getAbsoluteUrl(this.file);			
+			this.nextAudioElement.src = system.getAbsoluteUrl(this.file);			
 		})
 		
 	js void volume: float value
@@ -66,12 +66,6 @@ skipInit immutable Sound
 	isPlaying
 		return audio.playingSounds.any.sound == this and .frame < Time.ticks
 
-	fadeOut: float duration = 3000 // The duration of the fade out in milliseconds
-		     float delay = 0       // The delay before the fade out starts in milliseconds
-		// Migrate to 3D
-		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
-		return this
-
 internal transient PlayingSound
 	immutable Sound sound
 	immutable int frame
@@ -110,6 +104,6 @@ transient global skipInit unit audio
 	
 	adjustVolume: int delta = 1, Player forPlayer = null
 		if !forPlayer or forPlayer.id == input.localUser.id
-			volumeLevel = math.clamp(volumeLevel+delta, min:0, max:volumeLevels.length-1)
+			volumeLevel = (volumeLevel+delta).clamp 0 to volumeLevels.length-1
 			volume = volumeLevels[volumeLevel]
 			playingSounds.each.sound.updateVolume

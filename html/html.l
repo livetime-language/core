@@ -114,7 +114,7 @@ dynamic HTMLElement
 				Mouse	then type = cast ev.button.clamp(0 to 2)
 				Touch	then type = Touch
 				default	then type = Pen
-			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/Platform.scale, ev.pageY/Platform.scale, pixels)}
+			Touch touch = {phase:Down, id:ev.pointerId, type, position:new Vector2(ev.pageX/system.scale, ev.pageY/system.scale, pixels)}
 			touch.shiftKey = ev.shiftKey
 			touch.ctrlKey = ev.ctrlKey
 			touch.altKey = ev.altKey
@@ -129,8 +129,8 @@ dynamic HTMLElement
 			Touch touch = this.touches.find.id == ev.pointerId
 			if touch
 				touch.phase = Move
-				touch.position.x = ev.pageX/Platform.scale
-				touch.position.y = ev.pageY/Platform.scale
+				touch.position.x = ev.pageX/system.scale
+				touch.position.y = ev.pageY/system.scale
 				do(touch, touches, this, ev)
 		}
 	
@@ -141,8 +141,8 @@ dynamic HTMLElement
 			if index != -1
 				let touch = this.touches[index]
 				touch.phase = Up
-				touch.position.x = ev.pageX/Platform.scale
-				touch.position.y = ev.pageY/Platform.scale
+				touch.position.x = ev.pageX/system.scale
+				touch.position.y = ev.pageY/system.scale
 				touch.shiftKey = ev.shiftKey
 				touch.ctrlKey = ev.ctrlKey
 				touch.altKey = ev.altKey
@@ -169,7 +169,7 @@ dynamic HTMLElement
 			ev.preventDefault();
 			ev.stopPropagation();
 			let isPinch = ev.ctrlKey || ev.deltaX === -0		
-			do(new Vector2(ev.clientX/Platform.scale, ev.clientY/Platform.scale, "px"), new Vector2(-ev.deltaX, ev.deltaY, "px"), isPinch);
+			do(new Vector2(ev.clientX/system.scale, ev.clientY/system.scale, "px"), new Vector2(-ev.deltaX, ev.deltaY, "px"), isPinch);
 		}
 		
 	inline js void captureTouch(Touch touch) this.setPointerCapture(touch.id)
@@ -215,7 +215,7 @@ HtmlEvent PointerEvent
 	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 	
 	// The position of the pointer relative to the whole document
-	inline js Vector2 position() new Vector2(this.pageX/Platform.scale, this.pageY/Platform.scale)
+	inline js Vector2 position() new Vector2(this.pageX/system.scale, this.pageY/system.scale)
 
 HtmlEvent
 	HTMLElement target        // The element that triggered the event
@@ -225,7 +225,7 @@ HtmlEvent
 	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
 		
 	inline Vector2 relativeTouchPosition() html.getRelativeMousePosition(this, this.currentTarget)
-	inline js Vector2 touchPosition() new Vector2(this.clientX/Platform.scale, this.clientY/Platform.scale)
+	inline js Vector2 touchPosition() new Vector2(this.clientX/system.scale, this.clientY/system.scale)
 
 HtmlKeyboardEvent
 	Key keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
@@ -237,7 +237,7 @@ HtmlKeyboardEvent
 skipInit class Image
 	string previewSrc
 	string src
-	string basePath = Platform.basePath
+	string basePath = system.basePath
 	
 	toString => "url('{basePath}{src}')"
 	
@@ -384,7 +384,7 @@ global priority low skipInit static class html
 			return
 		try
 			refreshInProgress = true
-			Platform.resetStateIndex
+			system.resetStateIndex
 			currentStyleSheet.replaceSync("")
 			nodesCreated = nodesUpdated = 0
 			parentNode = documentBody
@@ -405,11 +405,11 @@ global priority low skipInit static class html
 			// 	overlayNode = div style:{position:Fixed top:0 left:0 right:0 bottom:0, backgroundColor:Black, opacity:.5}
 			// 	body.parentNode.appendChild overlayNode
 		catch
-			Platform.onError .
+			system.onError .
 		finally
 			refreshInProgress = false
 		
-	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/Platform.scale)
+	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/system.scale)
 	inline js void scrollToTop() window.scrollTo(0,0)
 	inline js void scrollTo(float x = 0, float y = 0) window.scrollTo(x,y)
 	inline js HTMLElement getElementById(string id) document.getElementById(id)
@@ -450,41 +450,42 @@ global priority low skipInit static class html
 		let body = document.body
 		body.style = "background-color: white; color: black; font:16px/1.7 OpenSans; overflow: "+html.overflow
 		let screenWidth = localStorage.getItem("isMobile") == "true" ? 0 : window.innerWidth
-		Platform.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
+		system.nativeSize = new Vector2(window.innerWidth, window.innerHeight)
 
 		let referenceWidth = 0
-		if(Platform.referenceSizes) {
-			Platform.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
-			for(let entry of Platform.referenceSizes) {
+		if(system.referenceSizes) {
+			system.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
+			for(let entry of system.referenceSizes) {
 				if(screenWidth < entry.forWidthBelow) {
 					referenceWidth = entry.referenceWidth
-					Platform.isMobile = entry.isMobile
+					system.isMobile = entry.isMobile
 					break;
 				}
 			}
 		}
 		
 		if(referenceWidth) {
-			Platform.scale = window.innerWidth / referenceWidth
-			Platform.size = new Vector2(referenceWidth, referenceWidth * window.innerHeight/window.innerWidth)
+			system.scale = window.innerWidth / referenceWidth
+			system.size = new Vector2(referenceWidth, referenceWidth * window.innerHeight/window.innerWidth)
 			body.style.transform = 'none !important'
 			body.style.marginRight = '0 !important'
 			body.style.marginBottom = '0 !important'
-			body.style.width = Platform.size.x+"px"
+			body.style.width = system.size.x+"px"
 			const width = body.clientWidth
 			const height = body.clientHeight
-			body.style.transform = `scale(${Platform.scale})`
+			body.style.transform = `scale(${system.scale})`
 			body.style.transformOrigin = '0 0'
-			const pullUp = height - height * Platform.scale
-			const pullLeft = width - width * Platform.scale
+			const pullUp = height - height * system.scale
+			const pullLeft = width - width * system.scale
 			body.style.marginBottom = `${-pullUp}px`
 			body.style.marginRight = `${-pullLeft}px`
 		} else {
-			Platform.scale = 1
-			Platform.isMobile = localStorage.getItem("isMobile") == "true"
-			body.style.zoom = Platform.scale
+			system.scale = 1
+			system.isMobile = localStorage.getItem("isMobile") == "true"
+			system.size = new Vector2(window.innerWidth, window.innerHeight)
+			body.style.zoom = system.scale
 		}
-		body.className = Platform.isMobile ? "mobile" : ""
+		body.className = system.isMobile ? "mobile" : ""
 		html.resizeInProgress = false
 	
 	enableScrolling: bool value
@@ -517,7 +518,7 @@ global priority low skipInit static class html
 		}
 		if(style.overlay) {
 			let rect = document.body.getBoundingClientRect()
-			style.position = "fixed"; style.top = 0; style.left = 0; style.width = (window.innerWidth/Platform.scale)+"px"; style.height = (document.body.scrollHeight)+"px"  
+			style.position = "fixed"; style.top = 0; style.left = 0; style.width = (window.innerWidth/system.scale)+"px"; style.height = (document.body.scrollHeight)+"px"  
 		}
 		return style 
 
@@ -587,7 +588,7 @@ global priority low skipInit static class html
 				
 	js Vector2 getRelativeMousePosition: HtmlEvent event, HTMLElement element
 		let rect = element.getBoundingClientRect()
-		return new Vector2((event.clientX - rect.left)/Platform.scale, (event.clientY - rect.top)/Platform.scale)
+		return new Vector2((event.clientX - rect.left)/system.scale, (event.clientY - rect.top)/system.scale)
 
 	js void setCursorPosition: HTMLElement element, int position
 		const range = document.createRange();

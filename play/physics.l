@@ -3,7 +3,7 @@ transient unit Physics
 	float scale = 100
 	
 	js async void start
-		await Platform.openScript((_basePath || location.href.getUntilLast("/")+"/")+"lib/liquidfun.js")
+		await system.openScript((_basePath || location.href.getUntilLast("/")+"/")+"lib/liquidfun.js")
 		if(window.world) _b2World_Delete(world)
 		window.world = new b2World(new b2Vec2(0, 10))
 		

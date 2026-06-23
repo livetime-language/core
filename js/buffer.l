@@ -475,4 +475,3 @@ internal transient class Buffer
 		for(let i=0; i<this.writePos; i++)
 			result.push(this.dataView.getUint8(i))
 		return result
-		

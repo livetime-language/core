@@ -86,7 +86,7 @@ struct Vector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	// Returns true if the vector is not equal to Vector2.None
+	// Returns true if the vector is not equal to Vector2.none
 	inline js bool toBool() (this != null && (this.x != Number.POSITIVE_INFINITY || this.y != Number.POSITIVE_INFINITY))
 	inline js bool !() (this == null || (this.x == Number.POSITIVE_INFINITY && this.y == Number.POSITIVE_INFINITY))
 
@@ -132,6 +132,13 @@ struct Vector2
 	// The smaller of the two coordinates
 	min => x < y ? x : y
 	
+	clamp: Vector2 from
+		   Vector2 to
+		return Vector2(
+			x.clamp from.x to to.x
+			y.clamp from.y to to.y
+		)
+
 	// Move the vector
 	move: Vector2 delta // The vector to move by
 		this.x += delta.x
@@ -253,14 +260,6 @@ struct Vector2
 	// The cross product
 	importance:4 cross: Vector2 value // The value to calculate the cross procut with
 		return x*value.y - y*value.x
-		
-	serialize: Buffer buffer
-		buffer.writeFloat64(x)
-		buffer.writeFloat64(y)
-		
-	deserialize: Buffer buffer
-		x = buffer.readFloat64
-		y = buffer.readFloat64
 	
 	static getPathLength: Vector2[] path
 		float length
@@ -308,8 +307,8 @@ Path
 	float[] segmentLengths
 	float length
 	
-	Vector2 first	=> nodes ? nodes.first : Vector2.None
-	Vector2 last	=> nodes ? nodes.last  : Vector2.None
+	Vector2 first	=> nodes ? nodes.first : Vector2.none
+	Vector2 last	=> nodes ? nodes.last  : Vector2.none
 	int count	=> nodes.length
 	inline Vector2 get(int index) this.nodes[index]
 	
@@ -324,7 +323,7 @@ Path
 			length += segmentLengths[i] = math.sqrt(x*x + y*y)
 		
 	Vector2 getPosition: float distance
-		if nodes.length == 0 then return Vector2.None
+		if nodes.length == 0 then return Vector2.none
 		if nodes.length == 1 then return nodes[0]
 			
 		float travelledSoFar
@@ -339,7 +338,7 @@ Path
 		return nodes.last
 		
 	PositionAndVector getPositionAndVector: float distance
-		if nodes.length == 0 then return { position:Vector2.None }
+		if nodes.length == 0 then return { position:Vector2.none }
 		if nodes.length == 1 then return { position:nodes[0] }
 			
 		float travelledSoFar
@@ -365,10 +364,10 @@ struct IntVector2
 	SourceCodeLocation location
 	
 	// Used to specify that the vector is not set or invalid
-	static importance:4 inline IntVector2 None() IntVector2(-9007199254740991, -9007199254740991, null)
+	static importance:4 inline IntVector2 none() IntVector2(-9007199254740991, -9007199254740991, null)
 		
 	// {0,0}
-	static importance:4 inline IntVector2 Zero() IntVector2(0, 0, null)
+	static importance:4 inline IntVector2 zero() IntVector2(0, 0, null)
 
 	const importance:4 immutable IntVector2 Up     = { 0,-1, location:null} // negative y direction (0,-1)
 	const importance:4 immutable IntVector2 Right  = { 1, 0, location:null} // positive x direction (1,0)
@@ -467,7 +466,7 @@ struct IntVector2
 	bool >  float length: return math.sqrt(x*x + y*y) >  length
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
-	// Returns true if the vector is not equal to IntVector2.None
+	// Returns true if the vector is not equal to IntVector2.none
 	inline js bool toBool() (this != null && (this.x != -9007199254740991 || this.y != -9007199254740991))
 	inline js bool !() (this == null || (this.x == -9007199254740991 && this.y == -9007199254740991))
 
@@ -494,23 +493,11 @@ struct IntVector2
 	// The smaller of the two coordinates
 	min => x < y ? x : y
 	
-	clamp: IntVector2 min
-		   IntVector2 max
+	clamp: Vector2 from
+		   Vector2 to
 		return IntVector2(
-			math.clamp x, min:min.x, max:max.x
-			math.clamp y, min:min.y, max:max.y
-		)
-		
-	clamp: IntVector2 max
-		return IntVector2(
-			math.clamp x, max:max.x
-			math.clamp y, max:max.y
-		)
-		
-	clamp: IntVector2 min
-		return IntVector2(
-			math.clamp x, min:min.x
-			math.clamp y, min:min.y
+			x.clamp from.x to to.x
+			y.clamp from.y to to.y
 		)
 		
 	// The distance to another vector
@@ -732,18 +719,18 @@ global skipInit unit math
 		let x4    = endB.x,   y4 = endB.y
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.None // lines are parallel
+		if (denominator == 0) return Vector2.none // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.None
+			return Vector2.none
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -752,8 +739,8 @@ global skipInit unit math
 		let lineVector = to - from
 		let pointVector = point - from
 		let scalar = (pointVector dot lineVector) / lineVector.lengthSquared
-		if type >= Ray     and scalar < 0 then return Vector2.None
-		if type == Segment and scalar > 1 then return Vector2.None
+		if type >= Ray     and scalar < 0 then return Vector2.none
+		if type == Segment and scalar > 1 then return Vector2.none
 		return from + lineVector * scalar
 	
 	closestPointOnLine: Vector2 from, Vector2 to, LineType type = Segment, Vector2 point
@@ -764,7 +751,7 @@ global skipInit unit math
 		if type == Segment and scalar > 1 then scalar = 1
 		return from + lineVector * scalar
 	
-global transient unit System
+global transient skipInit unit system
 	global inline js void forPositions: int to                            // The exclusive upper bound to iterate towards
 		                                Vector2 start = {0,0}             // Left or top align items at this position
 		                                implicit Vector2 delta = {300,0}  // Distance between items
@@ -889,7 +876,7 @@ class IsometicGrid
 		let x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		let y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y) then	return Vector2(x,y)
-		else	return Vector2.None
+		else	return Vector2.none
 		
 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 	getGridPosition: Vector2 screenPos // The screen position
@@ -898,15 +885,15 @@ class IsometicGrid
 		let x = math.round((xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y))
 		let y = math.round((xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y))
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y) then	return IntVector2(x,y)
-		else	return IntVector2.None
+		else	return IntVector2.none
 		
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
 		
-	limitToInside: IntVector2 position
+	clamp: IntVector2 position
 		return IntVector2(
-			math.clamp position.x, min:0, max:size.x-1
-			math.clamp position.y, min:0, max:size.y-1
+			position.x.clamp 0 to size.x-1
+			position.y.clamp 0 to size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector
@@ -932,18 +919,18 @@ Line
 		let typeB = other.type
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.None // lines are parallel
+		if (denominator == 0) return Vector2.none // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.None
+			return Vector2.none
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -965,126 +952,8 @@ immutable Rect
 		                 Vector2 size
 		return this.position - this.size/2 - size/2 <=  position < this.position + this.size/2 + size/2
 
-class Grid<T>
-	IntVector2 size
-	T[] items
-	transient void(T item, IntVector2 pos)[string] itemForCharacter = null
-	
-	Grid
-		for size.x * size.y
-			items.add null
-	
-	get: IntVector2 position // The vector to get the value from
-		return {0,0} <= position < size ? items[position.y*size.x + position.x] : null
-	
-	get: int x // The column to get the value from
-		 int y // The row to get the value from
-		return 0 <= x < size.x and 0 <= y < size.y ? items[y*size.x + x] : null
-	
-	T set: IntVector2 position // The grid position of the value to set
-		 T value             // The value to set
-		return items[position.y*size.x + position.x] = value
-
-	T set: int x   // The column of the value to set
-		 int y   // The row of the value to set
-		 T value // The value to set
-		return items[y*size.x + x] = value
-	
-	map: string character
-		 stored void(T item, IntVector2 pos) to
-		if not itemForCharacter then itemForCharacter = {}
-		itemForCharacter.set(character, to)
-
-	create: string[] strings
-		for strings as line, y
-			for line as char, x
-				let itemFunction = itemForCharacter.get(char)
-					itemFunction(items[y*size.x + x], {x, y})
-		
-	// Do something for each item in the grid
-	inline js void each: inline -> void(
-		                     T it,      // The current item of the list we are iterating over with the for-loop
-		                     IntVector2 pos,
-		                     int i      // The index of the current item of the list we are iterating over with the for-loop
-		                 ) do           // Do this for each item in a list
-		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new IntVector2(i%this.size.x, Math.floor(i/this.size.x)), i)}
-			
-	inline js void each: includeEmpty = false // Include items that are null
-		                 inline -> void(
-		                     T it,      // The current item of the list we are iterating over with the for-loop
-		                     IntVector2 pos,
-		                     int i      // The index of the current item of the list we are iterating over with the for-loop
-		                 ) do           // Do this for each item in a list
-		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)}
-
-	// The amount of items in the grid	
-	importance:4 inline int length() this.items.length
-
-	// Return a list that contains the selected field or expression for each item
-	importance:4 inline js TValue[] select: TValue(T it) selector
-		this.items.map(selector)
-		
-	// Get the selected field or expression for each item and flattens the result
-	inline js TValue[] flatten: TValue[](T it) selector
-		this.items.flatMap(selector)
-		
-	// Returns true if the given condition is true for all items in the list
-	inline js bool all
-		this.items.every(a => a)
-		
-	// Returns true if the given condition is true for any item in the list
-	inline js bool any
-		this.items.some(a => a)
-		
-	// Returns true if the given condition is true for any item in the list
-	importance:4 inline js bool any: bool(T a) predicate // The condition to check
-		this.items.some(predicate)
-		
-	importance:4 inline js T[] where: bool(T a) predicate // The condition to check
-		this.items.filter(predicate)
-		
-	int count: bool(T a) predicate // The condition to check
-		int count = 0
-		for items
-			if predicate(.)
-				count++
-		return count
-		
-	// Returns true if the given condition is true for all items in the list
-	importance:4 inline js bool all: bool(T a) predicate // The condition to check
-		this.items.every(predicate)
-		
-	importance:4 bool isValid: IntVector2 pos
-		return {0,0} <= pos < size
-
-	importance:4 withMin: float(T a) selector
-		               float threshold = float.maxValue
-		float resultValue = threshold
-		T resultItem
-		for this
-			let value = selector(.)
-			if value < resultValue
-				resultValue = value
-				resultItem = .
-		return resultValue != threshold ? resultItem : null
-
-	insertRows: int count = 1, int y = -1
-		if y == -1 then y = size.y
-		size.y += count
-		let baseIndex = y * size.x
-		for size.x * count
-			items.insert null index:baseIndex + .
-	
-	insertColumns: int count = 1, int x = -1
-		if x == -1 then x = size.x
-		size.x += count
-		for size.y as y
-			let rowIndex = y * size.x
-			for count
-				items.insert null index:rowIndex + x + .
-	
-global transient unit System
-	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
+global transient skipInit unit system
+	global inline js void for: Vector2 subject  // The exclusive upper bound to iterate towards
 		                       -> inline void(
 		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop
 		                           int x,          // The x component of the current position we are iterating over with the for-loop
@@ -1092,7 +961,7 @@ global transient unit System
 		                       ) do                // Do this the given number of times
 		for(let _size=subject, y=0; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(new IntVector2(x,y), x, y)
 			
-	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
+	global inline js void for: Vector2 subject  // The exclusive upper bound to iterate towards
 		                       <- inline void(
 		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop
 		                           int x,          // The x component of the current position we are iterating over with the for-loop
@@ -1117,16 +986,16 @@ global transient unit System
 		                       ) do           // Do this for each item in a list
 		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)
 
-	global inline js TResult[] for: IntVector2 to     // Iterator over both dimensions of the vector towards this exclusive upper bound
+	global inline js TResult[] for: Vector2 to     // Iterator over both dimensions of the vector towards this exclusive upper bound
 		                            TResult(
 		                                IntVector2 it // The current position of the vector we are iterating over with the for-loop
 		                            ) do              // Select the field or expression to be included in the result
 		IntVector2.enumerate(new IntVector2(0,0), to, do)
 
-	global inline js TResult[] for: IntVector2 from     // Iterator over both dimensions of the vector starting from this vector
+	global inline js TResult[] for: Vector2 from     // Iterator over both dimensions of the vector starting from this vector
 		                            TResult(
 		                                IntVector2 it   // The current position of the vector we are iterating over with the for-loop
 		                            ) do                // Select the field or expression to be included in the result
-		                            label IntVector2 to // Iterator over both dimensions of the vector towards this exclusive upper bound
+		                            label Vector2 to // Iterator over both dimensions of the vector towards this exclusive upper bound
 		IntVector2.enumerate(from, to, do)
 		

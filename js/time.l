@@ -214,6 +214,10 @@ string TimeString
 	
 	inline js bool toBool => this
 	inline string toString() this
+
+	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
+	inline js int localeCompare: TimeString value // The string to compare to
+		this.localeCompare(value)
 	
 	// (31.12.)
 	inline string dayMonthString
@@ -418,3 +422,18 @@ js(Date) internal transient class Date
 	static js Date fromCompactTimeString(string compactTimeString)
 		new Date(+compactTimeString.slice(0,4), +compactTimeString.slice(4,6)-1, +compactTimeString.slice(6,8), +compactTimeString.slice(9,11), +compactTimeString.slice(11,13), +compactTimeString.slice(13,15))
 	
+struct RollingList
+	measure: void() do
+		let startTime = PlainDate.preciseTime
+		do
+		values[index++ mod length] = PlainDate.preciseTime - startTime
+
+List<T>
+	// Sort by string
+	T[] sortBy: TimeString(T it) expression // First order by this expression
+		return this.sort(expression(a).localeCompare expression(b))
+		
+	// Sort by string in descending order
+	T[] sortByDescending: TimeString(T it) expression // First order by this expression
+		return this.sort(expression(b) localeCompare expression(a))
+		

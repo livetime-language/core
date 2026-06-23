@@ -1289,7 +1289,7 @@ struct Vector2
 	// A string representation of the vector
 	string toString => "({x} {y})"
 	
-	// Returns true if the vector is not equal to Vector2.None
+	// Returns true if the vector is not equal to Vector2.none
 	bool toBool => (x != float.infinity || y != float.infinity)
 		
 	implicit Vector3 toVector3 => {x, y, 0}
@@ -1807,18 +1807,18 @@ unit math
 		let x4    = endB.x,   y4 = endB.y
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.None // lines are parallel
+		if (denominator == 0) return Vector2.none // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.None
+			return Vector2.none
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -1846,7 +1846,7 @@ unit math
 		let factor = (value-from) / (to-from)
 		return start + (target-start) * ease.function(factor)
 	
-global transient unit System
+global transient skipInit unit system
 	global inline js void forPositions: T[] subject                       // The list to iterate over
 		                                Vector2 start = {0,0}             // Left or top align items at this position
 		                                implicit Vector2 delta = {300,0}  // Distance between items
@@ -1940,7 +1940,7 @@ class IsometicGrid
 		let x = (xOffset.x*t.y + xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		let y = (xOffset.x*t.y - xOffset.y*t.x) / (2*xOffset.x*xOffset.y)
 		if allowOutside or (x >= 0 and x < size.x and y >= 0 and y < size.y): return Vector2(x,y)
-		else                                                                  return Vector2.None
+		else                                                                  return Vector2.none
 		
 	// Convert screen pos (north is up) to rounded world pos (northwest is up)
 	getGridPosition: Vector2 screenPos // The screen position
@@ -2029,18 +2029,18 @@ class Line
 		let typeB = other.type
 		
 		// Check if none of the lines are of length 0
-		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.None
+		if (x1 == x2 && y1 == y2) || (x3 == x4 && y3 == y4) return Vector2.none
 
 		// compute line params
 		let denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
-		if (denominator == 0) return Vector2.None // lines are parallel
+		if (denominator == 0) return Vector2.none // lines are parallel
 		let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
 		let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
 
 		// is the intersection along the segments
 		if (typeA >= Ray && ua < 0) || (typeA == Segment && ua > 1)
 		|| (typeB >= Ray && ub < 0) || (typeB == Segment && ub > 1)
-			return Vector2.None
+			return Vector2.none
 			
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
@@ -2055,7 +2055,7 @@ class Rect
 	float top	=> position.y - size.y/2
 	float bottom	=> position.y + size.y/2
 	
-	bool contains: Vector2 position
+	bool includes: Vector2 position
 		return this.position - this.size/2 <=  position < this.position + this.size/2
 	
 	bool intersectsWith: Vector2 position
@@ -2101,8 +2101,8 @@ class Grid<T>
 		                 ) do           // Do this for each item in a list
 		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) { let it = _items[y*_size.x + x]; let pos = new IntVector2(x,y); do()}
 			
-	// Return a list that contains the selected field or expression for each item
-	inline js TValue[] select: TValue(T it) selector
+	// Return a list that includes the selected field or expression for each item
+	inline js TValue[] map: TValue(T it) selector
 		this.items.map(selector)
 		
 	// Get the selected field or expression for each item and flattens the result
@@ -2117,7 +2117,7 @@ class Grid<T>
 	inline js bool any: bool(T a) predicate // The condition to check
 		this.items.some(predicate)
 		
-	inline js T[] where: bool(T a) predicate // The condition to check
+	inline js T[] filter: bool(T a) predicate // The condition to check
 		this.items.filter(predicate)
 		
 	int count: bool(T a) predicate // The condition to check
@@ -2138,7 +2138,7 @@ class Grid<T>
 	bool isValid: IntVector2 pos
 		return {0,0} <= pos < size
 			
-global transient unit System
+global transient skipInit unit system
 	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
 		                       -> void(
 		                           IntVector2 pos, // The current position of the vector we are iterating over with the for-loop

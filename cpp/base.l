@@ -343,7 +343,7 @@ immutable struct string
 	inline cpp(int, algorithm) int indexOf(string str, int startPos)
 		this.find(str, startPos)
 	
-	inline cpp(bool, algorithm) bool contains(string str)
+	inline cpp(bool, algorithm) bool includes(string str)
 		(this.find(str) != std::string::npos)
 
 	inline cpp(int) int getCharCodeAt(int index)
@@ -606,8 +606,8 @@ struct List<T>
 			if(std::find(this.begin(), this.end(), it) == this.end())
 				this.push_back(it)
 		
-	// Returns whether the list contains the given item
-	inline cpp bool contains: T item
+	// Returns whether the list includes the given item
+	inline cpp bool includes: T item
 		return std::find(this.begin(), this.end(), item) != this.end();
 		
 	// The index of an item in the list
@@ -717,11 +717,11 @@ struct List<T>
 	// 	return this.get((index+1)%length)
 		
 	// T next: T currentItem
-	// 	    label bool(T item) where
+	// 	    label bool(T item) filter
 	// 	int baseIndex = indexOf(currentItem)
 	// 	for this.length
 	// 		let item = this.get((baseIndex+i+1)%length)
-	// 		if(where(item)) return item
+	// 		if(filter(item)) return item
 	// 	return null
 		
 	// T prev: T currentItem
@@ -787,7 +787,7 @@ struct List<T>
 		std::stable_sort(this.begin(), this.end(), comparer)
 	
 	// Sort the list by a given expression
-	inline cpp(algorithm) void orderBy: float(T a) expression // First order by this expression
+	inline cpp(algorithm) void sortBy: float(T a) expression // First order by this expression
 		std::stable_sort(this.begin(), this.end(), [=](auto a, auto b) { return expression(a) < expression(b); });
 				
 	// Returns true if the given condition is true for any item in the list
@@ -801,7 +801,7 @@ struct List<T>
 	inline cpp bool all: bool(T a) predicate // The condition to check
 		std::all_of(this.begin(), this.end(), predicate)
 		
-	// Return a list that contains the selected field or expression for each item
+	// Return a list that includes the selected field or expression for each item
 	inline cpp TValue[] select: TValue(T it) selector
 		this.map(selector)
 		
@@ -842,7 +842,7 @@ struct List<T>
 	// 			return i
 	// 	return -1
 		
-	// inline cpp T[] where: bool(T a) condition // The condition to check
+	// inline cpp T[] filter: bool(T a) condition // The condition to check
 	// 	this.filter(condition)
 		
 	// inline cpp T[] take: int count
@@ -854,9 +854,9 @@ struct List<T>
 	// 	return sum
 		
 	// int total: int(T it) selector
-	// 	       label bool(T a) where
+	// 	       label bool(T a) filter
 	// 	let sum = 0
-	// 	for this: if where(.): sum += selector(.)
+	// 	for this: if filter(.): sum += selector(.)
 	// 	return sum
 		
 	// float total: float(T it) selector
@@ -921,10 +921,10 @@ struct List<T>
 	// min: int(T a) selector
 	// 	 int threshold = int.maxValue
 	// 	 int default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -932,10 +932,10 @@ struct List<T>
 	// min: float(T a) selector
 	// 	 float threshold = float.maxValue
 	// 	 float default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -961,10 +961,10 @@ struct List<T>
 	// max: int(T a) selector
 	// 	 int threshold = int.minValue
 	// 	 int default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -972,10 +972,10 @@ struct List<T>
 	// max: float(T a) selector
 	// 	 float threshold = float.minValue
 	// 	 float default = 0
-	// 	 label bool(T a) where
+	// 	 label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue: resultValue = value
 	// 	return resultValue != threshold ? resultValue : default
@@ -1026,11 +1026,11 @@ struct List<T>
 		
 	// withMin: int(T a) selector
 	// 	     int threshold = int.maxValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue
 	// 				resultValue = value
@@ -1039,11 +1039,11 @@ struct List<T>
 		
 	// withMin: float(T a) selector
 	// 	     float threshold = float.maxValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value < resultValue
 	// 				resultValue = value
@@ -1104,11 +1104,11 @@ struct List<T>
 		
 	// withMax: int(T a) selector
 	// 	     int threshold = int.minValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	int resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue
 	// 				resultValue = value
@@ -1117,11 +1117,11 @@ struct List<T>
 		
 	// withMax: float(T a) selector
 	// 	     float threshold = float.minValue
-	// 	     label bool(T a) where
+	// 	     label bool(T a) filter
 	// 	float resultValue = threshold
 	// 	T resultItem
 	// 	for this
-	// 		if where(.)
+	// 		if filter(.)
 	// 			let value = selector(.)
 	// 			if value > resultValue
 	// 				resultValue = value
@@ -1594,7 +1594,7 @@ global transient priority unit system
 							inline nocolon void() finally
 		try code() @finally finally()
 		
-global transient priority low unit system
+global transient skipInit priority low unit system
 	// Creates a new list populated with the results of calling a function on every element of the list
 	// global inline cpp TResult[] for: T[] subject // The list to iterate over
 	// 	                       -> TResult(
@@ -1753,7 +1753,7 @@ immutable Range
 	Range: int from       // The start of the range
 		   nocolon int to // The end of the range
 	
-	inline cpp bool contains: int value
+	inline cpp bool includes: int value
 		(value >= this.from && value < this.from)
 	
 	inline cpp bool containsInclusively: int value

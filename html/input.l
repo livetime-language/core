@@ -140,7 +140,7 @@ unit html
 	js void initGlobalEventHandlers
 		document.onkeydown = ev => {
 			if(ev.key == "F10") { 
-				Platform.toggleSmallScreen();
+				system.toggleSmallScreen();
 			} else if(ev.key == "Enter" && html.defaultButtonToTriggerWithEnterKey != null) {
 				html.defaultButtonToTriggerWithEnterKey.invoke(ev)
 				ev.preventDefault();

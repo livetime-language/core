@@ -1,4 +1,4 @@
-skipInit unit Platform
+global transient skipInit unit system
 	userCount = 1
 	bool running
 	
@@ -11,14 +11,14 @@ skipInit unit Platform
 		
 	cpp void initPlatform
 		core::init();
-		Platform::init();
+		system::init();
 		app::init();
 		
 	cpp(thread, chrono) void start
 		system::print(std::string("------------------------------------------ ")+std::string(_appName)+std::string(" Version ")+std::to_string(_buildVersion)+std::string(" ------------------------------------------"));
-		Platform::initMedia();
-		Platform::initPlatform();
-		Platform::openMedia();
+		system::initMedia();
+		system::initPlatform();
+		system::openMedia();
 		core::startLocal();
 		
 		// Sound
@@ -49,7 +49,7 @@ skipInit unit Platform
 					case SDL_KEYUP:   input::handleKeyEvent(InputType_KeyUp,   event.key.keysym.scancode, (Key)event.key.keysym.sym); break;
 				}
 			}
-			core::animationFrame();
+			core::onFrame();
 			// std::this_thread::sleep_for(std::chrono::milliseconds(16));
 		}
 		// Mix_HaltChannel(-1);

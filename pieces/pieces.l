@@ -47,7 +47,7 @@ Object Piece
 	private float targetAngle
 	private bool rotatedOverThreshold
 	
-	Vector2 iconPos = Vector2.None
+	Vector2 iconPos = Vector2.none
 	Vector2 clickableMargin = {50,50}
 	
 	public Board board
@@ -57,7 +57,7 @@ Object Piece
 	onBoardChanged
 		
 	// Snap
-	visible Vector2 snappedAt = Vector2.None
+	visible Vector2 snappedAt = Vector2.none
 	onSnap
 	onUnsnap
 	onRotate
@@ -85,7 +85,7 @@ Object Piece
 				
 		// Rotate	
 		Vector2 iconPos = this.iconPos ? this.iconPos : (rotatable ? {(size.x+size.y)*.29, (size.x+size.y)*.29}*{1,-1} : size/2*{1,-1})
-		if rotatable and Framework.selectedObjects.contains(this)
+		if rotatable and Framework.selectedObjects.includes(this)
 			onTouchDown position:position+iconPos, size:Image.rotateIcon.size+clickableMargin, by:visibleFor
 				rotateTouch = touch
 				rotateOffset = angle - math.getAngleForVector(touch.position - position)
@@ -124,7 +124,7 @@ Object Piece
 			onDrop
 		
 		// Flip	
-		if Framework.selectedObjects.contains(this) && flipable
+		if Framework.selectedObjects.includes(this) && flipable
 			drawButton flipIcon, position:position+iconPos*{-1,1}, clickableMargin:{50,50}
 				side = side == Back ? Front : Back
 		
@@ -135,7 +135,7 @@ Object Piece
 				if angle == targetAngle: onRotate
 		
 		// Draw rotation icon
-		if rotatable and Framework.selectedObjects.contains(this) and not (rotateTouch and rotatedOverThreshold)
+		if rotatable and Framework.selectedObjects.includes(this) and not (rotateTouch and rotatedOverThreshold)
 			drawImage rotateIcon, position:position+iconPos, layer:10000, visibleFor
 		
 		draw
@@ -303,11 +303,11 @@ Board SmartBoard
 		return []
 			
 	snap: Piece currentObject, Vector2 position
-		Vector2 closestSpotPos = Vector2.None
+		Vector2 closestSpotPos = Vector2.none
 		float minDistance = int.maxValue
 		let positions = getValidPositions currentObject
 		
-		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.None
+		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.none
 			currentObject.position = snapToPosition
 			
 		if snapToPosition != currentObject.snappedAt
@@ -331,7 +331,7 @@ Board SpotBoard
 		spots.add spot
 	
 	snap: Piece currentObject, Vector2 position
-		Vector2 closestSpotPos = Vector2.None
+		Vector2 closestSpotPos = Vector2.none
 		float minDistance = int.maxValue
 		for spots -> spot
 			let spotPos = spot.getClosestPoint position, this.position

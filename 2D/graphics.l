@@ -1,15 +1,16 @@
-// A color comprised of a red, green, blue and alpha component
-immutable Color
-	global const Color White       = {"#ffffff", "White"}
-	global const Color Black       = {"#000000", "Black"}
-	global const Color Red         = {"#ef476f", "Red"}
-	global const Color Yellow      = {"#ffd166", "Yellow"}
-	global const Color Green       = {"#06d6a0", "Green"}
-	global const Color Blue        = {"#118ab2", "Blue"}
-	global const Color Gray        = {"#3d3d3d", "Gray"}
-		
-	const Color TransparentRed     = {"#ff000080", "Transparent Red"}
+static class Colors
+	global const Color White	=  {"#ffffff", "White"}
+	global const Color Black	= { "#000000", "Black"}
+	global const Color Red	= { "#ef476f", "Red"}
+	global const Color Yellow	= { "#ffd166", "Yellow"}
+	global const Color Green	= { "#06d6a0", "Green"}
+	global const Color Blue	= { "#118ab2", "Blue"}
+	global const Color DarkGrey 	= { "#5F574F", "Dark Grey" }
+	global const Color LightGrey 	= { "#C2C3C7", "Light Grey" }
+	const Color TransparentRed	= { "#ff000080", "Transparent Red"}
 	
+// A color comprised of a red, green, blue and alpha component
+immutable Color	
 	importance:4 string hex
 	string name
 	
@@ -44,6 +45,18 @@ immutable Color
 		
 	Color withAlpha: float alpha
 		return {hex[1..7]+componentToHex(math.floor(alpha*255))}
+
+	// Interpolates to another color
+	Color interpolateTo: Color target
+		                 float progress
+		if progress <= 0	then return this
+		if progress >= 1	then return target
+		let iprogress = 1 - progress
+		return {
+			math.floor(red   * iprogress + target.red   * progress)
+			math.floor(green * iprogress + target.green * progress)
+			math.floor(blue  * iprogress + target.blue  * progress)
+		}
 		
 enum TextOverflow: Visible, Wrap, Scale, WrapAndScale, CutOff, Ellipsis
 
@@ -54,7 +67,7 @@ immutable Texture
 	transient dynamic imageOrCanvas, context
 	
 	Texture
-		if Platform.engineStarted and file
+		if system.engineStarted and file
 			open
 			
 	internal js bool ensureIsAvailable()
@@ -82,7 +95,7 @@ immutable Texture
 					console.log("Error loading image: ", this.file, e)
 					reject(e)
 				}
-				image.src = Platform.getAbsoluteUrl(this.file)
+				image.src = system.getAbsoluteUrl(this.file)
 			})
 		} else {
 			this.imageOrCanvas = image
@@ -106,7 +119,7 @@ immutable Texture
 			var prevPixelSizeX = graphics.pixelSize.x
 			var prevPixelSizeY = graphics.pixelSize.y
 			var prevItems = graphics.items
-			var prevFastForward = Platform.fastForward
+			var prevFastForward = system.fastForward
 			
 			// Create canvas
 			if(!this.context) {
@@ -121,7 +134,7 @@ immutable Texture
 			graphics.pixelSize.x = this.size.x
 			graphics.pixelSize.y = this.size.y
 			graphics.items = []
-			Platform.fastForward = false
+			system.fastForward = false
 			var a = graphics.localMatrix.matrix, b = graphics.totalMatrix.matrix
 			var a0 = graphics.localMatrix.m0, a1 = graphics.localMatrix.m1, a2 = graphics.localMatrix.m2, a3 = graphics.localMatrix.m3, a4 = graphics.localMatrix.m4, a5 = graphics.localMatrix.m5
 			var b0 = graphics.totalMatrix.m0, b1 = graphics.totalMatrix.m1, b2 = graphics.totalMatrix.m2, b3 = graphics.totalMatrix.m3, b4 = graphics.totalMatrix.m4, b5 = graphics.totalMatrix.m5
@@ -145,7 +158,7 @@ immutable Texture
 			graphics.pixelSize.x = prevPixelSizeX
 			graphics.pixelSize.y = prevPixelSizeY
 			graphics.items = prevItems
-			Platform.fastForward = Platform.fastForward
+			system.fastForward = system.fastForward
 		}
 		
 // A font that can be used to draw text
@@ -159,7 +172,7 @@ skipInit immutable Font
 		if(!window._fontCache) _fontCache = {}
 		let font = _fontCache[this.file]
 		if(!font) {
-			let font = new FontFace(this.name, "url("+Platform.getAbsoluteUrl(this.file)+")");
+			let font = new FontFace(this.name, "url("+system.getAbsoluteUrl(this.file)+")");
 			await font.load();
 			document.fonts.add(font);
 			_fontCache[this.file] = font;
@@ -272,7 +285,7 @@ transient skipInit global unit graphics
 	bool isDrawingDebugInfo
 	
 	async setup
-		if Platform.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
+		if system.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
@@ -295,7 +308,7 @@ transient skipInit global unit graphics
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
 	internal updateBaseMatrix
-		let statisticsMargin = Platform.showDebugInfo ? statistics.margin : {}
+		let statisticsMargin = system.showDebugInfo ? statistics.margin : {}
 		let referenceSizeWithMargin = referenceSize + statisticsMargin
 		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
 		float scale
@@ -317,12 +330,12 @@ transient skipInit global unit graphics
 		let offsetY = anchor > TopCenter ? pixelSize.y/2 : 0
 		baseMatrix = {scale,0,0,scale,offsetX-(statisticsMargin.x/2)*scale,offsetY-(statisticsMargin.y/2)*scale}
 
-	Vectro2 getReferencePos: float x, float y
+	Vector2 getPixelPos: float x, float y
 		return {x*pixelRatio, y*pixelRatio}.getRelativeTo(baseMatrix)
 		
 	internal js void startFrame
 		graphics.reset()
-		if(!Platform.fastForward && !Platform.waitingForInitialData) {
+		if(!system.fastForward && !system.waitingForInitialData) {
 			if(!graphics.backgroundColor || graphics.backgroundColor.hex == "#000000") {
 				graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			} else {
@@ -347,18 +360,18 @@ transient skipInit global unit graphics
 		items.clear
 
 	internal finishFrame
-		if(Platform.fastForward) return
+		if(system.fastForward) return
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
 		// if core.frame < core.frames or core.runningTest then	showPointersMode = input.showPointersDuringPlayback
-		// else if Platform.isDebug then	showPointersMode = input.showPointersModeInEditor
+		// else if system.isDebug then	showPointersMode = input.showPointersModeInEditor
 		// else	showPointersMode = input.showPointersMode
 		switch
 			core.frame < core.frames or core.runningTest	then showPointersMode = input.showPointersDuringPlayback
-			Platform.isDebug	then showPointersMode = input.showPointersModeInEditor
+			system.isDebug	then showPointersMode = input.showPointersModeInEditor
 			default	then showPointersMode = input.showPointersMode
-		if showPointersMode != None then players.each drawPointer ., showPointersMode
+		if showPointersMode != None then input.players.each drawPointer ., showPointersMode
 		
 		for input.internalUsers if .
 			.videoElementIndex = 0
@@ -389,17 +402,17 @@ transient skipInit global unit graphics
 		graphics.context.globalAlpha = 1
 				
 	internal isVisibleFor: Player[] visibleFor
-		if(Platform.fastForward && !isDrawingDebugInfo) return false
+		if(system.fastForward && !isDrawingDebugInfo) return false
 		// Use currentlyVisibleFor when visibleFor is null or [null]
 		let effectiveVisibleFor = visibleFor and (visibleFor.length != 1 or visibleFor[0]) ? visibleFor : currentlyVisibleFor
 		return effectiveVisibleFor == null or effectiveVisibleFor.any . == null or .id == input.localUser.id
 		
 	private Player[] getClickableBy: Player[] visibleFor, Player[] clickableBy
-		if not Platform.isOnlineMultiplayer return players
+		if not system.isOnlineMultiplayer return input.players
 		Player[] effectiveVisibleBy = visibleFor or currentlyVisibleFor
 		return effectiveVisibleBy and clickableBy
 		     ? effectiveVisibleBy intersectWith clickableBy 
-		     : effectiveVisibleBy or clickableBy or players
+		     : effectiveVisibleBy or clickableBy or input.players
 			
 	internal js void drawMargins
 		if(graphics.effectiveScaleMode == 1) {
@@ -465,7 +478,7 @@ transient skipInit global unit graphics
 		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                      implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 							  alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White	// Tint the image with this color
 		                      HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -507,7 +520,7 @@ transient skipInit global unit graphics
 		                      implicit Vector2 size = {}	// A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                      implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                      implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                      implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                      alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                      Color color = White	// Tint the image with this color
 		                      angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -560,7 +573,7 @@ transient skipInit global unit graphics
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", "Walk2.png", ...)
 						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
 		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
-					       implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+					       implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White	// Tint the image with this color
 		                   SourceCodeLocation location
@@ -582,7 +595,7 @@ transient skipInit global unit graphics
 		                   framesPerSecond = 0	// Animate a sequence of images (for example "Walk0.png", "Walk1.png", ...)
 						   frameOffset = 0	// Offset the animation. Use this to ensure several innstances of the animation are not in sync.
 		                   frameCount = 0	// Only use this many frames from the sequence of images. A value of 0 with play all frames.
-		                   implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                   implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                   alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                   Color color = White	// Tint the image with this color
 		                   angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -599,7 +612,7 @@ transient skipInit global unit graphics
 		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the image
 		                                implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                                implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                                implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                                alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                                Color color = White	// Tint the image with this color
 	                                    HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -635,7 +648,7 @@ transient skipInit global unit graphics
 		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the image
 		                                implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                                implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                                implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                                alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                                Color color = White	// Tint the image with this color
 		                                angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
@@ -662,7 +675,7 @@ transient skipInit global unit graphics
 		                            implicit Vector2 size = {}
 		                            implicit Player[] visibleFor = null
 								    implicit frame = 0
-		                            implicit layer = int.minValue
+		                            implicit layer = float.minValue
 		                            alpha = 1.0
 		                            Color color = White
 								    float leftSlice = 0.0
@@ -729,7 +742,7 @@ transient skipInit global unit graphics
 							         implicit Vector2 sourceSize = {}	// The size of the source image to draw
 							         implicit Player[] visibleFor = null	// Only this player or list of players will see the image
 		                             implicit frame = 0	// The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
-		                             implicit layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                             implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                             alpha = 1.0	// The opacity of the image (0: fully transparent, 1: fully visible)
 		                             Color color = White	// Tint the image with this color
 		                             HorizontalAlignment align = Center	// The horizontal alignment of the image
@@ -777,7 +790,7 @@ transient skipInit global unit graphics
 		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		             Color outlineColor = null            // The color of the outline around the text
 		             outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		             implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		             implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		             implicit Player[] visibleFor = null  // Only this player or list of players will see the text
@@ -801,7 +814,7 @@ transient skipInit global unit graphics
 		float offsetX, offsetY
 		
 		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
-		or text.contains("\n")
+		or text.includes("\n")
 			if maxWidth == 0	then maxWidth = float.maxValue
 			if overflow == Ellipsis	then maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
 			// Split text into words
@@ -953,7 +966,7 @@ transient skipInit global unit graphics
 		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
 		                                Color outlineColor = null            // The color of the outline around the text
 		                                outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		                                implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		                                implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
 		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
 		                                implicit Player[] visibleFor = null  // Only this player or list of players will see the text
@@ -1133,7 +1146,7 @@ transient skipInit global unit graphics
 		                     size = 0.0                           // The font size of the text
 		                     Color color = null                   // The color of the text
 		                     Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		                     implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		                     implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                     radius = 100.0                       // The radius of the circle to draw the text around
 		                     angle = 0.0                          // The angle of the center of the text in turn (0: top, 0.25: right, 0.5: bottom, -0.25: left)
 		                     spacing = .2                         // The spacing between the letters of the text
@@ -1181,7 +1194,7 @@ transient skipInit global unit graphics
 		                    implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                    implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
 		                    hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
-		                    implicit layer = int.minValue        // Higher layers are drawn in front of lower layers
+		                    implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                    alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                    enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
 		                    alphaWhenDisabled = .5               // The opacity of the button will be multiplied with this factor when its disabled
@@ -1207,7 +1220,7 @@ transient skipInit global unit graphics
 		if isVisibleFor(visibleFor)
 			if frame == -1	then frame = 0
 			if scale != 1.0	then textSize = math.round(textSize * scale); effectiveSize *= scale
-			int effectiveLayer = layer != int.minValue ? layer : math.floor(graphics.currentLayer)
+			let effectiveLayer = layer != float.minValue ? layer : math.floor(graphics.currentLayer)
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
 			if text then drawText text, position+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
 			if accentImage
@@ -1233,7 +1246,7 @@ transient skipInit global unit graphics
 		                          Color outlineColor = null           // The color of the outline around the rectangle
 		                          outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                          implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
-		                          implicit layer = int.minValue       // Higher layers are drawn in front of lower layers
+		                          implicit layer = float.minValue       // Higher layers are drawn in front of lower layers
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                          HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                          VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
@@ -1271,7 +1284,7 @@ transient skipInit global unit graphics
 		                                 Color outlineColor = null           // The color of the outline around the rectangle
 		                                 outlineWidth = 0.0                    // The width of the outline around the rectangle in pixels
 		                                 implicit Player[] visibleFor = null // Only this player or list of players will see the rectangle
-		                                 implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                                 implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                                 HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                                 VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
@@ -1323,7 +1336,7 @@ transient skipInit global unit graphics
 		                       angle = math.twoPi                 // Draw an arc with this angle in radians (one full rotation is 2*pi)
 		                       RotationDirection direction = Clockwise // The circle is drawn in this direction
 		                       implicit Player[] visibleFor = null     // Only this player or list of players will see the circle
-		                       implicit layer = int.minValue           // Higher layers are drawn in front of lower layers
+		                       implicit layer = float.minValue           // Higher layers are drawn in front of lower layers
 		                       alpha = 1.0                             // The opacity of the circle (0: fully transparent, 1: fully visible)
 		                       SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1359,7 +1372,7 @@ transient skipInit global unit graphics
 		                     Color color = null	// The color of the line
 		                     width = 0.0	// The width of the line in pixels
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
-		                     implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                     implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayLine(
@@ -1388,7 +1401,7 @@ transient skipInit global unit graphics
 		                      width = 0                           // The width of the line in pixels
 		                      smooth = false                      // Smooth the corners of the line
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the line
-		                      implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                      implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
@@ -1418,7 +1431,7 @@ transient skipInit global unit graphics
 		                           Color outlineColor = null	// The color of the outline around the arrow
 		                           outlineWidth = 0.0	// The width of the outline around the arrow
 		                           implicit Player[] visibleFor = null	// Only this player or list of players will see the arrow
-		                           implicit int layer = int.minValue	// Higher layers are drawn in front of lower layers
+		                           implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
 		                           alpha = 1.0	// The opacity of the arrow (0: fully transparent, 1: fully visible)
 		if width <= 0 then width = graphics.currentLineWidth
 		let delta = to - from
@@ -1462,7 +1475,7 @@ transient skipInit global unit graphics
 		                        outlineWidth = 0.0                    // The width of the outline around the polygon in pixels
 		                        smooth = false                      // Smooth the corners of the polygon
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
-		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
@@ -1547,7 +1560,7 @@ transient skipInit global unit graphics
 		                        Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                        implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1582,7 +1595,7 @@ transient skipInit global unit graphics
 		                        Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                        Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                        implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1614,7 +1627,7 @@ transient skipInit global unit graphics
 		                             Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                             Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
 		                             implicit Player[] visibleFor = null // Only this player or list of players will see the texture
-		                             implicit int layer = int.minValue   // Higher layers are drawn in front of lower layers
+		                             implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                             Color color = White                 // Tint the texture with this color
 		if(graphics.isVisibleFor(visibleFor)) {
@@ -1742,7 +1755,7 @@ transient skipInit global unit graphics
 	//                 drawText "OK"
 	//                 drawImage Button
 	// Image: graphicsTransform.png
-	transform: Vector2 move = Vector2.None  // The distance to move
+	transform: Vector2 move = Vector2.none  // The distance to move
 		       rotate = 0.0                 // The angle in radians (one full rotation is 2*pi)
 		       scale = 1.0                  // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
@@ -1806,7 +1819,7 @@ transient skipInit global unit graphics
 		  bool show = false     // Show the clipping area for debugging
 		  void() code           // All drawing operations within this block of code will be clipped
 		let prev = currentClippingPath
-		Vector2[] absolutePoints = points.select . + position
+		Vector2[] absolutePoints = points.map . + position
 		currentClippingPath = ClippingPath(show, absolutePoints)
 		code()
 		currentClippingPath = prev
@@ -1985,7 +1998,7 @@ transient skipInit global unit graphics
 		
 	private getScaleImagesAsPointerGetsCloserFactor: Vector2 position
 		if not scaleAsPointerGetsCloserRadius then return 1.0
-		let distance = scaleAsPointerGetsCloserBy ? scaleAsPointerGetsCloserBy.pointerPosition.distanceTo(position) : players.min.pointerPosition.distanceTo(position)
+		let distance = scaleAsPointerGetsCloserBy ? scaleAsPointerGetsCloserBy.pointerPosition.distanceTo(position) : input.players.min.pointerPosition.distanceTo(position)
 		// return math.map distance, 0, scaleAsPointerGetsCloserRadius, scaleAsPointerGetsCloserFactor, 1
 		return scaleAsPointerGetsCloserFactor interpolateTo 1 progress:distance 0..scaleAsPointerGetsCloserRadius
 		
@@ -2111,7 +2124,7 @@ internal skipInit transient unit gizmo
 		handleSize = 16 interpolateTo 32 progress:math.min(max.x-min.x, max.y-min.y) 64..256
 	
 	internal tick
-		if Platform.playMode != Manipulator then return
+		if system.playMode != Manipulator then return
 		findInfluencedItems
 		
 		if items and showSelection
@@ -2125,7 +2138,7 @@ internal skipInit transient unit gizmo
 			drawRectangle center, size:max-min, outlineColor:{"#437FDF"}, outlineWidth:4, location:null, layer:int.maxValue
 			
 	private IntVector2 overHandleDirection
-	private Vector2 touchDownPos = Vector2.None
+	private Vector2 touchDownPos = Vector2.none
 	private bool touchDownInsideGizmo
 	private int locationIndex
 	private int waitingForCodeId
@@ -2135,26 +2148,26 @@ internal skipInit transient unit gizmo
 	private bool showSelection = false
 	
 	clear
-		overHandleDirection = IntVector2.None
-		touchDownPos = Vector2.None
+		overHandleDirection = IntVector2.none
+		touchDownPos = Vector2.none
 		touchDownInsideGizmo = false
 		locationIndex = 0
 		waitingForCodeId = 0
 		aspectRatio = 1
 		items.clear
-		min = Vector2.None
-		max = Vector2.None
+		min = Vector2.none
+		max = Vector2.none
 		lastSendTime = 0
 	
 	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
-		if Platform.playMode != Manipulator then return
+		if system.playMode != Manipulator then return
 		let movedSinceTouchDown = (referencePos manhattanDistanceTo touchDownPos) > 8
 		let insideGizmo = referencePos >= gizmo.min and referencePos <= gizmo.max
 		if inputType == TouchDown	then touchDownPos = referencePos; touchDownInsideGizmo = insideGizmo; else
-		if inputType == TouchUp	then touchDownPos = Vector2.None
+		if inputType == TouchUp	then touchDownPos = Vector2.none
 			
 		// Which handle are we currently hovering over?
-		if items and touchDownPos == Vector2.None
+		if items and touchDownPos == Vector2.none
 			let center = (min + max)/2
 
 			switch referencePos
@@ -2166,11 +2179,11 @@ internal skipInit transient unit gizmo
 				.manhattanDistanceTo({min.x, center.y}) < handleSize	then overHandleDirection = IntVector2.Left
 				.manhattanDistanceTo({center.x, min.y}) < handleSize	then overHandleDirection = IntVector2.Up
 				.manhattanDistanceTo({center.x, max.y}) < handleSize	then overHandleDirection = IntVector2.Down
-				default 	then overHandleDirection = IntVector2.None
+				default 	then overHandleDirection = IntVector2.none
 				
 		// If we touch down outside the selection, we select an item immediately, so we can directly move it
 		// If we touch up inside the selection without moving, we cycle through all items the pointer is over
-		if overHandleDirection == IntVector2.None and codeId >= waitingForCodeId
+		if overHandleDirection == IntVector2.none and codeId >= waitingForCodeId
 			if (inputType == TouchDown and !insideGizmo) 
 			or (inputType == TouchUp and touchDownInsideGizmo and !movedSinceTouchDown)
 				// Collect all items and locations the mouse pointer is over
@@ -2190,19 +2203,19 @@ internal skipInit transient unit gizmo
 					let selectedStackItem = overItems[locationIndex++ mod overItems.length]
 					cursorLocation = selectedStackItem.location
 					cursorItem = selectedStackItem.item
-					Platform.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
+					system.sendToEditor({type:"select", cursorFile:cursorLocation.file, cursorPos:cursorLocation.start})
 					showSelection = true
-					Platform.replay updateMedia:false
+					system.replay updateMedia:false
 				else
 					// Deselect
 					cursorLocation = null
 					locationIndex = 0
 					showSelection = false
-					Platform.replay updateMedia:false
+					system.replay updateMedia:false
 		
 		if cursorLocation
 			GizomInfluence[] influences
-			if overHandleDirection != IntVector2.None
+			if overHandleDirection != IntVector2.none
 				// Resize the item (we are over a handle)
 				let handle = overHandleDirection
 				let isOrthogonal = handle.x == 0 or handle.y == 0
@@ -2254,17 +2267,17 @@ internal skipInit transient unit gizmo
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
 					aspectRatio = (max.y - min.y) / (max.x - min.x)
-					Platform.sendToEditor {type:"startManipulation", influences}
+					system.sendToEditor {type:"startManipulation", influences}
 					showSelection = true
 					
 				if isManipulating
 					// Move manipulation
-					Platform.sendToEditor {type:"moveManipulation", influences, codeId:++waitingForCodeId}
+					system.sendToEditor {type:"moveManipulation", influences, codeId:++waitingForCodeId}
 
 			if inputType == TouchUp && isManipulating
 				// End manipulation
 				isManipulating = false
-				Platform.sendToEditor {type:"endManipulation",  influences}
+				system.sendToEditor {type:"endManipulation",  influences}
 			
 	private js void setCursor: string cursor
 		document.body.style.cursor = cursor
@@ -2286,7 +2299,7 @@ awardScreen
 			active = not active
 		if active
 			let size = {720, 540}
-			forPositions players, grid:{2,2}, delta:size
+			forPositions input.players, grid:{2,2}, delta:size
 				drawVideo . position:pos, size
 				drawText .playerScore, pos * {2.13, 1.8}, font:ByTheWay
 				
@@ -2294,7 +2307,7 @@ awardScreen
 
 internal transient immutable DisplayItem
 	float x, y, w, h
-	int layer
+	float layer
 	float alpha
 	ClippingPath clippingPath
 	string name
@@ -2308,7 +2321,7 @@ internal transient immutable DisplayItem
 
 	DisplayItem: Matrix2D m
 		m0 = m.m0; m1 = m.m1; m2 = m.m2; m3 = m.m3; m4 = m.m4; m5 = m.m5
-		if Platform.isDebug and (w or h)
+		if system.isDebug and (w or h)
 			poly = [
 				{ x,   y   }.transform(m),
 				{ x+w, y   }.transform(m),

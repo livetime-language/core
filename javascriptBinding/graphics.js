@@ -147,7 +147,7 @@ function drawLargeButton(text, position, options) {
 
 function print(text, options) {
 	options ||= {}
-	System.print(String(text ?? ""), options.type ?? "info", options.color ?? null, options.drawDebugInfo ?? null, options.location)
+	system.print(String(text ?? ""), options.type ?? "info", options.color ?? null, options.drawDebugInfo ?? null, options.location)
 }
 
 function animate(duration, tick, then, delay = 0) {

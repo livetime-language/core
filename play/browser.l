@@ -1,7 +1,7 @@
-transient skipInit unit Platform
+global transient skipInit unit system
 	public inline js string url	=> location.href
 	public inline js string hostname	=> location.hostname
-	public protocolAndHost	=> !Platform.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
+	public protocolAndHost	=> !system.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
 	public inline js int userAgent	=> navigator.userAgent.replace(/,/g," ")
 	public inline js float usedMemory	=> (performance.memory ? performance.memory.usedJSHeapSize : 0)
 	
@@ -13,7 +13,7 @@ transient skipInit unit Platform
 		
 	js async void setFullscreen: value = true
 		                         Player forPlayer = null
-		if(!Platform.isStaging && !Platform.isDebug && !Platform.fastForward && (forPlayer == null || input.localUser?.id == forPlayer.id)) {
+		if(!system.isStaging && !system.isDebug && !system.fastForward && (forPlayer == null || input.localUser?.id == forPlayer.id)) {
 			try {
 				if(value) await document.body.requestFullscreen()
 				else      await document.exitFullscreen()
@@ -66,10 +66,6 @@ transient skipInit unit Platform
 	inline js void vibrate: int duration = 100
 		if(navigator.vibrate) navigator.vibrate(duration)
 		
-	inline js void alert: string message
-		alert(message)
-		log(message)
-		
 	inline js void delay: float time // The delay in milliseconds
 		                  void() then
 		setTimeout(then, time)
@@ -108,7 +104,7 @@ transient skipInit unit Platform
 		if(core.isPremiere) history.back();
 		
 	inline js void reload
-		if(!Platform.isDebug) location.reload();
+		if(!system.isDebug) location.reload();
 
 	js void openScript: string url
 		return new Promise((resolve, reject) => {
@@ -291,18 +287,18 @@ internal transient skipInit unit IndexedDB
 					core.log("IndexedDB: upgradeneeded");
 					IndexedDB.db = e.target.result;
 					for(let store of IndexedDB.stores) {
-						if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
+						if(!IndexedDB.db.objectStoreNames.includes(store.name)) {
 							let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
-							System.print("IndexedDB: created store "+store.name)
+							system.print("IndexedDB: created store "+store.name)
 							for(let index of store.indices) {
 								storeObject.createIndex(index.name, index.keyPaths.length == 1 ? index.keyPaths[0] : index.keyPaths)
 							}
 						}
 					}
-					System.print("IndexedDB: successfully upgraded to version "+version)
+					system.print("IndexedDB: successfully upgraded to version "+version)
 				}
 				request.onsuccess = e => {
-					System.print("IndexedDB: success");
+					system.print("IndexedDB: success");
 					IndexedDB.db = e.target.result;
 					for(let store of IndexedDB.stores) {
 						store.db = IndexedDB.db
@@ -326,18 +322,18 @@ internal transient skipInit unit IndexedDB
 				core.log("IndexedDB: upgradeneeded");
 				IndexedDB.db = e.target.result;
 				for(let store of IndexedDB.stores) {
-					if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
+					if(!IndexedDB.db.objectStoreNames.includes(store.name)) {
 						let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
-						System.print("IndexedDB: created store "+store.name)
+						system.print("IndexedDB: created store "+store.name)
 						for(let index of store.indices) {
 							storeObject.createIndex(index.name, index.keyPaths)
 						}
 					}
 				}
-				System.print("IndexedDB: successfully upgraded to version "+version)
+				system.print("IndexedDB: successfully upgraded to version "+version)
 			}
 			request.onsuccess = e => {
-				System.print("IndexedDB: success");
+				system.print("IndexedDB: success");
 				IndexedDB.db = e.target.result;
 				for(let store of IndexedDB.stores) {
 					store.db = IndexedDB.db

@@ -27,7 +27,7 @@ transient skipInit static class backend
 		
 	async js void connect: string url = ""
 		if(url)	backend.url = backend.libUrl = url + "/"
-		else	backend.url = window.location && window.location.host && !Platform.isDebug ? location.origin : "http://localhost:8090"
+		else	backend.url = window.location && window.location.host && !system.isDebug ? location.origin : "http://localhost:8090"
 		const PocketBase = (await import((backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
 		if(backend.pb) backend.pb.realtime.unsubscribe();
 		backend.pb = new PocketBase(backend.url);
@@ -56,7 +56,7 @@ transient skipInit static class backend
 	importance:5 async
 	dynamic getAuthenticatedUser
 		try
-			if Platform.getLocalStorageString("pocketbase_auth")
+			if system.getLocalStorageString("pocketbase_auth")
 				let result = await pb.collection("users").authRefresh();
 				return result.record
 		catch as error
@@ -109,7 +109,7 @@ transient skipInit static class backend
 	importance:5
 	void logout
 		pb.authStore.clear();
-		Platform.removeLocalStorageItem('pocketbase_auth');
+		system.removeLocalStorageItem('pocketbase_auth');
 
 	// Duplicated pending requests are automatically cancelled by default. Use this funtion to enable or disable this.
 	// Example:
@@ -135,7 +135,7 @@ transient skipInit static class backend
 		return pb.collection('users').confirmVerification(token);
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
-// The items are stored locally in the member variable "items". Use the functions "get", "find", "where" and "length" to access the local items.
+// The items are stored locally in the member variable "items". Use the functions "get", "find", "filter" and "length" to access the local items.
 // You can also subscribe to changes in the remote PocketBase collection to automatically keep the local items up to date in realtime.
 DatabaseTable<T> 
 	// The name of the remote PocketBase collection
@@ -479,7 +479,7 @@ DatabaseTable<T>
 		
 	// Find all items that meet the given condition from the items stored locally in the member variable "items"
 	importance:3 
-	inline js T[] where: bool(T a) condition // The condition to check
+	inline js T[] filter: bool(T a) condition // The condition to check
 		this.items.filter(condition)
 	
 	// Gets the number of items stored locally in the member variable "items"
@@ -499,7 +499,7 @@ DatabaseTable<T>
 		items.removeAt(index)
 		return item
 
-global transient priority unit System
+global transient priority unit system
 	// Do something a given number of times or for each item in a list
 	global inline js void for: DatabaseTable<T> subject    // The list to iterate over
 		                       -> inline void(

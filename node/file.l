@@ -1,4 +1,4 @@
-unit System
+global transient skipInit unit system
 	global inline js dynamic require: string moduleName
 		require(moduleName)
 
