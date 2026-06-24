@@ -354,7 +354,6 @@ transient global skipInit graphics
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 	global string helpText
-	global string focus
 
 	setResolution: Vector2 size = {256, 192}
 		screen.setup size

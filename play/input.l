@@ -26,6 +26,7 @@ internal transient class InternalUser
 	visible bool[] justPressed, isPressed, justReleased
 	Vector2 pointerPosition, scrollDelta
 	string typedCharacters
+	string focus, prevFocus
 
 	// Video + Audio
 	object mediaStream
@@ -83,6 +84,7 @@ internal transient class InternalUser
 			justReleased[i] = false
 		scrollDelta = {0,0}
 		typedCharacters = ""
+		prevFocus = focus
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -1079,9 +1081,9 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}", input.isCertain
-
-		graphics.focus = ""
 		
+		internalUser.focus = ""
+
 		// Call input handlers
 		// app.onTouchHover??(touch);
 		// player.onTouchHover??(touch);
@@ -1892,3 +1894,21 @@ input
 	global getTypedCharacters: int player = 0
 		player = 0
 		return internalUsers[player].typedCharacters
+
+	global getFocus: int player = 0
+		player = 0
+		return internalUsers[player].focus
+
+	global setFocus: string value, int player = 0
+		player = 0
+		let user = internalUsers[player]
+		// if value != user.prevFocus then user.lostFocus = user.prevFocus
+		user.focus = value
+
+	global getLostFocus: int player = 0
+		player = 0
+		let user = internalUsers[player]
+		return user.focus != user.prevFocus ? user.prevFocus : ""
+		// let lostFocus = user.lostFocus
+		// user.lostFocus = ""
+		// return lostFocus
