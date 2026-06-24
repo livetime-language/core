@@ -428,7 +428,7 @@ transient global skipInit graphics
 					   nocolon Color with = null
 					   void() onClick = null
 					   string help = ""
-					   Vector2 margin = {2,2}
+					   Vector2 margin = {0,0}
 		if not system.fastForward 
 			int positionX = pos.x.floor, positionY = pos.y.floor
 			int startX = positionX
@@ -484,7 +484,7 @@ transient global skipInit graphics
 					implicit Color color = Colors.White
 					void() onClick = null
 					string help = ""
-					Vector2 margin = {2,2}
+					Vector2 margin = {0,0}
 		if system.fastForward then return
 		int stride = floor(screen.size.x)
 		int fontStride = floor(font.charsPerRow * font.gridSize.x)
@@ -515,7 +515,7 @@ transient global skipInit graphics
 						  int outlineWidth = 1
 					      void() onClick = null
 					      string help = ""
-					      Vector2 margin = {2,2}
+					      Vector2 margin = {0,0}
 		if system.fastForward then return
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
@@ -544,7 +544,7 @@ transient global skipInit graphics
 							int outlineWidth = 1
 					        void() onClick = null
 					        string help = ""
-					        Vector2 margin = {2,2}
+					        Vector2 margin = {0,0}
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
 		// TODO: Implement draw circle
