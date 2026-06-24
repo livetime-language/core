@@ -427,6 +427,7 @@ transient global skipInit graphics
 					   nocolon Color with = null
 					   void() onClick = null
 					   string help = ""
+					   Color transparentColor = Black
 					   Vector2 margin = {0,0}
 		if not system.fastForward 
 			int positionX = pos.x.floor, positionY = pos.y.floor
@@ -446,11 +447,12 @@ transient global skipInit graphics
 			int end = start + endX - startX
 			int offsetToTarget = startY * targetStride + startX - start
 			int[] source = sprite.pixels, target = screen.pixels
+			int transparentValue = transparentColor ? transparentColor.value : 0
 			if with == null or replaceColor == with
 				for startY to endY as y
 					for start to end as i
 						let sourceValue = source[i]
-						if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
+						if sourceValue != transparentValue then target[i + offsetToTarget] = sourceValue
 					start += spriteStride
 					end += spriteStride
 					offsetToTarget += targetStride - spriteStride
@@ -462,7 +464,7 @@ transient global skipInit graphics
 					for start to end as i
 						let sourceValue = source[i]
 						if sourceValue == fromColor then sourceValue = toColor
-						if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
+						if sourceValue != transparentValue then target[i + offsetToTarget] = sourceValue
 					start += spriteStride
 					end += spriteStride
 					offsetToTarget += targetStride - spriteStride
@@ -471,7 +473,7 @@ transient global skipInit graphics
 				for startY to endY as y
 					for start to end as i
 						let sourceValue = source[i]
-						if sourceValue != 0xff000000 then target[i + offsetToTarget] = singleColor
+						if sourceValue != transparentValue then target[i + offsetToTarget] = singleColor
 					start += spriteStride
 					end += spriteStride
 					offsetToTarget += targetStride - spriteStride
