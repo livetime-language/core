@@ -583,7 +583,7 @@ Sprite
 	int[] pixels
 	Vector2 size
 	int frames = 1
-	int framesPerSecond = 15
+	int framesPerSecond = 10
 	int stride
 	
 	SpriteType type = SpriteType.None
