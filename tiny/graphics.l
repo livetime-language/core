@@ -279,7 +279,8 @@ transient global skipInit graphics
 		screen = {}
 		screens = [screen]
 
-		setZoom 1
+		setResolution {224, 168}
+		// setResolution {256, 192}
 		initHandlers
 
 		colorByLetter = {}
@@ -355,9 +356,8 @@ transient global skipInit graphics
 	global string helpText
 	global string focus
 
-	setZoom: int factor
-		screen.setup {224,168}*factor
-		// screen.setup {192,144}*factor
+	setResolution: Vector2 size = {256, 192}
+		screen.setup size
 		pixels = screen.pixels
 		screenSize.create screen.size
 		screenGridSize.create screen.size / tileSize
