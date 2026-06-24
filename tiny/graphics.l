@@ -423,6 +423,7 @@ transient global skipInit graphics
 
 	global drawSprite: Sprite sprite
 	                   Vector2 pos = {0,0}
+					   int frame = 0
 					   Color replaceColor = null
 					   nocolon Color with = null
 					   void() onClick = null
@@ -441,7 +442,8 @@ transient global skipInit graphics
 			if endY > screen.clipY2 then endY = screen.clipY2
 			if startX >= endX or startY >= endY then return
 			int spriteStride = sprite.stride
-			int start = (startY - positionY) * spriteStride + startX - positionX
+			int actualFrame = frame mod sprite.frames
+			int start = (startY - positionY) * spriteStride + startX - positionX + actualFrame * sprite.size.x
 			int end = start + endX - startX
 			int offsetToTarget = startY * targetStride + startX - start
 			int[] source = sprite.pixels, target = screen.pixels
@@ -598,7 +600,7 @@ Sprite
 		if not pixelsAsStrings then return
 		let maxWidth = pixelsAsStrings.max.length
 		pixels = []
-		size.create(maxWidth, pixelsAsStrings.length)
+		size.create(floor(maxWidth/frames), pixelsAsStrings.length)
 		if frames == int.undefined then frames = 1
 		if framesPerSecond == int.undefined then framesPerSecond = 15
 		stride = maxWidth
@@ -612,12 +614,9 @@ Sprite
 		string[] result
 		for size.y as y
 			string line
-			for size.x as x
+			for size.x*frames as x
 				int pixelIndex = y * stride + x
 				Color color = graphics.getClosestColor(pixels[pixelIndex])
 				line += color ? color.letter : " "
 			result.add line
 		return result
-
-	copyFromSource
-		// NEXT: Copy from graphics.tiles at sourcePos with size and frames, use in spriteEditor and tilePanel
