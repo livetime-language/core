@@ -577,7 +577,7 @@ transient global skipInit graphics
 		colorReplacements.clear
 		enableColorReplacements = false
 
-enum SpriteType: None, Character, Object, Tile
+enum SpriteType: None, Object, Character, Tile
 enum CollisionType: None, Solid, Hazard, OneWayPlatform
 
 Sprite
@@ -589,6 +589,7 @@ Sprite
 	
 	SpriteType type = SpriteType.None
 	CollisionType collisionType = CollisionType.None
+	int expectNeighbors = 16
 	string name
 	string tags
 	
