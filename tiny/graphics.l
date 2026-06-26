@@ -155,12 +155,16 @@ Screen
 	
 	js void setup: Vector2 size
 		this.size = size
-		this.canvas = document.createElement("canvas")
-		this.canvas.width = this.size.x
-		this.canvas.height = this.size.y
-		this.context = this.canvas.getContext("2d")
-		this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
-		this.pixels = new Uint32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
+		if(system.isEmbedded) {
+			this.pixels = new Uint32Array(size.x * size.y);
+		} else {
+			this.canvas = document.createElement("canvas")
+			this.canvas.width = this.size.x
+			this.canvas.height = this.size.y
+			this.context = this.canvas.getContext("2d")
+			this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
+			this.pixels = new Uint32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
+		}
 		this.clear();
 
 	onResize
@@ -189,7 +193,7 @@ Screen
 		for len target[.] = 0xff000000
 			
 	finishFrame
-		if system.fastForward then return
+		if system.fastForward or system.isEmbedded then return
 		context.putImageData(pixelData, 0, 0)
 		graphics.context.imageSmoothingEnabled = smoothing;
 		graphics.context.drawImage(canvas, activeOffset.x, activeOffset.y, activeSize.x, activeSize.y)
@@ -253,10 +257,12 @@ transient global skipInit graphics
 	TileCollection[] tileCollections
 
 	js void initHandlers
+		if(system.isEmbedded) return
 		window.onresize = () => this.onResize()
 		this.onResize()
 
 	internal js void onResize
+		if(system.isEmbedded) return
 		graphics.canvas = document.querySelector("canvas");
 		if(!graphics.canvas) {
 			graphics.canvas = document.createElement("canvas");
