@@ -127,6 +127,10 @@ immutable struct int
 	// Perform a bitwise "and" operation
 	importance:3  inline js int bitwiseAnd: implicit int value // The value to perform the bitwise "and" with
 		(this & value)
+
+	// Perform a bitwise "xor" operation
+	importance:3 inline js int bitwiseXor: implicit int value // The value to perform the bitwise "xor" with
+		(this ^ value)
 	
 	// Check if a certain bit it set
 	inline js bool isSet: implicit int value // The value of the bits to check (for example 1, 2, 4, 8, 16, ...)

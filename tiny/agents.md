@@ -63,7 +63,7 @@ tick	// app.tick is called every frame (30 times per second by default)
 	if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 	if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
 js void navigateTo: string url	// js keyword indicates that function body is in JavaScript. Return type is required.
-	location.href = url;	// JavaScript code
+	location.href = url;	// JavaScript code. Do not use nested functions.
 // File: classes/sprites.l	// Contains available sprites. Add sprites as needed.
 blueCircle = Sprite [	// Each letter represets a color:
 	"  bbbb  "	//   Black

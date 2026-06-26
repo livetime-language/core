@@ -100,6 +100,11 @@ internal transient skipInit unit core
 		startTime = serverStartTime = currentTime
 		reset
 		onFrame
+
+	internal clearInputs
+		for input.internalUsers if .
+			.inputs.reset
+			.startInputFrame frame+1
 		
 	// Start recording (from the beginning or the middle of an existing event stream)
 	// We remove all future inputs
