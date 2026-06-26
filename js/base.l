@@ -2346,8 +2346,8 @@ global transient priority unit system
 		                       inline nocolon void() finally
 		try code() @finally finally()
 
-	// Return an object that includes all global variables and functions
-	global dynamic globals
+	// Return an object of all static classes. For example, global.app.start() is equivalent to app.start 
+	global inline js dynamic global() _global
 
 	global inline js void debugger() debugger
 	global inline js void throw(Error error) throw error
