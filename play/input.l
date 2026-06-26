@@ -673,7 +673,7 @@ skipInit global unit input
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt32 cast keyCode
-		if inputType == KeyDown then inputs.writeString key
+		if inputType == KeyDown then inputs.writeString (key or characterForKeyCode[keyCode])
 		
 	internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 		int touchType, id
@@ -1186,6 +1186,7 @@ skipInit global unit input
 	                  Player player
 					  Key key
 					  string character
+		print key, character
 		internalUser.downKeys.add key
 		player.keysCurrentlyDown.ensure key
 		if character
@@ -1858,12 +1859,24 @@ global static class keys
 	global const Tab	= "\t"
 	global const Space	= " "
 	global const Esc 	= "\x1b"
-	global const Shift	= "shift"
-	global const Ctrl	= "ctrl"
-	global const Alt	= "alt"
-	global const CmdOrCtrl	= "cmd/ctrl"
-		
+	global const Shift	= "⇧"
+	global const Ctrl	= "⌃"
+	global const Alt	= "⌥"
+	global const CmdOrCtrl	= "⌘"
+	global const CursorLeft	= "←"
+	global const CursorUp	= "↑"
+	global const CursorRight= "→"
+	global const CursorDown	= "↓"
+
 input
+	string[Key] characterForKeyCode = {
+		Key.Left:	"←"
+		Key.Up:	"↑"
+		Key.Right:	"→"
+		Key.Down:	"↓"
+		Key.Enter:	"\n"
+	}
+
 	const int inputButtonCount = 19
 
 	// Returns true if the player has just pressed the given button this frame (it was not pressed in the previous frame).
