@@ -1875,6 +1875,7 @@ input
 		Key.Right:	"→"
 		Key.Down:	"↓"
 		Key.Enter:	"\n"
+		Key.Tab:	"\t"
 	}
 
 	const int inputButtonCount = 19
