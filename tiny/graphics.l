@@ -281,7 +281,7 @@ transient global skipInit graphics
 	getPixelPos: int x, int y
 		return screen.getPixelPos({x, y})
 
-	async setup
+	setup
 		screen = {}
 		screens = [screen]
 

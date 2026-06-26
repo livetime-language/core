@@ -100,7 +100,7 @@ global transient skipInit unit system
 			this.homeInterrruptAtOutputIndex = -1
 			this.isDebug = isDebug or false
 			this.userCount = 2
-			initBackend
+			if backend?? then await backend??.connect2()
 			statistics.startTime = now
 			core.simulateConnection = false
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
@@ -108,7 +108,7 @@ global transient skipInit unit system
 			// isMobile = true
 			// await graphics.setup {referenceSizeX, referenceSizeY}
 			// await graphics.setup isMobile ? new Vector2(960, 540) : new Vector2(1920, 1080)
-			await graphics.setup
+			graphics.setup
 			graphics.onResize
 			playMode = Stop
 			let path = url.getUntil("?").split("/")
@@ -130,7 +130,7 @@ global transient skipInit unit system
 					userId = cast roomId.substring(dashIndex+1)
 					roomId = roomId.substring(0,dashIndex)
 				
-			await app??.preload()
+			if app??.preload then await app??.preload()
 			media.openMedia
 				try
 					this.engineStarted = true
