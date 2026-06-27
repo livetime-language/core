@@ -1876,6 +1876,7 @@ input
 		Key.Down:	"↓"
 		Key.Enter:	"\n"
 		Key.Tab:	"\t"
+		Key.Escape:	"\x1b"
 	}
 
 	const int inputButtonCount = 19
