@@ -136,7 +136,8 @@ struct int
 BitmapFont
 	string name
 	Vector2 charSize
-	Vector2 gridSize
+	Vector2 charSizeWithoutSpacing
+	Vector2 sourceSize
 	int charsPerRow
 	int startChar
 	int[] pixels
@@ -241,7 +242,6 @@ transient global skipInit graphics
 	internal dynamic context
 	Vector2 windowSize
 	float pixelRatio
-	BitmapFont font
 	
 	Screen screen
 	Screen[] screens
@@ -341,10 +341,10 @@ transient global skipInit graphics
 	// 			index += tilesStride
 
 	private openFonts
-		font = {name: "monogram", gridSize: {6,12}, charSize:{5,9}, charsPerRow: 16, startChar: 32 }
+		font = {name: "monogram", sourceSize:{6,12}, charSize:{6,10}, charSizeWithoutSpacing:{5,9}, charsPerRow: 16, startChar: 32 }
 		int index = 0
 		for fontsData.split("\n") as line
-			int pixelOffset = floor(i*font.gridSize.x*font.charsPerRow)
+			int pixelOffset = floor(i*font.sourceSize.x*font.charsPerRow)
 			for line.length as i
 				if line[i] != "0" then font.pixels[pixelOffset + i] = 1
 
@@ -357,6 +357,7 @@ transient global skipInit graphics
 		screen.finishFrame
 
 	int[] pixels
+	BitmapFont font
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 	global string helpText
@@ -487,33 +488,50 @@ transient global skipInit graphics
 		handleClickAndHelp onClick, help, pos, sprite.size, margin
 
 	global drawText: string text
-	                Vector2 pos = {0,0}
-					implicit Color color = Colors.White
-					void() onClick = null
-					string help = ""
-					Vector2 margin = {0,0}
+	                 Vector2 pos = {0,0}
+					 implicit Color color = Colors.White
+					 void() onClick = null
+					 string help = ""
+					 Vector2 margin = {0,0}
 		if system.fastForward then return
 		int stride = floor(screen.size.x)
-		int fontStride = floor(font.charsPerRow * font.gridSize.x)
+		int fontStride = floor(font.charsPerRow * font.sourceSize.x)
 		let target = screen.pixels
 		int colorValue = color.value
 		Vector2 p = pos
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
-			int tileOffset = floor((char mod 16) * font.gridSize.x + math.floor(char / 16) * fontStride * font.gridSize.y)
+			int tileOffset = floor((char mod 16) * font.sourceSize.x + math.floor(char / 16) * fontStride * font.sourceSize.y)
 			int screenOffset = floor(p.x + p.y*stride)
-			for font.charSize.y as y
-				for font.charSize.x as x
+			for font.charSizeWithoutSpacing.y as y
+				for font.charSizeWithoutSpacing.x as x
 					if font.pixels[tileOffset + x] then target[screenOffset + x] = colorValue
 				screenOffset += stride
 				tileOffset += fontStride
-			p.x += font.gridSize.x
+			p.x += font.sourceSize.x
 			if p.x >= screen.size.x
 				p.x = 0
-				p.y += font.gridSize.y
+				p.y += font.sourceSize.y
 
-		// if help then print pos, {font.gridSize.x * text.length, font.gridSize.y}, margin
-		handleClickAndHelp onClick, help, pos, {font.gridSize.x * text.length, font.gridSize.y}, margin
+		// if help then print pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
+		handleClickAndHelp onClick, help, pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
+
+	global wrapText: string text
+		             Vector2 maxSize = screenSize
+		int maxColumns = floor(maxSize.x / font.sourceSize.x)
+		int maxRows = floor(maxSize.y / font.sourceSize.y)
+		string[] lines
+		string currentLine
+		for text.split " " as word
+			if currentLine.length + word.length + 1 > maxColumns
+				if lines.length >= maxRows then break
+				lines.add currentLine
+				currentLine = word
+			else
+				if currentLine.length > 0 then currentLine += " "
+				currentLine += word
+		if currentLine.length > 0 then lines.add currentLine
+		return lines
 
 	global void drawRect: Vector2 pos = {0,0}
 		                  implicit Vector2 size = {8,8}
