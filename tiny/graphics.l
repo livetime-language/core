@@ -427,6 +427,23 @@ transient global skipInit graphics
 			if help then helpText = help
 			if isClick then onClick()
 
+	global wrapText: string text
+		             Vector2 maxSize = screenSize
+		int maxColumns = floor(maxSize.x / font.sourceSize.x)
+		int maxRows = floor(maxSize.y / font.sourceSize.y)
+		string[] lines
+		string currentLine
+		for text.split " " as word
+			if currentLine.length + word.length + 1 > maxColumns
+				if lines.length >= maxRows then break
+				lines.add currentLine
+				currentLine = word
+			else
+				if currentLine.length > 0 then currentLine += " "
+				currentLine += word
+		if currentLine.length > 0 then lines.add currentLine
+		return lines
+
 	global drawSprite: Sprite sprite
 	                   Vector2 pos = {0,0}
 					   int frame = 0
@@ -516,23 +533,6 @@ transient global skipInit graphics
 		// if help then print pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
 		handleClickAndHelp onClick, help, pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
 
-	global wrapText: string text
-		             Vector2 maxSize = screenSize
-		int maxColumns = floor(maxSize.x / font.sourceSize.x)
-		int maxRows = floor(maxSize.y / font.sourceSize.y)
-		string[] lines
-		string currentLine
-		for text.split " " as word
-			if currentLine.length + word.length + 1 > maxColumns
-				if lines.length >= maxRows then break
-				lines.add currentLine
-				currentLine = word
-			else
-				if currentLine.length > 0 then currentLine += " "
-				currentLine += word
-		if currentLine.length > 0 then lines.add currentLine
-		return lines
-
 	global void drawRect: Vector2 pos = {0,0}
 		                  implicit Vector2 size = {8,8}
 						  implicit Color fillColor = null
@@ -572,7 +572,7 @@ transient global skipInit graphics
 					        Vector2 margin = {0,0}
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
-		// TODO: Implement draw circle
+		// TODO: Draw a pixel art cirlce
 		drawRect pos, size:{radius.x*2, radius.y*2}, fillColor, outlineColor, outlineWidth
 		
 		handleClickAndHelp onClick, help, pos, radius*2, margin
