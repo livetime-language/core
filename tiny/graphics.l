@@ -566,22 +566,94 @@ transient global skipInit graphics
 
 		handleClickAndHelp onClick, help, pos, size, margin
 
+	private hLine: int xLeft, int xRight, int y, int colorValue
+		if y < screen.clipY1 or y >= screen.clipY2 then return
+		int x0 = xLeft atLeast screen.clipX1
+		int x1 = xRight atMost (screen.clipX2 - 1)
+		if x0 > x1 then return
+		int stride = floor(screen.size.x)
+		int[] target = screen.pixels
+		int rowStart = y * stride
+		for rowStart + x0 to rowStart + x1 + 1 as i
+			target[i] = colorValue
+
 	global void drawCircle: Vector2 pos = {0,0}
 		                    Vector2 radius
 							implicit Color fillColor = null
 							implicit Color outlineColor = null
-							int outlineWidth = 1
 					        void() onClick = null
 					        string help = ""
 					        Vector2 margin = {0,0}
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
-		// TODO: Draw a pixel art cirlce
-		
+		if radius.y == 0 then radius.y = radius.x
+			
+		// Pixel art ellipse/circle fitting exactly in the bounding box [pos, pos + radius*2].
+		// Bresenham midpoint rasterizer (Zingl): one connected 1px outline, no spurious pixels,
+		// handles even and odd diameters, no anti-aliasing. Fill and outline are both optional.
+		int width = round(radius.x * 2)
+		int height = round(radius.y * 2)
+		if width >= 1 and height >= 1
+			int x0 = pos.x.floor
+			int y0 = pos.y.floor
+			int x1 = x0 + width - 1
+			int y1 = y0 + height - 1
+
+			int a = x1 - x0                 // horizontal diameter
+			int b = y1 - y0                 // vertical diameter
+			int b1 = b mod 2                // 1 for odd height
+			int dx = 4 * (1 - a) * b * b
+			int dy = 4 * (b1 + 1) * a * a
+			int err = dx + dy + b1 * a * a
+			int e2
+
+			y0 += floor((b + 1) / 2)        // start at the vertical centre
+			y1 = y0 - b1
+			int xStep = 8 * b * b
+			int yStep = 8 * a * a
+
+			bool hasFill = fillColor != null
+			bool hasOutline = outlineColor != null
+			int fillValue = hasFill ? fillColor.value : 0
+
+			while x0 <= x1
+				if hasFill
+					hLine x0, x1, y0, fillValue
+					hLine x0, x1, y1, fillValue
+				if hasOutline
+					setPixel {x1, y0}, outlineColor
+					setPixel {x0, y0}, outlineColor
+					setPixel {x0, y1}, outlineColor
+					setPixel {x1, y1}, outlineColor
+				e2 = 2 * err
+				if e2 <= dy
+					y0 += 1
+					y1 -= 1
+					dy += yStep
+					err += dy
+				if e2 >= dx or 2 * err > dy
+					x0 += 1
+					x1 -= 1
+					dx += xStep
+					err += dx
+
+			// Finish the tips of very flat ellipses (a tiny radius on one axis)
+			while y0 - y1 < b
+				if hasFill
+					hLine x0 - 1, x1 + 1, y0, fillValue
+					hLine x0 - 1, x1 + 1, y1, fillValue
+				if hasOutline
+					setPixel {x0 - 1, y0}, outlineColor
+					setPixel {x1 + 1, y0}, outlineColor
+					setPixel {x0 - 1, y1}, outlineColor
+					setPixel {x1 + 1, y1}, outlineColor
+				y0 += 1
+				y1 -= 1
+
 		handleClickAndHelp onClick, help, pos, radius*2, margin
 
-	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null, int outlineWidth = 1
-		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor, outlineWidth
+	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
+		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor
 
 	global clip: Vector2 pos = {0,0}
 		         Vector2 size = {0,0}
