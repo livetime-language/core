@@ -245,9 +245,6 @@ transient global skipInit graphics
 	
 	Screen screen
 	Screen[] screens
-	
-	int[int] colorReplacements
-	bool enableColorReplacements
 
 	int[string] colorByLetter
 	Color[] colors
@@ -296,10 +293,6 @@ transient global skipInit graphics
 			colors.add color
 			colorByLetter[color.letter] = color.value
 
-		colorReplacements = {}
-		for colorByLetter.length
-			colorReplacements[i] = i
-		enableColorReplacements = false
 		// openTiles
 		openFonts
 
@@ -400,22 +393,13 @@ transient global skipInit graphics
 		int offsetToTarget = startY * targetStride + startX - start
 		int[] target = screen.pixels
 
-		if not enableColorReplacements
-			for startY to endY as y
-				for start to end as i
-					let sourceValue = source[i]
-					if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
-				start += tilesStride
-				end += tilesStride
-				offsetToTarget += targetStride - tilesStride
-		else
-			for startY to endY as y
-				for start to end as i
-					let sourceValue = colorReplacements[source[i]]
-					if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
-				start += tilesStride
-				end += tilesStride
-				offsetToTarget += targetStride - tilesStride
+		for startY to endY as y
+			for start to end as i
+				let sourceValue = source[i]
+				if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
+			start += tilesStride
+			end += tilesStride
+			offsetToTarget += targetStride - tilesStride
 
 	private handleClickAndHelp: void() onClick, string help, Vector2 pos, Vector2 size = {1,1}, Vector2 margin = {2,2}
 		bool isClick = onClick != null and justPressed LeftMouseButton
@@ -592,15 +576,6 @@ transient global skipInit graphics
 		screen.clipY1 = 0
 		screen.clipX2 = screen.size.x.floor
 		screen.clipY2 = screen.size.y.floor
-
-	global replaceColor: implicit Color color
-		                 implicit nocolon Color with
-		colorReplacements[color.value] = with.value
-		enableColorReplacements = true
-
-	global stopReplacingColors
-		colorReplacements.clear
-		enableColorReplacements = false
 
 enum SpriteType: None, Object, Character, Tile
 enum CollisionType: None, Solid, Hazard, OneWayPlatform
