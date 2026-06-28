@@ -499,20 +499,30 @@ transient global skipInit graphics
 		int fontStride = floor(font.charsPerRow * font.sourceSize.x)
 		let target = screen.pixels
 		int colorValue = color.value
+		int charW = floor(font.charSizeWithoutSpacing.x)
+		int charH = floor(font.charSizeWithoutSpacing.y)
+		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
+		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
 		Vector2 p = pos
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
+			int glyphX = floor(p.x), glyphY = floor(p.y)
 			int tileOffset = floor((char mod 16) * font.sourceSize.x + math.floor(char / 16) * fontStride * font.sourceSize.y)
-			int screenOffset = floor(p.x + p.y*stride)
-			for font.charSizeWithoutSpacing.y as y
-				for font.charSizeWithoutSpacing.x as x
-					if font.pixels[tileOffset + x] then target[screenOffset + x] = colorValue
-				screenOffset += stride
-				tileOffset += fontStride
+			int startX = 0, endX = charW
+			int startY = 0, endY = charH
+			if glyphX + startX < clipX1 then startX = clipX1 - glyphX
+			if glyphX + endX > clipX2 then endX = clipX2 - glyphX
+			if glyphY + startY < clipY1 then startY = clipY1 - glyphY
+			if glyphY + endY > clipY2 then endY = clipY2 - glyphY
+			if startX < endX and startY < endY
+				int screenOffset = (glyphY + startY) * stride + glyphX
+				int tileRow = tileOffset + startY * fontStride
+				for startY to endY as y
+					for startX to endX as x
+						if font.pixels[tileRow + x] then target[screenOffset + x] = colorValue
+					screenOffset += stride
+					tileRow += fontStride
 			p.x += font.sourceSize.x
-			if p.x >= screen.size.x
-				p.x = 0
-				p.y += font.sourceSize.y
 
 		// if help then print pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
 		handleClickAndHelp onClick, help, pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
@@ -532,11 +542,21 @@ transient global skipInit graphics
 		if fillColor == null and outlineColor == null then fillColor = White
 		if fillColor != null
 			int stride = floor(screen.size.x)
-			int screenOffset = floor(x + y*stride)
-			for sizeY as y
-				for sizeX as x
-					target[screenOffset + x] = fillColor.value
-				screenOffset += stride
+			int startX = x, endX = x + sizeX
+			int startY = y, endY = y + sizeY
+			if startX < screen.clipX1 then startX = screen.clipX1
+			if endX > screen.clipX2 then endX = screen.clipX2
+			if startY < screen.clipY1 then startY = screen.clipY1
+			if endY > screen.clipY2 then endY = screen.clipY2
+			if startX < endX and startY < endY
+				int fillValue = fillColor.value
+				int start = startY * stride + startX
+				int end = start + endX - startX
+				for startY to endY as yy
+					for start to end as i
+						target[i] = fillValue
+					start += stride
+					end += stride
 
 		if outlineColor != null and outlineWidth > 0 and outlineColor != fillColor
 			drawRect {x,y}, {sizeX, outlineWidth}, fillColor:outlineColor
@@ -557,7 +577,6 @@ transient global skipInit graphics
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
 		// TODO: Draw a pixel art cirlce
-		drawRect pos, size:{radius.x*2, radius.y*2}, fillColor, outlineColor, outlineWidth
 		
 		handleClickAndHelp onClick, help, pos, radius*2, margin
 
@@ -566,10 +585,10 @@ transient global skipInit graphics
 
 	global clip: Vector2 pos = {0,0}
 		         Vector2 size = {0,0}
-		screen.clipX1 = pos.x.floor
-		screen.clipY1 = pos.y.floor
-		screen.clipX2 = (pos.x + size.x).floor
-		screen.clipY2 = (pos.y + size.y).floor
+		screen.clipX1 = pos.x atLeast 0
+		screen.clipY1 = pos.y atLeast 0
+		screen.clipX2 = (pos.x + size.x) atMost screen.size.x
+		screen.clipY2 = (pos.y + size.y) atMost screen.size.y
 
 	global stopClipping
 		screen.clipX1 = 0
