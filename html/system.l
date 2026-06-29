@@ -242,8 +242,6 @@ global transient skipInit unit system
 		try { _ }
 		catch(e) { return e.stack.split("\n").slice(2).join("\n") }
 		
-	global inline js void debugger() debugger
-	
 	inline js void pushState: string url
 		                      object state = null
 		history.pushState(state, "", url);
