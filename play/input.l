@@ -608,7 +608,7 @@ skipInit global unit input
 				clickWithAltKeyX = pointerX; clickWithAltKeyY = pointerY;
 				input.handleTouchEvent(1, clickWithAltKeyX, clickWithAltKeyY, "touch", /*pointerId*/127, /*button*/0, /*shift*/false, /*alt*/false, /*ctrl*/false);
 			} else {
-				let typedKey = key && key.length == 1  && !e.ctrlKey && !e.metaKey && !e.altKey? key : ""
+				let typedKey = key && key.length == 1 && !e.ctrlKey && !e.metaKey ? key : ""
 				input.handleKeyEvent(5, keyCode, typedKey)
 				if(keyCode == 9) e.preventDefault();
 			}
