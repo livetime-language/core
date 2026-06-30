@@ -141,7 +141,7 @@ global transient skipInit unit system
 					else	core.startLocal
 					
 					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
-					if !isDebug then record
+					if !isDebug or isEmbedded then record
 					
 					// Tell the editor that we can call "replay" when the code changes
 					// If we didn't reach this point, we call "start" again when the code changes
