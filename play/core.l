@@ -874,6 +874,7 @@ internal transient skipInit unit core
 		
 	onError: Error error
 		if error.message == "interrrupt" then return
+		system.logError error
 		errorMessage = error.stack
 		hasErrors = true
 		errorCount++
@@ -883,7 +884,6 @@ internal transient skipInit unit core
 		} else {
 			core.log errorMessage
 		}
-		system.logError error
 		if system.isDebug
 			// Advance frame on error to ensure the current frame is replayed
 			frame++

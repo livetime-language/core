@@ -98,7 +98,7 @@ global transient skipInit unit system
 			this.engineStarted = false
 			this.homeFrame = 0
 			this.homeInterrruptAtOutputIndex = -1
-			this.isDebug = isDebug or false
+			this.isDebug = isDebug
 			this.userCount = 2
 			if backend?? then await backend??.connect2()
 			statistics.startTime = now
