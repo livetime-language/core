@@ -431,6 +431,8 @@ transient global skipInit graphics
 	global drawSprite: Sprite sprite
 	                   Vector2 pos = {0,0}
 					   int frame = 0
+					   bool flipX = false
+					   bool flipY = false
 					   Color replaceColor = null
 					   nocolon Color with = null
 					   void() onClick = null
@@ -451,40 +453,52 @@ transient global skipInit graphics
 			if startX >= endX or startY >= endY then return
 			int spriteStride = sprite.stride
 			int actualFrame = frame mod sprite.frames
-			int start = (startY - positionY) * spriteStride + startX - positionX + actualFrame * sprite.size.x
-			int end = start + endX - startX
-			int offsetToTarget = startY * targetStride + startX - start
+			int spriteWidth = sprite.size.x.floor
+			int spriteHeight = sprite.size.y.floor
+			int frameOffset = actualFrame * sprite.size.x
+			int sourceCol = flipX ? (spriteWidth - 1 - (startX - positionX)) : (startX - positionX)
+			int sourceRow = flipY ? (spriteHeight - 1 - (startY - positionY)) : (startY - positionY)
+			int sourceStart = sourceRow * spriteStride + sourceCol + frameOffset
+			int sourceStepX = flipX ? -1 : 1
+			int sourceStepY = flipY ? -spriteStride : spriteStride
+			int targetStart = startY * targetStride + startX
 			int[] source = sprite.pixels, target = screen.pixels
 			int transparentValue = transparentColor ? transparentColor.value : 0
 			if with == null or replaceColor == with
 				for startY to endY as y
-					for start to end as i
-						let sourceValue = source[i]
-						if sourceValue != transparentValue then target[i + offsetToTarget] = sourceValue
-					start += spriteStride
-					end += spriteStride
-					offsetToTarget += targetStride - spriteStride
+					int s = sourceStart, t = targetStart
+					for startX to endX as x
+						let sourceValue = source[s]
+						if sourceValue != transparentValue then target[t] = sourceValue
+						s += sourceStepX
+						t += 1
+					sourceStart += sourceStepY
+					targetStart += targetStride
 			else
 			if replaceColor
 				int fromColor = replaceColor.value
 				int toColor = with.value
 				for startY to endY as y
-					for start to end as i
-						let sourceValue = source[i]
+					int s = sourceStart, t = targetStart
+					for startX to endX as x
+						let sourceValue = source[s]
 						if sourceValue == fromColor then sourceValue = toColor
-						if sourceValue != transparentValue then target[i + offsetToTarget] = sourceValue
-					start += spriteStride
-					end += spriteStride
-					offsetToTarget += targetStride - spriteStride
+						if sourceValue != transparentValue then target[t] = sourceValue
+						s += sourceStepX
+						t += 1
+					sourceStart += sourceStepY
+					targetStart += targetStride
 			else
 				int singleColor = with.value
 				for startY to endY as y
-					for start to end as i
-						let sourceValue = source[i]
-						if sourceValue != transparentValue then target[i + offsetToTarget] = singleColor
-					start += spriteStride
-					end += spriteStride
-					offsetToTarget += targetStride - spriteStride
+					int s = sourceStart, t = targetStart
+					for startX to endX as x
+						let sourceValue = source[s]
+						if sourceValue != transparentValue then target[t] = singleColor
+						s += sourceStepX
+						t += 1
+					sourceStart += sourceStepY
+					targetStart += targetStride
 
 		handleClickAndHelp onClick, help, pos, sprite.size, margin
 
