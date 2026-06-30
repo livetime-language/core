@@ -427,7 +427,7 @@ internal Gamepad
 		leftBumper, rightBumper, leftTrigger, rightTrigger,
 		start, select,
 		leftStickButton, rightStickButton,
-		up, right, down, left
+		up, down, left, right
 	]
 	
 	bool inMotion
@@ -663,13 +663,7 @@ skipInit global unit input
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
-		
-		let controllerButton = controllerButtonMap[keyCode]
-			composite += controllerButton.buttonIndex shiftLeft 5 // buttonIndex: 0 - 15 (4 bit)
-			// TODO: Typed keys vs. 2nd player WASD
-			// if core.mode == Local and not core.simulateConnection
-			// 	inputs = internalUsers[controllerButton.userId].inputs
-			
+					
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
 		inputs.writeInt32 cast keyCode
@@ -1075,7 +1069,7 @@ skipInit global unit input
 		else
 			// Evaluate: Set isDown directly instead of in player.postprocessEvents #easier-to-reason-about #evaluate
 			touch = {id, player, Down, type, referencePos, referencePos, referencePos, isDown:true}
-			player.touches.add touch
+			player.touches.add touch			
 				
 		player.downTouches.ensure touch
 		player.pointerPosition = referencePos
@@ -1194,7 +1188,7 @@ skipInit global unit input
 			print type:Key "Press key {character} by {player}"
 		else
 			print type:Key "Press key {key} by {player}"
-
+			
 		// Call input handlers
 		// app.onKeyDown??(key, character)
 		// player.onKeyDown??(key, character)
@@ -1205,6 +1199,11 @@ skipInit global unit input
 		else
 		if key == Backspace
 			internalUser.typedCharacters += "\b"
+			
+		let controllerButton = controllerButtonMap[key]
+			InternalUser user = input.internalUsers[controllerButton.userId]
+			user.justPressed[controllerButton.buttonIndex] = true
+			user.isPressed[controllerButton.buttonIndex] = true		
 
 	internal keyUp: InternalUser internalUser
 	                Player player
@@ -1215,6 +1214,12 @@ skipInit global unit input
 		// Call input handlers
 		// app.onKeyUp??(key)
 		// player.onKeyUp??(key)
+			
+		// Modern Input
+		let controllerButton = controllerButtonMap[key]
+			InternalUser user = input.internalUsers[controllerButton.userId]
+			user.justReleased[controllerButton.buttonIndex] = true
+			user.isPressed[controllerButton.buttonIndex] = false		
 						
 	internal updatePlayers
 		players.sortBy.id
@@ -1232,8 +1237,8 @@ skipInit global unit input
 					c.right.assign "→"	Right
 					c.down.assign  "↓"	Down
 					c.left.assign  "←"	Left
-					c.A.assign     "Shift"	Shift
-					c.B.assign     "Control"	Ctrl
+					c.A.assign     "Space"	Space
+					c.B.assign     "Meta"	LeftMetaKey
 			
 			if players.length >= 2
 				Gamepad c = players[1].gamepad
