@@ -604,6 +604,10 @@ skipInit global unit input
 				system.toggleSmallScreen();
 			} else if(key == "F11") { 
 				graphics.copyScreenshotToClipboard();
+			} else if(key == "F12") {
+				if(typeof require != "undefined") {
+					require('@electron/remote').getCurrentWindow().toggleDevTools()
+				}
 			} else if(key == "Alt" && input.enableClickingWithAltKey) {
 				clickWithAltKeyX = pointerX; clickWithAltKeyY = pointerY;
 				input.handleTouchEvent(1, clickWithAltKeyX, clickWithAltKeyY, "touch", /*pointerId*/127, /*button*/0, /*shift*/false, /*alt*/false, /*ctrl*/false);
