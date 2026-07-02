@@ -581,22 +581,6 @@ skipInit global unit input
 				if(e.ctrlKey) { core.restore(index); e.preventDefault(); }
 			}
 			else
-			// Reload
-			if(ctrlOrCmd && key == "F1") {/*keep room, keep userId, keep master*/ ServerNetwork.sendReload(false, false, true ); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F2") {/*keep room, keep userId, everybody*/   ServerNetwork.sendReload(false, false, false); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F3") {/*new  room, keep userId, everybody*/   ServerNetwork.sendReload(true,  false, false); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F4") {/*new  room, new  userId, everybody*/   ServerNetwork.sendReload(true,  true,  false);  e.preventDefault();} else
-			
-			// Switch send interval
-			if(ctrlOrCmd && key == "F5") {core.switchSendInterval( 3); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F6") {core.switchSendInterval(10); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F7") {core.switchSendInterval(20); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F8") {core.switchSendInterval(30); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F9") {core.switchSendInterval(40); e.preventDefault();} else
-				
-			if(ctrlOrCmd && key == "F10") {core.switchSendInputMode(1); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F11") {core.switchSendInputMode(2); e.preventDefault();} else
-			
 			if(key == "F5" && system.isDebug) {
 				system.stop();
 				e.preventDefault();
@@ -1278,21 +1262,9 @@ skipInit global unit input
 	private getTargetedPlayers: Player[] by
 		return by and by.length > 0 and by[0] and not core.everybodyCanClickForEverybody ? by : players
 		
-	Player[] playersToRemove
-		
+
 	removePlayer: Player player
-		if not isCertain then return
-		core.log "Removing player {player.id} at frame {core.frame}"
-		playersToRemove.add player
-		
-	internal removePlayersIfNecessary
-		for playersToRemove
-			players.remove .
-			playersById[.id] = null
-			updatePlayers
-			InternalUser user = internalUsers[.id]
-				PeerNetwork.disconnect user
-		playersToRemove.clear
+		// TODO: Remove player deterministically, so that the same player is removed on all clients
 					
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	

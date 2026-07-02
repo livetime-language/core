@@ -147,7 +147,6 @@ internal transient skipInit unit core
 		input.players.clear
 		input.playersById.clear
 		input.host = null
-		input.playersToRemove.clear
 		errorMessage = ""
 		HTMLElement??.clear()
 		math.randomValueIndex = 0
@@ -354,7 +353,6 @@ internal transient skipInit unit core
 		now = currentTime
 		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
-		ServerNetwork.tick
 		PeerNetwork.tick
 		statistics.tick
 		if mode == None or mode == Ping then return
@@ -438,11 +436,6 @@ internal transient skipInit unit core
 		lastAnimationFrame = now
 		if system.playMode == Play and frame >= frames then system.record()
 			
-		// Ping
-		if currentTime - lastPingTime > 1000
-			lastPingTime = currentTime
-			PeerNetwork.ping
-			
 	private int frameAtBeginningOfOnFrame	// The frame at the beginning of onFrame, used to calculate iteration
 	private float now	// The time at the beginning of onFrame
 	
@@ -520,9 +513,7 @@ internal transient skipInit unit core
 		if mode != Connected then return
 		
 		if frame >= lastSendFrame + sendInterval
-			switch sendInputsMode
-				Peer	PeerNetwork.sendInputs inputFrame
-				Server	ServerNetwork.sendInputs inputFrame
+			PeerNetwork.sendInputs inputFrame
 			lastSendFrame = frame
 	
 	internal switchToPlayer: Player player
@@ -533,14 +524,6 @@ internal transient skipInit unit core
 		for prevPlayer.touches
 			input.handleUpdateTouchAfterSwitchingUser .id, .position
 		system.updatePageIconAndTitle
-			
-	switchSendInterval: int sendInterval
-		this.sendInterval = sendInterval
-		ServerNetwork.sendSwitch sendInputsMode, sendInterval
-		
-	switchSendInputMode: SendInputsMode sendInputsMode
-		this.sendInputsMode = sendInputsMode
-		ServerNetwork.sendSwitch sendInputsMode, sendInterval
 
 	// Save state, parse inputs, step physics, process tick, and calculate checksum
 	// This is called in onFrame and during replays. 
@@ -575,7 +558,6 @@ internal transient skipInit unit core
 		tick draw
 		
 		HTMLElement??.tickAll()
-		input.removePlayersIfNecessary
 				
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
@@ -921,25 +903,17 @@ internal transient skipInit unit core
 		this.frames = 0
 		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
 		this.outputIndex = 0
-		// TEMP: Storing event stream in database is disabled for now
+		// Storing input event stream in IndexedDB is work in progress
 		// try
 		// 	await openFromDB
 		// catch 
 		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
-		// Each session tags its input stream with a fresh random epoch: peers use it to detect
-		// that we restarted and lost our in-memory stream (see PeerNetwork.onTick)
-		input.localUser.epoch = PeerNetwork.generateEpoch
-		// Connect to the signaling server in parallel with the media setup, because signaling doesn't need media
-		// A media failure must never abort the join: setupLocalMedia never throws and falls back to degraded media
-		// Peer connections wait in PeerNetwork.initiate and onReceivedOffer until the media setup settled,
-		// so the local tracks are always added when a peer connection is created
-		ServerNetwork.setupServerConnection
+
+		PeerNetwork.connect
 		PeerNetwork.setupLocalMedia
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
-		// Background-tab behaviour: status messages to peers and a worker heartbeat (F6)
-		PeerNetwork.setupBackgroundBehaviour
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll
