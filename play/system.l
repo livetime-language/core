@@ -1,4 +1,6 @@
 CompilerSettings
+	// Snapshots (rollback netcode) need the generated serialize_internal/deserialize_internal
+	serializeInternal = true
 	logSerialize = false
 	
 enum PlayMode: Stop, Pause, Manipulator, Slide, Play, Record
@@ -132,7 +134,9 @@ global transient skipInit unit system
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
 					startInterval
-					isOnlineMultiplayer = not (isDebug or isLocal or roomId == "local" or url.startsWith("file") or hostname == "localhost" or hostname == "127.0.0.1")
+					// A localhost page with an explicit room in the URL is online multiplayer too:
+					// the Go signaling server serves the page locally for development and testing
+					isOnlineMultiplayer = not (isDebug or isLocal or roomId == "local" or url.startsWith("file") or ((hostname == "localhost" or hostname == "127.0.0.1") and not roomId))
 					if isOnlineMultiplayer	core.join gameId, roomId, userId
 					else	core.startLocal
 					

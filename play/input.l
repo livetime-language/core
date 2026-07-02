@@ -9,16 +9,22 @@ internal transient class InternalUser
 	
 	// Event Stream
 	bool collectInputs          // When we are done pinging, we add a join event and start collecting inputs
-	int inputFrame = -1         // We received all inputs from this player up to and including this frame
+	int inputFrame = -1         // We received all inputs from this player up to and including this frame (their claim)
 	int receivedMyInputsUpToPos // We received all inputs from this player up to this pos
 	int[] lastTouchMoveIndex
 	Buffer inputs = {}          // The stream of inputs of this user
-	int storedInputsUpTo
+	int storedInputsUpTo        // Local user only: our own inputs are persisted to IndexedDB up to this pos
 	int epoch                   // The epoch of this user's input stream: a new value means the user restarted with a fresh session (0 = unknown, see PeerNetwork.onTick)
-	int epochStartPos           // Local user only: bytes below this pos were restored from peers after a rejoin, our own new bytes start here
+	int epochStartPos           // Local user only: bytes below this pos were restored after a rejoin, our own new bytes start here
 	int historyTotalLength = -1 // While we restore our stream after a rejoin: how many bytes of it this peer reported to hold (-1 = no reply yet, see PeerNetwork.tickRestore)
-	float lastHistorySentTime   // When we last sent this user its own stored history (rate limit, see PeerNetwork.sendHistory)
+	float lastStreamSentTime    // When we last sent this user a stream answer (rate limit, see PeerNetwork.onStreamRequest)
 	int stalledChunkSends       // Chunked catch-up Ticks sent to this user without ack progress (fallback valve, see PeerNetwork.sendInputs)
+
+	// Removal (deterministic, driven by a RemoveUser event in the host's input stream)
+	bool removed                // This user was removed from the game
+	int removedAfterFrame = int.maxValue // Inputs of a removed user are only parsed up to and including this frame
+	float removalGossipStart    // When the host started collecting this silent user's stream from all peers (0 = not started)
+	bool removalEventWritten    // The host wrote the RemoveUser event for this user
 	
 	// List of inputs filled by parseInput and used by onTouchDown, onWheel, onKeyDown, ...
 	visible Touch[] downTouches, movingTouches, upTouches
@@ -51,11 +57,14 @@ internal transient class InternalUser
 	string connectionState
 	bool hidden                    // The user's tab is hidden: it is throttled and may fall silent, tolerate a longer silence (F6, see PeerNetwork.tick)
 	bool leaving                   // The user's page is closing or navigating away: don't burn reconnect attempts; cleared by any incoming message (F6)
+	bool reconnectNotified         // app.onTryingToReconnectTo was called for the current silence (cleared by any incoming message)
+	bool presentOnServer           // The server listed this user as currently connected in the JoinResponse
 	dynamic logConnectionTypeTimer // Pending connection-type report, cancelled when the connection is recreated (F30, see PeerNetwork.logConnectionType)
-	
+
 	float startToConnectTime = float.maxValue
 	float startDataChannelTime = float.maxValue
-	float lastIncomingMessageTime = float.maxValue
+	float lastIncomingMessageTime = float.maxValue // Last message on any transport (drives reconnect notifications and removal)
+	float lastIncomingChannelTime = float.maxValue // Last message on the data channel (drives P2P connection repair)
 	
 	// Statistics
 	private int[] aheadHistory    // Rolling buffer of ahead values, used to calculate bufferFrames
@@ -178,7 +187,7 @@ internal UserAccount
 	string name
 	string colorPreferences
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object
+enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object, RemoveUser
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -780,6 +789,19 @@ skipInit global unit input
 		inputs.writeInt16 cast InputType.Object
 		inputs.writeInt id
 		inputs.writeString data
+
+	// Write a RemoveUser event into our own input stream: the removal of a player becomes part
+	// of the deterministic timeline and is applied by every client when the event is parsed.
+	// lastFrame is the last frame of the removed user's stream that still counts - the host
+	// merged the streams of all living peers first, so it covers everything any client committed
+	internal handleRemoveUser: int userId, int lastFrame
+		if core.mode == None || !localUser || !localUser.collectInputs then return
+		let inputs = localUser.inputs
+		inputs.writeInt32 localUser.inputFrame
+		inputs.writeInt16 cast InputType.RemoveUser
+		inputs.writeInt userId
+		inputs.writeInt lastFrame
+		print "Removing player {userId}, their inputs count up to frame {lastFrame}", type:Action
 		
 	// Returns a "GamepadList" (which doesn't have the functions of a LiveTime list)
 	private inline js dynamic getGamepads() navigator.getGamepads()
@@ -843,6 +865,14 @@ skipInit global unit input
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
 				if nextFrame > frame then break
+				// Only parse records that are covered by the sender's claim: claimed records are
+				// guaranteed to be complete in the buffer (a chunked transfer can end mid-record)
+				// and identical on every client. Our own records are always complete
+				if not internalUser.local and nextFrame > internalUser.inputFrame then break
+				// A removed user's stream ends deterministically after removedAfterFrame:
+				// clients may have received different amounts from a dead user, but every client
+				// parses exactly the records up to this frame
+				if internalUser.removed and nextFrame > internalUser.removedAfterFrame then break
 				inputs.readPos += 4
 				
 				// We create the player as soon as we receive the first input from that player,
@@ -993,10 +1023,17 @@ skipInit global unit input
 				if inputType == Join
 					player._id = internalUser._id = inputs.readString
 					player.playerLanguage = cast inputs.readInt8
-					player.playerName = internalUser.name = inputs.readString 
+					player.playerName = internalUser.name = inputs.readString
 					player.playerEmail = inputs.readString
 					string colorPreferencesString = inputs.readString
 					player.colorPreferences = colorPreferencesString.split(",").map.toInt
+					print "Player {userId} joined at frame {frame}", type:Reaction
+					app.onJoin??(userId)
+				else
+				if inputType == RemoveUser
+					int removeUserId = inputs.readInt
+					int lastFrame = inputs.readInt
+					removeUserDeterministically removeUserId, lastFrame, frame
 	
 		// for players
 		// 	let internalUser = internalUsers[.id]
@@ -1263,9 +1300,31 @@ skipInit global unit input
 		return by and by.length > 0 and by[0] and not core.everybodyCanClickForEverybody ? by : players
 		
 
+	// Remove a player deterministically: writes a RemoveUser event into the local input stream,
+	// so the same player is removed at the same frame on all clients
 	removePlayer: Player player
-		// TODO: Remove player deterministically, so that the same player is removed on all clients
-					
+		if not player then return
+		let user = internalUsers[player.id]
+		if not user or user.removed then return
+		handleRemoveUser player.id, user.local ? user.inputFrame : math.max(user.inputFrame, 0)
+
+	// Applies a parsed RemoveUser event. Runs during live play and again during replays after a
+	// rewind, so everything here must be idempotent. The InternalUser and its input bytes are kept
+	// (snapshots and replays reference them), only the Player leaves the game
+	internal removeUserDeterministically: int removeUserId, int lastFrame, int atFrame
+		let user = internalUsers[removeUserId]
+		if not user then return
+		if not user.removed
+			user.removed = true
+			user.removedAfterFrame = lastFrame
+			PeerNetwork.onUserRemoved user
+		let player = playersById[removeUserId]
+		if player
+			players.remove player
+			playersById[removeUserId] = null
+			updatePlayers
+			print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
+
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
 	// Do something when the player touches or clicks within a given area.

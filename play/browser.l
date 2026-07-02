@@ -201,7 +201,9 @@ internal IndexedDBStore
 				then?.()
 			}
 		} catch(error) {
-			core.onError(error)
+			// A failed database write must never become a game error (private mode, quota,
+			// closing connection) - persistence is best-effort, peers hold the data too
+			core.log("Error in IndexedDB.put: "+error.message)
 			else?.(error)
 		}
 		
@@ -287,7 +289,7 @@ internal transient skipInit unit IndexedDB
 					core.log("IndexedDB: upgradeneeded");
 					IndexedDB.db = e.target.result;
 					for(let store of IndexedDB.stores) {
-						if(!IndexedDB.db.objectStoreNames.includes(store.name)) {
+						if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
 							let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
 							system.print("IndexedDB: created store "+store.name)
 							for(let index of store.indices) {
@@ -322,7 +324,7 @@ internal transient skipInit unit IndexedDB
 				core.log("IndexedDB: upgradeneeded");
 				IndexedDB.db = e.target.result;
 				for(let store of IndexedDB.stores) {
-					if(!IndexedDB.db.objectStoreNames.includes(store.name)) {
+					if(!IndexedDB.db.objectStoreNames.contains(store.name)) {
 						let storeObject = IndexedDB.db.createObjectStore(store.name, { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
 						system.print("IndexedDB: created store "+store.name)
 						for(let index of store.indices) {

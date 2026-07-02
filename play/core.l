@@ -1,5 +1,14 @@
 enum NetworkMode: None, Ping, Local, Connected
-internal transient immutable RoomInfo: int time, userId
+
+// Everything a client remembers about a room in localStorage: the identity to rejoin with and
+// the recovery info a freshly restarted server needs to recreate the room (seed, start time)
+internal transient immutable RoomInfo
+	int time
+	int userId
+	string seed
+	float serverStartTime
+	int maxUserId
+
 enum SendInputsMode: None, Peer, Server
 	
 internal transient skipInit unit core
@@ -66,7 +75,6 @@ internal transient skipInit unit core
 	const maxCatchUpMillisPerFrame = 100
 	
 	IndexedDBStore inputStore = {"input", indices:[{"roomId"}]}
-	IndexedDBStore roomStore  = {"room"}
 	
 	startConnected: int frame
 		if mode == Connected then return
@@ -431,7 +439,6 @@ internal transient skipInit unit core
 			// Store local inputs
 			if IndexedDB.isReady
 				core.storeInputsToDB input.localUser
-				core.storeRoomToDB
 				
 		lastAnimationFrame = now
 		if system.playMode == Play and frame >= frames then system.record()
@@ -536,7 +543,10 @@ internal transient skipInit unit core
 
 		// Flags
 		system.fastForward = fastForward
-		certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) filter: . != null
+		// A removed user stops blocking certainty once we hold their complete final stream
+		// (their claims reached the removal frame) - before that, their missing bytes are part
+		// of the timeline and must arrive (fetched from peers) before frames become certain
+		certainFrame = input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.inputFrame, .smoothFrame)) filter: . != null
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
@@ -624,9 +634,13 @@ internal transient skipInit unit core
 	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
-			
+
 		if mode == Local and simulateRollback then	nextSnapshotFrame = frame - 5
-		else	nextSnapshotFrame = (input.internalUsers.min math.min(.smoothFrame, .inputFrame) filter: . and not .local)+1
+		else
+			// Removed users with a complete final stream no longer hold the snapshot back: when
+			// every remote user is gone for good this becomes int.maxValue+1, snapshots stop and
+			// the rewind below runs one final time to replay the last received bytes into the state
+			nextSnapshotFrame = (input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.smoothFrame, .inputFrame)) filter: . and not .local)+1
 		
 		if snapshotFrame != -1
 			if verbose
@@ -757,69 +771,43 @@ internal transient skipInit unit core
 		let date = Date.now
 		file.saveBinary "{system.appName} {date.dayShortMonthNameYearString} {date.hourMinuteSecondString} v{system.buildVersion}.state", buffer
 		
-	const chunkSize = 256
-	
-	storeRoomToDB
-		// TEMP: Storing event stream in database is disabled for now
-		return
-		roomStore.put {
-			id: roomId
-			frame
-			frames
-			eventStreamVersion
-			math.randomSeed
-			startInLobby
-			system.isStaging
-			localUserId: input.localUser.id
-		}
-	
+	const dbChunkSize = 4096
+	private float lastInputStoreTime
+
+	// Persist our own input stream to IndexedDB in fixed chunks (the tail chunk is rewritten as
+	// it fills). After a page refresh, restoreOwnInputsFromDB loads the stream back, so the player
+	// picks up where they left off even when all peers are gone. Failures are ignored: the peers
+	// hold a copy of our stream too, IndexedDB is just the copy that survives alone
 	storeInputsToDB: InternalUser user
-		// TEMP: Storing event stream in database is disabled for now
-		return
+		if not user or not user.local or roomId <= 0 then return
 		let inputs = user.inputs
-		if inputs.writePos > user.storedInputsUpTo
-			// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
-			let start = inputs.writePos - (inputs.writePos mod chunkSize)
-			let id = "{roomId}-{user.id}-{start}"
-			print "[{frame}] <{user.id}> Storing inputs {id} ({start} to {inputs.writePos})"
-			inputStore.put {id, roomId, userId:user.id, start, inputs:inputs.subArrayBuffer(start to inputs.writePos)}
-				print "[{frame}] <{user.id}> Storing inputs successful"
-			else
-				print "[{frame}] <{user.id}> Storing inputs failed"
-			user.storedInputsUpTo = inputs.writePos
-			
-	openFromDB
-		// TEMP: Storing event stream in database is disabled for now
-		return
-		await IndexedDB.start system.isStaging ? "up4playing-{localUserId}" : "up4playing", version:2
-		
-		let room = await roomStore.get roomId
-		int targetFrame = room.frame - 1
-		frames = room.frames
-		let randomSeed = room.randomSeed
-		startInLobby = room.startInLobby
-		system.isStaging = room.isStaging
-		localUserId = room.localUserId
-		
-		print "#database opening from db {room.toJson}"
-		dynamic[] rooms = await inputStore.getAllFromIndex "roomId", roomId
-		rooms.sortBy.start
-		forDynamic rooms as room
-			int userId = room.userId
-			int start = .start
-			dynamic inputs = .inputs
-			let user = input.internalUsers[.userId] ?= {id:.userId, local:.userId == localUserId, collectInputs:true}
-			if user.local
-				input.localUser = user
-			user.inputs.insertArrayBuffer .inputs
-			print "#database", userId, start, inputs.toString()
-		print "#database", input.localUser.inputs.toString
-			
-		// Replay
-		for input.internalUsers if .
-			.startInputFrame frames
-		math.setRandomSeed randomSeed
-		replay 0 to targetFrame
+		if inputs.writePos <= user.storedInputsUpTo then return
+		if currentTime < lastInputStoreTime + 500 then return
+		lastInputStoreTime = currentTime
+
+		int start = user.storedInputsUpTo - (user.storedInputsUpTo mod dbChunkSize)
+		while start < inputs.writePos
+			int end = math.min(start + dbChunkSize, inputs.writePos)
+			inputStore.put {id:"{roomId}-{user.id}-{start}", roomId, userId:user.id, start, bytes:inputs.subArrayBuffer(start to end)}
+			start += dbChunkSize
+		user.storedInputsUpTo = inputs.writePos
+
+	// Load our own input stream back from IndexedDB after a page refresh (called by
+	// PeerNetwork.connect before the signaling connection starts). Chunks are applied in order
+	// and only while they extend the stream contiguously - a missing chunk ends the restore
+	js async void restoreOwnInputsFromDB
+		if(core.roomId <= 0 || core.localUserId == -1 || !IndexedDB.db) return;
+		let rows = await core.inputStore.getAllFromIndex("roomId", core.roomId);
+		rows = rows.filter(r => r.userId == core.localUserId && r.bytes).sort((a, b) => a.start - b.start);
+		let inputs = input.localUser.inputs;
+		for(let row of rows) {
+			if(row.start > inputs.writePos) break; // Gap: nothing beyond it may be used
+			if(row.start + row.bytes.byteLength <= inputs.writePos) continue;
+			inputs.writePos = row.start;
+			inputs.insertArrayBuffer(row.bytes);
+		}
+		if(inputs.writePos > 0)
+			core.log("#db Restored "+inputs.writePos+" bytes of our own inputs from IndexedDB");
 	
 	openState
 		file.openBinary
@@ -903,13 +891,14 @@ internal transient skipInit unit core
 		this.frames = 0
 		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
 		this.outputIndex = 0
-		// Storing input event stream in IndexedDB is work in progress
-		// try
-		// 	await openFromDB
-		// catch 
-		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
+		// Each session tags its input stream with a fresh random epoch: peers use it to detect
+		// that we restarted and lost our in-memory stream (see PeerNetwork.onTick)
+		input.localUser.epoch = PeerNetwork.generateEpoch
 
+		// Open IndexedDB (restores our own inputs after a page refresh), then connect to the
+		// signaling server. The media setup runs in parallel: signaling doesn't need media, and
+		// a media failure must never abort the join (setupLocalMedia never throws)
 		PeerNetwork.connect
 		PeerNetwork.setupLocalMedia
 			enableVideo:not system.isStaging || core.enableVideoForStaging
@@ -927,8 +916,13 @@ internal transient skipInit unit core
 			}
 		}		
 		
-	internal storeUserId
-		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id)
+	// Remember everything needed to rejoin this room after a page refresh (userId) and to
+	// recreate it on a freshly restarted server (seed, start time, highest known user id)
+	internal storeRoomInfo
+		int maxUserId = input.localUser.id
+		for input.internalUsers
+			if . and .id > maxUserId then maxUserId = .id
+		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id, math.randomSeed, serverStartTime, maxUserId)
 		
 	// A checksum received over the network (carried in the trailing fields of every peer and
 	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
@@ -940,6 +934,8 @@ internal transient skipInit unit core
 
 	string snapshotLogWithWrongChecksum
 
+	private int wrongChecksumCount
+
 	onWrongChecksum: int frame, float mine, float theirs
 		string message = " Out of sync. frame:{frame} mine:{mine} theirs:{theirs}"
 		string serializeLog = serializeLogs[frame mod 100]
@@ -949,6 +945,13 @@ internal transient skipInit unit core
 			core.log "\n{serializeLog}"
 			// file.saveText "{input.localUser.id}-snapshot{frame}.json", serializeLog
 		onError {message}
+
+		// Self-heal from a persistent divergence: reload the page and rebuild the state by
+		// replaying the streams as the mesh holds them (our own inputs survive in IndexedDB and
+		// on our peers). Rate-limited inside selfHealReload to avoid reload loops
+		if ++wrongChecksumCount >= 3 and mode == Connected and not system.isDebug
+			statistics.scheduleSendIn 0 seconds
+			PeerNetwork.selfHealReload "out of sync at frame {frame}"
 		
 	onError: Error error
 		if error.message == "interrrupt" then return
