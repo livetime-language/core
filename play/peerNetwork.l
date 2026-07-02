@@ -106,8 +106,6 @@ internal transient skipInit unit ServerNetwork
 		// room lives on that server
 		if(!ServerNetwork.serverUrls) {
 			let urls = [];
-			if(location.protocol == "http:" || location.protocol == "https:")
-				urls.push((location.protocol == "https:" ? "wss://" : "ws://") + location.host + "/ws");
 			if(location.hostname == "localhost" || location.hostname == "127.0.0.1")
 				urls.push("ws://localhost:3112/ws");
 			else
