@@ -25,6 +25,11 @@ internal transient class InternalUser
 	int removedAfterFrame = int.maxValue // Inputs of a removed user are only parsed up to and including this frame
 	float removalGossipStart    // When the host started collecting this silent user's stream from all peers (0 = not started)
 	bool removalEventWritten    // The host wrote the RemoveUser event for this user
+
+	// Diagnostics (only used for logging)
+	int droppedTickCount        // Ticks from this user that were dropped as non-contiguous (packet loss indicator)
+	float lastDropLogTime       // Rate limit for logging dropped Ticks
+	int lastTickTransport       // 0: nothing sent yet, 1: data channel, 2: server relay (logged on change)
 	
 	// List of inputs filled by parseInput and used by onTouchDown, onWheel, onKeyDown, ...
 	visible Touch[] downTouches, movingTouches, upTouches

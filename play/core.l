@@ -449,11 +449,18 @@ internal transient skipInit unit core
 	private float prevLogTime
 	
 	// Logs
+	// Each line carries a millisecond timestamp and the current frame, so client logs can be
+	// correlated with each other and with the server log (which logs microseconds) after a
+	// real-world incident
 	js void log: logstring text
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 
-		let str = new Date().toString() + " " + text
+		let d = new Date()
+		let pad = (n, l) => String(n).padStart(l, "0")
+		let timestamp = d.getFullYear()+"-"+pad(d.getMonth()+1,2)+"-"+pad(d.getDate(),2)+" "
+			+pad(d.getHours(),2)+":"+pad(d.getMinutes(),2)+":"+pad(d.getSeconds(),2)+"."+pad(d.getMilliseconds(),3)
+		let str = timestamp + " [" + core.frame + "] " + text
 		statistics.systemLogs.push(str)
 		// Bound the unsent backlog: in debug mode, or when the statistics server is unreachable,
 		// nothing ever flushes it (F28). The sent prefix is trimmed in statistics.trimSentData
@@ -801,13 +808,16 @@ internal transient skipInit unit core
 		rows = rows.filter(r => r.userId == core.localUserId && r.bytes).sort((a, b) => a.start - b.start);
 		let inputs = input.localUser.inputs;
 		for(let row of rows) {
-			if(row.start > inputs.writePos) break; // Gap: nothing beyond it may be used
+			if(row.start > inputs.writePos) {
+				// Gap: nothing beyond it may be used
+				core.log("#db Gap in stored input chunks: next chunk starts at "+row.start+", we have "+inputs.writePos+" -> stopping the restore here");
+				break;
+			}
 			if(row.start + row.bytes.byteLength <= inputs.writePos) continue;
 			inputs.writePos = row.start;
 			inputs.insertArrayBuffer(row.bytes);
 		}
-		if(inputs.writePos > 0)
-			core.log("#db Restored "+inputs.writePos+" bytes of our own inputs from IndexedDB");
+		core.log("#db Restored "+inputs.writePos+" bytes of our own inputs from IndexedDB ("+rows.length+" chunks stored for room "+core.roomId+", user "+core.localUserId+")");
 	
 	openState
 		file.openBinary

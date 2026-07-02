@@ -106,6 +106,12 @@ internal transient skipInit unit ServerNetwork
 		// room lives on that server
 		if(!ServerNetwork.serverUrls) {
 			let urls = [];
+			// An explicit ?server=ws://host:port/ws in the page URL wins - used by the e2e tests
+			// (which start servers on random ports) and for pointing a client at a staging server
+			try {
+				let override = new URLSearchParams(location.search).get("server");
+				if(override) urls.push(override);
+			} catch {}
 			if(location.hostname == "localhost" || location.hostname == "127.0.0.1")
 				urls.push("ws://localhost:3112/ws");
 			else
@@ -167,11 +173,14 @@ internal transient skipInit unit ServerNetwork
 		}
 
 	private onMessageFromServer: Buffer buffer
-		ServerMessageType type = cast buffer.readInt8
-		switch type
-			JoinResponse	onJoinResponse buffer
-			Pong	onPong buffer
-			Relay	onRelay buffer
+		try
+			int typeValue = buffer.readInt8
+			if typeValue == cast ServerMessageType.JoinResponse	then onJoinResponse buffer; else
+			if typeValue == cast ServerMessageType.Pong	then onPong buffer; else
+			if typeValue == cast ServerMessageType.Relay	then onRelay buffer
+			else	core.log "#error Unknown server message type {typeValue} - client/server version mismatch?"
+		catch
+			core.log "#error Failed to handle server message ({buffer.writePos} bytes): {error.stack}"
 
 	// The Join carries everything a freshly restarted server needs to recreate the room:
 	// seed, start time and the highest user id we know. This is what makes a server restart
@@ -187,6 +196,10 @@ internal transient skipInit unit ServerNetwork
 		for input.internalUsers if . and .id > maxKnownUserId
 			maxKnownUserId = .id
 		if info and info.maxUserId > maxKnownUserId then maxKnownUserId = info.maxUserId
+
+		// The recovery fields are what a freshly restarted server rebuilds the room from - log
+		// them so a bad recovery (wrong seed, wrong time base) can be traced from both sides
+		core.log "#server Sending Join: room:'{core.roomString}' userId:{input.localUser.id} v{system.buildVersion} protocol:{protocolVersion} recovery(seed:{seed ? seed : "-"} serverStartTime:{serverStartTime} elapsed:{math.round(elapsed)}ms maxKnownUserId:{maxKnownUserId})"
 
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast ServerMessageType.Join
@@ -222,16 +235,21 @@ internal transient skipInit unit ServerNetwork
 				// affected by a signaling outage, so the first-join setup must not run again.
 				// New users may have joined the room while we were away - create them so the
 				// health loop connects to them
-				core.log "#server Rejoined room {roomId} as user {userId}"
+				string rejoinUsers = ""
 				for userCount
 					let id = buffer.readInt32
 					let present = buffer.readBool
+					rejoinUsers += " {id}:{present ? "up" : "away"}"
 					if id != input.localUser.id
 						let user = getOrCreateUser id
 						user.presentOnServer = present
+				core.log "#server Rejoined room {roomId} as user {userId} (seed:{seed} serverStartTime:{serverStartTime} users:{rejoinUsers})"
+				if roomId != core.roomId or userId != input.localUser.id
+					core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId}"
 				return
 			alreadyJoinedBefore = true
 
+			string joinUsers = ""
 			for userCount
 				let id = buffer.readInt32
 				let present = buffer.readBool
@@ -240,7 +258,8 @@ internal transient skipInit unit ServerNetwork
 				else             user = input.internalUsers[id] ?= {offerByMe:true, connectionId:nextConnectionId++}
 				user.id = id
 				user.presentOnServer = present
-				core.log "#onJoinResponse", userCount, id, present, user.local
+				joinUsers += " {id}:{present ? "up" : "away"}"
+			core.log "#server JoinResponse: room:{roomId} userId:{userId} v{version} protocol:{serverProtocolVersion} seed:{seed} serverStartTime:{serverStartTime} users:{joinUsers}"
 
 			if roomId != core.roomId
 				core.log "#server Received room id {roomId}"
@@ -485,10 +504,47 @@ internal transient skipInit unit PeerNetwork
 					bool missingRemovedBytes = .removed and .inputFrame < .removedAfterFrame
 					bool gossiping = .removalGossipStart != 0 and not .removalEventWritten
 					if missingRemovedBytes or gossiping
+						string reason = missingRemovedBytes ? "removed but incomplete" : "removal gossip"
+						core.log "#stream Requesting user {.id}'s stream from all peers ({reason}): we hold {.inputs.writePos} bytes, claims up to {.inputFrame}, removedAfterFrame:{.removedAfterFrame}"
 						requestStreamFromAllPeers .id
+
+		// The periodic status summary: one block every 10 seconds with everything needed to
+		// diagnose a field report from the logs alone - per-peer connection state, transports,
+		// stream positions, claims, silences and drop counters
+		if core.mode != None and now > lastStatusLogTime + 10000
+			lastStatusLogTime = now
+			logStatusSummary now
 
 	private float lastPeerPingTime
 	private float lastStreamFetchTime
+	private float lastStatusLogTime
+
+	private logStatusSummary: float now
+		let localUser = input.localUser
+		string wsState = ServerNetwork.connected ? "up" : "DOWN"
+		if not ServerNetwork.joined then wsState += " not-joined"
+		string modeFlags = ""
+		if restoring then modeFlags += " RESTORING"
+		if core.catchingUp then modeFlags += " CATCHING-UP"
+		// behind: how far the frame loop lags the shared clock (should be 0..1)
+		// drift: how far core.startTime is from the pong-derived reference (slew should keep it near 0)
+		int framesBehind = math.floor((core.currentTime - core.startTime)/core.frameTime)+1 - core.frame
+		int clockDrift = ServerNetwork.referenceStartTime ? math.round(ServerNetwork.referenceStartTime - core.startTime) : 0
+		string summary = "#status frame:{core.frame} certain:{core.certainFrame} lag:{core.frame - core.certainFrame} behind:{framesBehind} drift:{clockDrift}ms players:{input.players.length} ws:{wsState} host:{amHost}{modeFlags} me:<{localUser.id}> epoch:{localUser.epoch} writePos:{localUser.inputs.writePos} epochStart:{localUser.epochStartPos} inputFrame:{localUser.inputFrame}"
+		for input.internalUsers as user
+			if user and not user.local
+				string channelState = hasOpenChannel(user) ? "open buffered:{channelBufferedAmount(user)}" : "closed"
+				string channelAgo = user.lastIncomingChannelTime == float.maxValue ? "never" : "{math.round(now - user.lastIncomingChannelTime)}ms"
+				string messageAgo = user.lastIncomingMessageTime == float.maxValue ? "never" : "{math.round(now - user.lastIncomingMessageTime)}ms"
+				string smooth = user.smoothFrame == int.maxValue ? "-" : "{user.smoothFrame}"
+				string userFlags = ""
+				if user.hidden then userFlags += " hidden"
+				if user.leaving then userFlags += " leaving"
+				if user.removed then userFlags += " REMOVED@" + user.removedAfterFrame
+				string pcState = user.connectionState ? user.connectionState : "none"
+				string connectionType = user.connectionType ? user.connectionType : "?"
+				summary += "\n    <{user.id}> pc:{pcState} channel:{channelState} type:{connectionType} inputFrame:{user.inputFrame} smooth:{smooth} writePos:{user.inputs.writePos} ackedOfMine:{user.receivedMyInputsUpToPos} lastChannelMsg:{channelAgo} lastMsg:{messageAgo} drops:{user.droppedTickCount} tries:{user.connectionTries}{userFlags}"
+		core.log "{summary}"
 
 	// The host is the living, not removed user with the lowest id (internalUsers is indexed by id,
 	// so the iteration order is the id order). Only the host writes RemoveUser events, so two
@@ -525,7 +581,8 @@ internal transient skipInit unit PeerNetwork
 	js void wipeRoomStorageAndReload
 		try { localStorage.removeItem("room"+core.roomId) } catch {}
 		try { sessionStorage.setItem("removedAt", ""+Date.now()) } catch {}
-		let reload = () => { location.href = "/"+core.gameId+"/"+core.roomId; };
+		// Keep the query string: it can carry the ?server/?turn/?relay overrides
+		let reload = () => { location.href = "/"+core.gameId+"/"+core.roomId+location.search; };
 		try {
 			// Delete our stored input chunks so a future player with a reused id can't load them
 			let trans = IndexedDB.db.transaction("input", "readwrite");
@@ -616,8 +673,11 @@ internal transient skipInit unit PeerNetwork
 			user.silentPeriods = 0;
 
 			// STUN and TURN both live inside the Go server executable. The TURN server is on the
-			// same host that accepted our WebSocket; UDP first, TCP as the firewall fallback
+			// same host that accepted our WebSocket; UDP first, TCP as the firewall fallback.
+			// ?turn=port in the page URL overrides the port (the e2e tests use random ports)
 			let turnHost = ServerNetwork.workingServerHost || location.hostname;
+			let turnPort = 3478;
+			try { turnPort = parseInt(new URLSearchParams(location.search).get("turn")) || 3478; } catch {}
 			let options = {
 				iceTransportPolicy: PeerNetwork.relayMode == 2 ? "relay" : "all",
 				iceServers: [],
@@ -625,8 +685,8 @@ internal transient skipInit unit PeerNetwork
 			if(PeerNetwork.relayMode > 0) {
 				options.iceServers.push({
 					urls: [
-						"turn:"+turnHost+":3478?transport=udp",
-						"turn:"+turnHost+":3478?transport=tcp",
+						"turn:"+turnHost+":"+turnPort+"?transport=udp",
+						"turn:"+turnHost+":"+turnPort+"?transport=tcp",
 					],
 					username: PeerNetwork.turnUsername,
 					credential: PeerNetwork.turnPassword,
@@ -634,12 +694,12 @@ internal transient skipInit unit PeerNetwork
 			}
 			options.iceServers.push({
 				urls: [
-					"stun:"+turnHost+":3478",
+					"stun:"+turnHost+":"+turnPort,
 					"stun:stun1.l.google.com:19302",
 					"stun:stun2.l.google.com:19302",
 				],
 			});
-			core.log(`#peer <${user.id}> Setup Peer Connection offerByMe: ${offerByMe} turn: ${turnHost}`);
+			core.log(`#peer <${user.id}> Setup Peer Connection offerByMe:${offerByMe} relayMode:${PeerNetwork.relayMode} turn:${turnHost}:${turnPort}`);
 			let peerConnection = user.peerConnection = new RTCPeerConnection(options);
 
 			// Negotiation
@@ -953,14 +1013,27 @@ internal transient skipInit unit PeerNetwork
 			return 0
 		}
 
+	// A crashing handler must never take down the message pump, and the exception must reach the
+	// saved logs (uncaught exceptions in data channel callbacks only reach the browser console)
 	internal onPeerMessage: InternalUser user, Buffer buffer, bool viaServer
+		try
+			handlePeerMessage user, buffer, viaServer
+		catch
+			core.log "#error <{user.id}> Failed to handle peer message via {viaServer ? "server relay" : "data channel"} ({buffer.writePos} bytes): {error.stack}"
+
+	private handlePeerMessage: InternalUser user, Buffer buffer, bool viaServer
 		user.lastIncomingMessageTime = PlainDate.realTime
 		user.silentPeriods = 0
 		user.leaving = false // Any message proves the user is still there (e.g. restored from the back/forward cache)
+		user.presentOnServer = true // The JoinResponse presence snapshot goes stale; any message proves liveness
 		if user.reconnectNotified
 			user.reconnectNotified = false
-			core.log "#peer <{user.id}> Reachable again"
-		PeerMessageType type = cast buffer.readInt8
+			core.log "#peer <{user.id}> Reachable again via {viaServer ? "server relay" : "data channel"}"
+		int typeValue = buffer.readInt8
+		if typeValue < 0 or typeValue > cast PeerMessageType.Removed
+			core.log "#error <{user.id}> Unknown peer message type {typeValue} via {viaServer ? "server relay" : "data channel"} - version mismatch between clients?"
+			return
+		PeerMessageType type = cast typeValue
 		switch type
 			Tick	onTick user, buffer
 			Ping	onPing user, buffer
@@ -995,6 +1068,14 @@ internal transient skipInit unit PeerNetwork
 			// Don't pile onto a congested transport - the cumulative resend covers these bytes later
 			if viaChannel and channelBufferedAmount(receiver) > 1048576 then continue
 			if not viaChannel and ServerNetwork.bufferedAmount > 1048576 then continue
+
+			// A transport change is a connectivity event worth one log line: it shows exactly
+			// when the P2P path went down (Ticks fall back to the server) and when it recovered
+			int transport = viaChannel ? 1 : 2
+			if receiver.lastTickTransport != transport
+				if receiver.lastTickTransport != 0 or not viaChannel
+					core.log "#transport <{receiver.id}> Sending inputs via {viaChannel ? "data channel" : "server relay"}"
+				receiver.lastTickTransport = transport
 
 			let startPos = receiver.receivedMyInputsUpToPos
 			int length = inputs.writePos - startPos
@@ -1074,12 +1155,19 @@ internal transient skipInit unit PeerNetwork
 
 		// Only contiguous appends are allowed: the stream is append-only within an epoch and snapshots
 		// reference positions in it, so a write must neither leave a gap nor shrink what we already have
-		// (dropped bytes are repaired by the cumulative resend of the next Tick)
+		// (dropped bytes are repaired by the cumulative resend of the next Tick).
+		// Gap drops are the packet-loss signal: counted always, logged at most every 2 seconds
+		// (the cumulative count also appears in the periodic #status summary)
 		if incomingStartPos > sender.inputs.writePos
-			if core.verbose then core.log "[{claim}] <{sender.id}> #receive Dropped: bytes start at {incomingStartPos} but we only have {sender.inputs.writePos}"
+			sender.droppedTickCount++
+			let now = PlainDate.realTime
+			if now > sender.lastDropLogTime + 2000
+				sender.lastDropLogTime = now
+				core.log "[{claim}] <{sender.id}> #receive Dropped Tick (gap): bytes start at {incomingStartPos}, we have {sender.inputs.writePos} ({sender.droppedTickCount} drops so far)"
 			return
 		if incomingStartPos + length < sender.inputs.writePos
-			if core.verbose then core.log "[{claim}] <{sender.id}> #receive Dropped: bytes end at {incomingStartPos + length}, below our {sender.inputs.writePos}"
+			// A late or duplicated message on the unreliable channel - routine, only counted
+			sender.droppedTickCount++
 			return
 
 		buffer.readBuffer sender.inputs, incomingStartPos
