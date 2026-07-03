@@ -657,7 +657,7 @@ skipInit global unit input
 		return 0
 		
 	private handleTextInput: InputType type, string text
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.catchingUp then return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -665,7 +665,7 @@ skipInit global unit input
 		inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, Key keyCode, string key
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.catchingUp then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 		
@@ -690,7 +690,7 @@ skipInit global unit input
 		Vector2 referencePos = graphics.getPixelPos(x, y)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return		
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.catchingUp then return		
 		let inputs = localUser.inputs
 
 		if inputType == TouchMove
@@ -734,7 +734,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(referencePos.y)
 		
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.catchingUp then return
 		let inputs = localUser.inputs
 		
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
@@ -766,14 +766,14 @@ skipInit global unit input
 				
 	// Handles navigating back or forward in the browser	
 	internal handleNavigate: string url
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.catchingUp then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Navigate
 		inputs.writeString url
 		
 	internal handleString: int id, string data
-		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs then return
+		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.catchingUp then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.String
@@ -781,7 +781,7 @@ skipInit global unit input
 		inputs.writeString data
 		
 	internal handleJson: int id, string data
-		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs then return
+		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.catchingUp then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Json

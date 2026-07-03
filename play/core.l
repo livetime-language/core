@@ -411,7 +411,12 @@ internal transient skipInit unit core
 				while frame < targetFrame
 					if system.playMode == Record
 						for input.internalUsers as user
-							if user?.local then user.startInputFrame frame+1
+							// Never regress the stamp for new records: during a catch-up replay frame
+							// counts up from below claims we (or our pre-reload session) already sent,
+							// and a record stamped at or below a sent claim can't be rewound to its
+							// true frame by peers (their snapshot is only pinned down to claim+1) -
+							// they would apply it at their current frame and desync forever
+							if user?.local then user.startInputFrame math.max(frame+1, user.inputFrame)
 					// While catching up, stop stepping when the budget is used up and draw the
 					// chunk's last frame so the player sees progress instead of a frozen canvas
 					bool lastStepOfChunk = frame == targetFrame-1 or (catchingUp and currentTime >= catchUpDeadline)

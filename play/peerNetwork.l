@@ -163,7 +163,15 @@ internal transient skipInit unit ServerNetwork
 	string workingServerHost
 
 	private getOrCreateUser: int id
-		return input.internalUsers[id] || (input.internalUsers[id] = {id, local:false})
+		let existing = input.internalUsers[id]
+		if existing then return existing
+		InternalUser user = {id, local:false}
+		input.internalUsers[id] = user
+		// Keep the stored room recovery info aware of every user we ever saw: after a server
+		// restart the first rejoiner's maxKnownUserId is what tells the server (and through its
+		// user list, everyone else) that the currently unreachable users exist at all
+		if core.roomId > 0 and input.localUser then core.storeRoomInfo
+		return user
 
 	// Called when we first connect to the server or when we reconnect
 	private onConnectedToServer
@@ -1366,7 +1374,7 @@ internal transient skipInit unit PeerNetwork
 
 		// Our own stream: handled by the restore rules (append-only prefix)
 		if streamUserId == input.localUser.id
-			onOwnHistory peer, buffer, totalLength, startPos
+			onOwnHistory peer, buffer, totalLength, claim, startPos
 			return
 
 		let streamUser = input.internalUsers[streamUserId]
@@ -1466,14 +1474,14 @@ internal transient skipInit unit PeerNetwork
 	// Bytes are append-only: we may only adopt a longer history while our stream is still exactly
 	// the restored prefix - once we appended our own new inputs, nothing below writePos may change
 	// any more (our snapshots and the other peers already reference it)
-	private onOwnHistory: InternalUser peer, Buffer buffer, int totalLength, int startPos
+	private onOwnHistory: InternalUser peer, Buffer buffer, int totalLength, int claim, int startPos
 		let savedReadPos = buffer.readPos
 		let length = buffer.readInt
 		buffer.readPos = savedReadPos
 
 		if totalLength > peer.historyTotalLength then peer.historyTotalLength = totalLength
 		let localUser = input.localUser
-		core.log "#restore <{peer.id}> Received {length} bytes of our own history at {startPos} of {totalLength}, we have {localUser.inputs.writePos}"
+		core.log "#restore <{peer.id}> Received {length} bytes of our own history at {startPos} of {totalLength} (claimed up to frame {claim}), we have {localUser.inputs.writePos}"
 
 		if not restoring and localUser.inputs.writePos != localUser.epochStartPos and totalLength > localUser.epochStartPos
 			// Irreconcilable fork: a peer holds more of our previous stream than the point we
@@ -1489,16 +1497,33 @@ internal transient skipInit unit PeerNetwork
 			core.log "#restore <{peer.id}> Peer stored {totalLength} bytes of our previous stream, but we already appended new inputs after {localUser.epochStartPos} -> discarding our forked inputs"
 			discardForkedInputsAndReload
 			return
+
+		// The peer's claim for our stream is the floor for the stamps of our new records: peers
+		// have parsed our old records up to it and their snapshots are only pinned down to claim+1,
+		// so a new record stamped at or below it would be applied at different frames on live peers
+		// vs replaying peers - a permanent desync. Only adopted once we hold the full stream the
+		// claim covers, so the claims we send stay truthful (like the remote rule in onStreamData)
+		adoptOwnClaimFloor totalLength, claim
+
 		if startPos > localUser.inputs.writePos then return           // Would leave a gap
 		if startPos + length <= localUser.inputs.writePos then return // Nothing new
 
 		buffer.readBuffer localUser.inputs, startPos
 		if not restoring then localUser.epochStartPos = localUser.inputs.writePos
+		adoptOwnClaimFloor totalLength, claim
 		// More of our history may exist beyond this chunk - the 1s request loop keeps fetching.
 		// Extend the deadline while we are making progress
 		if restoring then restoreDeadline = math.max(restoreDeadline, PlainDate.realTime + 2000)
 		nextRestoreRequestTime = 0
 		core.log "#restore <{peer.id}> Restored our input stream to {localUser.inputs.writePos} bytes"
+
+	// Raise the stamp floor for our new input records to one above the claim a peer reported for
+	// our own (pre-reload) stream. core.onFrame keeps localUser.inputFrame monotonic from there
+	private adoptOwnClaimFloor: int totalLength, int claim
+		let localUser = input.localUser
+		if localUser.inputs.writePos >= totalLength and claim + 1 > localUser.inputFrame
+			core.log "#restore Our previous session already claimed inputs up to frame {claim} -> new records start at frame {claim + 1}"
+			localUser.inputFrame = claim + 1
 
 	// --------------------------------------------- Ping/Pong ---------------------------------------------
 
