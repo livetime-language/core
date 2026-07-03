@@ -312,19 +312,22 @@ internal transient skipInit unit ServerNetwork
 
 		statistics.serverPings.add pingPongTime
 
-		// Ignore pings that took more than twice as long as the average
+		// Ignore extreme outliers: pings that took at least three times as long as the link's own
+		// average round trip. Never use an absolute cutoff - the link itself may have extremely
+		// high latency and must still be able to sync
 		pongCount++
 		pingPongTimes.add pingPongTime maxLength:30
 		let pingPongTimesAverage = pingPongTimes.average
-		if pingPongTime > 400 or (pingPongTimes.length >= 15 and pingPongTime > pingPongTimesAverage * 2)
-			core.log "#server ignoring ping-pong", pingPongTimes.length, pingPongTimesAverage
+		if pingPongTimes.length >= 15 and pingPongTime > pingPongTimesAverage * 3
+			core.log "#server ignoring ping-pong outlier", pingPongTime, pingPongTimesAverage
 			return
 
-		// An accepted pong's start-time estimate is off by at most pingPongTime/2 (< 200ms), so a much
+		// An accepted pong's start-time estimate is off by at most pingPongTime/2, so a much
 		// larger deviation means the clock domains shifted: the machine slept or was suspended and
 		// performance.now paused while the server clock kept running. Slewing can't absorb minutes
 		// -> relearn the reference and snap startTime (the catch-up burst after the snap is budgeted)
-		if core.mode == Connected and math.abs(calculatedStartTime - core.startTime) > 1000
+		// The threshold scales with the round trip so extremely high latency isn't mistaken for a step
+		if core.mode == Connected and math.abs(calculatedStartTime - core.startTime) > math.max(1000, pingPongTime)
 			driftedPongs++
 			if driftedPongs == 1
 				// A single pong could be a fluke -> confirm with an immediate second ping before re-anchoring
