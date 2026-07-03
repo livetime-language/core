@@ -95,7 +95,7 @@ internal transient skipInit unit core
 				log "handleJoin", frame
 				input.localUser.startInputFrame 0
 				input.handleJoin frame, account
-		
+
 		mode = Connected
 		input.localUser.collectInputs = true
 		snapshotFrame = -1
@@ -817,6 +817,13 @@ internal transient skipInit unit core
 			inputs.writePos = row.start;
 			inputs.insertArrayBuffer(row.bytes);
 		}
+		// The restored bytes are pre-epoch history: this session must append after them, never
+		// write into them. Setting the boundary here (not only in finishRestore) keeps it truthful
+		// even when the restore protocol never runs - e.g. when we rejoin a freshly restarted server
+		// that lists nobody else. Peers that hold up to this much of our old stream then accept our
+		// new epoch instead of refusing it forever, and startConnected resumes our player instead
+		// of writing a second Join event
+		input.localUser.epochStartPos = inputs.writePos;
 		core.log("#db Restored "+inputs.writePos+" bytes of our own inputs from IndexedDB ("+rows.length+" chunks stored for room "+core.roomId+", user "+core.localUserId+")");
 	
 	openState

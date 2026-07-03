@@ -54,6 +54,9 @@ internal transient skipInit unit ServerNetwork
 	int nextConnectionId = 1
 	bool connected
 	bool joined              // We received a JoinResponse over the current or an earlier connection
+	// The server registers our membership per connection: every new socket needs its own
+	// JoinResponse before relays flow. Reset in setupServerConnection, drives the Join resend
+	bool joinedOnThisConnection
 	float startToConnectTime = float.maxValue
 	int retries
 
@@ -78,6 +81,14 @@ internal transient skipInit unit ServerNetwork
 			setupServerConnection
 			retries++
 
+		// The Join itself can be swallowed by a half-dead connection (socket open, nothing flows):
+		// without the JoinResponse for THIS socket the server doesn't know us and we would sit
+		// connected-but-unregistered indefinitely, sending nothing the server reacts to.
+		// The Join is idempotent - resend it until the response arrives
+		if connected and not joinedOnThisConnection and now > lastJoinSentTime + 2000
+			core.log "#server No JoinResponse after {math.round(now - lastJoinSentTime)} ms -> Resending Join"
+			sendJoinMessage
+
 		// Ping for clock sync (fast until we have a stable estimate, then slow)
 		if (core.mode == Ping or core.mode == Connected) and now >= nextPingTime
 			sendBuffer.reset
@@ -90,6 +101,7 @@ internal transient skipInit unit ServerNetwork
 		// Same monotonic clock as core.currentTime (inlined here: js blocks can't call inline functions)
 		ServerNetwork.startToConnectTime = Math.round(performance.timeOrigin + performance.now())
 		ServerNetwork.connected = false
+		ServerNetwork.joinedOnThisConnection = false
 
 		if(ServerNetwork.socket) {
 			core.log("#server Closing Previous Websocket");
@@ -182,10 +194,13 @@ internal transient skipInit unit ServerNetwork
 		catch
 			core.log "#error Failed to handle server message ({buffer.writePos} bytes): {error.stack}"
 
+	private float lastJoinSentTime
+
 	// The Join carries everything a freshly restarted server needs to recreate the room:
 	// seed, start time and the highest user id we know. This is what makes a server restart
 	// invisible to the players - the first client to reconnect rebuilds the room
 	private sendJoinMessage
+		lastJoinSentTime = core.currentTime
 		RoomInfo info = system.getLocalStorageObject("room"+core.roomId) or {}
 		string seed = core.mode == Connected ? math.randomSeed : (info.seed or "")
 		float serverStartTime = core.mode == Connected ? core.serverStartTime : (info.serverStartTime or 0)
@@ -229,6 +244,7 @@ internal transient skipInit unit ServerNetwork
 			let userCount = buffer.readInt16
 
 			joined = true
+			joinedOnThisConnection = true
 
 			if alreadyJoinedBefore
 				// We re-joined after a WebSocket reconnect. The WebRTC peer connections are not
@@ -588,6 +604,45 @@ internal transient skipInit unit PeerNetwork
 		let reload = () => { location.href = "/"+core.gameId+"/"+core.roomId+location.search; };
 		try {
 			// Delete our stored input chunks so a future player with a reused id can't load them
+			let trans = IndexedDB.db.transaction("input", "readwrite");
+			let store = trans.objectStore("input");
+			let index = store.index("roomId");
+			let req = index.getAllKeys(core.roomId);
+			req.onsuccess = () => {
+				for(let key of req.result) {
+					if((""+key).startsWith(core.roomId+"-"+input.localUser.id+"-")) store.delete(key);
+				}
+			};
+			trans.oncomplete = reload;
+			trans.onerror = reload;
+			setTimeout(reload, 2000);
+		} catch(e) {
+			reload();
+		}
+
+	// Our post-reload inputs forked from the group timeline (see onOwnHistory): delete only our
+	// stored input chunks for this room - identity and RoomInfo stay, so we reload and rejoin as
+	// the same player, and the restore rebuilds our stream from the peers' copies (which provably
+	// hold more of it than we do). Guarded against loops like selfHealReload
+	private bool forkDiscardHandled
+
+	js void discardForkedInputsAndReload
+		if(PeerNetwork.forkDiscardHandled) return;
+		PeerNetwork.forkDiscardHandled = true;
+		try {
+			let count = parseInt(sessionStorage.getItem("forkDiscards") || "0");
+			let last = parseInt(sessionStorage.getItem("forkDiscardTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#restore Not discarding the fork again, already discarded "+count+" times");
+				return;
+			}
+			sessionStorage.setItem("forkDiscards", ""+(count+1));
+			sessionStorage.setItem("forkDiscardTime", ""+Date.now());
+		} catch {}
+		core.log("#restore Deleting our stored input chunks for room "+core.roomId+" and reloading");
+		let reload = () => { location.reload(); };
+		try {
 			let trans = IndexedDB.db.transaction("input", "readwrite");
 			let store = trans.objectStore("input");
 			let index = store.index("roomId");
@@ -1131,16 +1186,7 @@ internal transient skipInit unit PeerNetwork
 				send sender, sendBuffer
 			return
 
-		// A new epoch means the sender restarted and lost its in-memory stream (page refresh with
-		// the same userId). Its stream only continues the one we stored if it restored at least
-		// everything we hold - otherwise its writes would retroactively change history that our
-		// snapshots and read positions reference, so we offer it its own history back instead
-		if epoch != sender.epoch
-			if sender.epoch != 0 and epochStartPos < sender.inputs.writePos
-				sendStreamChunk sender, sender.id, epochStartPos // Rate-limited, gives the rejoiner its own history back
-				return
-			core.log "[{claim}] <{sender.id}> #epoch Accepting new stream epoch {epoch} (was {sender.epoch}), continued from {epochStartPos}, we stored {sender.inputs.writePos}"
-			sender.epoch = epoch
+		bool epochConflict = epoch != sender.epoch
 
 		let incomingStartPos = buffer.readInt           // The sender sent inputs starting from this pos
 		let ackPos = buffer.readInt                     // The sender received my inputs up to this pos
@@ -1151,10 +1197,32 @@ internal transient skipInit unit PeerNetwork
 		buffer.readPos = savedReadPos
 
 		// Ack progress: the receiver is consuming our chunked catch-up (see sendInputs).
-		// Acks only move forward - a late message must not regress the resend cursor
-		if ackPos > sender.receivedMyInputsUpToPos
+		// Acks only move forward - a late message must not regress the resend cursor.
+		// Exception: an epoch other than the one we recorded means the sender restarted and lost
+		// every byte of our stream it ever held (peers never persist each other's streams), so
+		// that message's ack is the truth even when it regresses. Normally the sender's restore
+		// request resets the cursor to 0 anyway - but if that request was lost (the sender rejoined
+		// while we were unreachable), this is the only signal left: without it we would resend from
+		// the stale cursor forever and the sender would drop every Tick as a gap. Processed even
+		// when we refuse the epoch below, otherwise the deadlock is mutual: we don't take their
+		// bytes AND they never receive ours
+		if epochConflict and ackPos < sender.receivedMyInputsUpToPos
+			core.log "[{claim}] <{sender.id}> #epoch Epoch {epoch} acks only {ackPos} of our {input.localUser.inputs.writePos} bytes (cursor was {sender.receivedMyInputsUpToPos}) -> resend from {ackPos}"
+		if epochConflict or ackPos > sender.receivedMyInputsUpToPos
 			sender.receivedMyInputsUpToPos = ackPos
 			sender.stalledChunkSends = 0
+
+		// A new epoch means the sender restarted and lost its in-memory stream (page refresh with
+		// the same userId). Its stream only continues the one we stored if it restored at least
+		// everything we hold - otherwise its writes would retroactively change history that our
+		// snapshots and read positions reference, so we offer it its own history back instead
+		// (the rejoiner discards its fork and reloads when it sees the offer, see onOwnHistory)
+		if epochConflict
+			if sender.epoch != 0 and epochStartPos < sender.inputs.writePos
+				sendStreamChunk sender, sender.id, epochStartPos // Rate-limited, gives the rejoiner its own history back
+				return
+			core.log "[{claim}] <{sender.id}> #epoch Accepting new stream epoch {epoch} (was {sender.epoch}), continued from {epochStartPos}, we stored {sender.inputs.writePos}"
+			sender.epoch = epoch
 
 		// Only contiguous appends are allowed: the stream is append-only within an epoch and snapshots
 		// reference positions in it, so a write must neither leave a gap nor shrink what we already have
@@ -1333,6 +1401,8 @@ internal transient skipInit unit PeerNetwork
 
 	bool restoring
 	private float restoreDeadline
+	private float restoreStartTime
+	private float lastRestoreWaitLogTime
 	private float nextRestoreRequestTime
 
 	// Called from ServerNetwork.onJoinResponse when we joined with a preassigned userId and other
@@ -1340,6 +1410,7 @@ internal transient skipInit unit PeerNetwork
 	// so we neither append new inputs to our stream nor send Ticks until the restore settled
 	startRestore
 		restoring = true
+		restoreStartTime = PlainDate.realTime
 		restoreDeadline = PlainDate.realTime + 5000
 		nextRestoreRequestTime = 0
 		core.log "#restore Joined with a preassigned userId -> requesting our previous session's input stream from all peers (we hold {input.localUser.inputs.writePos} bytes from IndexedDB)"
@@ -1362,16 +1433,29 @@ internal transient skipInit unit PeerNetwork
 		// or when the deadline passed (a peer is unreachable -> its copy is lost to us; our
 		// new epoch keeps peers that still hold more of our old stream from being corrupted)
 		bool allAnswered = true
+		bool presentUnanswered = false
 		for input.internalUsers as user
 			if . and not .local and not .removed
 				if .historyTotalLength == -1 or .historyTotalLength > input.localUser.inputs.writePos
 					allAnswered = false
+					if .historyTotalLength == -1 and .presentOnServer then presentUnanswered = true
 
 		if allAnswered
 			finishRestore "all peers answered"
 		else
 		if now > restoreDeadline
-			finishRestore "timeout"
+			// Don't give up while a server-listed peer simply hasn't answered yet: starting without
+			// its copy risks appending a fork that only a discard-reload can repair, and right after
+			// a reload the connections can take several seconds to re-establish. Waiting also means
+			// the peers' streams arrive before we start stepping, so the catch-up replay parses them
+			// at their true frames. Capped: a listed-but-dead peer must not block us forever
+			if presentUnanswered and now < restoreStartTime + 30000
+				restoreDeadline = now + 1000
+				if now > lastRestoreWaitLogTime + 5000
+					lastRestoreWaitLogTime = now
+					core.log "#restore Waiting for present peers to answer ({math.round(now - restoreStartTime)} ms)"
+			else
+				finishRestore "timeout"
 
 	private finishRestore: string reason
 		restoring = false
@@ -1391,11 +1475,22 @@ internal transient skipInit unit PeerNetwork
 		let localUser = input.localUser
 		core.log "#restore <{peer.id}> Received {length} bytes of our own history at {startPos} of {totalLength}, we have {localUser.inputs.writePos}"
 
+		if not restoring and localUser.inputs.writePos != localUser.epochStartPos and totalLength > localUser.epochStartPos
+			// Irreconcilable fork: a peer holds more of our previous stream than the point we
+			// continued from, and we already appended new inputs over those positions (our restore
+			// requests were lost, or IndexedDB lagged behind what we had sent before the reload).
+			// Our appends can never join the group timeline - the peers refuse them, correctly.
+			// This must be checked on the reported total, not on the received chunk: our appends may
+			// be longer than the peer's copy, and the divergence would otherwise go undetected.
+			// The resilient exit: discard our forked inputs and reload. The restore then rebuilds
+			// our stream purely from the peers' copies (this peer provably holds it and is alive -
+			// it just sent it to us) and we resume as the same player. Only our few forked inputs
+			// are lost, which nobody else ever saw
+			core.log "#restore <{peer.id}> Peer stored {totalLength} bytes of our previous stream, but we already appended new inputs after {localUser.epochStartPos} -> discarding our forked inputs"
+			discardForkedInputsAndReload
+			return
 		if startPos > localUser.inputs.writePos then return           // Would leave a gap
 		if startPos + length <= localUser.inputs.writePos then return // Nothing new
-		if not restoring and localUser.inputs.writePos != localUser.epochStartPos
-			core.log "#restore <{peer.id}> Peer stored {startPos + length} bytes of our previous stream, but we already appended new inputs after {localUser.epochStartPos} -> can't adopt"
-			return
 
 		buffer.readBuffer localUser.inputs, startPos
 		if not restoring then localUser.epochStartPos = localUser.inputs.writePos
