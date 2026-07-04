@@ -357,6 +357,23 @@ internal transient class Buffer
 	js bool readBool
 		return this.dataView.getInt8(this.readPos++) != 0
 		
+	// Compares the length-prefixed chunk at the current readPos with `other` at otherStart,
+	// over the overlap below other.writePos. Peeks only: readPos is left unchanged
+	js bool chunkMatches: Buffer other
+		                  int otherStart = 0
+		let savedReadPos = this.readPos
+		let length = this.readInt()
+		let overlap = Math.min(length, other.writePos - otherStart)
+		let matches = true
+		for(let i = 0; i < overlap; i++) {
+			if(this.dataView.getUint8(this.readPos + i) != other.dataView.getUint8(otherStart + i)) {
+				matches = false
+				break
+			}
+		}
+		this.readPos = savedReadPos
+		return matches
+
 	js int readBuffer: Buffer writeBuffer
 		               int writeStart = 0
 		// Read length

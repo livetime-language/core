@@ -1605,20 +1605,25 @@ internal transient skipInit unit PeerNetwork
 		let localUser = input.localUser
 		core.log "#restore <{peer.id}> Received {length} bytes of our own history at {startPos} of {totalLength} (claimed up to frame {claim}), we have {localUser.inputs.writePos}"
 
-		if not restoring and localUser.inputs.writePos != localUser.epochStartPos and totalLength > localUser.epochStartPos
-			// Irreconcilable fork: a peer holds more of our previous stream than the point we
-			// continued from, and we already appended new inputs over those positions (our restore
-			// requests were lost, or IndexedDB lagged behind what we had sent before the reload).
-			// Our appends can never join the group timeline - the peers refuse them, correctly.
-			// This must be checked on the reported total, not on the received chunk: our appends may
-			// be longer than the peer's copy, and the divergence would otherwise go undetected.
+		if not restoring and localUser.inputs.writePos != localUser.epochStartPos
+			// Irreconcilable fork: a peer holds parts of our previous stream that our new appends
+			// overwrote (our restore requests were lost, or IndexedDB lagged behind what we had
+			// sent before the reload). Our appends can never join the group timeline - the peers
+			// refuse them, correctly.
+			// A fork is only proven when the peer holds MORE of our stream than we ever produced
+			// (previous-session bytes we lost) or when its bytes DIFFER from ours at the same
+			// positions. The peer's total merely exceeding epochStartPos is normal once the game
+			// runs - peers hold our current-session appends too, and on a high-latency link late
+			// duplicate restore answers routinely arrive after we started appending; treating those
+			// as forks caused spurious reload loops.
 			// The resilient exit: discard our forked inputs and reload. The restore then rebuilds
 			// our stream purely from the peers' copies (this peer provably holds it and is alive -
 			// it just sent it to us) and we resume as the same player. Only our few forked inputs
 			// are lost, which nobody else ever saw
-			core.log "#restore <{peer.id}> Peer stored {totalLength} bytes of our previous stream, but we already appended new inputs after {localUser.epochStartPos} -> discarding our forked inputs"
-			discardForkedInputsAndReload
-			return
+			if totalLength > localUser.inputs.writePos or not buffer.chunkMatches(localUser.inputs, startPos)
+				core.log "#restore <{peer.id}> Peer stored {totalLength} bytes of our previous stream (we hold {localUser.inputs.writePos}, continued from {localUser.epochStartPos}), which forks our appended inputs -> discarding our forked inputs"
+				discardForkedInputsAndReload
+				return
 
 		// The peer's claim for our stream is the floor for the stamps of our new records: peers
 		// have parsed our old records up to it and their snapshots are only pinned down to claim+1,
