@@ -70,6 +70,8 @@ internal transient class InternalUser
 	float startDataChannelTime = float.maxValue
 	float lastIncomingMessageTime = float.maxValue // Last message on any transport (drives reconnect notifications and removal)
 	float lastIncomingChannelTime = float.maxValue // Last message on the data channel (drives P2P connection repair)
+	float lastChannelMessageTime = float.maxValue  // Last message on the data channel; never reset by the repair watchdog (drives the silent-channel relay mirror, see PeerNetwork.channelSuspect)
+	float lastAckProgressTime = float.maxValue     // Last time this user acked new bytes of our stream or had nothing outstanding (drives the silent-channel relay mirror)
 	
 	// Statistics
 	private int[] aheadHistory    // Rolling buffer of ahead values, used to calculate bufferFrames

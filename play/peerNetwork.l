@@ -423,6 +423,12 @@ internal transient skipInit unit PeerNetwork
 	float removalGossipMillis = 10000
 	// The app is told that we are trying to reconnect to a user after this much silence
 	float reconnectNotifyMillis = 4000
+	// An open data channel that has neither delivered a message nor acked our outstanding bytes
+	// for this long is silently dead until proven otherwise (half-dead NAT, dying router): every
+	// peer message is then mirrored over the server relay, so inputs and repair offers keep
+	// flowing within seconds of an outage instead of stalling until a reconnect happens to close
+	// the channel. The protocol is idempotent and ack-driven, so duplicates are harmless
+	float channelSuspectMillis = 3000
 
 	// --------------------------------------------- Connect ---------------------------------------------
 
@@ -477,6 +483,10 @@ internal transient skipInit unit PeerNetwork
 				// instead of blocking certainty forever
 				if .lastIncomingMessageTime == float.maxValue then .lastIncomingMessageTime = now
 				if .lastIncomingChannelTime == float.maxValue then .lastIncomingChannelTime = now
+				if .lastChannelMessageTime == float.maxValue then .lastChannelMessageTime = now
+				if .lastAckProgressTime == float.maxValue then .lastAckProgressTime = now
+				// A peer with nothing outstanding is not ack-stalled (see channelSuspect)
+				if input.localUser and .receivedMyInputsUpToPos >= input.localUser.inputs.writePos then .lastAckProgressTime = now
 
 				// Tell the app when a user has fallen silent on every transport, so it can show
 				// a "trying to reconnect" hint. Any incoming message clears the notification
@@ -859,6 +869,7 @@ internal transient skipInit unit PeerNetwork
 		}
 		dataChannel.onmessage = e => {
 			user.lastIncomingChannelTime = Date.now();
+			user.lastChannelMessageTime = Date.now();
 			PeerNetwork.onPeerMessage(user, new Buffer(e.data, 0, 0, 0), false);
 		}
 
@@ -1068,9 +1079,24 @@ internal transient skipInit unit PeerNetwork
 	// mask each other - only when both are down at the same time is the peer unreachable
 	private int send: InternalUser user, Buffer buffer
 		if hasOpenChannel user
-			return sendOnChannel user, buffer
+			int sentBytes = sendOnChannel user, buffer
+			// An "open" channel can be silently dead (a dying router or NAT eats the packets but
+			// the SCTP association never notices). While the channel is suspect, mirror every
+			// message over the server relay too - inputs and repair offers keep flowing seconds
+			// into an outage instead of stalling until a reconnect happens to close the channel
+			if channelSuspect user and ServerNetwork.connected and ServerNetwork.bufferedAmount < 1048576
+				ServerNetwork.relay user.id, buffer
+			return sentBytes
 		ServerNetwork.relay user.id, buffer
 		return buffer.writePos
+
+	// True when the open channel cannot be trusted: it delivered nothing for a while (their
+	// direction is dead), or the peer stopped acking our outstanding bytes (our direction is
+	// dead - visible without any wire change because acks ride on the peer's Ticks, which
+	// still arrive when only our direction died)
+	private bool channelSuspect: InternalUser user
+		let now = PlainDate.realTime
+		return now > user.lastChannelMessageTime + channelSuspectMillis or now > user.lastAckProgressTime + channelSuspectMillis
 
 	private js int sendOnChannel: InternalUser user, Buffer buffer
 		try {
@@ -1141,11 +1167,12 @@ internal transient skipInit unit PeerNetwork
 			if not viaChannel and ServerNetwork.bufferedAmount > 1048576 then continue
 
 			// A transport change is a connectivity event worth one log line: it shows exactly
-			// when the P2P path went down (Ticks fall back to the server) and when it recovered
-			int transport = viaChannel ? 1 : 2
+			// when the P2P path went down (Ticks fall back to the server or are mirrored while
+			// the channel is suspect) and when it recovered
+			int transport = viaChannel ? (channelSuspect(receiver) ? 3 : 1) : 2
 			if receiver.lastTickTransport != transport
-				if receiver.lastTickTransport != 0 or not viaChannel
-					core.log "#transport <{receiver.id}> Sending inputs via {viaChannel ? "data channel" : "server relay"}"
+				if receiver.lastTickTransport != 0 or transport != 1
+					core.log "#transport <{receiver.id}> Sending inputs via {transport == 1 ? "data channel" : transport == 2 ? "server relay" : "data channel + server relay (channel suspect)"}"
 				receiver.lastTickTransport = transport
 
 			// A returning peer can ack MORE of our stream than we hold (it kept our pre-reload
@@ -1227,6 +1254,7 @@ internal transient skipInit unit PeerNetwork
 		if epochConflict or ackPos > sender.receivedMyInputsUpToPos
 			sender.receivedMyInputsUpToPos = ackPos
 			sender.stalledChunkSends = 0
+			sender.lastAckProgressTime = PlainDate.realTime
 
 		// A new epoch means the sender restarted and lost its in-memory stream (page refresh with
 		// the same userId). Its stream only continues the one we stored if it restored at least
