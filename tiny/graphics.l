@@ -252,6 +252,24 @@ transient global skipInit graphics
 	int[] tiles
 	TileCollection[] tileCollections
 
+	init
+		colorByLetter = {}
+		colors = []
+		forDynamic Colors as color, name
+			color.name = name
+			colors.add color
+			colorByLetter[color.letter] = color.value
+
+		// openTiles
+		openFonts
+		screen = {}
+		screens = [screen]
+
+	setup
+		setResolution {224, 168}
+		// setResolution {256, 192}
+		initHandlers
+
 	js void initHandlers
 		if(system.isEmbedded) return
 		window.onresize = () => this.onResize()
@@ -277,24 +295,6 @@ transient global skipInit graphics
 
 	getPixelPos: int x, int y
 		return screen.getPixelPos({x, y})
-
-	setup
-		screen = {}
-		screens = [screen]
-
-		setResolution {224, 168}
-		// setResolution {256, 192}
-		initHandlers
-
-		colorByLetter = {}
-		colors = []
-		forDynamic Colors as color, name
-			color.name = name
-			colors.add color
-			colorByLetter[color.letter] = color.value
-
-		// openTiles
-		openFonts
 
 	getClosestColor: int value
 		let r = value bitwiseAnd 0xff
