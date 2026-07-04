@@ -669,6 +669,76 @@ transient global skipInit graphics
 	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
 		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor
 
+	global void drawTilemap: Tilemap tilemap	// The tilemap to draw
+		                     Vector2 pos = {0,0}	// The screen position to draw to in pixels 
+							 Vector2 sourcePos = {0,0}	// Start drawing from this tilemap position in tiles
+							 Vector2 size = {0,0}	// The amount of tiles to draw. Draws the whole map by default
+							 string tags = null	// Only draw tiles with these tags. Draw all tiles by default
+		if system.fastForward or tilemap == null then return
+
+		Sprite[] tiles = tilemap.tiles
+		int mapWidth = tilemap.size.x.floor
+		int mapHeight = tilemap.size.y.floor
+
+		// Tile range to draw, in tilemap coordinates (end indices are exclusive)
+		int firstCol = sourcePos.x.floor
+		int firstRow = sourcePos.y.floor
+		int colCount = size.x.floor
+		int rowCount = size.y.floor
+		if colCount <= 0 then colCount = mapWidth - firstCol
+		if rowCount <= 0 then rowCount = mapHeight - firstRow
+		int lastCol = firstCol + colCount
+		int lastRow = firstRow + rowCount
+		if firstCol < 0 then firstCol = 0
+		if firstRow < 0 then firstRow = 0
+		if lastCol > mapWidth then lastCol = mapWidth
+		if lastRow > mapHeight then lastRow = mapHeight
+		if firstCol >= lastCol or firstRow >= lastRow then return
+
+		int tileW = tileSize.x.floor
+		int tileH = tileSize.y.floor
+		// Screen origin so that tilemap tile (sourcePos) lands at pos
+		int originX = (pos.x - sourcePos.x * tileW).floor
+		int originY = (pos.y - sourcePos.y * tileH).floor
+
+		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
+		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+		int targetStride = screen.size.x.floor
+		int[] target = screen.pixels
+		int transparentValue = Colors.Black.value
+		bool filterTags = tags != null
+
+		for firstRow to lastRow as r
+			int rowBase = r * mapWidth
+			int rowScreenY = originY + r * tileH
+			for firstCol to lastCol as c
+				Sprite tile = tiles[rowBase + c]
+				if tile == null then continue
+				if filterTags and (tile.tags == null or not tile.tags.includes(tags)) then continue
+
+				int positionX = originX + c * tileW
+				int startX = positionX, endX = positionX + tile.size.x.floor
+				int startY = rowScreenY, endY = rowScreenY + tile.size.y.floor
+				if startX < clipX1 then startX = clipX1
+				if endX > clipX2 then endX = clipX2
+				if startY < clipY1 then startY = clipY1
+				if endY > clipY2 then endY = clipY2
+				if startX >= endX or startY >= endY then continue
+
+				int spriteStride = tile.stride
+				int[] source = tile.pixels
+				int sourceStart = (startY - rowScreenY) * spriteStride + (startX - positionX)
+				int targetStart = startY * targetStride + startX
+				for startY to endY as y
+					int s = sourceStart, t = targetStart
+					for startX to endX as x
+						let sourceValue = source[s]
+						if sourceValue != transparentValue then target[t] = sourceValue
+						s += 1
+						t += 1
+					sourceStart += spriteStride
+					targetStart += targetStride
+
 	global clip: Vector2 pos = {0,0}
 		         Vector2 size = {0,0}
 		screen.clipX1 = pos.x atLeast 0
@@ -685,7 +755,7 @@ transient global skipInit graphics
 enum SpriteType: None, Object, Character, Tile
 enum CollisionType: None, Solid, Hazard, OneWayPlatform
 
-Sprite
+class Sprite
 	int[] pixels
 	Vector2 size
 	int frames = 1
@@ -726,3 +796,25 @@ Sprite
 				line += color ? color.letter : " "
 			result.add line
 		return result
+
+class Tilemap
+	Sprite[] tiles
+	Vector2 size
+
+	Tilemap: string[] tilesAsStrings = null
+		if not tilesAsStrings then return
+		int maxWidth = tilesAsStrings.max.length/2
+		size.create(maxWidth, tilesAsStrings.length)
+		tiles = []
+		int index
+		for tilesAsStrings as line
+			for line.length as i
+				int keyIndex = i*2
+				let key = line[keyIndex to keyIndex+2]
+				tiles[index + i] = tilemaps.mappings[key] or null
+			index += maxWidth
+
+	toStrings
+		string[] result
+		for size.y as y
+			string line
