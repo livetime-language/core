@@ -51,6 +51,7 @@ internal transient class InternalUser
 	// Connection
 	dynamic peerConnection
 	dynamic[] dataChannels
+	dynamic latestDataChannel // The channel created with the current offer; may still be connecting (dataChannels only lists open ones)
 	dynamic[] pendingIceCandidates // ICE candidates that arrived before the remote description was set
 	bool settingRemoteDescription  // A received offer/answer is being applied; queue ICE candidates until setRemoteDescription resolved
 	string connectionType
@@ -58,7 +59,11 @@ internal transient class InternalUser
 	bool receivedAnswer
 	bool connected
 	int connectionTries
-	int silentPeriods // Consecutive 10s periods without any incoming peer message (see PeerNetwork.tick)
+	int silentPeriods // Consecutive silence periods without any incoming peer message (see PeerNetwork.tick)
+	// Consecutive channel-silence reconnects with no channel message in between. Grows the silence
+	// timeout so a high-latency link gets enough time to finish signaling+ICE+DTLS before the
+	// watchdog kills the almost-complete connection again (see PeerNetwork.tick)
+	int channelReconnects
 	string connectionState
 	bool hidden                    // The user's tab is hidden: it is throttled and may fall silent, tolerate a longer silence (F6, see PeerNetwork.tick)
 	bool leaving                   // The user's page is closing or navigating away: don't burn reconnect attempts; cleared by any incoming message (F6)

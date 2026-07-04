@@ -73,11 +73,14 @@ internal transient skipInit unit ServerNetwork
 			core.startTime += math.max(math.min(referenceStartTime - core.startTime, maxAdjust), -maxAdjust)
 		lastSlewTime = now
 
-		// Reconnect to server: Try again if we aren't connected 5 seconds after starting to connect.
+		// Reconnect to server: Try again if we aren't connected some time after starting to connect.
+		// The timeout grows with every failed attempt (5s up to 20s): on a high-latency link the
+		// TCP+TLS+WebSocket handshake alone can take ~5s, so a fixed 5s cutoff would abort every
+		// almost-complete attempt forever (seen with 600ms delay: ~5 minutes to join).
 		// This never gives up: when the server restarts or the internet drops for minutes, the next
 		// attempt after the outage succeeds and the re-join recovers the room
-		if not connected and now > startToConnectTime + 5000
-			core.log "#server WebSocket not connected after {now - startToConnectTime} ms -> Reconnecting"
+		if not connected and now > startToConnectTime + 5000 + math.min(retries, 5) * 3000
+			core.log "#server WebSocket not connected after {now - startToConnectTime} ms -> Reconnecting (try {retries+1})"
 			setupServerConnection
 			retries++
 
@@ -141,6 +144,8 @@ internal transient skipInit unit ServerNetwork
 		ServerNetwork.socket.onopen = () => {
 			core.log("#server Websocket Open ("+url+")");
 			ServerNetwork.connected = true;
+			// A later outage starts with the fast 5s timeout again
+			ServerNetwork.retries = 0;
 			// Stick to the URL that worked for all future reconnects
 			ServerNetwork.serverUrls = [url];
 			ServerNetwork.serverUrlIndex = 0;
@@ -498,10 +503,15 @@ internal transient skipInit unit PeerNetwork
 				// attempts would be pointless churn; any later message clears the flag
 				if not .leaving
 					// Reconnect the peer connection if the data channel has been silent for a while.
+					// The timeout grows with consecutive fruitless reconnects (10s up to 30s): over a
+					// high-latency TURN relay, signaling+ICE+DTLS take longer than 10s, and a fixed
+					// cutoff would keep killing connections right before the channel opens.
 					// A hidden tab is throttled and may fall silent - tolerate a longer silence
-					if now > .lastIncomingChannelTime + (.hidden ? 60000 : 10000)
+					float channelSilenceTimeout = .hidden ? 60000 : 10000 + math.min(.channelReconnects, 4) * 5000
+					if now > .lastIncomingChannelTime + channelSilenceTimeout
 						core.log "[{Time.ticks}] <{.id}> #problem ------ State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last channel message {now - .lastIncomingChannelTime} ms ago, offerByMe:{.offerByMe} ------"
 						.startToConnectTime = .lastIncomingChannelTime = now
+						.channelReconnects++
 						statistics.scheduleSendIn 3 seconds
 
 						if .offerByMe
@@ -707,6 +717,10 @@ internal transient skipInit unit PeerNetwork
 		// Wait until it settled so the local tracks are added when the peer connection is created
 		await whenLocalMediaSettled
 		setupPeerConnection user, offerByMe:true
+		// Create the data channel before the offer, so the very first SDP round trip negotiates it
+		// and it opens right after DTLS. Creating it later would trigger a renegotiation - one more
+		// full signaling round trip during which a high-latency link looks dead to the watchdog
+		setupDataChannel user
 		setupRemoteMedia user
 
 	private js void restartIce: InternalUser user
@@ -828,6 +842,14 @@ internal transient skipInit unit PeerNetwork
 			return null;
 		}
 
+	// Recreates the data channel only if the previous one is gone for good. While it is still
+	// "connecting" it was negotiated with the offer and will open on its own; closing it and
+	// creating a new one would trigger a renegotiation (a full extra signaling round trip)
+	private js void ensureDataChannel: InternalUser user
+		let channel = user.latestDataChannel;
+		if(channel && (channel.readyState == "open" || channel.readyState == "connecting")) return;
+		PeerNetwork.setupDataChannel(user);
+
 	private js void setupDataChannel: InternalUser user
 		try {
 			user.startDataChannelTime = Date.now();
@@ -836,6 +858,7 @@ internal transient skipInit unit PeerNetwork
 
 			// Unreliable, unordered: losses are repaired by the ack-driven cumulative resend
 			let dataChannel = user.peerConnection.createDataChannel("channel", {ordered:false, maxRetransmits:0});
+			user.latestDataChannel = dataChannel;
 			PeerNetwork.attachDataChannel(user, dataChannel);
 		}
 		catch(e) {
@@ -851,6 +874,8 @@ internal transient skipInit unit PeerNetwork
 		dataChannel.onopen = e => {
 			user.dataChannels.splice(0,0,dataChannel);
 			user.lastIncomingChannelTime = Date.now();
+			// The link proved it can establish a channel - the silence watchdog starts fast again
+			user.channelReconnects = 0;
 			core.log("#peer <"+user.id+"> Data Channel Open (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
 			PeerNetwork.logConnectionType(user);
 		}
@@ -874,12 +899,15 @@ internal transient skipInit unit PeerNetwork
 		}
 
 	onConnected: InternalUser user
+		// Fresh silence window: the channel created with the offer still needs the SCTP handshake
 		user.startDataChannelTime = user.lastIncomingChannelTime = PlainDate.realTime
 		user.connectionTries = 0
 		logConnectionType user
 
+		// The channel was already negotiated with the offer and normally just opens now. Only when
+		// it died for good (SCTP gone but ICE recovered) create a new one - that costs a renegotiation
 		if user.offerByMe
-			setupDataChannel user
+			ensureDataChannel user
 
 		if not statistics.connectTime
 			int connectedCount = input.internalUsers.count.offerByMe and .connected
