@@ -177,6 +177,10 @@ internal transient skipInit unit core
 		lobby.inLobby = startInLobby
 		Time.now = serverStartTime
 		snapshotFrame = -1
+		integrationReplayTo = -1
+		remoteInputsChanged = true
+		earliestChangedFrame = int.maxValue
+		nextPredictionPassFrame = 0
 		checksumValues.clear
 		checksumFrames.clear
 		lastChecksumFrame = -1
@@ -435,11 +439,18 @@ internal transient skipInit unit core
 							// from a peer holding more of our stream, and a claim covering their
 							// frames would break the receivers' rewind pinning the same way
 							if user?.local and not PeerNetwork.holdingConfirmationPending then user.startInputFrame math.max(frame+1, user.inputFrame)
-					// While catching up, stop stepping when the budget is used up and draw the
-					// chunk's last frame so the player sees progress instead of a frozen canvas
-					bool lastStepOfChunk = frame == targetFrame-1 or (catchingUp and currentTime >= catchUpDeadline)
-					step fastForward:false, draw:lastStepOfChunk
-					if not system.isDebug then collectStatistics
+					// Frames below integrationReplayTo re-step frames the player already saw (a
+					// budgeted integration replay, see checkRewindAndReplayState): they run
+					// fastForwarded like a synchronous replay - sounds and app effects must not
+					// fire again - are never drawn, and don't feed the smoothing statistics
+					bool integrating = frame < integrationReplayTo
+					// While catching up or integrating, stop stepping when the budget is used up.
+					// A catch-up chunk draws its last frame so the player sees progress instead
+					// of a frozen canvas; an integration keeps the last live frame on the canvas
+					bool lastStepOfChunk = frame == targetFrame-1 or ((catchingUp or integrating) and currentTime >= catchUpDeadline)
+					bool drawThisStep = lastStepOfChunk and not integrating
+					step fastForward:integrating, draw:drawThisStep
+					if not system.isDebug and not integrating then collectStatistics
 					if lastStepOfChunk then break
 			catch
 				onError .
@@ -666,9 +677,58 @@ internal transient skipInit unit core
 	
 	private Buffer[] milestones
 	
+	// Arrival tracking for the rollback replay: rewind+replay only runs when something that can
+	// change the deterministic parse actually arrived since the last completed pass (03a).
+	// earliestChangedFrame is the first frame whose parsed inputs may differ from what the last
+	// replay predicted: when it lies above the current frame, forward stepping parses the new
+	// records at their true stamps anyway and no replay is needed at all
+	private bool remoteInputsChanged = true
+	private int earliestChangedFrame = int.maxValue
+	
+	// While a large integration replay is spread over several animation frames (03c), new rewinds
+	// are blocked and nextSnapshotFrame stays frozen until the replay reached this frame
+	// (see checkRewindAndReplayState); -1 = no integration replay in progress
+	int integrationReplayTo = -1
+	
+	// While the snapshot pin is frozen (a silent peer, a rejoin's holding gate), every pass
+	// replays the whole window back to the pin. Those prediction passes run on a cooldown
+	// proportional to the window (see checkRewindAndReplayState), which bounds the total replay
+	// work to a constant rate no matter how long the outage lasts (03b). Remote inputs then
+	// integrate in slightly larger batches as the window grows.
+	// Note: a ring of intermediate snapshots would bound the window itself, but the serializer's
+	// _objectIndex reuse stamps only allow restoring the snapshot that was serialized LAST -
+	// interleaving extra serialize calls corrupts the next restore (verified by test)
+	private int nextPredictionPassFrame
+	
+	// Diagnostics for the resilience tests and the statistics graphs
+	internal int replayPassCount        // Executed rewind+replay passes
+	internal int skippedReplayPassCount // Passes skipped because they would have reproduced the current state
+	internal int replayedFrameCount     // Total frames stepped by replay passes
+	internal int lastReplayFrameCount   // Frames stepped by the most recent replay pass
+	internal int maxReplayFrameCount    // Largest single replay window (tests reset this between phases)
+	
+	// Called by PeerNetwork whenever something arrived that can change the deterministic parse:
+	// a user's claim advanced (records above it became parseable), a user appeared or was removed,
+	// or restored history bytes were adopted. firstChangedFrame is the first frame whose parsed
+	// inputs may differ from the last replay's prediction - a claim advance changes nothing below
+	// oldClaim+1, because records are never stamped at or below their sender's claim
+	internal markRemoteChange: int firstChangedFrame
+		remoteInputsChanged = true
+		if firstChangedFrame < earliestChangedFrame then earliestChangedFrame = firstChangedFrame
+	
 	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
+
+		// A budgeted integration replay is still stepping toward integrationReplayTo: don't
+		// restart it on every arriving chunk (that made a returning peer's recovery cost many
+		// consecutive full-window replays, O(window²) in total). nextSnapshotFrame stays frozen
+		// too, so the pinned snapshot is re-saved at the frame this pass planned for - every byte
+		// below it was already present when the pass started. Arrivals during the pass stay
+		// recorded in remoteInputsChanged/earliestChangedFrame and the next pass integrates them
+		if integrationReplayTo != -1
+			if frame < integrationReplayTo then return
+			integrationReplayTo = -1
 
 		if mode == Local and simulateRollback then	nextSnapshotFrame = frame - 5
 		else
@@ -684,16 +744,68 @@ internal transient skipInit unit core
 			// holding confirmations are pending (PeerNetwork.holdingConfirmationPending)
 			nextSnapshotFrame = (input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.smoothFrame, .inputFrame)) filter: . != null)+1
 		
-		if snapshotFrame != -1
-			if verbose
-				core.log "rewindAndReplayState", snapshotFrame, frame, nextSnapshotFrame
-				for input.internalUsers
-					core.log "\t<{.id}>", .smoothFrame, .inputFrame, .local
-			
-			let prevSnapshotFrame = snapshotFrame
-			snapshotFrame = -1
-			rewind snapshot
-			replay prevSnapshotFrame to frame
+		if snapshotFrame == -1 then return
+		
+		bool pinAdvances = nextSnapshotFrame > snapshotFrame
+		if not pinAdvances
+			// Skip the pass when it provably reproduces the current state (03a): nothing relevant
+			// arrived, or every newly parseable record is stamped above the current frame - forward
+			// stepping parses those at their true stamps anyway. Without this, one silent peer
+			// meant replaying its whole silence window on every animation frame, with the total
+			// work growing quadratically over the outage
+			if not remoteInputsChanged or earliestChangedFrame > frame
+				skippedReplayPassCount++
+				remoteInputsChanged = false
+				earliestChangedFrame = int.maxValue
+				replayFrom = -1
+				return
+			// The pin is frozen, so this pass replays the whole window. Respect the cooldown set
+			// by the previous pass (03b) - arrivals keep accumulating in earliestChangedFrame
+			if frame < nextPredictionPassFrame then return
+		
+		if verbose
+			core.log "rewindAndReplayState", snapshotFrame, frame, nextSnapshotFrame
+			for input.internalUsers
+				core.log "\t<{.id}>", .smoothFrame, .inputFrame, .local
+		
+		remoteInputsChanged = false
+		earliestChangedFrame = int.maxValue
+		
+		int rewindFrame = snapshotFrame
+		int replayToFrame = frame
+		
+		// The pin is only re-serialized when it moves - re-saving an identical snapshot on every
+		// animation frame was one of the hidden costs of the old code. The pin is also the only
+		// valid rewind root: the serializer's _objectIndex stamps belong to the last serialize
+		// call, so restoring any snapshot other than the most recently serialized one corrupts
+		// the object-reuse decisions of deserialize
+		if pinAdvances then snapshotFrame = -1
+		
+		rewind snapshot
+		
+		// Passes with a frozen pin cost the full window every time: space them out so the total
+		// replay work stays at a constant rate however long the outage lasts (03b)
+		nextPredictionPassFrame = replayToFrame + math.floor((replayToFrame - rewindFrame) / ticksPerSecond)
+		
+		// The threshold is generous (5 seconds of frames): mid-sized windows replay synchronously
+		// in well under a frame budget, and the synchronous path is bit-identical to the old code
+		if replayToFrame - rewindFrame > ticksPerSecond*5
+			// A huge window (a peer returning after a long outage, a removal releasing a backlog)
+			// is not replayed synchronously - that froze the tab for seconds and silenced our own
+			// Ticks. It is spread over several animation frames with the catch-up budget instead:
+			// core.onFrame's step loop steps frames below integrationReplayTo fastForwarded and
+			// budgeted (03c). Unlike a real catch-up this does not pause input recording: new
+			// records are stamped localUser.inputFrame, which stays monotonic above every claim
+			// we have sent, so records arriving between chunks are safe
+			frame = replayFrom = rewindFrame
+			integrationReplayTo = replayToFrame
+			replayPassCount++
+			lastReplayFrameCount = replayToFrame - rewindFrame
+			if lastReplayFrameCount > maxReplayFrameCount then maxReplayFrameCount = lastReplayFrameCount
+			replayedFrameCount += lastReplayFrameCount
+			log "#catchup Integrating {lastReplayFrameCount} replayed frames in budgeted chunks (rewound to {rewindFrame})"
+		else
+			replay rewindFrame to replayToFrame
 
 	private rewind: Buffer snapshot
 		restoreTime = PlainDate.measure
@@ -707,6 +819,10 @@ internal transient skipInit unit core
 					user.inputs.readPos = snapshot.readInt
 		
 	private replay: int from, int to
+		replayPassCount++
+		lastReplayFrameCount = to - from
+		if lastReplayFrameCount > maxReplayFrameCount then maxReplayFrameCount = lastReplayFrameCount
+		replayedFrameCount += lastReplayFrameCount
 		replayTime = PlainDate.measure
 			frame = replayFrom = from
 			while frame < to

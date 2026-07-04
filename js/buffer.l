@@ -262,14 +262,10 @@ internal transient class Buffer
 		// Write length
 		this.writeInt(length)
 		
-		// Write bytes
-		let readPos = start
-		let writePos = this.writePos
-		let readPosEnd = start + length
-		while(readPos < readPosEnd)
-			this.dataView.setUint8(writePos++, source.dataView.getUint8(readPos++))
-			
-		this.writePos = writePos
+		// Write bytes (bulk copy - a DataView call per byte is 10-50x slower, and this runs
+		// for every sent and received Tick)
+		this.bytes.set(source.bytes.subarray(start, start + length), this.writePos)
+		this.writePos += length
 		
 	// Insert a raw array buffer at the writePos without writing its length
 	js void insertArrayBuffer: dynamic sourceArrayBuffer
@@ -280,44 +276,30 @@ internal transient class Buffer
 			this.expandBuffer(this.writePos+length)
 			
 		// Write bytes
-		let readPos = 0
-		let writePos = this.writePos
-		let sourceDataView = new DataView(sourceArrayBuffer)
-		while(readPos < length)
-			this.dataView.setUint8(writePos++, sourceDataView.getUint8(readPos++))
-		this.writePos = writePos
+		this.bytes.set(new Uint8Array(sourceArrayBuffer), this.writePos)
+		this.writePos += length
 		
 	js void copyFromBuffer: Buffer source
-		let readPos = 0
 		let length = source.writePos
-		let writePos = this.writePos
 		
 		// Expand if neccessary
-		if(writePos+length > this.buffer.byteLength)
-			this.expandBuffer(writePos+length)
+		if(this.writePos+length > this.buffer.byteLength)
+			this.expandBuffer(this.writePos+length)
 			
-		// Write bytes
-		let readPosEnd = readPos + length
-		while(readPos < readPosEnd)
-			this.dataView.setUint8(writePos++, source.dataView.getUint8(readPos++))
-			
-		this.writePos = writePos
+		// Write bytes (bulk copy)
+		this.bytes.set(source.bytes.subarray(0, length), this.writePos)
+		this.writePos += length
 		
 	js void set: Buffer source
-		let readPos = 0
 		let length = source.writePos
-		let writePos = 0
 		
 		// Expand if neccessary
-		if(writePos+length > this.buffer.byteLength)
-			this.expandBuffer(writePos+length)
+		if(length > this.buffer.byteLength)
+			this.expandBuffer(length)
 			
-		// Write bytes
-		let readPosEnd = readPos + length
-		while(readPos < readPosEnd)
-			this.dataView.setUint8(writePos++, source.dataView.getUint8(readPos++))
-			
-		this.writePos = writePos
+		// Write bytes (bulk copy)
+		this.bytes.set(source.bytes.subarray(0, length), 0)
+		this.writePos = length
 		
 	inline js int peekInt8  => this.dataView.getInt8(this.readPos)
 	inline js int peekInt16 => this.dataView.getInt16(this.readPos)
@@ -365,8 +347,9 @@ internal transient class Buffer
 		let length = this.readInt()
 		let overlap = Math.min(length, other.writePos - otherStart)
 		let matches = true
+		let bytes = this.bytes, otherBytes = other.bytes, base = this.readPos
 		for(let i = 0; i < overlap; i++) {
-			if(this.dataView.getUint8(this.readPos + i) != other.dataView.getUint8(otherStart + i)) {
+			if(bytes[base + i] != otherBytes[otherStart + i]) {
 				matches = false
 				break
 			}
@@ -383,15 +366,10 @@ internal transient class Buffer
 		if(writeStart+length > writeBuffer.buffer.byteLength)
 			writeBuffer.expandBuffer(writeStart+length)
 			
-		// Read bytes
-		let readPos = this.readPos
-		let writePos = writeStart
-		let readPosEnd = readPos + length
-		while(readPos < readPosEnd)
-			writeBuffer.dataView.setUint8(writePos++, this.dataView.getUint8(readPos++))
-			
-		this.readPos = readPos
-		writeBuffer.writePos = writePos
+		// Read bytes (bulk copy)
+		writeBuffer.bytes.set(this.bytes.subarray(this.readPos, this.readPos + length), writeStart)
+		this.readPos += length
+		writeBuffer.writePos = writeStart + length
 		return length
 			
 	js string toString
@@ -409,6 +387,7 @@ internal transient class Buffer
 	int readPos, writePos
 	private object buffer
 	private object dataView
+	private object bytes // Cached Uint8Array view over buffer, recreated with dataView (bulk copies)
 	private static object textEncoder, textDecoder
 	
 	init
@@ -422,6 +401,7 @@ internal transient class Buffer
 		if(!this.buffer) this.buffer = new ArrayBuffer(size)
 		else             this.writePos = this.buffer.byteLength
 		this.dataView = new DataView(this.buffer)
+		this.bytes = new Uint8Array(this.buffer)
 		
 	private static js void setupTextEncoder
 		Buffer.textEncoder = new TextEncoder
@@ -444,38 +424,47 @@ internal transient class Buffer
 		this.readPos = 0
 		
 	private js void expandBuffer: int size
-		let prevLength = this.buffer.byteLength
-		let len = Math.max(prevLength*2, size)
-		this.buffer = new ArrayBuffer(len)
-		let prevDataView = this.dataView
-		let newDataView = new DataView(this.buffer)
-		for(let i=0; i<prevLength; i++)
-			newDataView.setInt8(i, prevDataView.getInt8(i))
-				
-		this.dataView = newDataView
+		let len = Math.max(this.buffer.byteLength*2, size)
+		let newBuffer = new ArrayBuffer(len)
+		let newBytes = new Uint8Array(newBuffer)
+		newBytes.set(this.bytes)
+		this.buffer = newBuffer
+		this.bytes = newBytes
+		this.dataView = new DataView(newBuffer)
 		
 	js bool == Buffer value
-		if(this.writePos != value.writePos) return false;
-		for(var i=0, len=this.writePos; i<len; i++) {
-			if(this.dataView.getUint8(i) != value.dataView.getUint8(i)) {
-				return false;
-			}
+		let length = this.writePos
+		if(length != value.writePos) return false;
+		// Compare 4 bytes at a time (both buffers start word-aligned), then the byte tail
+		let words = length >> 2
+		let mine = new Int32Array(this.buffer, 0, words)
+		let theirs = new Int32Array(value.buffer, 0, words)
+		for(var i=0; i<words; i++) {
+			if(mine[i] != theirs[i]) return false;
+		}
+		for(var i=words<<2; i<length; i++) {
+			if(this.bytes[i] != value.bytes[i]) return false;
 		}
 		return true;
 		
 	js bool != Buffer value
-		if(this.writePos != value.writePos) return true;
-		for(var i=0, len=this.writePos; i<len; i++) {
-			if(this.dataView.getUint8(i) != value.dataView.getUint8(i)) {
-				return true;
-			}
+		let length = this.writePos
+		if(length != value.writePos) return true;
+		let words = length >> 2
+		let mine = new Int32Array(this.buffer, 0, words)
+		let theirs = new Int32Array(value.buffer, 0, words)
+		for(var i=0; i<words; i++) {
+			if(mine[i] != theirs[i]) return true;
+		}
+		for(var i=words<<2; i<length; i++) {
+			if(this.bytes[i] != value.bytes[i]) return true;
 		}
 		return false;
 			
 	js int checksum
 	    let hash = 0;
 	    for (let i = 0; i < this.writePos; i++) {
-	        let value = this.dataView.getUint8(i);
+	        let value = this.bytes[i];
 	        hash = (hash << 5) - hash + value;
 	        hash |= 0; // Convert to 32bit integer
 	    }
@@ -493,5 +482,5 @@ internal transient class Buffer
 	js int[] toList
 		let result = []
 		for(let i=0; i<this.writePos; i++)
-			result.push(this.dataView.getUint8(i))
+			result.push(this.bytes[i])
 		return result

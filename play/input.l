@@ -1389,6 +1389,9 @@ skipInit global unit input
 		if not user.removed
 			user.removed = true
 			user.removedAfterFrame = lastFrame
+			// The removal changes certainty and the snapshot pin for past frames - conservatively
+			// rewind the next pass to the pinned snapshot (runs once, the flag is idempotent)
+			core.markRemoteChange 0
 			PeerNetwork.onUserRemoved user
 		let player = playersById[removeUserId]
 		if player

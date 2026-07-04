@@ -172,6 +172,9 @@ internal transient skipInit unit ServerNetwork
 		if existing then return existing
 		InternalUser user = {id, local:false}
 		input.internalUsers[id] = user
+		// A user appearing mid-session invalidates every prediction (their records may sit at
+		// any frame above the pin) - force the next pass back to the pinned snapshot
+		core.markRemoteChange 0
 		// Keep the stored room recovery info aware of every user we ever saw: after a server
 		// restart the first rejoiner's maxKnownUserId is what tells the server (and through its
 		// user list, everyone else) that the currently unreachable users exist at all
@@ -1319,8 +1322,13 @@ internal transient skipInit unit PeerNetwork
 
 		buffer.readBuffer sender.inputs, incomingStartPos
 
-		// Claims only move forward, and only when the claimed bytes are actually here
-		if claim > sender.inputFrame then sender.inputFrame = claim
+		// Claims only move forward, and only when the claimed bytes are actually here.
+		// A claim advance is what makes new records parseable: tell the rollback machinery the
+		// first frame whose parse can differ (records are never stamped at or below their
+		// sender's previous claim), so the next pass rewinds no further than necessary
+		if claim > sender.inputFrame
+			core.markRemoteChange sender.inputFrame + 1
+			sender.inputFrame = claim
 
 		if core.verbose and length > 0 then core.log "[{claim}] <{sender.id}> #receive <<-- received {length} bytes, up to {sender.inputs.writePos}"
 
@@ -1467,6 +1475,7 @@ internal transient skipInit unit PeerNetwork
 		// old claim and this one may end mid-record (the 16 KB cuts here are not record-aligned),
 		// so the claim - which gates parsing - only moves when the transfer is complete
 		if streamUser.inputs.writePos >= totalLength and claim > streamUser.inputFrame
+			core.markRemoteChange streamUser.inputFrame + 1
 			streamUser.inputFrame = claim
 
 	// --------------------------------------------- Restoring our stream after a rejoin ---------------------------------------------
@@ -1592,6 +1601,9 @@ internal transient skipInit unit PeerNetwork
 	// so our new appends continue the group timeline instead of forking it
 	private finishHoldingConfirmations
 		holdingConfirmationPending = false
+		// The gate held our claim (and with it the snapshot pin) down; new records may now be
+		// stamped below existing ring snapshots - force the next pass back to the pinned snapshot
+		core.markRemoteChange 0
 		let localUser = input.localUser
 		core.log "#restore Every live peer confirmed its holdings of our stream -> new inputs continue at {localUser.inputs.writePos}, stamps from {localUser.inputFrame}"
 		// A rejoiner that could restore nothing at all (fresh IndexedDB and no live peer held
@@ -1645,6 +1657,8 @@ internal transient skipInit unit PeerNetwork
 		if startPos + length <= localUser.inputs.writePos then return // Nothing new
 
 		buffer.readBuffer localUser.inputs, startPos
+		// Restored history records carry old stamps - predictions above the pin are invalid
+		core.markRemoteChange 0
 		if not restoring then localUser.epochStartPos = localUser.inputs.writePos
 		adoptOwnClaimFloor totalLength, claim
 		// More of our history may exist beyond this chunk - the 1s request loop keeps fetching.
