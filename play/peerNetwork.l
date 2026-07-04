@@ -1239,6 +1239,10 @@ internal transient skipInit unit PeerNetwork
 
 			core.tickMessageSize = send receiver, sendBuffer
 
+			// These stream bytes are now on the wire and must never be mutated in place
+			// (see the TouchMove patch guard in input.handleTouchEvent)
+			if input.localUser.sentInputsUpToPos < startPos + length then input.localUser.sentInputsUpToPos = startPos + length
+
 			if core.verbose and length > 0 then core.log "[{claim}] <{receiver.id}> #send -->> sending {length} bytes, from {startPos} to {startPos + length} of {inputs.writePos}{viaChannel ? "" : " via server"}"
 
 	private onTick: InternalUser sender, Buffer buffer
@@ -1429,6 +1433,11 @@ internal transient skipInit unit PeerNetwork
 		sendBuffer.writeInt fromPos
 		sendBuffer.writeBuffer streamUser.inputs, fromPos, length
 		send requester, sendBuffer
+
+		// Our own stream bytes sent here are on the wire and must never be mutated in place
+		// (see the TouchMove patch guard in input.handleTouchEvent)
+		if streamUser.local and streamUser.sentInputsUpToPos < fromPos + length
+			streamUser.sentInputsUpToPos = fromPos + length
 
 	private onStreamData: InternalUser peer, Buffer buffer
 		int streamUserId = buffer.readInt

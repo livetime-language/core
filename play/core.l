@@ -450,6 +450,11 @@ internal transient skipInit unit core
 					catchingUp = false
 					log "#catchup Caught up at frame {frame}"
 
+			// Deliver networkData callbacks (storage.get / http.*) that resolved while input
+			// recording was blocked - queued in input.handleObject, written here once recording
+			// is possible again so the app still hears back after a catch-up or holding gate
+			input.flushPendingObjectRecords
+
 			// Send inputs after the step loop: stepping writes gamepad records stamped frame+1,
 			// so a claim sent before the loop would cover bytes that only travel in a later message.
 			// localUser.inputFrame-1 claims exactly the frames no future write can be stamped with

@@ -14,6 +14,7 @@ internal transient class InternalUser
 	int[] lastTouchMoveIndex
 	Buffer inputs = {}          // The stream of inputs of this user
 	int storedInputsUpTo        // Local user only: our own inputs are persisted to IndexedDB up to this pos
+	int sentInputsUpToPos       // Local user only: our stream bytes below this pos may already be on the wire and must never be mutated in place (see the TouchMove patch guard in input.handleTouchEvent)
 	int epoch                   // The epoch of this user's input stream: a new value means the user restarted with a fresh session (0 = unknown, see PeerNetwork.onTick)
 	int epochStartPos           // Local user only: bytes below this pos were restored after a rejoin, our own new bytes start here
 	int historyTotalLength = -1 // While we restore our stream after a rejoin: how many bytes of it this peer reported to hold (-1 = no reply yet, see PeerNetwork.tickRestore)
@@ -476,6 +477,12 @@ enum ShowPointersMode
 	LocalAndRemote	// Show the mouse pointers of all players
 	WhenDown	// Show the mouse pointers of all players, but only when they are down (clicking or touching)
 	
+// A networkData callback answer (storage.get / http.*) that resolved while input recording
+// was blocked; kept until recording resumes so the app still hears back (see input.handleObject)
+internal transient PendingObjectRecord
+	immutable int id
+	immutable string data
+
 // Collect user input
 skipInit global unit input
 	transient visible InternalUser[] internalUsers
@@ -483,6 +490,7 @@ skipInit global unit input
 	transient internal Player localPlayer
 	transient bool isCertain
 	transient ControllerButtonPlayerAndIndex[Key] controllerButtonMap
+	transient PendingObjectRecord[] pendingObjectRecords
 	
 	// A list of all players
 	Player[] players
@@ -652,6 +660,12 @@ skipInit global unit input
 		
 	private setLastTouchMoveIndex: int id, int index
 		let lastMoveIndex = localUser.lastTouchMoveIndex
+		let i = 0
+		while i < lastMoveIndex.length
+			if lastMoveIndex[i] == id
+				lastMoveIndex[i+1] = index
+				return
+			i += 2
 		lastMoveIndex.add id
 		lastMoveIndex.add index
 	
@@ -702,6 +716,17 @@ skipInit global unit input
 
 		if inputType == TouchMove
 			int index = getLastTouchMoveIndex id
+			// Coalescing patches the previous move record of this input frame IN PLACE. Mutating
+			// stream bytes is only safe while they have never left this device: normally
+			// core.onFrame clears lastTouchMoveIndex (startInputFrame) before it transmits
+			// (PeerNetwork.sendInputs), so a patchable record is always younger than the last
+			// transmission. But the stream can also be sent between animation frames
+			// (onHeartbeat while hidden, stream answers to a restoring rejoiner) - patching an
+			// already-sent record would fork the copy the receiver holds into a permanent
+			// checksum desync, so in that case append a fresh record instead
+			if index and index < localUser.sentInputsUpToPos
+				core.log "TouchMove record at {index} was already sent (sent up to {localUser.sentInputsUpToPos}) - appending a new record instead of patching sent bytes"
+				index = 0
 			if index
 				// We already moved the pointer this input frame, so just update the last move
 				inputs.setInt16 index, math.round(referencePos.x)
@@ -795,12 +820,36 @@ skipInit global unit input
 		inputs.writeInt id
 		inputs.writeString data
 		
+	// Callback delivery for the async networkData APIs (storage.get, http.get/post/put/delete).
+	// Guarded like handleString/handleJson, with two differences: an empty answer is still a
+	// valid delivery (storage.get answers "" for a missing key), and a blocked delivery must
+	// not be dropped - the record is what fires the app's callback on every client, so dropping
+	// it would mean the app never hears back. While recording is not possible (catch-up replay,
+	// holding-confirmation gate, no local user yet) the delivery is queued and flushed from
+	// core.onFrame once recording resumes
 	internal handleObject: int id, string data
+		if core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused
+			pendingObjectRecords.add {id:id, data:data}
+			return
+		writeObjectRecord id, data
+
+	private writeObjectRecord: int id, string data
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Object
 		inputs.writeInt id
 		inputs.writeString data
+
+	// Deliver the networkData callbacks that resolved while input recording was blocked.
+	// Called from core.onFrame after the step loop, so the records are stamped with the
+	// current monotonic inputFrame and travel with the next Tick
+	internal flushPendingObjectRecords
+		if !pendingObjectRecords.length then return
+		if core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
+		core.log "Flushing {pendingObjectRecords.length} networkData callback records that resolved while input recording was blocked"
+		for pendingObjectRecords
+			writeObjectRecord .id, .data
+		pendingObjectRecords.clear
 
 	// Write a RemoveUser event into our own input stream: the removal of a player becomes part
 	// of the deterministic timeline and is applied by every client when the event is parsed.
@@ -819,9 +868,16 @@ skipInit global unit input
 	private inline js dynamic getGamepads() navigator.getGamepads()
 	
 	internal updateGamepads
+		// Gamepad state is only recorded during a live Record step. Replay steps (the rollback
+		// replay in core.checkRewindAndReplayState, debug timeline navigation) run with
+		// system.fastForward and inputFrame does not advance there - recording would append a
+		// duplicate record with the same stamp on every replayed step, bloating the stream by
+		// the replay window on every animation frame. Catch-up steps run with fastForward:false
+		// and monotonic stamps, so they keep recording intentionally - they carry the live stick
+		// state (which is why this doesn't check core.inputRecordingPaused, true during a catch-up)
+		if system.fastForward or system.playMode != Record then return
 		// Gamepad records must not be appended while a rejoin's holding confirmations are
-		// pending, like the DOM input handlers (not core.inputRecordingPaused: gamepad records
-		// are intentional during a catch-up - they carry the live stick state at monotonic stamps)
+		// pending, like the DOM input handlers
 		if PeerNetwork.holdingConfirmationPending then return
 		let gamepads = getGamepads
 		if gamepads == null then return
