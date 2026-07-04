@@ -73,6 +73,13 @@ internal transient skipInit unit core
 	visible float catchUpProgress
 	private int catchUpFromFrame
 	const maxCatchUpMillisPerFrame = 100
+
+	// New input records must not be appended while we replay a catch-up (the stamps would lag
+	// the claims we already sent) or while a rejoin's holding confirmations are pending (the
+	// bytes would fork the longer copy of our previous stream a returning peer may still hold,
+	// see PeerNetwork.holdingConfirmationPending). Checked by every input record handler
+	bool inputRecordingPaused
+		return catchingUp or PeerNetwork.holdingConfirmationPending
 	
 	IndexedDBStore inputStore = {"input", indices:[{"roomId"}]}
 	
@@ -91,6 +98,12 @@ internal transient skipInit unit core
 				// our Join event, so we resume that player instead of joining again - the replay from
 				// frame 0 recreates our player from the restored stream
 				log "resume", input.localUser.epochStartPos
+			else if PeerNetwork.holdingConfirmationPending
+				// We restored nothing, but not every peer confirmed its holdings - one of them may
+				// still hold our previous session's stream, and a fresh Join at position 0 would
+				// fork it. The Join is written when the confirmations settle
+				// (PeerNetwork.finishHoldingConfirmations) or the restore rebuilds our old stream
+				log "handleJoin deferred until every live peer confirmed its holdings"
 			else
 				log "handleJoin", frame
 				input.localUser.startInputFrame 0
@@ -415,8 +428,13 @@ internal transient skipInit unit core
 							// counts up from below claims we (or our pre-reload session) already sent,
 							// and a record stamped at or below a sent claim can't be rewound to its
 							// true frame by peers (their snapshot is only pinned down to claim+1) -
-							// they would apply it at their current frame and desync forever
-							if user?.local then user.startInputFrame math.max(frame+1, user.inputFrame)
+							// they would apply it at their current frame and desync forever.
+							// While a rejoin's holding confirmations are pending, the counter (and
+							// with it the claim we send) instead stays at the floor adopted from
+							// confirmed peers: old records of our previous session may still surface
+							// from a peer holding more of our stream, and a claim covering their
+							// frames would break the receivers' rewind pinning the same way
+							if user?.local and not PeerNetwork.holdingConfirmationPending then user.startInputFrame math.max(frame+1, user.inputFrame)
 					// While catching up, stop stepping when the budget is used up and draw the
 					// chunk's last frame so the player sees progress instead of a frozen canvas
 					bool lastStepOfChunk = frame == targetFrame-1 or (catchingUp and currentTime >= catchUpDeadline)
@@ -651,8 +669,15 @@ internal transient skipInit unit core
 		else
 			// Removed users with a complete final stream no longer hold the snapshot back: when
 			// every remote user is gone for good this becomes int.maxValue+1, snapshots stop and
-			// the rewind below runs one final time to replay the last received bytes into the state
-			nextSnapshotFrame = (input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.smoothFrame, .inputFrame)) filter: . and not .local)+1
+			// the rewind below runs one final time to replay the last received bytes into the state.
+			// The LOCAL user is part of the min for the same reason it is part of certainFrame:
+			// the snapshot must never advance beyond certainFrame+1. Frames above it are not final
+			// yet, and decisions the app deferred at uncertain frames (core.restart returns while
+			// not input.isCertain) must stay replayable until their frames become certain. In
+			// normal play the local inputFrame is frame+1 and never binds - it only pins the
+			// snapshot down while our own claim trails the remote claims, e.g. while a rejoin's
+			// holding confirmations are pending (PeerNetwork.holdingConfirmationPending)
+			nextSnapshotFrame = (input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.smoothFrame, .inputFrame)) filter: . != null)+1
 		
 		if snapshotFrame != -1
 			if verbose

@@ -458,6 +458,10 @@ internal transient skipInit unit PeerNetwork
 		// before the session starts (ServerNetwork.onPong waits until this settled)
 		if restoring then tickRestore now
 
+		// After a restore that ended with unconfirmed peers, keep asking them for our history
+		// until every live peer confirmed its holdings - only then may we append new inputs
+		if holdingConfirmationPending and not restoring then tickHoldingConfirmations now
+
 		// Handle a removal of our own player that was parsed from the event stream
 		if core.mode == Connected and not system.isDebug and input.localUser and input.localUser.removed then onRemovedNotice
 
@@ -552,6 +556,7 @@ internal transient skipInit unit PeerNetwork
 		if not ServerNetwork.joined then wsState += " not-joined"
 		string modeFlags = ""
 		if restoring then modeFlags += " RESTORING"
+		if holdingConfirmationPending then modeFlags += " HOLDING-GATE"
 		if core.catchingUp then modeFlags += " CATCHING-UP"
 		// behind: how far the frame loop lags the shared clock (should be 0..1)
 		// drift: how far core.startTime is from the pong-derived reference (slew should keep it near 0)
@@ -1143,7 +1148,10 @@ internal transient skipInit unit PeerNetwork
 					core.log "#transport <{receiver.id}> Sending inputs via {viaChannel ? "data channel" : "server relay"}"
 				receiver.lastTickTransport = transport
 
-			let startPos = receiver.receivedMyInputsUpToPos
+			// A returning peer can ack MORE of our stream than we hold (it kept our pre-reload
+			// inputs while our own restore was cut short) - nothing to send it until the
+			// history adoption in onOwnHistory catches our writePos up to its copy
+			let startPos = math.min(receiver.receivedMyInputsUpToPos, inputs.writePos)
 			int length = inputs.writePos - startPos
 			int claim = inputFrame
 			if length > maxTickBytes
@@ -1413,6 +1421,20 @@ internal transient skipInit unit PeerNetwork
 	private float lastRestoreWaitLogTime
 	private float nextRestoreRequestTime
 
+	// The restore ended without every live peer confirming how much of our previous stream it
+	// holds (they were unreachable during the restore window). A returning peer may still hold
+	// MORE of our old stream than we restored, so until every live peer confirmed - or was
+	// removed from the game (a removed user that returns wipes its storage and rejoins fresh,
+	// so its copy of our old stream dies with it) - we must not append new input records and
+	// must not raise our claims: new bytes would fork the longer copy (a peer holding less
+	// accepts the fork, the peer holding more refuses it, and their copies of our stream can
+	// never match again), and a claim covering frames whose old records may still surface would
+	// make receivers apply those records at the wrong frames (their rewind snapshots are only
+	// pinned down to claim+1). Enforced in core.inputRecordingPaused (input recording),
+	// core.onFrame (the claim counter stays at the floor adopted from confirmed peers) and
+	// core.startConnected (Join deferral); resolved in tickHoldingConfirmations
+	bool holdingConfirmationPending
+
 	// Called from ServerNetwork.onJoinResponse when we joined with a preassigned userId and other
 	// users exist in the room. While restoring is set, ServerNetwork.onPong delays startConnected,
 	// so we neither append new inputs to our stream nor send Ticks until the restore settled
@@ -1469,6 +1491,50 @@ internal transient skipInit unit PeerNetwork
 		restoring = false
 		input.localUser.epochStartPos = input.localUser.inputs.writePos
 		core.log "#restore Restore finished ({reason}): our own new inputs continue at {input.localUser.epochStartPos}"
+
+		// Peers that never answered may still hold more of our previous stream than we restored
+		// -> hold back new inputs and claims until every live peer confirmed its holdings, so
+		// the doomed fork bytes never exist (see holdingConfirmationPending)
+		string unconfirmedIds = ""
+		for input.internalUsers as user
+			if . and not .local and not .removed and (.historyTotalLength == -1 or .historyTotalLength > input.localUser.inputs.writePos)
+				unconfirmedIds += " {.id}"
+		if unconfirmedIds
+			holdingConfirmationPending = true
+			core.log "#restore Peers{unconfirmedIds} did not confirm their holdings of our stream -> not appending new inputs until every live peer confirmed"
+
+	// While holdingConfirmationPending: request our history from every peer that has not
+	// confirmed yet (the restore's request loop, continued past the restore timeout), and open
+	// the gate once every live peer confirmed. A peer that never returns stops blocking when
+	// the removal protocol removes it from the game
+	private tickHoldingConfirmations: float now
+		bool allConfirmed = true
+		for input.internalUsers as user
+			if . and not .local and not .removed and (.historyTotalLength == -1 or .historyTotalLength > input.localUser.inputs.writePos)
+				allConfirmed = false
+				if now >= nextRestoreRequestTime and (hasOpenChannel(.) or ServerNetwork.connected)
+					core.log "#restore <{.id}> Requesting our input history from {input.localUser.inputs.writePos} (holding confirmation pending)"
+					sendBuffer.reset
+					sendBuffer.writeInt8 cast PeerMessageType.StreamRequest
+					sendBuffer.writeInt input.localUser.id
+					sendBuffer.writeInt input.localUser.inputs.writePos
+					send ., sendBuffer
+		if now >= nextRestoreRequestTime then nextRestoreRequestTime = now + 1000
+		if allConfirmed then finishHoldingConfirmations
+
+	// Every live peer confirmed its holdings: we hold the longest copy of our previous stream
+	// (onOwnHistory adopted the reported bytes and raised epochStartPos and the claim floor),
+	// so our new appends continue the group timeline instead of forking it
+	private finishHoldingConfirmations
+		holdingConfirmationPending = false
+		let localUser = input.localUser
+		core.log "#restore Every live peer confirmed its holdings of our stream -> new inputs continue at {localUser.inputs.writePos}, stamps from {localUser.inputFrame}"
+		// A rejoiner that could restore nothing at all (fresh IndexedDB and no live peer held
+		// our old stream) deferred its Join event until now (see core.startConnected)
+		if core.mode == Connected and localUser.inputs.writePos == 0 and localUser.epochStartPos == 0
+			core.log "handleJoin (deferred)", core.frame
+			localUser.startInputFrame 0
+			input.handleJoin core.frame, core.account
 
 	// Our own previous-session input stream as a peer stored it.
 	// Bytes are append-only: we may only adopt a longer history while our stream is still exactly
