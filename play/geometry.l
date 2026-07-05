@@ -250,8 +250,8 @@ struct Vector2
 		return c
 		
 	importance:4 in: Rect rectangle
-		return x >= rectangle.position.x - rectangle.size.x/2 && x < rectangle.position.x + rectangle.size.x/2
-		    && y >= rectangle.position.y - rectangle.size.y/2 && y < rectangle.position.y + rectangle.size.y/2
+		return x >= rectangle.pos.x - rectangle.size.x/2 && x < rectangle.pos.x + rectangle.size.x/2
+		    && y >= rectangle.pos.y - rectangle.size.y/2 && y < rectangle.pos.y + rectangle.size.y/2
 	
 	// The dot product
 	importance:4 dot: Vector2 value // The value to calculate the dot procut with
@@ -938,19 +938,19 @@ Line
 	toString => "\{{start.x.format(maxFractionDigits:2)}, {start.y.format(maxFractionDigits:2)\} -> \{{end.x.format(maxFractionDigits:2)}, {end.y.format(maxFractionDigits:2)}\}"
 
 immutable Rect
-	importance:4 Vector2 position, size
+	importance:4 Vector2 pos, size
 	
-	float left	=> position.x - size.x/2
-	float right	=> position.x + size.x/2
-	float top	=> position.y - size.y/2
-	float bottom	=> position.y + size.y/2
+	float left	=> pos.x - size.x/2
+	float right	=> pos.x + size.x/2
+	float top	=> pos.y - size.y/2
+	float bottom	=> pos.y + size.y/2
 	
-	importance:4 bool contains: Vector2 position
-		return this.position - this.size/2 <=  position < this.position + this.size/2
+	importance:4 bool contains: Vector2 pos
+		return this.pos - this.size/2 <=  pos < this.pos + this.size/2
 	
-	importance:4 bool intersectsWith: Vector2 position
+	importance:4 bool intersectsWith: Vector2 pos
 		                 Vector2 size
-		return this.position - this.size/2 - size/2 <=  position < this.position + this.size/2 + size/2
+		return this.pos - this.size/2 - size/2 <=  pos < this.pos + this.size/2 + size/2
 
 global transient skipInit unit system
 	global inline js void for: Vector2 subject  // The exclusive upper bound to iterate towards
