@@ -19,7 +19,6 @@ internal transient class InternalUser
 	int epochStartPos           // Local user only: bytes below this pos were restored after a rejoin, our own new bytes start here
 	int historyTotalLength = -1 // While we restore our stream after a rejoin: how many bytes of it this peer reported to hold (-1 = no reply yet, see PeerNetwork.tickRestore)
 	float lastStreamSentTime    // When we last sent this user a stream answer (rate limit, see PeerNetwork.onStreamRequest)
-	int stalledChunkSends       // Chunked catch-up Ticks sent to this user without ack progress (fallback valve, see PeerNetwork.sendInputs)
 
 	// Removal (deterministic, driven by a RemoveUser event in the host's input stream)
 	bool removed                // This user was removed from the game

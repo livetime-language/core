@@ -465,7 +465,12 @@ internal transient skipInit unit PeerNetwork
 	// --------------------------------------------- Tick (peer health) ---------------------------------------------
 
 	tick
-		let now = PlainDate.realTime
+		// All peer-health, removal and restore timers run on core.currentTime (monotonic) for the
+		// same reason frame pacing does: Date.now() steps arbitrarily on NTP corrections, manual
+		// clock changes and resume. A forward step would make every peer look silent at once
+		// (reconnect churn on healthy links, spurious removal gossip); a backward step would put
+		// every watchdog to sleep for the step duration
+		let now = core.currentTime
 		ServerNetwork.tick
 
 		// After a rejoin, restore our previous session's input stream from our peers
@@ -606,7 +611,7 @@ internal transient skipInit unit PeerNetwork
 	// clients don't both write one for the same user (and if they briefly disagree, the parse is
 	// idempotent and the first event in the deterministic stream order wins)
 	bool amHost
-		let now = PlainDate.realTime
+		let now = core.currentTime
 		for input.internalUsers as user
 			if user and not user.removed
 				if user.local then return true
@@ -763,7 +768,8 @@ internal transient skipInit unit PeerNetwork
 		try {
 			// A pending connection-type report belongs to the connection being replaced
 			clearTimeout(user.logConnectionTypeTimer);
-			user.startToConnectTime = user.lastIncomingChannelTime = Date.now();
+			// Same monotonic clock as core.currentTime (inlined: js blocks can't call inline functions)
+			user.startToConnectTime = user.lastIncomingChannelTime = Math.round(performance.timeOrigin + performance.now());
 			user.offerByMe = offerByMe;
 			// A fresh connection has no answer yet and no silence history
 			// While offerByMe && !receivedAnswer our offer counts as outstanding -> the impolite peer ignores crossing offers (see onReceivedOffer)
@@ -855,7 +861,7 @@ internal transient skipInit unit PeerNetwork
 
 	private js void setupDataChannel: InternalUser user
 		try {
-			user.startDataChannelTime = Date.now();
+			user.startDataChannelTime = Math.round(performance.timeOrigin + performance.now());
 			core.log("#peer <"+user.id+"> Data Channel Creating");
 			PeerNetwork.closeDataChannels(user);
 
@@ -876,7 +882,8 @@ internal transient skipInit unit PeerNetwork
 
 		dataChannel.onopen = e => {
 			user.dataChannels.splice(0,0,dataChannel);
-			user.lastIncomingChannelTime = Date.now();
+			// Same monotonic clock as core.currentTime (inlined: js blocks can't call inline functions)
+			user.lastIncomingChannelTime = Math.round(performance.timeOrigin + performance.now());
 			// The link proved it can establish a channel - the silence watchdog starts fast again
 			user.channelReconnects = 0;
 			core.log("#peer <"+user.id+"> Data Channel Open (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
@@ -896,14 +903,13 @@ internal transient skipInit unit PeerNetwork
 			core.log("#peer <"+user.id+"> Data Channel Error (id:"+dataChannel._id+")");
 		}
 		dataChannel.onmessage = e => {
-			user.lastIncomingChannelTime = Date.now();
-			user.lastChannelMessageTime = Date.now();
+			user.lastIncomingChannelTime = user.lastChannelMessageTime = Math.round(performance.timeOrigin + performance.now());
 			PeerNetwork.onPeerMessage(user, new Buffer(e.data, 0, 0, 0), false);
 		}
 
 	onConnected: InternalUser user
 		// Fresh silence window: the channel created with the offer still needs the SCTP handshake
-		user.startDataChannelTime = user.lastIncomingChannelTime = PlainDate.realTime
+		user.startDataChannelTime = user.lastIncomingChannelTime = core.currentTime
 		user.connectionTries = 0
 		logConnectionType user
 
@@ -1126,7 +1132,7 @@ internal transient skipInit unit PeerNetwork
 	// dead - visible without any wire change because acks ride on the peer's Ticks, which
 	// still arrive when only our direction died)
 	private bool channelSuspect: InternalUser user
-		let now = PlainDate.realTime
+		let now = core.currentTime
 		return now > user.lastChannelMessageTime + channelSuspectMillis or now > user.lastAckProgressTime + channelSuspectMillis
 
 	private js int sendOnChannel: InternalUser user, Buffer buffer
@@ -1150,10 +1156,17 @@ internal transient skipInit unit PeerNetwork
 			core.log "#error <{user.id}> Failed to handle peer message via {viaServer ? "server relay" : "data channel"} ({buffer.writePos} bytes): {error.stack}"
 
 	private handlePeerMessage: InternalUser user, Buffer buffer, bool viaServer
-		user.lastIncomingMessageTime = PlainDate.realTime
+		user.lastIncomingMessageTime = core.currentTime
 		user.silentPeriods = 0
 		user.leaving = false // Any message proves the user is still there (e.g. restored from the back/forward cache)
 		user.presentOnServer = true // The JoinResponse presence snapshot goes stale; any message proves liveness
+		// A user that proves it is alive before its RemoveUser event was written cancels the removal
+		// gossip: otherwise the 1s stream-fetch loop would keep requesting its stream forever, and a
+		// LATER outage would inherit this stale start time and remove the user with zero gossip time
+		// (removalEventWritten stays: once the event is in the stream, the removal is deterministic)
+		if user.removalGossipStart != 0 and not user.removalEventWritten
+			user.removalGossipStart = 0
+			core.log "#removal <{user.id}> Back before removal -> gossip cancelled"
 		if user.reconnectNotified
 			user.reconnectNotified = false
 			core.log "#peer <{user.id}> Reachable again via {viaServer ? "server relay" : "data channel"}"
@@ -1218,16 +1231,21 @@ internal transient skipInit unit PeerNetwork
 				// The claim may only cover frames whose bytes are fully inside what the receiver
 				// will then have, so it comes from the position->frame samples too
 				int cutPos = alignedCutBelow startPos + maxTickBytes
-				if cutPos > startPos and ++receiver.stalledChunkSends <= 90
+				if cutPos > startPos
 					length = cutPos - startPos
 					claim = claimForPos cutPos
 				else
-					// No aligned cut available (restored history was never sampled), or no ack
-					// progress for ~3s of chunked sends. Fall back to one uncapped send - works
-					// whenever the whole delta fits into a message at all
-					receiver.stalledChunkSends = 0
-			else
-				receiver.stalledChunkSends = 0
+					// No aligned cut below the cap: restored pre-epoch history was never claim-sampled
+					// (a rejoiner serving its restored stream to a peer that acks from 0). Send a capped,
+					// NON-aligned chunk with a conservative claim: the claim only gates parsing, so the
+					// receiver's stream may briefly end mid-record and it simply keeps its old claim
+					// (-1 when nothing is sampled) until the resend cursor reaches sampled territory -
+					// the same principle onStreamData's non-aligned 16 KB cuts rely on. An uncapped send
+					// would exceed the SCTP message limit (channel.send throws, the same oversized send
+					// is retried forever) or the server's 4 MB read limit (which closes our own
+					// signaling connection - a reconnect death loop)
+					length = maxTickBytes
+					claim = claimForPos startPos + length
 
 			sendBuffer.reset
 			sendBuffer.writeInt8 cast PeerMessageType.Tick
@@ -1256,7 +1274,7 @@ internal transient skipInit unit PeerNetwork
 		// A removed user's stream is closed forever - and if they honestly came back after being
 		// removed, they need to know that their id is retired so they rejoin as a fresh player
 		if sender.removed
-			let now = PlainDate.realTime
+			let now = core.currentTime
 			if now > sender.lastStreamSentTime + 1000
 				sender.lastStreamSentTime = now
 				sendBuffer.reset
@@ -1288,8 +1306,7 @@ internal transient skipInit unit PeerNetwork
 			core.log "[{claim}] <{sender.id}> #epoch Epoch {epoch} acks only {ackPos} of our {input.localUser.inputs.writePos} bytes (cursor was {sender.receivedMyInputsUpToPos}) -> resend from {ackPos}"
 		if epochConflict or ackPos > sender.receivedMyInputsUpToPos
 			sender.receivedMyInputsUpToPos = ackPos
-			sender.stalledChunkSends = 0
-			sender.lastAckProgressTime = PlainDate.realTime
+			sender.lastAckProgressTime = core.currentTime
 
 		// A new epoch means the sender restarted and lost its in-memory stream (page refresh with
 		// the same userId). Its stream only continues the one we stored if it restored at least
@@ -1310,7 +1327,7 @@ internal transient skipInit unit PeerNetwork
 		// (the cumulative count also appears in the periodic #status summary)
 		if incomingStartPos > sender.inputs.writePos
 			sender.droppedTickCount++
-			let now = PlainDate.realTime
+			let now = core.currentTime
 			if now > sender.lastDropLogTime + 2000
 				sender.lastDropLogTime = now
 				core.log "[{claim}] <{sender.id}> #receive Dropped Tick (gap): bytes start at {incomingStartPos}, we have {sender.inputs.writePos} ({sender.droppedTickCount} drops so far)"
@@ -1420,7 +1437,7 @@ internal transient skipInit unit PeerNetwork
 		sendStreamChunk requester, streamUserId, fromPos
 
 	private sendStreamChunk: InternalUser requester, int streamUserId, int fromPos
-		let now = PlainDate.realTime
+		let now = core.currentTime
 		if now < requester.lastStreamSentTime + 200 then return
 		requester.lastStreamSentTime = now
 
@@ -1514,8 +1531,8 @@ internal transient skipInit unit PeerNetwork
 	// so we neither append new inputs to our stream nor send Ticks until the restore settled
 	startRestore
 		restoring = true
-		restoreStartTime = PlainDate.realTime
-		restoreDeadline = PlainDate.realTime + 5000
+		restoreStartTime = core.currentTime
+		restoreDeadline = core.currentTime + 5000
 		nextRestoreRequestTime = 0
 		core.log "#restore Joined with a preassigned userId -> requesting our previous session's input stream from all peers (we hold {input.localUser.inputs.writePos} bytes from IndexedDB)"
 
@@ -1663,7 +1680,7 @@ internal transient skipInit unit PeerNetwork
 		adoptOwnClaimFloor totalLength, claim
 		// More of our history may exist beyond this chunk - the 1s request loop keeps fetching.
 		// Extend the deadline while we are making progress
-		if restoring then restoreDeadline = math.max(restoreDeadline, PlainDate.realTime + 2000)
+		if restoring then restoreDeadline = math.max(restoreDeadline, core.currentTime + 2000)
 		nextRestoreRequestTime = 0
 		core.log "#restore <{peer.id}> Restored our input stream to {localUser.inputs.writePos} bytes"
 
