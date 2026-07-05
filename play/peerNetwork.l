@@ -47,8 +47,8 @@ internal transient MediaDevices
 
 // The connection to the signaling server
 internal transient skipInit unit ServerNetwork
-	// Must match protocolVersion in server/main.go, sent in Join and verified in JoinResponse
-	const int protocolVersion = 2
+	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
+	const int protocolVersion = 3
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -257,6 +257,11 @@ internal transient skipInit unit ServerNetwork
 				core.log "#server Protocol version mismatch: client uses {protocolVersion}, server uses {serverProtocolVersion}."
 			let seed = buffer.readString
 			let serverStartTime = buffer.readFloat64
+			// Ephemeral TURN credentials, minted per join (empty when the server runs without
+			// TURN). Read before the rejoin early-out: rejoins happen on every reconnect and
+			// are what keeps the expiring credential fresh for later peer-connection setups
+			PeerNetwork.turnUsername = buffer.readString
+			PeerNetwork.turnCredential = buffer.readString
 			let userCount = buffer.readInt16
 
 			joined = true
@@ -419,10 +424,13 @@ internal transient skipInit unit PeerNetwork
 	private bool retryingMedia
 	Buffer sendBuffer = {}
 
-	// TURN credentials for the embedded TURN server in the Go executable
-	// (must match the -turn-user/-turn-password flags of the server)
-	const string turnUsername = "livetime"
-	const string turnPassword = "u9zK2mFq7RxWc4bT8nHd3vGs6yLpJa5e"
+	// TURN credentials for the embedded TURN server in the Go executable. The server mints an
+	// ephemeral, expiring pair into every JoinResponse (see server/turnauth.go) and rejoins
+	// refresh it on every reconnect; the static pair below is only the fallback while no
+	// JoinResponse arrived yet (must match the -turn-user/-turn-password flags of the server)
+	string turnUsername, turnCredential
+	const string fallbackTurnUsername = "livetime"
+	const string fallbackTurnPassword = "Vf3nQx8KwRj5ZtLb7McYs2HdPg9uEa4i"
 
 	// A user is considered gone for good (and removed from the game) after this much silence
 	// (variables instead of consts so resilience tests can shorten them)
@@ -792,8 +800,8 @@ internal transient skipInit unit PeerNetwork
 						"turn:"+turnHost+":"+turnPort+"?transport=udp",
 						"turn:"+turnHost+":"+turnPort+"?transport=tcp",
 					],
-					username: PeerNetwork.turnUsername,
-					credential: PeerNetwork.turnPassword,
+					username: PeerNetwork.turnUsername || PeerNetwork.fallbackTurnUsername,
+					credential: PeerNetwork.turnCredential || PeerNetwork.fallbackTurnPassword,
 				});
 			}
 			options.iceServers.push({
