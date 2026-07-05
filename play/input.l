@@ -674,7 +674,7 @@ skipInit global unit input
 		if inputType == KeyDown then inputs.writeString (key or characterForKeyCode[keyCode])
 			
 		// Pass event to embedded system
-		run??.runningSystem?.input.handleKeyEvent(inputType, keyCode, key)
+		run??.runningApp?.input.handleKeyEvent(inputType, keyCode, key)
 		
 	internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 		int touchType, id
@@ -710,7 +710,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(referencePos.y)
 		
 		// Pass event to embedded system
-		run??.runningSystem?.input.handleTouchEvent(inputType, x, y, pointerType, pointerId, button, shift, alt, cmdOrCtrl)
+		run??.runningApp?.input.handleTouchEvent(inputType, x, y, pointerType, pointerId, button, shift, alt, cmdOrCtrl)
 
 	internal handleSynteticTouchEvent: int playerIndex, InputType inputType, float x, float y, TouchType touchType, int id
 		let inputs = internalUsers[playerIndex]?.inputs
@@ -749,7 +749,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(deltaY)
 		
 		// Pass event to embedded system
-		run??.runningSystem?.input.handleWheelEvent(x, y, deltaX, deltaY, isPinch)
+		run??.runningApp?.input.handleWheelEvent(x, y, deltaX, deltaY, isPinch)
 		
 	internal handleSetState: Buffer buffer
 		let inputs = localUser.inputs
