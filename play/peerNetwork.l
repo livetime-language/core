@@ -26,7 +26,7 @@
 //     reordering and losses on any path are harmless.
 
 // Messages between a client and the signaling server
-enum ServerMessageType: Join, JoinResponse, Ping, Pong, Relay
+enum ServerMessageType: Join, JoinResponse, Ping, Pong, Relay, ProtocolMismatch
 
 // Messages between two peers (via data channel or wrapped in a server Relay)
 enum PeerMessageType: Tick, Ping, Pong, Offer, Answer, IceCandidate, StreamRequest, StreamData, Status, Leaving, Removed
@@ -205,7 +205,8 @@ internal transient skipInit unit ServerNetwork
 			int typeValue = buffer.readInt8
 			if typeValue == cast ServerMessageType.JoinResponse	then onJoinResponse buffer; else
 			if typeValue == cast ServerMessageType.Pong	then onPong buffer; else
-			if typeValue == cast ServerMessageType.Relay	then onRelay buffer
+			if typeValue == cast ServerMessageType.Relay	then onRelay buffer; else
+			if typeValue == cast ServerMessageType.ProtocolMismatch	then onProtocolMismatch buffer
 			else	core.log "#error Unknown server message type {typeValue} - client/server version mismatch?"
 		catch
 			core.log "#error Failed to handle server message ({buffer.writePos} bytes): {error.stack}"
@@ -244,6 +245,40 @@ internal transient skipInit unit ServerNetwork
 		sendBuffer.writeInt32 maxKnownUserId
 		send sendBuffer
 
+	// The server refused our Join because we speak an outdated protocol - we are an old build,
+	// usually served from the browser cache after a redeploy. Reload with a cache-busting query
+	// so the browser refetches index.html (which references the newly deployed scripts) and the
+	// player rejoins on the current build without doing anything themselves
+	private bool versionReloadPending
+
+	private onProtocolMismatch: Buffer buffer
+		int serverProtocol = buffer.readInt16
+		core.log "#server Join refused: we speak protocol {protocolVersion}, the server speaks {serverProtocol} -> reloading to fetch the current build"
+		// The Join resend loop keeps firing until the reload happens - count the reload only once
+		if versionReloadPending then return
+		versionReloadPending = true
+		reloadForNewVersion
+
+	// Rate-limited against reload loops (e.g. a CDN still serving the old build after a reload)
+	js void reloadForNewVersion
+		try {
+			let count = parseInt(sessionStorage.getItem("versionReloads") || "0");
+			let last = parseInt(sessionStorage.getItem("versionReloadTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#server Not reloading again, already reloaded "+count+" times and still incompatible");
+				return;
+			}
+			sessionStorage.setItem("versionReloads", ""+(count+1));
+			sessionStorage.setItem("versionReloadTime", ""+Date.now());
+		} catch {}
+		// A changed query string makes the browser treat the page as a new URL and refetch
+		// index.html instead of serving it from cache. Existing params (?server/?turn/?relay
+		// overrides) survive; identity and inputs live in localStorage/IndexedDB and survive too
+		let url = new URL(location.href);
+		url.searchParams.set("reload", ""+Date.now());
+		setTimeout(() => location.replace(url), 500);
+
 	bool alreadyJoinedBefore
 
 	private onJoinResponse: Buffer buffer
@@ -254,7 +289,13 @@ internal transient skipInit unit ServerNetwork
 			let version = buffer.readInt32
 			let serverProtocolVersion = buffer.readInt16
 			if serverProtocolVersion != protocolVersion
-				core.log "#server Protocol version mismatch: client uses {protocolVersion}, server uses {serverProtocolVersion}."
+				// Only an OLDER server answers a mismatched Join with a JoinResponse (a newer one
+				// rejects it with a ProtocolMismatch and we reload) - its field layout past this
+				// point may differ from what we parse below, so stop instead of reading garbage.
+				// joinedOnThisConnection stays false, so the tick loop keeps resending the Join
+				// every 2 s until the server is updated mid-deploy
+				core.log "#server Protocol version mismatch: client uses {protocolVersion}, server uses {serverProtocolVersion} -> ignoring the JoinResponse, waiting for the server to be updated"
+				return
 			let seed = buffer.readString
 			let serverStartTime = buffer.readFloat64
 			// Ephemeral TURN credentials, minted per join (empty when the server runs without

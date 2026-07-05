@@ -1968,11 +1968,15 @@ input
 		return internalUsers[player].justReleased[button]
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
-	global getPointer: int player = 0
-		player = 0
-		return internalUsers[player].pointerPosition
+	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
+	// players' pointers are available and deterministic
+	global Vector2 getPointer: int player = 0
+		let requestedPlayer = players[player]
+			return requestedPlayer.pointerPosition
+		return {0,0}
 
-	// Returns the current scroll delta of the player's input device.
-	global getScrollDelta: int player = 0
-		player = 0
-		return internalUsers[player].scrollDelta
+	// Returns the current scroll delta of the player's input device. player is the playerIndex
+	global Vector2 getScrollDelta: int player = 0
+		let requestedPlayer = players[player]
+			return internalUsers[requestedPlayer.id].scrollDelta
+		return {0,0}

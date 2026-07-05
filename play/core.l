@@ -61,6 +61,12 @@ internal transient skipInit unit core
 		if frame < 0 then return 0
 		return checksumFrames[frame mod checksumWindow] == frame ? checksumValues[frame mod checksumWindow] : 0
 
+	// Presence is keyed by the ring's frame slot, never by the value: a genuine checksum of 0
+	// (1 in 2^32 per frame, and the sessions are long-lived) must be stored and compared like
+	// any other value - the old 0-sentinel skipped the compare for exactly those frames
+	bool hasChecksum: int frame
+		return frame >= 0 and checksumFrames[frame mod checksumWindow] == frame
+
 	private setChecksum: int frame, float value
 		if frame < 0 then return // Peers send checksumFrame -1 until their first checksum exists
 		checksumFrames[frame mod checksumWindow] = frame
@@ -85,7 +91,10 @@ internal transient skipInit unit core
 	
 	startConnected: int frame
 		if mode == Connected then return
-			
+
+		// A late joiner's first seconds are catch-up noise - collectStatistics gates on this
+		joinFrame = frame
+
 		account = system.getLocalStorageObject("user") or {}
 		if not account._id
 			account._id = generateObjectId
@@ -137,7 +146,6 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
-		startTime = serverStartTime = currentTime
 		frames = 0
 		targetFrame = -1
 		interrruptAtOutputIndex = -1
@@ -859,10 +867,14 @@ internal transient skipInit unit core
 		// the simulation - including them made the checksum differ between clients around joins
 		if input.players.length >= 2 and frame <= certainFrame + 1
 			float myChecksum = snapshot.checksum
-			float theirChecksum = getChecksum frame
 			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
-			if !theirChecksum                             setChecksum frame, myChecksum; else
-			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
+			if hasChecksum frame
+				// Exact compare: the checksums are exact int32 hashes (transported as float64,
+				// lossless for int32) - there is no reason to accept any tolerance
+				float theirChecksum = getChecksum frame
+				if theirChecksum != myChecksum then onWrongChecksum frame, mine:myChecksum theirs:theirChecksum
+			else
+				setChecksum frame, myChecksum
 			lastChecksumFrame = frame
 
 		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
@@ -1096,9 +1108,11 @@ internal transient skipInit unit core
 	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
 	// saveState compares against it once its own snapshot reaches that frame
 	internal onRemoteChecksum: int checksumFor, float checksum
-		float myChecksum = getChecksum checksumFor
-		if !myChecksum                           setChecksum checksumFor, checksum; else
-		if !myChecksum.isApproximately(checksum) onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
+		if hasChecksum checksumFor
+			float myChecksum = getChecksum checksumFor
+			if myChecksum != checksum then onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
+		else
+			setChecksum checksumFor, checksum
 
 	string snapshotLogWithWrongChecksum
 
@@ -1315,17 +1329,20 @@ skipInit transient unit statistics
 			successfullySentGameLogs = math.max(successfullySentGameLogs - 5000, 0)
 	
 	private startSession
+		// Debug sessions never post statistics. Checked before anything else: the old code
+		// returned AFTER setting currentlySendingStatistics, leaving the flag stuck true for
+		// the whole session (trimSentData disabled, tick re-entering forever)
+		if system.isDebug then return
 		core.log "#statistics Start Session"
 		if currentlySendingStatistics then return
 		currentlySendingStatistics = true
-		
+
 		let user = storage.getObjectDirectly("user")
 		let server = system.hostname.getUntil(".")
 		let userId = input.localUser.id
 		id = core.roomId*100 + userId
 		int sendingSystemLogsUntil = systemLogs.length
 
-		if system.isDebug then return
 		http.postDirectly "{url}/startSession", body:{
 			id
 			gameId: core.gameId
@@ -1346,6 +1363,7 @@ skipInit transient unit statistics
 			currentlySendingStatistics = false
 	
 	private saveStatistics
+		if system.isDebug then return
 		core.log "#statistics Send Statistics"
 		if currentlySendingStatistics then return
 		currentlySendingStatistics = true
