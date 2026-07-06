@@ -878,12 +878,25 @@ internal transient skipInit unit core
 		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
-			
+
+			// Users discovered AFTER this snapshot was saved have no stored readPos: reset them
+			// to 0 so the replay re-parses their whole stream. Keeping the live readPos silently
+			// skipped every record the live state had already consumed - including the Join that
+			// carries the account id - while the deserialize above rolled the players list back
+			// to before the user existed: the player was then recreated by whatever record came
+			// next, at a wrong frame, a permanent fork (churn desync, seed 321831152). For a
+			// late-discovered user the pin lies below their first record, so the replay parses
+			// them at true stamps; records below the pin are the hidden-join fork, detected
+			// before every pass in checkRewindAndReplayState
+			for input.internalUsers as user
+				if user then user.inputs.readPos = 0
+
 			let userCount = snapshot.readInt
 			for userCount
 				let userId = snapshot.readInt
+				int storedReadPos = snapshot.readInt
 				let user = input.internalUsers[userId]
-					user.inputs.readPos = snapshot.readInt
+					user.inputs.readPos = storedReadPos
 		
 	private replay: int from, int to
 		replayPassCount++
