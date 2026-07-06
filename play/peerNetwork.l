@@ -48,7 +48,7 @@ internal transient MediaDevices
 // The connection to the signaling server
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
-	const int protocolVersion = 3
+	const int protocolVersion = 4
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -321,6 +321,12 @@ internal transient skipInit unit ServerNetwork
 					if id != input.localUser.id
 						let user = getOrCreateUser id
 						user.presentOnServer = present
+						// After a healed split-brain both sides removed each other and neither sends
+						// the other anything any more (Ticks and Pings skip removed users) - the
+						// standoff would last forever. A user we removed but the server still lists
+						// as connected gets the Removed notice now; the notices then arbitrate which
+						// side wipes and rejoins fresh (see PeerNetwork.onRemovedMessage)
+						if present and user.removed then PeerNetwork.sendRemovedNotice user
 				core.log "#server Rejoined room {roomId} as user {userId} (seed:{seed} serverStartTime:{serverStartTime} users:{rejoinUsers})"
 				if roomId != core.roomId or userId != input.localUser.id
 					core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId}"
@@ -677,8 +683,8 @@ internal transient skipInit unit PeerNetwork
 		closePeerConnection user
 		statistics.scheduleSendIn 3 seconds
 
-	// Our own player was removed while we were away: our userId is retired. Wipe the stored
-	// identity and inputs for this room and reload as a fresh player. Guarded against loops
+	// Our own player was removed from the deterministic timeline: our userId is retired. Wipe the
+	// stored identity and inputs for this room and reload as a fresh player. Guarded against loops
 	onRemovedNotice
 		if removedHandled then return
 		removedHandled = true
@@ -686,6 +692,67 @@ internal transient skipInit unit PeerNetwork
 		wipeRoomStorageAndReload
 
 	private bool removedHandled
+
+	// A peer told us our id is retired. After a symmetric partition that outlasted the removal
+	// grace, BOTH sides removed each other and both send this notice on heal - complying blindly
+	// would wipe every client (total room reset, and the wiped players' fresh room can inherit
+	// RemoveUser events for streams no client holds any more - a permanent certainFrame deadlock).
+	// Deterministic arbitration instead: the side with more living users wins, ties go to the side
+	// with the lowest living user id (then to the lower sender id) - both sides compute the same
+	// winner from the same numbers, so exactly one side complies and rejoins fresh
+	private onRemovedMessage: InternalUser sender, Buffer buffer
+		int senderLivingCount = buffer.readInt
+		int senderLowestLivingId = buffer.readInt
+		if sender.removed and input.localUser
+			// Mutual removal - a split-brain heal. We only wipe when the sender's side wins
+			int livingCount = countLivingUsers
+			int lowestLivingId = lowestLivingUserId
+			bool senderWins = senderLivingCount > livingCount
+			if senderLivingCount == livingCount and senderLowestLivingId < lowestLivingId then senderWins = true
+			if senderLivingCount == livingCount and senderLowestLivingId == lowestLivingId and sender.id < input.localUser.id then senderWins = true
+			string sides = "we are {livingCount} users from id {lowestLivingId}, they are {senderLivingCount} users from id {senderLowestLivingId}"
+			if not senderWins
+				core.log "#removal <{sender.id}> Refusing Removed notice: mutual removal and our side wins ({sides})"
+				return
+			core.log "#removal <{sender.id}> Mutual removal and their side wins ({sides})"
+		else
+			// We still count the sender as a live player. A genuinely removed returner receives no
+			// Ticks (nobody sends inputs to a removed user), so a fresh Tick from anyone else proves
+			// we are an active part of the game and this notice is the isolated side of a split-brain
+			// that hasn't removed us everywhere yet - refuse, the removal protocol settles the rest
+			let now = core.currentTime
+			for input.internalUsers as user
+				if . and not .local and not .removed and . != sender and now < .lastTickReceivedTime + 5000
+					core.log "#removal <{sender.id}> Refusing Removed notice: user {.id} sent us inputs {math.round(now - .lastTickReceivedTime)} ms ago, we are still part of the game"
+					return
+		onRemovedNotice
+
+	// Tell a user we consider removed that its id is retired, together with the size of our side
+	// so a healed split-brain arbitrates deterministically (see onRemovedMessage). Called for any
+	// message a removed user sends us and when a rejoin shows a removed user still on the server.
+	// Rate-limited per user like stream answers
+	sendRemovedNotice: InternalUser user
+		let now = core.currentTime
+		if now < user.lastStreamSentTime + 1000 then return
+		user.lastStreamSentTime = now
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast PeerMessageType.Removed
+		sendBuffer.writeInt countLivingUsers
+		sendBuffer.writeInt lowestLivingUserId
+		send user, sendBuffer
+
+	// The size of our side of the game: every user we still count as living, including ourselves
+	private int countLivingUsers
+		int count = 0
+		for input.internalUsers if . and not .removed
+			count++
+		return count
+
+	// internalUsers is indexed by id, so the first living user has the lowest id
+	private int lowestLivingUserId
+		for input.internalUsers as user
+			if user and not user.removed then return user.id
+		return -1
 
 	js void wipeRoomStorageAndReload
 		try { localStorage.removeItem("room"+core.roomId) } catch {}
@@ -1216,6 +1283,10 @@ internal transient skipInit unit PeerNetwork
 		if user.removalGossipStart != 0 and not user.removalEventWritten
 			user.removalGossipStart = 0
 			core.log "#removal <{user.id}> Back before removal -> gossip cancelled"
+		// Any message from a removed user proves it is back: its id is retired, tell it so it
+		// wipes and rejoins as a fresh player (rate-limited). The arbitration in onRemovedMessage
+		// keeps the healthy majority side of a healed split-brain from complying
+		if user.removed then sendRemovedNotice user
 		if user.reconnectNotified
 			user.reconnectNotified = false
 			core.log "#peer <{user.id}> Reachable again via {viaServer ? "server relay" : "data channel"}"
@@ -1235,7 +1306,7 @@ internal transient skipInit unit PeerNetwork
 			StreamData	onStreamData user, buffer
 			Status	onStatus user, buffer
 			Leaving	onLeaving user, buffer
-			Removed	onRemovedNotice
+			Removed	onRemovedMessage user, buffer
 
 	// --------------------------------------------- Input Ticks ---------------------------------------------
 
@@ -1320,16 +1391,13 @@ internal transient skipInit unit PeerNetwork
 		let epochStartPos = buffer.readInt                  // The sender's bytes below this pos are history restored from before this epoch
 		let claim = buffer.readInt                          // The sender sent inputs up to and including this frame
 
-		// A removed user's stream is closed forever - and if they honestly came back after being
-		// removed, they need to know that their id is retired so they rejoin as a fresh player
-		if sender.removed
-			let now = core.currentTime
-			if now > sender.lastStreamSentTime + 1000
-				sender.lastStreamSentTime = now
-				sendBuffer.reset
-				sendBuffer.writeInt8 cast PeerMessageType.Removed
-				send sender, sendBuffer
-			return
+		// A removed user's stream is closed forever - their bytes must not enter our timeline
+		// (handlePeerMessage already answered the message with a Removed notice)
+		if sender.removed then return
+
+		// An accepted Tick proves the sender still counts us as a live player - the arbitration
+		// of a Removed notice refuses to wipe while others are actively playing with us
+		sender.lastTickReceivedTime = core.currentTime
 
 		bool epochConflict = epoch != sender.epoch
 

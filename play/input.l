@@ -74,6 +74,7 @@ internal transient class InternalUser
 	float startToConnectTime = float.maxValue
 	float startDataChannelTime = float.maxValue
 	float lastIncomingMessageTime = float.maxValue // Last message on any transport (drives reconnect notifications and removal)
+	float lastTickReceivedTime                     // Last accepted Tick - proof this user counts us as a live player (0 = never, drives the Removed-notice arbitration, see PeerNetwork.onRemovedMessage)
 	float lastIncomingChannelTime = float.maxValue // Last message on the data channel (drives P2P connection repair)
 	float lastChannelMessageTime = float.maxValue  // Last message on the data channel; never reset by the repair watchdog (drives the silent-channel relay mirror, see PeerNetwork.channelSuspect)
 	float lastAckProgressTime = float.maxValue     // Last time this user acked new bytes of our stream or had nothing outstanding (drives the silent-channel relay mirror)
