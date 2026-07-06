@@ -1305,8 +1305,12 @@ skipInit global unit input
 		players.sortBy.id
 		for players
 			.playerIndex = i
-			.playerColor = graphics.defaultColors[i]
-			.playerDarkColor = graphics.darkDefaultColors[i]
+			// More players than palette entries must wrap, not read out of bounds: an undefined
+			// playerColor throws in the draw path, and that caught error used to poison this
+			// client's replays (churn desync, seed 339031744 - a removed user's arriving stream
+			// transiently resurrects their player, so the count can exceed the palette)
+			.playerColor = graphics.defaultColors[i mod graphics.defaultColors.length]
+			.playerDarkColor = graphics.darkDefaultColors[i mod graphics.darkDefaultColors.length]
 			internalUsers[.id].index = i
 			
 		if core.mode == Local and not core.simulateConnection
