@@ -48,7 +48,7 @@ internal transient MediaDevices
 // The connection to the signaling server
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
-	const int protocolVersion = 4
+	const int protocolVersion = 5
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -825,6 +825,33 @@ internal transient skipInit unit PeerNetwork
 			reload();
 		}
 
+	// Reload the page to rebuild from a detected timeline fork (a partition hid another user's
+	// join while our certainty advanced, see the fork detection in core.checkRewindAndReplayState).
+	// Same mechanics as selfHealReload - our identity and inputs survive, the full replay lands
+	// us on the group timeline - but counted separately: this is the expected recovery from a
+	// partition, not the emergency exit from a determinism bug, and the tests treat a desync
+	// self-heal as a failure. Returns true when the reload was scheduled (or a previous call
+	// already scheduled it), false when the rate limit refused it
+	js bool forkRecoveryReload: string reason
+		if(PeerNetwork.forkRecoveryScheduled) return true;
+		try {
+			let count = parseInt(sessionStorage.getItem("forkRecoveryReloads") || "0");
+			let last = parseInt(sessionStorage.getItem("forkRecoveryReloadTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#fork Not rebuilding again ("+reason+"), already reloaded "+count+" times");
+				return false;
+			}
+			sessionStorage.setItem("forkRecoveryReloads", ""+(count+1));
+			sessionStorage.setItem("forkRecoveryReloadTime", ""+Date.now());
+		} catch {}
+		PeerNetwork.forkRecoveryScheduled = true;
+		core.log("#fork Rebuilding from the mesh: "+reason);
+		setTimeout(() => location.reload(), 500);
+		return true;
+
+	private bool forkRecoveryScheduled
+
 	// Reload the page to self-heal from a state divergence: our own input stream survives
 	// (IndexedDB + peers), all other streams are re-fetched from the mesh, and the full replay
 	// rebuilds a state that is consistent with the group. Rate-limited to avoid reload loops
@@ -1386,6 +1413,7 @@ internal transient skipInit unit PeerNetwork
 			sendBuffer.writeBuffer inputs, startPos, length
 			sendBuffer.writeInt core.lastChecksumFrame                      // The last frame with a computed state checksum
 			sendBuffer.writeFloat64 core.getChecksum core.lastChecksumFrame // The checksum of that frame
+			sendBuffer.writeInt core.getChecksumRoster core.lastChecksumFrame // The roster that state was computed from - checksums of diverged rosters are incomparable
 
 			core.tickMessageSize = send receiver, sendBuffer
 
@@ -1478,7 +1506,8 @@ internal transient skipInit unit PeerNetwork
 		// Checksum
 		int checksumFor = buffer.readInt
 		float checksum = buffer.readFloat64
-		core.onRemoteChecksum checksumFor, checksum
+		int checksumRoster = buffer.readInt
+		core.onRemoteChecksum checksumFor, checksum, checksumRoster
 
 		// Store incoming inputs of remote users is not needed - only our own inputs are persisted
 

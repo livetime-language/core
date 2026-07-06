@@ -55,11 +55,21 @@ internal transient skipInit unit core
 	const checksumWindow = 4096
 	private float[] checksumValues
 	private int[] checksumFrames
+	private int[] checksumRosters
 	public int lastChecksumFrame
 
 	float getChecksum: int frame
 		if frame < 0 then return 0
 		return checksumFrames[frame mod checksumWindow] == frame ? checksumValues[frame mod checksumWindow] : 0
+
+	// The roster hash stored with a checksum: which players' inputs fed the state it was
+	// computed from. Two internally consistent forks of a partitioned room differ exactly here,
+	// and their state checksums MUST differ - comparing them would report a determinism bug
+	// where there is none, so mismatched-roster checksums are skipped instead (the fork itself
+	// is the removal protocol's job to arbitrate)
+	int getChecksumRoster: int frame
+		if frame < 0 then return 0
+		return checksumFrames[frame mod checksumWindow] == frame ? checksumRosters[frame mod checksumWindow] : 0
 
 	// Presence is keyed by the ring's frame slot, never by the value: a genuine checksum of 0
 	// (1 in 2^32 per frame, and the sessions are long-lived) must be stored and compared like
@@ -67,10 +77,30 @@ internal transient skipInit unit core
 	bool hasChecksum: int frame
 		return frame >= 0 and checksumFrames[frame mod checksumWindow] == frame
 
-	private setChecksum: int frame, float value
+	private setChecksum: int frame, float value, int roster
 		if frame < 0 then return // Peers send checksumFrame -1 until their first checksum exists
 		checksumFrames[frame mod checksumWindow] = frame
 		checksumValues[frame mod checksumWindow] = value
+		checksumRosters[frame mod checksumWindow] = roster
+
+	// A deterministic hash of the current roster (the player ids whose inputs feed the
+	// simulation). Players enter on their first parsed input record and leave through
+	// removeUserDeterministically, so every client on the same timeline computes the same
+	// value for the same frame
+	internal int rosterHash
+		int hash = 0
+		for input.players
+			hash = (hash * 31 + .id + 1) mod 1000000007
+		return hash
+
+	private float lastRosterSkipLogTime
+
+	// Rate-limited: during a live partition every Tick of the diverged side carries a
+	// mismatched-roster checksum (~30/s per peer)
+	private logRosterSkip: int frame
+		if currentTime < lastRosterSkipLogTime + 2000 then return
+		lastRosterSkipLogTime = currentTime
+		log "#checksum Skipped checksum compare for frame {frame}: rosters diverged (fork, arbitrated by the removal protocol)"
 
 	// Catch-up after a long pause in Connected mode (background tab, laptop sleep, late join):
 	// stepping is budgeted per animation frame so the tab never blocks for seconds, and the
@@ -434,6 +464,10 @@ internal transient skipInit unit core
 			try
 				let catchUpDeadline = now + maxCatchUpMillisPerFrame
 				while frame < targetFrame
+					// A fork rebuild is scheduled: stepping on would parse the fork's records at
+					// wrong frames and broadcast checksums of that corrupted state - stay quiet
+					// until the reload lands
+					if rebuildPending then break
 					if system.playMode == Record
 						for input.internalUsers as user
 							// Never regress the stamp for new records: during a catch-up replay frame
@@ -697,6 +731,10 @@ internal transient skipInit unit core
 	// are blocked and nextSnapshotFrame stays frozen until the replay reached this frame
 	// (see checkRewindAndReplayState); -1 = no integration replay in progress
 	int integrationReplayTo = -1
+
+	// A fork rebuild (reload + full replay from the mesh) is scheduled: stop stepping and
+	// replaying until it lands, see the fork detection in checkRewindAndReplayState
+	internal bool rebuildPending
 	
 	// While the snapshot pin is frozen (a silent peer, a rejoin's holding gate), every pass
 	// replays the whole window back to the pin. Those prediction passes run on a cooldown
@@ -727,6 +765,27 @@ internal transient skipInit unit core
 	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
+		if rebuildPending then return
+
+		// Fork detection: a user we only just discovered can hold records stamped below the
+		// pinned snapshot - the only valid rewind root. Known users can't (their claims pin the
+		// snapshot down, that is the pin's invariant), it takes a user whose join a partition
+		// hid from us while our certainty advanced without their inputs. Those records can
+		// never replay at their true frames: our certified timeline is a fork of the group's.
+		// Parsing on would apply them at wrong frames and desync us for good - rebuild
+		// deliberately instead: the reload replays every stream from frame 0 and lands us on
+		// the group timeline with our identity and inputs intact. (The checksum self-heal
+		// would find the same way out, but only after recording a false determinism failure
+		// and broadcasting checksums of the corrupted state to healthy peers)
+		if snapshotFrame != -1
+			for input.internalUsers as user
+				if user and not user.local and user.inputs.canRead
+					int firstUnparsedFrame = user.inputs.peekInt32
+					bool willParse = firstUnparsedFrame <= user.inputFrame and (not user.removed or firstUnparsedFrame <= user.removedAfterFrame)
+					if willParse and firstUnparsedFrame < snapshotFrame
+						log "#fork <{user.id}> Unparsed record stamped {firstUnparsedFrame} below the snapshot pin {snapshotFrame}: we certified these frames without user {user.id} -> rebuilding from the mesh"
+						rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s record at frame {firstUnparsedFrame} is below the snapshot pin {snapshotFrame}"
+						if rebuildPending then return
 
 		// A budgeted integration replay is still stepping toward integrationReplayTo: don't
 		// restart it on every arriving chunk (that made a returning peer's recovery cost many
@@ -867,14 +926,22 @@ internal transient skipInit unit core
 		// the simulation - including them made the checksum differ between clients around joins
 		if input.players.length >= 2 and frame <= certainFrame + 1
 			float myChecksum = snapshot.checksum
+			int myRoster = rosterHash
 			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
 			if hasChecksum frame
-				// Exact compare: the checksums are exact int32 hashes (transported as float64,
-				// lossless for int32) - there is no reason to accept any tolerance
-				float theirChecksum = getChecksum frame
-				if theirChecksum != myChecksum then onWrongChecksum frame, mine:myChecksum theirs:theirChecksum
+				if getChecksumRoster(frame) == myRoster
+					// Exact compare: the checksums are exact int32 hashes (transported as float64,
+					// lossless for int32) - there is no reason to accept any tolerance
+					float theirChecksum = getChecksum frame
+					if theirChecksum != myChecksum then onWrongChecksum frame, mine:myChecksum theirs:theirChecksum
+				else
+					// The stored checksum came from a diverged roster (see getChecksumRoster) and is
+					// incomparable - replace it with ours so peers on our own timeline still get
+					// compared for this frame
+					logRosterSkip frame
+					setChecksum frame, myChecksum, myRoster
 			else
-				setChecksum frame, myChecksum
+				setChecksum frame, myChecksum, myRoster
 			lastChecksumFrame = frame
 
 		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
@@ -1171,12 +1238,17 @@ internal transient skipInit unit core
 	// A checksum received over the network (carried in the trailing fields of every peer and
 	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
 	// saveState compares against it once its own snapshot reaches that frame
-	internal onRemoteChecksum: int checksumFor, float checksum
+	internal onRemoteChecksum: int checksumFor, float checksum, int roster
 		if hasChecksum checksumFor
+			if getChecksumRoster(checksumFor) != roster
+				// The sender computed its state from a different roster (a fork after a
+				// partition) - the values are incomparable, see getChecksumRoster
+				logRosterSkip checksumFor
+				return
 			float myChecksum = getChecksum checksumFor
 			if myChecksum != checksum then onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
 		else
-			setChecksum checksumFor, checksum
+			setChecksum checksumFor, checksum, roster
 
 	string snapshotLogWithWrongChecksum
 
