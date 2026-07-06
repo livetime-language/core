@@ -13,7 +13,8 @@ internal transient class InternalUser
 	int receivedMyInputsUpToPos // We received all inputs from this player up to this pos
 	int[] lastTouchMoveIndex
 	Buffer inputs = {}          // The stream of inputs of this user
-	int storedInputsUpTo        // Local user only: our own inputs are persisted to IndexedDB up to this pos
+	int storedInputsUpTo        // This user's stream is persisted to IndexedDB up to this pos (see core.storeInputsToDB)
+	int storedClaim = -1        // The claim persisted in this user's IndexedDB meta row (see core.storeInputsToDB)
 	int sentInputsUpToPos       // Local user only: our stream bytes below this pos may already be on the wire and must never be mutated in place (see the TouchMove patch guard in input.handleTouchEvent)
 	int epoch                   // The epoch of this user's input stream: a new value means the user restarted with a fresh session (0 = unknown, see PeerNetwork.onTick)
 	int epochStartPos           // Local user only: bytes below this pos were restored after a rejoin, our own new bytes start here

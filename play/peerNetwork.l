@@ -172,6 +172,9 @@ internal transient skipInit unit ServerNetwork
 		if existing then return existing
 		InternalUser user = {id, local:false}
 		input.internalUsers[id] = user
+		// The stream copy we persisted for this user before our reload (for a removed user those
+		// bytes may exist nowhere else any more, see core.storeInputsToDB)
+		core.applyStoredStream user
 		// A user appearing mid-session invalidates every prediction (their records may sit at
 		// any frame above the pin) - force the next pass back to the pinned snapshot
 		core.markRemoteChange 0
@@ -342,6 +345,9 @@ internal transient skipInit unit ServerNetwork
 				else             user = input.internalUsers[id] ?= {offerByMe:true, connectionId:nextConnectionId++}
 				user.id = id
 				user.presentOnServer = present
+				// The stream copy we persisted for this user before our reload (for a removed
+				// user those bytes may exist nowhere else any more, see core.storeInputsToDB)
+				if not user.local then core.applyStoredStream user
 				joinUsers += " {id}:{present ? "up" : "away"}"
 			core.log "#server JoinResponse: room:{roomId} userId:{userId} v{version} protocol:{serverProtocolVersion} seed:{seed} serverStartTime:{serverStartTime} users:{joinUsers}"
 
@@ -495,8 +501,9 @@ internal transient skipInit unit PeerNetwork
 
 	// --------------------------------------------- Connect ---------------------------------------------
 
-	// Called once from core.join: open IndexedDB and restore our own inputs, then connect to the
-	// signaling server. The media setup runs in parallel (core.join starts it right after)
+	// Called once from core.join: open IndexedDB and restore the stored input streams (our own,
+	// plus the copies we held of every other user's), then connect to the signaling server.
+	// The media setup runs in parallel (core.join starts it right after)
 	connect
 		setupBackgroundBehaviour
 		openDatabaseAndConnect
@@ -508,7 +515,7 @@ internal transient skipInit unit PeerNetwork
 			await Promise.race([
 				(async () => {
 					await IndexedDB.start("up4playing", 2);
-					await core.restoreOwnInputsFromDB();
+					await core.restoreInputsFromDB();
 				})(),
 				new Promise(resolve => setTimeout(resolve, 3000))
 			]);
@@ -760,15 +767,16 @@ internal transient skipInit unit PeerNetwork
 		// Keep the query string: it can carry the ?server/?turn/?relay overrides
 		let reload = () => { location.href = "/"+core.gameId+"/"+core.roomId+location.search; };
 		try {
-			// Delete our stored input chunks so a future player with a reused id can't load them
+			// Delete every stored input row for this room: our own chunks so a future player with
+			// a reused id can't load them, and our copies of the other users' streams so a stale
+			// copy can't resurrect a fork of a stream whose owner moved on without us (we rejoin
+			// as a fresh player, the room's history is no longer ours to serve)
 			let trans = IndexedDB.db.transaction("input", "readwrite");
 			let store = trans.objectStore("input");
 			let index = store.index("roomId");
 			let req = index.getAllKeys(core.roomId);
 			req.onsuccess = () => {
-				for(let key of req.result) {
-					if((""+key).startsWith(core.roomId+"-"+input.localUser.id+"-")) store.delete(key);
-				}
+				for(let key of req.result) store.delete(key);
 			};
 			trans.oncomplete = reload;
 			trans.onerror = reload;
@@ -778,9 +786,10 @@ internal transient skipInit unit PeerNetwork
 		}
 
 	// Our post-reload inputs forked from the group timeline (see onOwnHistory): delete only our
-	// stored input chunks for this room - identity and RoomInfo stay, so we reload and rejoin as
-	// the same player, and the restore rebuilds our stream from the peers' copies (which provably
-	// hold more of it than we do). Guarded against loops like selfHealReload
+	// OWN stored input chunks for this room - identity, RoomInfo and our copies of the other
+	// users' streams stay (they are valid receipts of the group timeline), so we reload and
+	// rejoin as the same player, and the restore rebuilds our stream from the peers' copies
+	// (which provably hold more of it than we do). Guarded against loops like selfHealReload
 	private bool forkDiscardHandled
 
 	js void discardForkedInputsAndReload
@@ -1411,8 +1420,8 @@ internal transient skipInit unit PeerNetwork
 
 		// Ack progress: the receiver is consuming our chunked catch-up (see sendInputs).
 		// Acks only move forward - a late message must not regress the resend cursor.
-		// Exception: an epoch other than the one we recorded means the sender restarted and lost
-		// every byte of our stream it ever held (peers never persist each other's streams), so
+		// Exception: an epoch other than the one we recorded means the sender restarted and now
+		// holds only what its IndexedDB restore gave back of our stream (possibly nothing), so
 		// that message's ack is the truth even when it regresses. Normally the sender's restore
 		// request resets the cursor to 0 anyway - but if that request was lost (the sender rejoined
 		// while we were unreachable), this is the only signal left: without it we would resend from

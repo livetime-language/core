@@ -483,9 +483,9 @@ internal transient skipInit unit core
 			catch
 				onError .
 
-			// Store local inputs
+			// Store all input streams (our own and the copies we hold of every other user's)
 			if IndexedDB.isReady
-				core.storeInputsToDB input.localUser
+				core.storeInputsToDB
 				
 		lastAnimationFrame = now
 		if system.playMode == Play and frame >= frames then system.record()
@@ -943,51 +943,115 @@ internal transient skipInit unit core
 		
 	const dbChunkSize = 4096
 	private float lastInputStoreTime
+	private dynamic storedStreamRows // Stream rows loaded by restoreInputsFromDB, keyed by userId, consumed by applyStoredStream
 
-	// Persist our own input stream to IndexedDB in fixed chunks (the tail chunk is rewritten as
-	// it fills). After a page refresh, restoreOwnInputsFromDB loads the stream back, so the player
-	// picks up where they left off even when all peers are gone. Failures are ignored: the peers
-	// hold a copy of our stream too, IndexedDB is just the copy that survives alone
-	storeInputsToDB: InternalUser user
-		if not user or not user.local or roomId <= 0 then return
-		let inputs = user.inputs
-		if inputs.writePos <= user.storedInputsUpTo then return
+	// Persist every user's input stream to IndexedDB in fixed chunks (the tail chunk is rewritten
+	// as it fills) plus one meta row carrying the claim. Our own stream lets the player pick up
+	// where they left off after a page refresh even when all peers are gone. The copies of the
+	// OTHER users' streams are what keeps a removed user's inputs recoverable when every survivor
+	// reloads at once: those bytes live nowhere else once the user is gone, and the RemoveUser
+	// event in the host's persisted stream would otherwise make every replay wait forever for
+	// bytes no client can provide (a permanent certainFrame deadlock).
+	// Failures are ignored: persistence is best-effort
+	storeInputsToDB
+		if roomId <= 0 then return
 		if currentTime < lastInputStoreTime + 500 then return
 		lastInputStoreTime = currentTime
+		// Remote users first: IndexedDB commits the puts in order, so whenever a RemoveUser event
+		// in our own persisted stream survives, the removed user's bytes it cuts at survived too
+		for input.internalUsers as user
+			if user and not user.local then storeUserInputsToDB user
+		storeUserInputsToDB input.localUser
+
+	private storeUserInputsToDB: InternalUser user
+		let inputs = user.inputs
+		// The claim gates parsing on a restoring client, so it is persisted alongside the bytes.
+		// It can advance without new bytes arriving (a peer's stream answer raised it), hence the
+		// separate storedClaim check
+		int claim = user.local ? math.max(user.inputFrame - 1, -1) : user.inputFrame
+		if inputs.writePos <= user.storedInputsUpTo and claim <= user.storedClaim then return
 
 		int start = user.storedInputsUpTo - (user.storedInputsUpTo mod dbChunkSize)
 		while start < inputs.writePos
 			int end = math.min(start + dbChunkSize, inputs.writePos)
 			inputStore.put {id:"{roomId}-{user.id}-{start}", roomId, userId:user.id, start, bytes:inputs.subArrayBuffer(start to end)}
 			start += dbChunkSize
+		// The meta row is written after the chunks it covers: a restore may only adopt the claim
+		// when it restored every byte up to writePos, so a torn write can never claim unheld bytes
+		inputStore.put {id:"{roomId}-{user.id}-meta", roomId, userId:user.id, writePos:inputs.writePos, claim}
 		user.storedInputsUpTo = inputs.writePos
+		user.storedClaim = claim
 
-	// Load our own input stream back from IndexedDB after a page refresh (called by
-	// PeerNetwork.connect before the signaling connection starts). Chunks are applied in order
-	// and only while they extend the stream contiguously - a missing chunk ends the restore
-	js async void restoreOwnInputsFromDB
+	// Load the input streams stored for this room back from IndexedDB after a page refresh
+	// (called by PeerNetwork.connect before the signaling connection starts). Our own stream is
+	// applied immediately; the other users' streams are stashed and applied once their
+	// InternalUser exists (see PeerNetwork.onJoinResponse and ServerNetwork.getOrCreateUser)
+	js async void restoreInputsFromDB
 		if(core.roomId <= 0 || core.localUserId == -1 || !IndexedDB.db) return;
 		let rows = await core.inputStore.getAllFromIndex("roomId", core.roomId);
-		rows = rows.filter(r => r.userId == core.localUserId && r.bytes).sort((a, b) => a.start - b.start);
-		let inputs = input.localUser.inputs;
+		core.storedStreamRows = new Map();
 		for(let row of rows) {
-			if(row.start > inputs.writePos) {
-				// Gap: nothing beyond it may be used
-				core.log("#db Gap in stored input chunks: next chunk starts at "+row.start+", we have "+inputs.writePos+" -> stopping the restore here");
-				break;
-			}
-			if(row.start + row.bytes.byteLength <= inputs.writePos) continue;
-			inputs.writePos = row.start;
-			inputs.insertArrayBuffer(row.bytes);
+			if(row.userId == null) continue;
+			let list = core.storedStreamRows.get(row.userId);
+			if(!list) core.storedStreamRows.set(row.userId, list = []);
+			list.push(row);
 		}
+		core.applyStoredStream(input.localUser);
 		// The restored bytes are pre-epoch history: this session must append after them, never
 		// write into them. Setting the boundary here (not only in finishRestore) keeps it truthful
 		// even when the restore protocol never runs - e.g. when we rejoin a freshly restarted server
 		// that lists nobody else. Peers that hold up to this much of our old stream then accept our
 		// new epoch instead of refusing it forever, and startConnected resumes our player instead
 		// of writing a second Join event
-		input.localUser.epochStartPos = inputs.writePos;
-		core.log("#db Restored "+inputs.writePos+" bytes of our own inputs from IndexedDB ("+rows.length+" chunks stored for room "+core.roomId+", user "+core.localUserId+")");
+		input.localUser.epochStartPos = input.localUser.inputs.writePos;
+		// Users that already exist pick up their stored streams now (only happens when the
+		// database open lost its 3s race against the signaling connection)
+		for(let user of input.internalUsers) if(user && !user.local) core.applyStoredStream(user);
+
+	// Apply the stored chunk rows for this user's stream (chunks are applied in order and only
+	// while they extend the stream contiguously - a missing chunk ends the restore) and adopt the
+	// stored claim when every byte it covers was restored - the same completeness rule
+	// onStreamData uses, so an adopted claim never covers bytes we don't hold.
+	// For a removed user this is what breaks the stream-loss deadlock after every survivor
+	// reloaded at once: their bytes and claim reach removedAfterFrame again, so the replay parses
+	// their stream up to the removal cut and certainFrame releases them
+	js void applyStoredStream: InternalUser user
+		if(!user || !core.storedStreamRows) return;
+		let rows = core.storedStreamRows.get(user.id);
+		if(!rows) return;
+		core.storedStreamRows.delete(user.id); // Applied at most once, to a freshly created user
+		let inputs = user.inputs;
+		if(!user.local && inputs.writePos > 0) return; // Bytes already arrived over the network - the stream protocol fills the rest
+		let meta = null;
+		let chunks = [];
+		for(let row of rows) {
+			if(row.bytes) chunks.push(row);
+			else meta = row;
+		}
+		chunks.sort((a, b) => a.start - b.start);
+		for(let row of chunks) {
+			if(row.start > inputs.writePos) {
+				// Gap: nothing beyond it may be used
+				core.log("#db Gap in user "+user.id+"'s stored input chunks: next chunk starts at "+row.start+", we have "+inputs.writePos+" -> stopping the restore here");
+				break;
+			}
+			if(row.start + row.bytes.byteLength <= inputs.writePos) continue;
+			inputs.writePos = row.start;
+			inputs.insertArrayBuffer(row.bytes);
+		}
+		user.storedInputsUpTo = inputs.writePos;
+		let claim = meta && inputs.writePos >= meta.writePos ? meta.claim : -1;
+		user.storedClaim = claim;
+		if(user.local) {
+			// Our previous session already claimed inputs up to this frame - new records must be
+			// stamped above it even when no peer is reachable to report the floor (the same rule
+			// as PeerNetwork.adoptOwnClaimFloor)
+			if(claim + 1 > user.inputFrame) user.inputFrame = claim + 1;
+		} else if(claim > user.inputFrame) {
+			user.inputFrame = claim;
+			core.markRemoteChange(0);
+		}
+		core.log("#db Restored "+inputs.writePos+" bytes of user "+user.id+"'s stream from IndexedDB ("+chunks.length+" chunks stored for room "+core.roomId+", claim "+claim+")");
 	
 	openState
 		file.openBinary
@@ -1076,7 +1140,7 @@ internal transient skipInit unit core
 		// that we restarted and lost our in-memory stream (see PeerNetwork.onTick)
 		input.localUser.epoch = PeerNetwork.generateEpoch
 
-		// Open IndexedDB (restores our own inputs after a page refresh), then connect to the
+		// Open IndexedDB (restores the stored input streams after a page refresh), then connect to the
 		// signaling server. The media setup runs in parallel: signaling doesn't need media, and
 		// a media failure must never abort the join (setupLocalMedia never throws)
 		PeerNetwork.connect
