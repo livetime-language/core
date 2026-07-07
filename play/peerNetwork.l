@@ -53,6 +53,12 @@ internal transient skipInit unit ServerNetwork
 	// of the id must present it (a claim without it joins as a fresh player instead of stealing
 	// the identity). Loaded from the stored RoomInfo at boot, refreshed from every JoinResponse
 	string sessionToken
+	// A JoinResponse start time this far off the one our identity was stored under means the
+	// room runs a different timeline than our previous session (a stateless restart reset the
+	// clock) - resuming would leave our inputs dead for exactly the shift, so past this we wipe
+	// and rejoin fresh instead (see onJoinResponse). Recovery-recreated rooms reconstruct the
+	// start time from a client's stored value or its measured elapsed - at most seconds off
+	const float roomClockResetMillis = 10000
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -406,6 +412,23 @@ internal transient skipInit unit ServerNetwork
 
 			if version > system.buildVersion
 				alert "You are using an old version of this application. Please refresh your browser."
+
+			// A large shift between the room's start time and the one our identity was stored
+			// under means our timeline no longer exists: a stateless server restart let a
+			// brand-new player recreate the room on a reset clock and our recovery info was not
+			// adopted (outside the adoption window in server/hub.go, or the room is younger than
+			// our identity because we ARE a dissolved provisional player whose eviction notice
+			// was lost). Resuming our old input stream onto a different timeline pins every new
+			// input record behind our old claims - inputs stay dead until the clock reaches the
+			// old frame count (the converged-but-stuck-in-lobby stall of lifecycle soak seed
+			// 607420393). The identity belongs to the dead timeline: wipe it and rejoin as a
+			// brand-new player instead
+			if core.localUserId != -1 and userId == core.localUserId
+				RoomInfo stored = core.getStoredRoomInfo
+				if stored and stored.serverStartTime > 0 and math.abs(serverStartTime - stored.serverStartTime) > roomClockResetMillis
+					core.log "#server The room clock shifted by {math.round(serverStartTime - stored.serverStartTime)} ms since our identity was stored -> our timeline is gone, rejoining as a new player"
+					PeerNetwork.onRemovedNotice
+					return
 
 			if core.localUserId != -1 and userId != core.localUserId
 				// Our claimed id was refused (no valid session token: browsing data cleared, or
