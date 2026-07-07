@@ -933,6 +933,12 @@ skipInit global unit input
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
+			// A removed user's Player leaves the game at the first frame past removedAfterFrame:
+			// all their records have been parsed by then, so the recreate-on-first-record path
+			// below can't resurrect them (see removeUserDeterministically)
+			if player and internalUser.removed and frame > internalUser.removedAfterFrame
+				removeRemovedPlayer userId, frame
+				player = null
 			player?.gamepad.startFrame
 			
 			while true
@@ -1398,12 +1404,25 @@ skipInit global unit input
 			// rewind the next pass to the pinned snapshot (runs once, the flag is idempotent)
 			core.markRemoteChange 0
 			PeerNetwork.onUserRemoved user
+		// The Player only leaves once the removed user's stream has deterministically ended. After
+		// a room clock reset the RemoveUser event can land at a frame BEFORE removedAfterFrame (the
+		// event is re-based onto the reset timeline, the removed user's old stream stamps are not):
+		// removing the Player here while their records are still being parsed would resurrect them
+		// as a fresh Player in parseInputs - a permanent ghost no removal ever cleans up again
+		// (lifecycle seed 167873016). parseInputs removes the Player once frame > removedAfterFrame
+		if atFrame > lastFrame
+			removeRemovedPlayer removeUserId, atFrame
+
+	// The deterministic end of a removal: the Player leaves the game. Called when the parse frame
+	// is past removedAfterFrame, so no records of the removed user can still follow. Idempotent -
+	// replays after a rewind run it again
+	private removeRemovedPlayer: int removeUserId, int atFrame
 		let player = playersById[removeUserId]
-		if player
-			players.remove player
-			playersById[removeUserId] = null
-			updatePlayers
-			print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
+		if not player then return
+		players.remove player
+		playersById[removeUserId] = null
+		updatePlayers
+		print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
 
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
