@@ -62,7 +62,7 @@ internal transient class InternalUser
 	bool receivedAnswer
 	bool connected
 	int connectionTries
-	int silentPeriods // Consecutive silence periods without any incoming peer message (see PeerNetwork.tick)
+	int silentPeriods // Consecutive silence periods without any incoming data channel message; relayed messages don't count (see PeerNetwork.tick)
 	// Consecutive channel-silence reconnects with no channel message in between. Grows the silence
 	// timeout so a high-latency link gets enough time to finish signaling+ICE+DTLS before the
 	// watchdog kills the almost-complete connection again (see PeerNetwork.tick)

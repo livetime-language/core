@@ -550,6 +550,7 @@ internal transient skipInit unit PeerNetwork
 	int retries
 	int dataChannelId
 	private object mediaSetupPromise
+	private bool mediaSetupTimedOut // The media setup outlived its timeout; peer connections no longer wait for it (see whenLocalMediaSettled)
 	private bool retryingMedia
 	Buffer sendBuffer = {}
 
@@ -636,6 +637,7 @@ internal transient skipInit unit PeerNetwork
 				if .lastIncomingChannelTime == float.maxValue then .lastIncomingChannelTime = now
 				if .lastChannelMessageTime == float.maxValue then .lastChannelMessageTime = now
 				if .lastAckProgressTime == float.maxValue then .lastAckProgressTime = now
+				if .startToConnectTime == float.maxValue then .startToConnectTime = now
 				// A peer with nothing outstanding is not ack-stalled (see channelSuspect)
 				if input.localUser and .receivedMyInputsUpToPos >= input.localUser.inputs.writePos then .lastAckProgressTime = now
 
@@ -662,7 +664,9 @@ internal transient skipInit unit PeerNetwork
 
 						if .offerByMe
 							retries++
-							if ++.connectionTries < 3
+							// Without a connection there is nothing to restart (initiate may still be
+							// parked on the media setup) -> go straight to a full re-initiate
+							if ++.connectionTries < 3 and .peerConnection
 								core.log "#peer <{.id}> Restarting ICE (offer by me)"
 								restartIce .
 							else
@@ -1410,7 +1414,10 @@ internal transient skipInit unit PeerNetwork
 
 	private handlePeerMessage: InternalUser user, Buffer buffer, bool viaServer
 		user.lastIncomingMessageTime = core.currentTime
-		user.silentPeriods = 0
+		// Only a data channel message proves the P2P link. A relayed message must not reset the
+		// channel-silence counter: the answerer takeover (see tick) exists exactly for a peer that
+		// is alive via server relay but never manages to establish its offered connection
+		if not viaServer then user.silentPeriods = 0
 		user.leaving = false // Any message proves the user is still there (e.g. restored from the back/forward cache)
 		user.presentOnServer = true // The JoinResponse presence snapshot goes stale; any message proves liveness
 		// A user that proves it is alive before its RemoveUser event was written cancels the removal
@@ -2073,9 +2080,39 @@ internal transient skipInit unit PeerNetwork
 		await PeerNetwork.mediaSetupPromise
 
 	// Peer connections are only created after the media setup settled, so the local tracks
-	// can be added when the connection is created (the media setup never rejects)
+	// can be added when the connection is created (the media setup never rejects).
+	// getUserMedia can hang forever (camera still held by a closing window, a pending OS permission
+	// prompt) and must not block the peer connections with it: after 5s the connections are created
+	// without local tracks (setupRemoteMedia negotiates receive-only transceivers instead) and
+	// reconnectPeersWhenLateMediaSettles renegotiates the tracks in once the media arrives
 	private js async void whenLocalMediaSettled
-		if(PeerNetwork.mediaSetupPromise) await PeerNetwork.mediaSetupPromise;
+		if(!PeerNetwork.mediaSetupPromise || PeerNetwork.mediaSetupTimedOut) return;
+		let timedOut = await Promise.race([
+			PeerNetwork.mediaSetupPromise.then(() => false),
+			new Promise(resolve => setTimeout(() => resolve(true), 5000)),
+		]);
+		if(timedOut && !PeerNetwork.mediaSetupTimedOut) {
+			PeerNetwork.mediaSetupTimedOut = true;
+			core.log("#camera Local media setup still pending after 5000 ms -> creating peer connections without local tracks");
+			PeerNetwork.reconnectPeersWhenLateMediaSettles();
+		}
+
+	// The media setup outlived the timeout above: when it finally settles with a media stream,
+	// recreate the existing peer connections so the new tracks reach them (sending a new track
+	// kind needs a renegotiation that only the offer side starts - the same path as retryMediaSetup)
+	private js async void reconnectPeersWhenLateMediaSettles
+		let promise = PeerNetwork.mediaSetupPromise;
+		let gotMedia = await promise;
+		PeerNetwork.mediaSetupTimedOut = false;
+		// A media retry replaced the promise meanwhile - retryMediaSetup renegotiates on its own
+		if(PeerNetwork.mediaSetupPromise != promise) return;
+		if(!gotMedia) return; // Settled without media - the receive-only transceivers already cover this
+		core.log("#camera Local media settled late -> reconnecting peers to attach the local tracks");
+		for(let user of input.internalUsers) {
+			if(user && !user.local && !user.removed && user.peerConnection) {
+				PeerNetwork.initiate(user);
+			}
+		}
 
 	// Request the local camera and microphone with a fallback ladder:
 	// video+audio -> video only -> audio only -> no media at all
