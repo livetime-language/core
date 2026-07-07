@@ -332,7 +332,15 @@ internal transient skipInit unit ServerNetwork
 						if present and user.removed then PeerNetwork.sendRemovedNotice user
 				core.log "#server Rejoined room {roomId} as user {userId} (seed:{seed} serverStartTime:{serverStartTime} users:{rejoinUsers})"
 				if roomId != core.roomId or userId != input.localUser.id
-					core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId}"
+					// The server now routes this connection by the received id (relays, reconnect
+					// kicks) while our deterministic state stays keyed by ours - ignoring the
+					// mismatch left the two split forever (seen when resent userId:-1 Joins each
+					// allocated a fresh id). Claim our identity again: the server honors claimed
+					// ids and remaps the connection back to us; the tick loop keeps resending
+					// until a JoinResponse confirms the expected identity
+					core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId} -> re-claiming our identity"
+					joinedOnThisConnection = false
+					sendJoinMessage
 				return
 			alreadyJoinedBefore = true
 
@@ -1894,11 +1902,21 @@ internal transient skipInit unit PeerNetwork
 
 			document.addEventListener("visibilitychange", () => {
 				core.log("#background Visibility changed to " + document.visibilityState);
+				// A hidden tab can be killed without any further event (mobile background reclaim),
+				// so the input tail is flushed here as well as on pagehide
+				if(document.hidden && IndexedDB.db) core.storeInputsToDB(true);
 				PeerNetwork.sendStatus(document.hidden);
 			});
 			// pagehide is the last reliable event before the tab closes, navigates away or enters
 			// the back/forward cache; pageshow with persisted is the return from that cache
-			window.addEventListener("pagehide", () => PeerNetwork.sendLeaving());
+			window.addEventListener("pagehide", () => {
+				// Flush the input tail before the page goes away: inputs younger than the periodic
+				// persist interval exist only in memory, and a simultaneous reload of every holder
+				// (both players hit refresh) would lose them everywhere (best-effort - the puts
+				// race the teardown, but a same-tab reload normally lets them commit)
+				if(IndexedDB.db) core.storeInputsToDB(true);
+				PeerNetwork.sendLeaving();
+			});
 			window.addEventListener("pageshow", e => { if(e.persisted) PeerNetwork.sendStatus(document.hidden); });
 		} catch(e) {
 			core.log("#background Setup failed: " + e.message);

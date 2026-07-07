@@ -1032,10 +1032,13 @@ internal transient skipInit unit core
 	// reloads at once: those bytes live nowhere else once the user is gone, and the RemoveUser
 	// event in the host's persisted stream would otherwise make every replay wait forever for
 	// bytes no client can provide (a permanent certainFrame deadlock).
-	// Failures are ignored: persistence is best-effort
-	storeInputsToDB
+	// Failures are ignored: persistence is best-effort.
+	// force skips the rate limit: pagehide/hidden flush the tail immediately - inputs younger
+	// than the persist interval exist only in memory, and when every holder reloads at once
+	// (both players hit refresh, a shared crash) those bytes would be lost everywhere
+	storeInputsToDB: bool force = false
 		if roomId <= 0 then return
-		if currentTime < lastInputStoreTime + 500 then return
+		if not force and currentTime < lastInputStoreTime + 500 then return
 		lastInputStoreTime = currentTime
 		// Remote users first: IndexedDB commits the puts in order, so whenever a RemoveUser event
 		// in our own persisted stream survives, the removed user's bytes it cuts at survived too
