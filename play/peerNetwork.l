@@ -26,7 +26,7 @@
 //     reordering and losses on any path are harmless.
 
 // Messages between a client and the signaling server
-enum ServerMessageType: Join, JoinResponse, Ping, Pong, Relay, ProtocolMismatch
+enum ServerMessageType: Join, JoinResponse, Ping, Pong, Relay, ProtocolMismatch, IdentityReassigned
 
 // Messages between two peers (via data channel or wrapped in a server Relay)
 enum PeerMessageType: Tick, Ping, Pong, Offer, Answer, IceCandidate, StreamRequest, StreamData, Status, Leaving, Removed
@@ -48,7 +48,11 @@ internal transient MediaDevices
 // The connection to the signaling server
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
-	const int protocolVersion = 5
+	const int protocolVersion = 6
+	// The session token minted by the server when our user id was first handed out: every claim
+	// of the id must present it (a claim without it joins as a fresh player instead of stealing
+	// the identity). Loaded from the stored RoomInfo at boot, refreshed from every JoinResponse
+	string sessionToken
 	private object socket
 	private Buffer sendBuffer = {}
 	int nextConnectionId = 1
@@ -209,7 +213,8 @@ internal transient skipInit unit ServerNetwork
 			if typeValue == cast ServerMessageType.JoinResponse	then onJoinResponse buffer; else
 			if typeValue == cast ServerMessageType.Pong	then onPong buffer; else
 			if typeValue == cast ServerMessageType.Relay	then onRelay buffer; else
-			if typeValue == cast ServerMessageType.ProtocolMismatch	then onProtocolMismatch buffer
+			if typeValue == cast ServerMessageType.ProtocolMismatch	then onProtocolMismatch buffer; else
+			if typeValue == cast ServerMessageType.IdentityReassigned	then onIdentityReassigned buffer
 			else	core.log "#error Unknown server message type {typeValue} - client/server version mismatch?"
 		catch
 			core.log "#error Failed to handle server message ({buffer.writePos} bytes): {error.stack}"
@@ -220,8 +225,11 @@ internal transient skipInit unit ServerNetwork
 	// seed, start time and the highest user id we know. This is what makes a server restart
 	// invisible to the players - the first client to reconnect rebuilds the room
 	private sendJoinMessage
+		// Who we are isn't decided yet (the room's identity lease is being resolved, see
+		// core.requestIdentityLease) - the resend loop in tick retries until it is
+		if core.identityLeasePending then return
 		lastJoinSentTime = core.currentTime
-		RoomInfo info = system.getLocalStorageObject("room"+core.roomId) or {}
+		RoomInfo info = core.getStoredRoomInfo or {}
 		string seed = core.mode == Connected ? math.randomSeed : (info.seed or "")
 		float serverStartTime = core.mode == Connected ? core.serverStartTime : (info.serverStartTime or 0)
 		float elapsed = 0
@@ -234,7 +242,7 @@ internal transient skipInit unit ServerNetwork
 
 		// The recovery fields are what a freshly restarted server rebuilds the room from - log
 		// them so a bad recovery (wrong seed, wrong time base) can be traced from both sides
-		core.log "#server Sending Join: room:'{core.roomString}' userId:{input.localUser.id} v{system.buildVersion} protocol:{protocolVersion} recovery(seed:{seed ? seed : "-"} serverStartTime:{serverStartTime} elapsed:{math.round(elapsed)}ms maxKnownUserId:{maxKnownUserId})"
+		core.log "#server Sending Join: room:'{core.roomString}' userId:{input.localUser.id} v{system.buildVersion} protocol:{protocolVersion} token:{sessionToken ? "set" : "-"} recovery(seed:{seed ? seed : "-"} serverStartTime:{serverStartTime} elapsed:{math.round(elapsed)}ms maxKnownUserId:{maxKnownUserId})"
 
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast ServerMessageType.Join
@@ -246,6 +254,7 @@ internal transient skipInit unit ServerNetwork
 		sendBuffer.writeFloat64 serverStartTime
 		sendBuffer.writeFloat64 elapsed
 		sendBuffer.writeInt32 maxKnownUserId
+		sendBuffer.writeString sessionToken
 		send sendBuffer
 
 	// The server refused our Join because we speak an outdated protocol - we are an old build,
@@ -282,6 +291,16 @@ internal transient skipInit unit ServerNetwork
 		url.searchParams.set("reload", ""+Date.now());
 		setTimeout(() => location.replace(url), 500);
 
+	// The server granted our user id to its rightful owner: a freshly restarted (stateless)
+	// server had handed the id to our Join(-1) without knowing an unreachable player already
+	// held it, and that player returned with recovery info proving prior ownership (see the
+	// provisional arbitration in server/hub.go handleJoin). Our identity is void - wipe it and
+	// rejoin as a brand-new player, exactly like a peer-level removal notice
+	private onIdentityReassigned: Buffer buffer
+		int reassignedId = buffer.readInt32
+		core.log "#server Our user id {reassignedId} was reassigned to its original owner -> rejoining as a new player"
+		PeerNetwork.onRemovedNotice
+
 	bool alreadyJoinedBefore
 
 	private onJoinResponse: Buffer buffer
@@ -306,6 +325,11 @@ internal transient skipInit unit ServerNetwork
 			// are what keeps the expiring credential fresh for later peer-connection setups
 			PeerNetwork.turnUsername = buffer.readString
 			PeerNetwork.turnCredential = buffer.readString
+			// The session token binding our id to us: presented in every future claim, so a
+			// second tab or another browser can never steal the id (it would join as a fresh
+			// player instead). Stored in RoomInfo by storeRoomInfo to survive a browser restart
+			let token = buffer.readString
+			if token then sessionToken = token
 			let userCount = buffer.readInt16
 
 			joined = true
@@ -332,6 +356,15 @@ internal transient skipInit unit ServerNetwork
 						if present and user.removed then PeerNetwork.sendRemovedNotice user
 				core.log "#server Rejoined room {roomId} as user {userId} (seed:{seed} serverStartTime:{serverStartTime} users:{rejoinUsers})"
 				if roomId != core.roomId or userId != input.localUser.id
+					if sessionToken
+						// We claimed our id WITH its session token and the server still resolved
+						// us to a different identity: the id was arbitrated away (a restart-race
+						// eviction whose IdentityReassigned notice we never saw). Re-claiming
+						// would only mint another fresh id per attempt - accept the verdict,
+						// wipe the void identity and restart as a brand-new player
+						core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId} -> our identity was reassigned, rejoining as a new player"
+						PeerNetwork.onRemovedNotice
+						return
 					// The server now routes this connection by the received id (relays, reconnect
 					// kicks) while our deterministic state stays keyed by ours - ignoring the
 					// mismatch left the two split forever (seen when resent userId:-1 Joins each
@@ -363,12 +396,24 @@ internal transient skipInit unit ServerNetwork
 				core.log "#server Received room id {roomId}"
 				system.pushState "/{core.gameId}/{roomId}"
 				core.roomId = roomId
+				// A brand-new room: claim its identity lease so a second tab opening the room
+				// link later sees it held (the grant arrives asynchronously and upgrades the
+				// identity persistence to localStorage, see onIdentityLeaseAcquiredLate)
+				core.requestIdentityLease
 
 			// Re-joins after a WebSocket reconnect must resolve to this exact room
 			core.roomString = roomId.toString
 
 			if version > system.buildVersion
 				alert "You are using an old version of this application. Please refresh your browser."
+
+			if core.localUserId != -1 and userId != core.localUserId
+				// Our claimed id was refused (no valid session token: browsing data cleared, or
+				// the id belongs to another tab or browser) - the server made us a fresh player.
+				// localUserId follows the verdict so the previous-session restore below is
+				// skipped; storeRoomInfo below records the new identity and its token
+				core.log "#server Claimed user id {core.localUserId} was refused -> joining as fresh user {userId}"
+				core.localUserId = userId
 
 			input.localUser.id = userId
 			math.setRandomSeed seed
@@ -770,10 +815,15 @@ internal transient skipInit unit PeerNetwork
 		return -1
 
 	js void wipeRoomStorageAndReload
-		try { localStorage.removeItem("room"+core.roomId) } catch {}
+		try { sessionStorage.removeItem("room"+core.roomId) } catch {}
 		try { sessionStorage.setItem("removedAt", ""+Date.now()) } catch {}
 		// Keep the query string: it can carry the ?server/?turn/?relay overrides
 		let reload = () => { location.href = "/"+core.gameId+"/"+core.roomId+location.search; };
+		// Only the identity-lease owner may clear the SHARED records: the localStorage identity
+		// and the stored input chunks are the owner tab's recovery data - a second tab wiping
+		// them would destroy the owner's ability to restore
+		if(!core.identityLeaseOwner) { reload(); return; }
+		try { localStorage.removeItem("room"+core.roomId) } catch {}
 		try {
 			// Delete every stored input row for this room: our own chunks so a future player with
 			// a reused id can't load them, and our copies of the other users' streams so a stale

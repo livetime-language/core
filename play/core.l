@@ -1,13 +1,17 @@
 enum NetworkMode: None, Ping, Local, Connected
 
-// Everything a client remembers about a room in localStorage: the identity to rejoin with and
-// the recovery info a freshly restarted server needs to recreate the room (seed, start time)
+// Everything a client remembers about a room: the identity to rejoin with (including the
+// session token proving the id is ours) and the recovery info a freshly restarted server needs
+// to recreate the room (seed, start time). Stored in sessionStorage (this tab's own identity,
+// survives a reload) and - only by the tab holding the identity lease - in localStorage (the
+// browser's identity, survives a browser restart). See core.requestIdentityLease
 internal transient immutable RoomInfo
 	int time
 	int userId
 	string seed
 	float serverStartTime
 	int maxUserId
+	string token
 
 enum SendInputsMode: None, Peer, Server
 	
@@ -1192,7 +1196,15 @@ internal transient skipInit unit core
 	int roomId
 	string gameId
 	int localUserId
-	
+
+	// This tab holds the room's identity lease (a Web Lock, auto-released when the tab dies):
+	// it resumes the identity stored in localStorage and is the only tab that persists to it.
+	// A second live tab of the same browser joins as a brand-new player instead of stealing the
+	// live identity (the Testrun206/331 two-tab theft)
+	bool identityLeaseOwner
+	// The Join is held back (see sendJoinMessage) until the lease decided who we are
+	bool identityLeasePending
+
 	join: string gameId, string roomString, int userId
 		statistics.scheduleSendIn 30 seconds
 		isPremiere = true
@@ -1205,15 +1217,6 @@ internal transient skipInit unit core
 		this.roomString = roomString
 		this.roomId = cast roomString
 		this.localUserId = userId
-		// A page refresh must not turn us into a new player - the old player would freeze as a
-		// permanent ghost. When the URL doesn't preassign a userId, reuse the one stored for this
-		// room (storeUserId); the restore started in onJoinResponse then recovers our previous
-		// input stream from our peers
-		if this.localUserId == -1 and this.roomId > 0
-			RoomInfo info = system.getLocalStorageObject("room"+this.roomId)
-			if info and currentTime - info.time < 24 hours
-				this.localUserId = info.userId
-				log "Rejoining room {this.roomId} as stored user {this.localUserId}"
 		this.frame = 0
 		this.frames = 0
 		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
@@ -1222,6 +1225,16 @@ internal transient skipInit unit core
 		// Each session tags its input stream with a fresh random epoch: peers use it to detect
 		// that we restarted and lost our in-memory stream (see PeerNetwork.onTick)
 		input.localUser.epoch = PeerNetwork.generateEpoch
+
+		// A page refresh must not turn us into a new player - the old player would freeze as a
+		// permanent ghost - so the identity for this room is resumed from storage. But the SAME
+		// identity in two live tabs is identity theft (both fight over the id): the stored
+		// identity belongs to the tab holding the room's Web Lock. requestIdentityLease decides
+		// asynchronously (the Join waits, see sendJoinMessage) and onIdentityLeaseDecided adopts
+		// the identity; a second live tab joins as a brand-new player instead
+		if this.roomId > 0
+			identityLeasePending = true
+			requestIdentityLease
 
 		// Open IndexedDB (restores the stored input streams after a page refresh), then connect to the
 		// signaling server. The media setup runs in parallel: signaling doesn't need media, and
@@ -1243,14 +1256,92 @@ internal transient skipInit unit core
 			}
 		}		
 		
-	// Remember everything needed to rejoin this room after a page refresh (userId) and to
-	// recreate it on a freshly restarted server (seed, start time, highest known user id)
+	// Remember everything needed to rejoin this room after a page refresh (userId + session
+	// token) and to recreate it on a freshly restarted server (seed, start time, highest known
+	// user id). Our own identity always survives a reload of THIS tab via sessionStorage; only
+	// the lease-owning tab writes the shared localStorage record (what a future tab resumes
+	// after a browser restart) - a second live tab must never overwrite the owner's identity
 	internal storeRoomInfo
 		int maxUserId = input.localUser.id
 		for input.internalUsers
 			if . and .id > maxUserId then maxUserId = .id
-		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id, math.randomSeed, serverStartTime, maxUserId)
-		
+		RoomInfo info = {currentTime, input.localUser.id, math.randomSeed, serverStartTime, maxUserId, ServerNetwork.sessionToken}
+		system.setSessionStorageObject "room"+roomId, info
+		if identityLeaseOwner then system.setLocalStorageObject "room"+roomId, info
+
+	// The identity we may resume for this room: this tab's own (sessionStorage - a reload of
+	// this tab always continues as the same player), falling back to the browser's stored
+	// identity (localStorage) only for the tab that holds the identity lease
+	internal RoomInfo getStoredRoomInfo
+		RoomInfo own = system.getSessionStorageObject("room"+roomId)
+		if own then return own
+		if identityLeaseOwner then return system.getLocalStorageObject("room"+roomId)
+		return null
+
+	// Requests this room's identity lease: an exclusive, origin-wide Web Lock the browser
+	// auto-releases when the holding tab closes, crashes or navigates. Exactly one tab per
+	// browser profile owns a room's stored identity at any time - a second live tab must not
+	// claim it (identity theft, see the identity-contention spec). The request stays queued in
+	// the background after losing the initial decision: when the owner tab closes, the
+	// surviving tab inherits the persistence duty (onIdentityLeaseAcquiredLate)
+	internal js void requestIdentityLease
+		const name = "livetime-identity-" + core.roomId;
+		let decided = false;
+		const decide = owner => {
+			if(decided) return;
+			decided = true;
+			if(core.identityLeasePending) { core.identityLeasePending = false; core.onIdentityLeaseDecided(owner); }
+		};
+		if(!(navigator.locks && navigator.locks.request)) {
+			// No Web Locks API (old browser): behave like before the lease existed - this tab
+			// uses the shared localStorage identity
+			core.identityLeaseOwner = true;
+			decide(true);
+			return;
+		}
+		try {
+			navigator.locks.request(name, () => {
+				const late = decided || !core.identityLeasePending;
+				core.identityLeaseOwner = true;
+				decide(true);
+				if(late) core.onIdentityLeaseAcquiredLate();
+				return new Promise(() => {});  // Hold the lease until this tab dies
+			}).catch(() => decide(false));
+			// Decision window: a closing owner tab (the user just closed it, a browser session
+			// restore is racing us) releases the lease within moments - give it a second before
+			// concluding a live tab owns the identity and we are a second player
+			setTimeout(() => decide(false), 1000);
+		} catch(e) {
+			core.identityLeaseOwner = true;
+			decide(true);
+		}
+
+	// The lease decided who we are - adopt the stored identity (or none) and let the held-back
+	// Join go out (see sendJoinMessage)
+	internal onIdentityLeaseDecided: bool owner
+		RoomInfo info = getStoredRoomInfo
+		if localUserId == -1
+			if info and currentTime - info.time < 24 hours
+				localUserId = info.userId
+				input.localUser.id = info.userId
+				ServerNetwork.sessionToken = info.token or ""
+				log "Rejoining room {roomId} as stored user {localUserId}"
+			else if not owner
+				log "Another tab of this browser holds this room's identity -> joining as a new player"
+		else if info and info.userId == localUserId and info.token
+			// Preassigned id (staging x-suffix): the identity is fixed, the lease only decides
+			// where it is persisted - but the session token proving the id is ours still comes
+			// from storage
+			ServerNetwork.sessionToken = info.token
+
+	// The lease was granted after the initial decision: the owner tab closed and we (the
+	// surviving tab) inherit the persistence duty, or we opened a brand-new room whose lease was
+	// free. From now on our identity survives a browser restart via localStorage
+	internal onIdentityLeaseAcquiredLate
+		log "#server This tab now holds the identity lease for room {roomId}"
+		if ServerNetwork.joined and input.localUser and input.localUser.id != -1
+			storeRoomInfo
+
 	// A checksum received over the network (carried in the trailing fields of every peer and
 	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
 	// saveState compares against it once its own snapshot reaches that frame

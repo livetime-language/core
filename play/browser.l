@@ -62,7 +62,19 @@ global transient skipInit unit system
 		
 	js void removeLocalStorageItem: string key
 		localStorage.removeItem(key)
-			
+
+	js void setSessionStorageObject: string key
+	                                 dynamic value
+		try { sessionStorage.setItem(key, JSON.stringify(value)) } catch(e) {}
+
+	js dynamic getSessionStorageObject: string key
+		try {
+			let str = sessionStorage.getItem(key)
+			return str ? JSON.parse(str) : null
+		} catch {
+			return null
+		}
+
 	inline js void vibrate: int duration = 100
 		if(navigator.vibrate) navigator.vibrate(duration)
 		
