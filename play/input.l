@@ -26,6 +26,8 @@ internal transient class InternalUser
 	int removedAfterFrame = int.maxValue // Inputs of a removed user are only parsed up to and including this frame
 	float removalGossipStart    // When the host started collecting this silent user's stream from all peers (0 = not started)
 	bool removalEventWritten    // The host wrote the RemoveUser event for this user
+	float removedFetchStallStart // Removed-but-incomplete stream: since when the fetch made no progress (0 = not stalled, see PeerNetwork's amend logic)
+	int removedFetchProgressPos // The writePos at the last fetch progress (stall detection baseline)
 
 	// Diagnostics (only used for logging)
 	int droppedTickCount        // Ticks from this user that were dropped as non-contiguous (packet loss indicator)
@@ -1417,6 +1419,20 @@ skipInit global unit input
 			// rewind the next pass to the pinned snapshot (runs once, the flag is idempotent)
 			core.markRemoteChange 0
 			PeerNetwork.onUserRemoved user
+		else
+		if lastFrame < user.removedAfterFrame
+			// Amended removal: the original event's cut referenced stream bytes the mesh no longer
+			// holds (every storage wiped between the removal and a reload storm) - a permanent
+			// certainFrame deadlock, since a removed user only stops binding certainty once their
+			// bytes reach removedAfterFrame. The host detects the stalled fetch and re-removes with
+			// the cut it actually holds (PeerNetwork tick); applying is lower-only, so replays that
+			// re-parse the ORIGINAL event after this one can't raise the cut back (lifecycle seed
+			// 246528788). Safe to apply at any time: while the deadlock lasts, every client's
+			// snapshot pin is held at frame 0 by the same missing claim, so the conservative
+			// rewind below replays the amended timeline from the start
+			user.removedAfterFrame = lastFrame
+			core.markRemoteChange 0
+			print "Removal of player {removeUserId} amended: their inputs now count up to frame {lastFrame}", type:Reaction
 		// The Player only leaves once the removed user's stream has deterministically ended. After
 		// a room clock reset the RemoveUser event can land at a frame BEFORE removedAfterFrame (the
 		// event is re-based onto the reset timeline, the removed user's old stream stamps are not):

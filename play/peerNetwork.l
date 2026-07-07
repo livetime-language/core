@@ -704,6 +704,26 @@ internal transient skipInit unit PeerNetwork
 						string reason = missingRemovedBytes ? "removed but incomplete" : "removal gossip"
 						core.log "#stream Requesting user {.id}'s stream from all peers ({reason}): we hold {.inputs.writePos} bytes, claims up to {.inputFrame}, removedAfterFrame:{.removedAfterFrame}"
 						requestStreamFromAllPeers .id
+					// A removed user's missing bytes can be lost FOR GOOD (the leaver's storage is
+					// gone with the tab, and the survivors' copies died in a storage wipe + reload
+					// storm): the RemoveUser event then references a cut nobody can reach and the
+					// removed user binds certainFrame at their stale claim forever. A full grace
+					// period of 1 Hz requests to every peer with ZERO progress means the mesh holds
+					// nothing more (a live peer holding bytes would have delivered; one silent that
+					// long is itself removal-eligible) - the host amends the removal, cutting at
+					// what it actually holds (lifecycle seed 246528788). Progress resets the timer,
+					// so slow transfers never trigger this
+					if missingRemovedBytes
+						if .removedFetchStallStart == 0 or .inputs.writePos > .removedFetchProgressPos
+							.removedFetchStallStart = now
+							.removedFetchProgressPos = .inputs.writePos
+						else
+						if amHost and now > .removedFetchStallStart + removalGraceMillis
+							.removedFetchStallStart = now
+							core.log "#removal <{.id}> Amending removal: stream fetch stalled at {.inputs.writePos} bytes (claim {.inputFrame} < removedAfterFrame {.removedAfterFrame}) for a full grace period -> cutting at what we hold"
+							input.handleRemoveUser .id, .inputFrame
+					else
+						.removedFetchStallStart = 0
 
 		// The periodic status summary: one block every 10 seconds with everything needed to
 		// diagnose a field report from the logs alone - per-peer connection state, transports,
