@@ -882,6 +882,7 @@ internal transient skipInit unit core
 		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
+			input.refreshLocalPlayer
 
 			// Users discovered AFTER this snapshot was saved have no stored readPos: reset them
 			// to 0 so the replay re-parses their whole stream. Keeping the live readPos silently

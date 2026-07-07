@@ -852,6 +852,18 @@ skipInit global unit input
 			writeObjectRecord .id, .data
 		pendingObjectRecords.clear
 
+	// A snapshot restore may create FRESH Player objects instead of reusing the live ones (the
+	// serializer's object-reuse stamps only match the most recently serialized snapshot, and
+	// checksum serializations restamp the graph between rewind passes). players/playersById/host
+	// are part of the restored state and stay consistent, but localPlayer is a transient pointer
+	// into that graph - re-derive it after every deserialize, or it keeps pointing at a dead
+	// object whose fields (playerIndex!) are frozen at their last live values (lifecycle seed
+	// 946832364: the veteran's ready clicks landed on another player's lobby slot forever)
+	internal refreshLocalPlayer
+		if localUser
+			let player = playersById[localUser.id]
+			if player then localPlayer = player
+
 	// Write a RemoveUser event into our own input stream: the removal of a player becomes part
 	// of the deterministic timeline and is applied by every client when the event is parsed.
 	// lastFrame is the last frame of the removed user's stream that still counts - the host
@@ -1097,7 +1109,8 @@ skipInit global unit input
 						user.index = player.playerIndex
 						user.name = player.playerName
 						playersById[player.id] = player
-						
+					refreshLocalPlayer
+
 				else
 				if inputType == Join
 					player._id = internalUser._id = inputs.readString
