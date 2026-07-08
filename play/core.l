@@ -718,7 +718,7 @@ internal transient skipInit unit core
 		
 	private Buffer snapshot = {}
 	private Buffer secondSnapshotForTesting = {}
-	private int snapshotFrame = -1
+	internal int snapshotFrame = -1 // The pinned snapshot's frame: the only valid rewind root (read by input.removeUserDeterministically's fork check)
 	private int nextSnapshotFrame = -1
 	
 	private Buffer[] milestones
@@ -1057,7 +1057,13 @@ internal transient skipInit unit core
 		// It can advance without new bytes arriving (a peer's stream answer raised it), hence the
 		// separate storedClaim check
 		int claim = user.local ? math.max(user.inputFrame - 1, -1) : user.inputFrame
-		if inputs.writePos <= user.storedInputsUpTo and claim <= user.storedClaim then return
+		// The removal cut is persisted too: a stored stream can be LONGER than the cut (its claim
+		// arrived live, before the removal did), and the RemoveUser event that cuts it sits at a
+		// LATER frame in the host's stream - a restoring replay would parse the discarded tail
+		// before it ever reaches the event and bake it into the timeline for good, forking against
+		// clients whose copy ends at the cut (lifecycle seeds 170692360, 485951509)
+		int removedAfterFrame = user.removed ? user.removedAfterFrame : int.maxValue
+		if inputs.writePos <= user.storedInputsUpTo and claim <= user.storedClaim and removedAfterFrame >= user.storedRemovedAfterFrame then return
 
 		int start = user.storedInputsUpTo - (user.storedInputsUpTo mod dbChunkSize)
 		while start < inputs.writePos
@@ -1066,9 +1072,10 @@ internal transient skipInit unit core
 			start += dbChunkSize
 		// The meta row is written after the chunks it covers: a restore may only adopt the claim
 		// when it restored every byte up to writePos, so a torn write can never claim unheld bytes
-		inputStore.put {id:"{roomId}-{user.id}-meta", roomId, userId:user.id, writePos:inputs.writePos, claim}
+		inputStore.put {id:"{roomId}-{user.id}-meta", roomId, userId:user.id, writePos:inputs.writePos, claim, removedAfterFrame}
 		user.storedInputsUpTo = inputs.writePos
 		user.storedClaim = claim
+		user.storedRemovedAfterFrame = removedAfterFrame
 
 	// Load the input streams stored for this room back from IndexedDB after a page refresh
 	// (called by PeerNetwork.connect before the signaling connection starts). Our own stream is
@@ -1138,6 +1145,18 @@ internal transient skipInit unit core
 		} else if(claim > user.inputFrame) {
 			user.inputFrame = claim;
 			core.markRemoteChange(0);
+		}
+		// A persisted removal cut is re-applied BEFORE the replay parses a single record: the
+		// stored stream may be longer than the cut, and the RemoveUser event that cuts it sits at
+		// a later frame - parsing the discarded tail first would bake it into the timeline for
+		// good (see storeUserInputsToDB). Lower-only, like every cut application. Rows written by
+		// older builds have no removedAfterFrame field and restore as not-removed
+		let storedCut = meta && meta.removedAfterFrame != null ? meta.removedAfterFrame : Number.MAX_SAFE_INTEGER;
+		user.storedRemovedAfterFrame = storedCut;
+		if(!user.local && storedCut < user.removedAfterFrame) {
+			user.removed = true;
+			user.removedAfterFrame = storedCut;
+			core.log("#db User "+user.id+"'s stored stream carries a removal cut at frame "+storedCut+" -> the replay parses it only up to the cut");
 		}
 		core.log("#db Restored "+inputs.writePos+" bytes of user "+user.id+"'s stream from IndexedDB ("+chunks.length+" chunks stored for room "+core.roomId+", claim "+claim+")");
 	

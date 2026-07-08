@@ -24,8 +24,10 @@ internal transient class InternalUser
 	// Removal (deterministic, driven by a RemoveUser event in the host's input stream)
 	bool removed                // This user was removed from the game
 	int removedAfterFrame = int.maxValue // Inputs of a removed user are only parsed up to and including this frame
+	int storedRemovedAfterFrame = int.maxValue // The removal cut persisted in this user's IndexedDB meta row (see core.storeInputsToDB)
 	float removalGossipStart    // When the host started collecting this silent user's stream from all peers (0 = not started)
 	bool removalEventWritten    // The host wrote the RemoveUser event for this user
+	int[] gossipAnswered = []   // Peers that answered the removal gossip with a stream answer we fully cover (host only, see PeerNetwork.removalGossipComplete)
 	float removedFetchStallStart // Removed-but-incomplete stream: since when the fetch made no progress (0 = not stalled, see PeerNetwork's amend logic)
 	int removedFetchProgressPos // The writePos at the last fetch progress (stall detection baseline)
 
@@ -1419,6 +1421,7 @@ skipInit global unit input
 			// rewind the next pass to the pinned snapshot (runs once, the flag is idempotent)
 			core.markRemoteChange 0
 			PeerNetwork.onUserRemoved user
+			checkRemovalCutBelowPin user, lastFrame
 		else
 		if lastFrame < user.removedAfterFrame
 			// Amended removal: the original event's cut referenced stream bytes the mesh no longer
@@ -1433,6 +1436,7 @@ skipInit global unit input
 			user.removedAfterFrame = lastFrame
 			core.markRemoteChange 0
 			print "Removal of player {removeUserId} amended: their inputs now count up to frame {lastFrame}", type:Reaction
+			checkRemovalCutBelowPin user, lastFrame
 		// The Player only leaves once the removed user's stream has deterministically ended. After
 		// a room clock reset the RemoveUser event can land at a frame BEFORE removedAfterFrame (the
 		// event is re-based onto the reset timeline, the removed user's old stream stamps are not):
@@ -1441,6 +1445,22 @@ skipInit global unit input
 		// (lifecycle seed 167873016). parseInputs removes the Player once frame > removedAfterFrame
 		if atFrame > lastFrame
 			removeRemovedPlayer removeUserId, atFrame
+
+	// A removal cut below inputs we already applied AND below the pinned snapshot - the only
+	// valid rewind root - means our certified timeline includes inputs the removal just
+	// discarded. The conservative rewind above can't reach below the pin, so parsing on would
+	// keep the phantom inputs baked in for good: a permanent silent desync against every client
+	// whose copy of the removed stream ends at the cut (lifecycle seeds 170692360, 485951509 -
+	// the host's gossip merge prevents this for LIVING clients, but a client that applied the
+	// tail while partitioned, or restored it from an old stored copy, can still get here).
+	// Rebuild from the mesh instead: the reload replays every stream from frame 0 with the
+	// persisted cut applied up front (core.applyStoredStream), landing us on the group timeline
+	// with our identity and inputs intact
+	private checkRemovalCutBelowPin: InternalUser user, int lastFrame
+		if user.inputFrame <= lastFrame then return                            // We hold nothing past the cut
+		if core.snapshotFrame == -1 or core.snapshotFrame <= lastFrame + 1 then return // The rewind reaches the cut - the replay heals us
+		core.log "#fork <{user.id}> Removal cut {lastFrame} lies below their applied claim {user.inputFrame} and the snapshot pin {core.snapshotFrame}: our timeline may include discarded inputs -> rebuilding from the mesh"
+		core.rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s removal cut {lastFrame} is below the snapshot pin {core.snapshotFrame}"
 
 	// The deterministic end of a removal: the Player leaves the game. Called when the parse frame
 	// is past removedAfterFrame, so no records of the removed user can still follow. Idempotent -

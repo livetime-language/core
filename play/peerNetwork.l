@@ -684,14 +684,23 @@ internal transient skipInit unit PeerNetwork
 				// Removal of users that are gone for good, decided by the host (the lowest-id living
 				// user) and made deterministic by writing a RemoveUser event into the host's input
 				// stream. Before writing the event, the host gossips: it fetches the user's stream
-				// from every living peer, so the removal frame covers everything any client committed
+				// from every living peer, so the removal frame covers everything any client committed.
+				// The gossip only concludes once every living peer ANSWERED and its copy is merged -
+				// a timer alone wrote cuts below claims other clients had already applied as certain
+				// when the answers were slower than the window (relayed round trips under a latency
+				// spike or heavy loss), a permanent one-click fork on those clients (lifecycle seeds
+				// 170692360, 485951509). removalGraceMillis is the hard stop when answers never come:
+				// a peer that stays silent that long is itself removal-eligible, so its claim no
+				// longer binds the cut
 				if core.mode == Connected and amHost and now > .lastIncomingMessageTime + removalGraceMillis and not .removalEventWritten
 					if .removalGossipStart == 0
 						.removalGossipStart = now
+						.gossipAnswered.clear
 						core.log "#removal <{.id}> Starting removal gossip (silent for {now - .lastIncomingMessageTime} ms)"
-					if now > .removalGossipStart + removalGossipMillis
+					bool merged = removalGossipComplete ., now
+					if (merged and now > .removalGossipStart + removalGossipMillis) or now > .removalGossipStart + removalGraceMillis
 						.removalEventWritten = true
-						core.log "#removal <{.id}> Writing RemoveUser event, lastFrame:{.inputFrame}"
+						core.log "#removal <{.id}> Writing RemoveUser event, lastFrame:{.inputFrame} ({merged ? "every living peer answered" : "gossip timed out without every answer"})"
 						input.handleRemoveUser .id, .inputFrame
 
 		// Fetch missing input stream bytes (rejoin restore is handled in tickRestore):
@@ -739,6 +748,19 @@ internal transient skipInit unit PeerNetwork
 	private float lastPeerPingTime
 	private float lastStreamFetchTime
 	private float lastStatusLogTime
+
+	// The removal gossip is complete when every living peer confirmed - via a StreamData answer
+	// (onStreamData) - that we hold at least as much of the user's stream as it does. Only then
+	// does the cut provably cover everything any living client may have applied as certain.
+	// A peer silent past removalGraceMillis stops binding: a live peer holding more bytes would
+	// have answered one of the 1 Hz requests long ago, and one silent that long is itself
+	// removal-eligible
+	private bool removalGossipComplete: InternalUser user, float now
+		for input.internalUsers as peer
+			if peer and not peer.local and not peer.removed and peer.id != user.id
+				if now < peer.lastIncomingMessageTime + removalGraceMillis and not user.gossipAnswered.includes peer.id
+					return false
+		return true
 
 	private logStatusSummary: float now
 		let localUser = input.localUser
@@ -1426,6 +1448,7 @@ internal transient skipInit unit PeerNetwork
 		// (removalEventWritten stays: once the event is in the stream, the removal is deterministic)
 		if user.removalGossipStart != 0 and not user.removalEventWritten
 			user.removalGossipStart = 0
+			user.gossipAnswered.clear
 			core.log "#removal <{user.id}> Back before removal -> gossip cancelled"
 		// Any message from a removed user proves it is back: its id is retired, tell it so it
 		// wipes and rejoins as a fresh player (rate-limited). The arbitration in onRemovedMessage
@@ -1705,12 +1728,15 @@ internal transient skipInit unit PeerNetwork
 		requester.lastStreamSentTime = now
 
 		let streamUser = input.internalUsers[streamUserId]
-		if not streamUser then return
 
-		int totalLength = streamUser.inputs.writePos
+		// Even a peer that doesn't know the stream's user answers (totalLength 0): the removal
+		// gossip needs a confirmation from EVERY living peer before it may conclude, and a fresh
+		// joiner that never saw the leaving user would otherwise stall the gossip until its
+		// hard timeout
+		int totalLength = streamUser ? streamUser.inputs.writePos : 0
 		int length = math.min(totalLength - fromPos, maxTickBytes)
 		if length < 0 then length = 0
-		int claim = streamUser.local ? input.localUser.inputFrame - 1 : streamUser.inputFrame
+		int claim = not streamUser ? -1 : streamUser.local ? input.localUser.inputFrame - 1 : streamUser.inputFrame
 
 		core.log "#stream <{requester.id}> Sending {length} bytes of user {streamUserId}'s stream at {fromPos} of {totalLength}, claim {claim}"
 		sendBuffer.reset
@@ -1719,12 +1745,16 @@ internal transient skipInit unit PeerNetwork
 		sendBuffer.writeInt totalLength
 		sendBuffer.writeInt claim
 		sendBuffer.writeInt fromPos
-		sendBuffer.writeBuffer streamUser.inputs, fromPos, length
+		// The payload is length-prefixed even when empty (an unknown stream answers with 0 bytes)
+		if streamUser
+			sendBuffer.writeBuffer streamUser.inputs, fromPos, length
+		else
+			sendBuffer.writeInt 0
 		send requester, sendBuffer
 
 		// Our own stream bytes sent here are on the wire and must never be mutated in place
 		// (see the TouchMove patch guard in input.handleTouchEvent)
-		if streamUser.local and streamUser.sentInputsUpToPos < fromPos + length
+		if streamUser and streamUser.local and streamUser.sentInputsUpToPos < fromPos + length
 			streamUser.sentInputsUpToPos = fromPos + length
 
 	private onStreamData: InternalUser peer, Buffer buffer
@@ -1757,6 +1787,12 @@ internal transient skipInit unit PeerNetwork
 		if streamUser.inputs.writePos >= totalLength and claim > streamUser.inputFrame
 			core.markRemoteChange streamUser.inputFrame + 1
 			streamUser.inputFrame = claim
+
+		// A removal gossip answer: the peer reported how much of the user's stream it holds. Once
+		// we hold everything it reported, its copy is merged - the host concludes the gossip when
+		// every living peer answered (removalGossipComplete)
+		if streamUser.removalGossipStart != 0 and not streamUser.removalEventWritten and streamUser.inputs.writePos >= totalLength
+			if not streamUser.gossipAnswered.includes peer.id then streamUser.gossipAnswered.add peer.id
 
 	// --------------------------------------------- Restoring our stream after a rejoin ---------------------------------------------
 
