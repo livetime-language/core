@@ -186,24 +186,42 @@ file
 	js string showSaveDialog: FileFilter[] filters = null
 		return require('@electron/remote').dialog.showSaveDialogSync({ filters, properties: ["createDirectory"] })
 	
-	async string[] readCsv: string filename, void(string[] values) processLine, void() then = null
+	async string[] readCsv: string filename, void(string[] values) processItem, void() then = null
 		let content = await read(filename)
-		for content.split("\n")[1..] as line
-			bool inQuotes
-			string value
-			string[] results
-			for line
-				if . == "\""
-					inQuotes = !inQuotes
-				else
-				if . == ',' and !inQuotes
-					results.add value.trim
-					value = ""
+		bool inQuotes
+		string quoteChar
+		string value
+		string[] results
+		bool isFirstRow = true
+		for content
+			if inQuotes
+				if . == quoteChar
+					inQuotes = false
 				else
 					value += .
-			if results.length
+			else
+			if . == "\"" or . == "'"
+				inQuotes = true
+				quoteChar = .
+			else
+			if . == ','
 				results.add value.trim
-				processLine(results)
+				value = ""
+			else
+			if . == "\n"
+				if results.length
+					results.add value.trim
+					if not isFirstRow
+						processItem(results)
+				value = ""
+				results = []
+				isFirstRow = false
+			else
+				value += .
+		if results.length
+			results.add value.trim
+			if not isFirstRow
+				processItem(results)
 		if then != null
 			then()
 	
