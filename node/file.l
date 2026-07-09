@@ -176,9 +176,9 @@ file
 	inline js async string write: string data, string to
 		require("fs").promises.writeFile(to, data, "utf8")
 		
-	inline js void createDirectory: string path
-		                             bool recursive = true
-		require("fs").mkdirSync(path, {recursive})
+	inline js async void createDirectory: string path
+		                                  bool recursive = true
+		require("fs").promises.mkdir(path, {@recursive:recursive})
 		
 	js string[] showOpenDialog: FileFilter[] filters = null
 		return require('@electron/remote').dialog.showOpenDialogSync({ filters, properties: ["openFile"] })
