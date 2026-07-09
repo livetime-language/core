@@ -171,8 +171,24 @@ unit file
 		}
 		document.body.appendChild(fileInput)
 		fileInput.click()
-	
-	
+
+	js async dynamic[] openFileDialog: string accept = "", bool multiple = false
+		return new Promise(resolve => {
+			const input = document.createElement("input");
+			input.type = "file";
+			input.accept = accept;
+			input.multiple = multiple;
+			input.style.display = "none";
+			input.onchange = () => {
+				let files = Array.from(input.files || []);
+				input.remove();
+				resolve(files);
+			}
+			document.body.appendChild(input);
+			input.click();
+		})
+
+
 internal IndexedDBIndex
 	string name
 	string[] keyPaths
