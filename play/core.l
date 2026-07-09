@@ -531,10 +531,11 @@ internal transient skipInit unit core
 			networkVisualizer.tick
 			
 		try
+			resetStateIndex()
 			Framework??.tick
 			tickTimes.add tickTime = PlainDate.measure
 				if lobby.inLobby then	lobby.tick
-				else	appTick
+				else	app??.tick()
 
 			// Advance frame
 			frame++
@@ -559,6 +560,7 @@ internal transient skipInit unit core
 			// instead of automatically sending it every time
 			// if frame == 0 and system.isDebug: debug.sendCurrentlyOnScreen
 							
+	inline js void resetStateIndex() if(window.reset_state_index != undefined) reset_state_index()
 	js void appTick() if(app.tick) app.tick();
 	js string appDebugString() (app.debugString || "")
 		

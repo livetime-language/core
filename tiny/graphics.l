@@ -757,10 +757,10 @@ enum CollisionType: None, Solid, Hazard, OneWayPlatform
 
 class Sprite
 	int[] pixels
-	Vector2 size
+	Vector2 size = {8,8}
 	int frames = 1
 	int framesPerSecond = 10
-	int stride
+	int stride = 8
 	
 	SpriteType type = SpriteType.None
 	CollisionType collisionType = CollisionType.None
@@ -811,7 +811,7 @@ class Tilemap
 			for line.length as i
 				int keyIndex = i*2
 				let key = line[keyIndex to keyIndex+2]
-				tiles[index + i] = tilemaps.mappings[key] or null
+				tiles[index + i] = tilemaps.stringToSprite[key] or null
 			index += maxWidth
 
 	toStrings
