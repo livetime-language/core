@@ -48,7 +48,7 @@ internal transient MediaDevices
 // The connection to the signaling server
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
-	const int protocolVersion = 6
+	const int protocolVersion = 7
 	// The session token minted by the server when our user id was first handed out: every claim
 	// of the id must present it (a claim without it joins as a fresh player instead of stealing
 	// the identity). Loaded from the stored RoomInfo at boot, refreshed from every JoinResponse
@@ -707,16 +707,34 @@ internal transient skipInit unit PeerNetwork
 		// - a removed user whose stream we don't fully have yet (we heard about the removal
 		//   before we received all their inputs)
 		// - a user in removal gossip (the host merges everything the mesh knows before removing)
+		// - a server-away placeholder we have never heard from. A surviving peer may be the only
+		//   holder of both its stream and its persisted removal cut; without fetching that state,
+		//   a fresh roster client keeps the placeholder alive forever and can never become host.
 		if now > lastStreamFetchTime + 1000
 			lastStreamFetchTime = now
+			int requestedStreamCount
+			int internalUserCount = input.internalUsers.length
+			int streamFetchStartUserId = nextStreamFetchUserId
+			for internalUserCount as offset
+				int userId = (streamFetchStartUserId + offset) mod internalUserCount
+				let user = input.internalUsers[userId]
+				if user and not user.local
+					bool missingRemovedBytes = user.removed and user.inputFrame < user.removedAfterFrame
+					bool gossiping = user.removalGossipStart != 0 and not user.removalEventWritten
+					bool unknownAwayPlaceholder = not user.removed and not user.presentOnServer and user.inputFrame == -1
+					if missingRemovedBytes or gossiping or unknownAwayPlaceholder
+						string reason = missingRemovedBytes ? "removed but incomplete" : gossiping ? "removal gossip" : "server-away placeholder"
+						core.log "#stream Requesting user {user.id}'s stream from all peers ({reason}): we hold {user.inputs.writePos} bytes, claims up to {user.inputFrame}, removedAfterFrame:{user.removedAfterFrame}"
+						requestStreamFromAllPeers user.id
+						requestedStreamCount++
+						nextStreamFetchUserId = (userId + 1) mod internalUserCount
+						if requestedStreamCount >= maxStreamFetchesPerPass then break
+
+			// Removal amendment watches every incomplete cut even when this pass's bounded request
+			// batch selected other streams. Progress on any later response resets its own timer.
 			for input.internalUsers as user
 				if . and not .local
 					bool missingRemovedBytes = .removed and .inputFrame < .removedAfterFrame
-					bool gossiping = .removalGossipStart != 0 and not .removalEventWritten
-					if missingRemovedBytes or gossiping
-						string reason = missingRemovedBytes ? "removed but incomplete" : "removal gossip"
-						core.log "#stream Requesting user {.id}'s stream from all peers ({reason}): we hold {.inputs.writePos} bytes, claims up to {.inputFrame}, removedAfterFrame:{.removedAfterFrame}"
-						requestStreamFromAllPeers .id
 					// A removed user's missing bytes can be lost FOR GOOD (the leaver's storage is
 					// gone with the tab, and the survivors' copies died in a storage wipe + reload
 					// storm): the RemoveUser event then references a cut nobody can reach and the
@@ -748,6 +766,8 @@ internal transient skipInit unit PeerNetwork
 	private float lastPeerPingTime
 	private float lastStreamFetchTime
 	private float lastStatusLogTime
+	private int nextStreamFetchUserId
+	const int maxStreamFetchesPerPass = 4
 
 	// The removal gossip is complete when every living peer confirmed - via a StreamData answer
 	// (onStreamData) - that we hold at least as much of the user's stream as it does. Only then
@@ -1724,8 +1744,8 @@ internal transient skipInit unit PeerNetwork
 
 	private sendStreamChunk: InternalUser requester, int streamUserId, int fromPos
 		let now = core.currentTime
-		if now < requester.lastStreamSentTime + 200 then return
-		requester.lastStreamSentTime = now
+		if now < requester.lastStreamSentTimeByUserId[streamUserId] + 200 then return
+		requester.lastStreamSentTimeByUserId[streamUserId] = now
 
 		let streamUser = input.internalUsers[streamUserId]
 
@@ -1737,13 +1757,17 @@ internal transient skipInit unit PeerNetwork
 		int length = math.min(totalLength - fromPos, maxTickBytes)
 		if length < 0 then length = 0
 		int claim = not streamUser ? -1 : streamUser.local ? input.localUser.inputFrame - 1 : streamUser.inputFrame
+		bool removed = streamUser and streamUser.removed
+		int removedAfterFrame = removed ? streamUser.removedAfterFrame : int.maxValue
 
-		core.log "#stream <{requester.id}> Sending {length} bytes of user {streamUserId}'s stream at {fromPos} of {totalLength}, claim {claim}"
+		core.log "#stream <{requester.id}> Sending {length} bytes of user {streamUserId}'s stream at {fromPos} of {totalLength}, claim {claim}, removedAfterFrame:{removedAfterFrame}"
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast PeerMessageType.StreamData
 		sendBuffer.writeInt streamUserId
 		sendBuffer.writeInt totalLength
 		sendBuffer.writeInt claim
+		sendBuffer.writeBool removed
+		if removed then sendBuffer.writeInt removedAfterFrame
 		sendBuffer.writeInt fromPos
 		// The payload is length-prefixed even when empty (an unknown stream answers with 0 bytes)
 		if streamUser
@@ -1761,6 +1785,8 @@ internal transient skipInit unit PeerNetwork
 		int streamUserId = buffer.readInt
 		int totalLength = buffer.readInt
 		int claim = buffer.readInt
+		bool removed = buffer.readBool
+		int removedAfterFrame = removed ? buffer.readInt : int.maxValue
 		int startPos = buffer.readInt // The pos where these bytes start
 
 		// Our own stream: handled by the restore rules (append-only prefix)
@@ -1770,6 +1796,13 @@ internal transient skipInit unit PeerNetwork
 
 		let streamUser = input.internalUsers[streamUserId]
 		if not streamUser or streamUser.local then return
+
+		// Removal state is part of the stream's authoritative metadata, just like its claim.
+		// Persisted cuts can outlive the host stream that originally carried the RemoveUser event;
+		// apply a peer's lower cut through the same idempotent/fork-safe path as a parsed event.
+		if removedAfterFrame < streamUser.removedAfterFrame
+			core.log "#stream <{peer.id}> User {streamUserId}'s stream carries a removal cut at frame {removedAfterFrame}"
+			input.removeUserDeterministically streamUserId, removedAfterFrame, core.frame
 
 		let savedReadPos = buffer.readPos
 		int length = buffer.readInt
