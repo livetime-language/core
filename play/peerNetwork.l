@@ -102,8 +102,12 @@ internal transient skipInit unit ServerNetwork
 			core.log "#server No JoinResponse after {math.round(now - lastJoinSentTime)} ms -> Resending Join"
 			sendJoinMessage
 
-		// Ping for clock sync (fast until we have a stable estimate, then slow)
-		if (core.mode == Ping or core.mode == Connected) and now >= nextPingTime
+		// Ping for clock sync only after THIS socket joined the room. On a reconnect to a
+		// stateless server the Join may still be delayed while a later Ping arrives first;
+		// without room membership the server has no room clock and cannot answer meaningfully.
+		// Treating that zero-age Pong as real would falsely re-anchor startTime and stall the
+		// running frame loop until wall time caught back up (chaos seed 862343571).
+		if joinedOnThisConnection and (core.mode == Ping or core.mode == Connected) and now >= nextPingTime
 			sendBuffer.reset
 			sendBuffer.writeInt8 cast ServerMessageType.Ping
 			sendBuffer.writeFloat64 now
