@@ -860,9 +860,7 @@ internal transient skipInit unit PeerNetwork
 			// Mutual removal - a split-brain heal. We only wipe when the sender's side wins
 			int livingCount = countLivingUsers
 			int lowestLivingId = lowestLivingUserId
-			bool senderWins = senderLivingCount > livingCount
-			if senderLivingCount == livingCount and senderLowestLivingId < lowestLivingId then senderWins = true
-			if senderLivingCount == livingCount and senderLowestLivingId == lowestLivingId and sender.id < input.localUser.id then senderWins = true
+			bool senderWins = removedNoticeSenderWins sender, senderLivingCount, senderLowestLivingId
 			string sides = "we are {livingCount} users from id {lowestLivingId}, they are {senderLivingCount} users from id {senderLowestLivingId}"
 			if not senderWins
 				core.log "#removal <{sender.id}> Refusing Removed notice: mutual removal and our side wins ({sides})"
@@ -876,13 +874,36 @@ internal transient skipInit unit PeerNetwork
 			let now = core.currentTime
 			for input.internalUsers as user
 				if . and not .local and not .removed and . != sender and now < .lastTickReceivedTime + 5000
-					core.log "#removal <{sender.id}> Refusing Removed notice: user {.id} sent us inputs {math.round(now - .lastTickReceivedTime)} ms ago, we are still part of the game"
+					int livingCount = countLivingUsers
+					int lowestLivingId = lowestLivingUserId
+					string sides = "we are {livingCount} users from id {lowestLivingId}, they are {senderLivingCount} users from id {senderLowestLivingId}"
+					if removedNoticeSenderWins sender, senderLivingCount, senderLowestLivingId
+						core.log "#removal <{sender.id}> Active user {.id} still counts us in the game, but their side wins ({sides})"
+						break
+					core.log "#removal <{sender.id}> Refusing Removed notice: user {.id} sent us inputs {math.round(now - .lastTickReceivedTime)} ms ago and our side wins ({sides})"
+					// This is a one-sided fork: the sender removed us, but we did not remove
+					// them. Counter with our side summary so the same mutual-removal
+					// arbitration runs on the sender and makes the losing timeline rejoin
+					// fresh. Without the counter, both sides repeat the notice/refusal
+					// forever (lifecycle seed 398819579).
+					sendRemovedNotice sender
 					return
 		onRemovedNotice
 
+	// Compare the two removal sides identically at either end of a Removed exchange. The side
+	// with more living users wins; ties prefer the lowest living id, then the lower endpoint id.
+	private bool removedNoticeSenderWins: InternalUser sender, int senderLivingCount, int senderLowestLivingId
+		int livingCount = countLivingUsers
+		int lowestLivingId = lowestLivingUserId
+		if senderLivingCount != livingCount then return senderLivingCount > livingCount
+		if senderLowestLivingId != lowestLivingId then return senderLowestLivingId < lowestLivingId
+		return sender.id < input.localUser.id
+
 	// Tell a user we consider removed that its id is retired, together with the size of our side
-	// so a healed split-brain arbitrates deterministically (see onRemovedMessage). Called for any
-	// message a removed user sends us and when a rejoin shows a removed user still on the server.
+	// so a healed split-brain arbitrates deterministically (see onRemovedMessage). Also used as a
+	// counter when a one-sided fork says we were removed but another live peer proves otherwise.
+	// Called for any message a removed user sends us and when a rejoin shows a removed user still
+	// on the server.
 	// Rate-limited per user like stream answers
 	sendRemovedNotice: InternalUser user
 		let now = core.currentTime
