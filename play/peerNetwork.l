@@ -1974,11 +1974,16 @@ internal transient skipInit unit PeerNetwork
 	// (onOwnHistory adopted the reported bytes and raised epochStartPos and the claim floor),
 	// so our new appends continue the group timeline instead of forking it
 	private finishHoldingConfirmations
-		holdingConfirmationPending = false
-		// The gate held our claim (and with it the snapshot pin) down; new records may now be
-		// stamped below existing ring snapshots - force the next pass back to the pinned snapshot
-		core.markRemoteChange 0
 		let localUser = input.localUser
+		// The gate can open from a network callback between animation frames. Advance the stamp
+		// BEFORE recording resumes: the next onFrame may first rewind a large integration pass,
+		// and an input arriving in that window would otherwise be stamped at the old restore floor
+		// (hundreds of frames below the live frame), retroactively changing certified history.
+		localUser.startInputFrame math.max(core.frame+1, localUser.inputFrame)
+		holdingConfirmationPending = false
+		// The gate held our claim (and with it the snapshot pin) down; restored records may have
+		// arrived below existing ring snapshots - force the next pass back to the pinned snapshot
+		core.markRemoteChange 0
 		core.log "#restore Every live peer confirmed its holdings of our stream -> new inputs continue at {localUser.inputs.writePos}, stamps from {localUser.inputFrame}"
 		// A rejoiner that could restore nothing at all (fresh IndexedDB and no live peer held
 		// our old stream) deferred its Join event until now (see core.startConnected)
