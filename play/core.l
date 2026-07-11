@@ -765,6 +765,24 @@ internal transient skipInit unit core
 	internal markRemoteChange: int firstChangedFrame
 		remoteInputsChanged = true
 		if firstChangedFrame < earliestChangedFrame then earliestChangedFrame = firstChangedFrame
+
+	// A stream can arrive immediately before a Tick carrying the sender's checksum. Do this
+	// fork check from the checksum handler as well as the next animation frame: otherwise a
+	// hidden user that joined AND left below our snapshot pin has the same current roster as us,
+	// so the checksum looks comparable and falsely trips the desync self-heal before the normal
+	// fork recovery gets a chance to inspect the newly arrived history.
+	private bool checkForForkBelowSnapshot
+		if rebuildPending then return true
+		if snapshotFrame == -1 then return false
+		for input.internalUsers as user
+			if user and not user.local and user.inputs.canRead
+				int firstUnparsedFrame = user.inputs.peekInt32
+				bool willParse = firstUnparsedFrame <= user.inputFrame and (not user.removed or firstUnparsedFrame <= user.removedAfterFrame)
+				if willParse and firstUnparsedFrame < snapshotFrame
+					log "#fork <{user.id}> Unparsed record stamped {firstUnparsedFrame} below the snapshot pin {snapshotFrame}: we certified these frames without user {user.id} -> rebuilding from the mesh"
+					rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s record at frame {firstUnparsedFrame} is below the snapshot pin {snapshotFrame}"
+					if rebuildPending then return true
+		return false
 	
 	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
@@ -781,15 +799,7 @@ internal transient skipInit unit core
 		// the group timeline with our identity and inputs intact. (The checksum self-heal
 		// would find the same way out, but only after recording a false determinism failure
 		// and broadcasting checksums of the corrupted state to healthy peers)
-		if snapshotFrame != -1
-			for input.internalUsers as user
-				if user and not user.local and user.inputs.canRead
-					int firstUnparsedFrame = user.inputs.peekInt32
-					bool willParse = firstUnparsedFrame <= user.inputFrame and (not user.removed or firstUnparsedFrame <= user.removedAfterFrame)
-					if willParse and firstUnparsedFrame < snapshotFrame
-						log "#fork <{user.id}> Unparsed record stamped {firstUnparsedFrame} below the snapshot pin {snapshotFrame}: we certified these frames without user {user.id} -> rebuilding from the mesh"
-						rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s record at frame {firstUnparsedFrame} is below the snapshot pin {snapshotFrame}"
-						if rebuildPending then return
+		if checkForForkBelowSnapshot then return
 
 		// A budgeted integration replay is still stepping toward integrationReplayTo: don't
 		// restart it on every arriving chunk (that made a returning peer's recovery cost many
@@ -1366,6 +1376,10 @@ internal transient skipInit unit core
 	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
 	// saveState compares against it once its own snapshot reaches that frame
 	internal onRemoteChecksum: int checksumFor, float checksum, int roster
+		// StreamData and Tick handlers can append old history and then receive a checksum before
+		// the next onFrame. Detect the resulting below-pin fork first; comparing a checksum from
+		// that history against our already-certified snapshot would be a false desync.
+		if checkForForkBelowSnapshot then return
 		if hasChecksum checksumFor
 			if getChecksumRoster(checksumFor) != roster
 				// The sender computed its state from a different roster (a fork after a
@@ -1763,4 +1777,3 @@ tests
 		// if core.frame <= core.targetFrame
 		system.fastForward = core.frame != core.targetFrame
 		core.tick draw:core.frame == core.targetFrame
-
