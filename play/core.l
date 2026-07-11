@@ -60,6 +60,7 @@ internal transient skipInit unit core
 	private float[] checksumValues
 	private int[] checksumFrames
 	private int[] checksumRosters
+	private int maxChecksumFrame = -1
 	public int lastChecksumFrame
 
 	float getChecksum: int frame
@@ -86,6 +87,27 @@ internal transient skipInit unit core
 		checksumFrames[frame mod checksumWindow] = frame
 		checksumValues[frame mod checksumWindow] = value
 		checksumRosters[frame mod checksumWindow] = roster
+		if frame > maxChecksumFrame then maxChecksumFrame = frame
+
+	// Newly parseable input can legitimately change predicted snapshots at and after its first
+	// affected frame. Drop that checksum suffix immediately: otherwise the replay compares its
+	// corrected state against this client's own stale pre-replay checksum and reports a false
+	// desync. This matters especially when removal metadata lowers a historical stream cut and
+	// marks frame 0 changed while a long integration replay is pending (lobby seed 705089693).
+	//
+	// Usually the affected suffix is one frame, so walk frame numbers rather than all 4096 ring
+	// slots. A jump wider than the ring clears by slot instead, keeping the work bounded.
+	private invalidateChecksumsFrom: int firstChangedFrame
+		if firstChangedFrame > maxChecksumFrame then return
+		if maxChecksumFrame - firstChangedFrame >= checksumWindow
+			for checksumFrames.length as i
+				if checksumFrames[i] >= firstChangedFrame then checksumFrames[i] = -1
+		else
+			for firstChangedFrame to maxChecksumFrame+1 as frame
+				int index = frame mod checksumWindow
+				if checksumFrames[index] == frame then checksumFrames[index] = -1
+		maxChecksumFrame = firstChangedFrame - 1
+		if lastChecksumFrame >= firstChangedFrame then lastChecksumFrame = firstChangedFrame - 1
 
 	// A deterministic hash of the current roster (the player ids whose inputs feed the
 	// simulation). Players enter on their first parsed input record and leave through
@@ -225,6 +247,8 @@ internal transient skipInit unit core
 		nextPredictionPassFrame = 0
 		checksumValues.clear
 		checksumFrames.clear
+		checksumRosters.clear
+		maxChecksumFrame = -1
 		lastChecksumFrame = -1
 		catchingUp = false
 		audio.stop
@@ -763,6 +787,7 @@ internal transient skipInit unit core
 	// inputs may differ from the last replay's prediction - a claim advance changes nothing below
 	// oldClaim+1, because records are never stamped at or below their sender's claim
 	internal markRemoteChange: int firstChangedFrame
+		invalidateChecksumsFrom firstChangedFrame
 		remoteInputsChanged = true
 		if firstChangedFrame < earliestChangedFrame then earliestChangedFrame = firstChangedFrame
 
@@ -1380,6 +1405,14 @@ internal transient skipInit unit core
 		// the next onFrame. Detect the resulting below-pin fork first; comparing a checksum from
 		// that history against our already-certified snapshot would be a false desync.
 		if checkForForkBelowSnapshot then return
+		// A checksum carried by the same Tick that made history newly parseable describes the
+		// sender's state before our queued rewind has integrated that history. Do not seed the
+		// freshly-invalidated ring with it: saveState would otherwise compare the corrected replay
+		// against this in-flight value (lobby seed 705089693). Budgeted integration spans multiple
+		// animation frames, so ignore peer checksums for its whole duration; fresh checksums resume
+		// immediately after both clients have had a chance to settle.
+		if integrationReplayTo != -1 then return
+		if remoteInputsChanged and checksumFor >= earliestChangedFrame then return
 		if hasChecksum checksumFor
 			if getChecksumRoster(checksumFor) != roster
 				// The sender computed its state from a different roster (a fork after a
