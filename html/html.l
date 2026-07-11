@@ -229,6 +229,10 @@ HtmlEvent
 
 HtmlKeyboardEvent
 	Key keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
+	bool shiftKey
+	bool ctrlKey
+	bool metaKey
+	bool altKey
 	HTMLElement target        // The element that triggered the event
 	HTMLElement currentTarget // The element to the event handler is attached to
 	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event
