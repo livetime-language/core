@@ -245,6 +245,8 @@ internal transient skipInit unit core
 		remoteInputsChanged = true
 		earliestChangedFrame = int.maxValue
 		nextPredictionPassFrame = 0
+		replayFrom = -1 // A stale root must never be re-rooted after a reset (see checkRewindAndReplayState)
+		pinSaveDeferred = false
 		checksumValues.clear
 		checksumFrames.clear
 		checksumRosters.clear
@@ -754,6 +756,7 @@ internal transient skipInit unit core
 	// records at their true stamps anyway and no replay is needed at all
 	private bool remoteInputsChanged = true
 	private int earliestChangedFrame = int.maxValue
+	private bool pinSaveDeferred // Rate-limits the deferred-pin-save log to one line per episode
 	
 	// While a large integration replay is spread over several animation frames (03c), new rewinds
 	// are blocked and nextSnapshotFrame stays frozen until the replay reached this frame
@@ -849,8 +852,24 @@ internal transient skipInit unit core
 			// snapshot down while our own claim trails the remote claims, e.g. while a rejoin's
 			// holding confirmations are pending (PeerNetwork.holdingConfirmationPending)
 			nextSnapshotFrame = (input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.smoothFrame, .inputFrame)) filter: . != null)+1
-		
-		if snapshotFrame == -1 then return
+
+		if snapshotFrame == -1
+			// The boot catch-up sweep is still stepping toward the live frame with its pin save
+			// pending - re-rooting now would restart the sweep from its root on every animation frame
+			if catchingUp then return
+			// No pin yet because the pass simply hasn't reached its target (a fresh boot whose
+			// stale restored claims put the target far above the current frame): keep waiting,
+			// checkSaveState pins when the frame gets there. Only an actively DEFERRED save
+			// re-roots - re-rooting here would redo the full window on every animation frame
+			if not pinSaveDeferred then return
+			// The last pass (or the boot sweep) deferred its pin save because records below the
+			// planned pin arrived mid-pass. Its rewind root is still the last serialized snapshot
+			// (nothing was serialized since the rewind), so re-root there and let the pass below
+			// rewind again - this time the arrival's records parse at their true stamps
+			if replayFrom == -1 then return
+			log "#pin Pin save was deferred -> re-rooting at frame {replayFrom} for a clean integration pass"
+			snapshotFrame = replayFrom
+			pinSaveDeferred = false
 		
 		bool pinAdvances = nextSnapshotFrame > snapshotFrame
 		if not pinAdvances
@@ -958,6 +977,23 @@ internal transient skipInit unit core
 			watch "Milestone {milestoneIndex}"
 			
 		if (mode == Connected or simulateRollback) and snapshotFrame == -1 and frame >= nextSnapshotFrame
+			// Stream bytes that arrive while a budgeted replay pass is stepping can carry records
+			// stamped below the pass's cursor: parseInputs applies those at the cursor frame, not
+			// their true frames, so the state here is a fork of the group timeline. Saving it would
+			// make the fork the permanent rewind root AND broadcast its checksum to healthy peers
+			// (lifecycle seed 426625824: a rejoiner's stream backfill landed mid-pass and one client
+			// sprayed poisoned checksums until the whole room burned its self-heal reloads).
+			// Defer the save instead: checkRewindAndReplayState re-roots at the pass's rewind frame
+			// and the next pass parses the arrival at its true stamps. The replayFrom bound keeps
+			// conservative full-invalidation marks (markRemoteChange 0 from removal events or a
+			// user appearing) out of this gate - those either leave the parse deterministic or
+			// schedule their own fork rebuild, and deferring on them would redo passes for nothing
+			if remoteInputsChanged and earliestChangedFrame < frame and earliestChangedFrame >= replayFrom
+				if not pinSaveDeferred
+					pinSaveDeferred = true
+					log "#pin Deferring the pin save at {frame}: records below it arrived mid-replay (first changed frame {earliestChangedFrame}, pass rooted at {replayFrom})"
+				return
+			pinSaveDeferred = false
 			snapshotFrame = frame
 			saveState snapshot
 			
@@ -988,13 +1024,17 @@ internal transient skipInit unit core
 					float theirChecksum = getChecksum frame
 					if theirChecksum != myChecksum then onWrongChecksum frame, mine:myChecksum theirs:theirChecksum
 				else
-					// The stored checksum came from a diverged roster (see getChecksumRoster) and is
-					// incomparable - replace it with ours so peers on our own timeline still get
-					// compared for this frame
+					// The stored checksum came from a diverged roster (see getChecksumRoster) and
+					// is incomparable - ours replaces it below so peers on our own timeline still
+					// get compared for this frame
 					logRosterSkip frame
-					setChecksum frame, myChecksum, myRoster
-			else
-				setChecksum frame, myChecksum, myRoster
+			// Our own computed value always ends up in the ring, even after a mismatch: sendInputs
+			// advertises the ring entry at lastChecksumFrame as OUR checksum, and when the slot
+			// kept the peer's value every client echoed foreign checksums as its own - a single
+			// transient wrong value then circulated the room as "theirs" long after its origin
+			// self-corrected, driving healthy clients' wrongChecksumCount over the self-heal
+			// threshold (lifecycle seed 426625824)
+			setChecksum frame, myChecksum, myRoster
 			lastChecksumFrame = frame
 
 		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
@@ -1106,11 +1146,27 @@ internal transient skipInit unit core
 			inputStore.put {id:"{roomId}-{user.id}-{start}", roomId, userId:user.id, start, bytes:inputs.subArrayBuffer(start to end)}
 			start += dbChunkSize
 		// The meta row is written after the chunks it covers: a restore may only adopt the claim
-		// when it restored every byte up to writePos, so a torn write can never claim unheld bytes
-		inputStore.put {id:"{roomId}-{user.id}-meta", roomId, userId:user.id, writePos:inputs.writePos, claim, removedAfterFrame}
+		// when it restored every byte up to writePos, so a torn write can never claim unheld bytes.
+		// The epoch records which lineage of the user's stream these bytes belong to: after our
+		// reload, their live epoch must match it before our copy may extend past their epochStartPos
+		// (see PeerNetwork.onTick's dead-lineage cut)
+		inputStore.put {id:"{roomId}-{user.id}-meta", roomId, userId:user.id, writePos:inputs.writePos, claim, removedAfterFrame, epoch:user.epoch}
 		user.storedInputsUpTo = inputs.writePos
 		user.storedClaim = claim
 		user.storedRemovedAfterFrame = removedAfterFrame
+
+	// Delete the persisted chunk rows of a cut stream tail so a reload can never restore the
+	// dead lineage again. The boundary chunk keeps its (partially stale) row until the next
+	// persist rewrites it - until then the meta row's writePos exceeds what the chunks restore
+	// contiguously, so applyStoredStream refuses the stored claim and nothing stale is parsed.
+	// Best-effort like every persistence call
+	js void truncateStoredStream: InternalUser user, int fromPos
+		if(core.roomId <= 0 || !IndexedDB.db) return;
+		let boundary = fromPos - ((fromPos % core.dbChunkSize + core.dbChunkSize) % core.dbChunkSize);
+		for(let start = boundary; start < user.storedInputsUpTo; start += core.dbChunkSize)
+			core.inputStore.delete(core.roomId + "-" + user.id + "-" + start);
+		if(user.storedInputsUpTo > boundary) user.storedInputsUpTo = boundary;
+		user.storedClaim = -1;
 
 	// Load the input streams stored for this room back from IndexedDB after a page refresh
 	// (called by PeerNetwork.connect before the signaling connection starts). Our own stream is
@@ -1170,8 +1226,13 @@ internal transient skipInit unit core
 			inputs.insertArrayBuffer(row.bytes);
 		}
 		user.storedInputsUpTo = inputs.writePos;
+		user.restoredFromDBUpTo = inputs.writePos;
 		let claim = meta && inputs.writePos >= meta.writePos ? meta.claim : -1;
 		user.storedClaim = claim;
+		// The lineage these bytes were persisted under. Rows written by older builds have no
+		// epoch field and restore as 0 (unknown) - a live epoch continuing below our copy then
+		// cuts the tail, the safe side (see PeerNetwork.onTick)
+		user.storedEpoch = meta && meta.epoch != null ? meta.epoch : 0;
 		if(user.local) {
 			// Our previous session already claimed inputs up to this frame - new records must be
 			// stamped above it even when no peer is reachable to report the floor (the same rule

@@ -365,6 +365,16 @@ internal transient skipInit unit ServerNetwork
 						// side wipes and rejoins fresh (see PeerNetwork.onRemovedMessage)
 						if present and user.removed then PeerNetwork.sendRemovedNotice user
 				core.log "#server Rejoined room {roomId} as user {userId} (seed:{seed} serverStartTime:{serverStartTime} users:{rejoinUsers})"
+				// The first-join path compares the room clock against the STORED identity
+				// (roomClockResetMillis rule below); a rejoin after a reconnect must apply the
+				// same invariant against the clock our RUNNING timeline is built on. A shifted
+				// clock means the room was recreated on a different timeline while we were away
+				// (or our own base was provisional): Time.now derives from serverStartTime, so
+				// every further frame we compute forks the room - wipe and rejoin fresh instead
+				if core.serverStartTime > 0 and math.abs(serverStartTime - core.serverStartTime) > roomClockResetMillis
+					core.log "#server The room clock shifted by {math.round(serverStartTime - core.serverStartTime)} ms across a reconnect -> our timeline is gone, rejoining as a new player"
+					PeerNetwork.onRemovedNotice
+					return
 				if roomId != core.roomId or userId != input.localUser.id
 					if sessionToken
 						// We claimed our id WITH its session token and the server still resolved
@@ -1647,6 +1657,30 @@ internal transient skipInit unit PeerNetwork
 			if sender.epoch != 0 and epochStartPos < sender.inputs.writePos
 				sendStreamChunk sender, sender.id, epochStartPos // Rate-limited, gives the rejoiner its own history back
 				return
+			// First contact after OUR reload (epoch 0 = we only hold what IndexedDB restored).
+			// When the live epoch continues BELOW our copy, our tail beyond epochStartPos is only
+			// the sender's real stream if it was persisted under this very epoch. A different
+			// stored epoch means the sender restarted since and re-recorded from epochStartPos -
+			// our tail is a dead lineage nobody else plays (a reload storm can strand the only
+			// copy of it in our IndexedDB: the sender's own restore found no live peer holding
+			// its bytes and continued from less, lifecycle seed 426625824). The live sender is
+			// authoritative for its own stream: cut our copy back and let the cumulative resend
+			// refill the truth (our regressed ack is accepted under the epoch-conflict exception)
+			// Only bytes that came from OUR IndexedDB restore are lineage-suspect: bytes served
+			// by the live mesh (StreamData fetches for an away user) are already the group's truth
+			if sender.epoch == 0 and epochStartPos < sender.restoredFromDBUpTo and epoch != sender.storedEpoch
+				if sender.inputs.readPos > epochStartPos
+					// The dead tail is already parsed into our replayed state and the pin may sit
+					// above those frames - no local rewind can unbake them, rebuild from the mesh
+					core.log "[{claim}] <{sender.id}> #epoch Restored copy beyond {epochStartPos} is a dead lineage (stored epoch {sender.storedEpoch}, live epoch {epoch}) and already parsed -> rebuilding from the mesh"
+					core.rebuildPending = forkRecoveryReload "user {sender.id}'s restored stream is a dead lineage beyond {epochStartPos}"
+					if core.rebuildPending then return
+				else
+					core.log "[{claim}] <{sender.id}> #epoch Cutting our restored copy of their stream from {sender.inputs.writePos} back to {epochStartPos}: persisted under epoch {sender.storedEpoch}, their live epoch {epoch} re-recorded from there"
+					sender.inputs.writePos = epochStartPos
+					sender.inputFrame = -1
+					core.truncateStoredStream sender, epochStartPos
+					core.markRemoteChange 0
 			core.log "[{claim}] <{sender.id}> #epoch Accepting new stream epoch {epoch} (was {sender.epoch}), continued from {epochStartPos}, we stored {sender.inputs.writePos}"
 			sender.epoch = epoch
 

@@ -17,6 +17,8 @@ internal transient class InternalUser
 	int storedClaim = -1        // The claim persisted in this user's IndexedDB meta row (see core.storeInputsToDB)
 	int sentInputsUpToPos       // Local user only: our stream bytes below this pos may already be on the wire and must never be mutated in place (see the TouchMove patch guard in input.handleTouchEvent)
 	int epoch                   // The epoch of this user's input stream: a new value means the user restarted with a fresh session (0 = unknown, see PeerNetwork.onTick)
+	int storedEpoch             // The epoch persisted with this user's IndexedDB meta row: the lineage our restored copy of their stream belongs to (0 = unknown, see PeerNetwork.onTick's dead-lineage cut)
+	int restoredFromDBUpTo      // How much of this user's stream came from OUR IndexedDB restore rather than the live mesh - only those bytes are lineage-suspect (see PeerNetwork.onTick's dead-lineage cut)
 	int epochStartPos           // Local user only: bytes below this pos were restored after a rejoin, our own new bytes start here
 	int historyTotalLength = -1 // While we restore our stream after a rejoin: how many bytes of it this peer reported to hold (-1 = no reply yet, see PeerNetwork.tickRestore)
 	float lastStreamSentTime    // Last Removed notice sent to this user (rate limit, see PeerNetwork.sendRemovedNotice)
