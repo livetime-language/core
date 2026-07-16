@@ -15,7 +15,7 @@ transient skipInit global unit graphics
 		                            Color accentColor = null             // Tint the accent image with this color, defaults to the color of the local player
 		                            implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                            implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
-		                            hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		                            hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
 		                            implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                            alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                            enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
@@ -38,7 +38,7 @@ transient skipInit global unit graphics
 		                         Color accentColor = null             // Tint the accent image with this color, defaults to the color of the local player
 		                         implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                         implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
-		                         hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		                         hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
 		                         implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                         alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                         textSize = 24

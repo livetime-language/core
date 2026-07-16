@@ -347,7 +347,7 @@ internal transient skipInit unit core
 			// Create artificial inputs to test the smoothness
 			if simulateInputsForTesting and input.localUser and input.localUser.collectInputs
 				for frame to targetFrame
-					input.handleKeyEvent KeyDown, cast Key.F24, ""
+					input.handleKeyEvent KeyDown, cast KeyCode.F24, "", ctrl:false, alt:false, meta:false
 				
 			frameAtBeginningOfOnFrame = frame
 			

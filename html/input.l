@@ -1,4 +1,4 @@
-enum Key
+enum KeyCode
 	None         =   0
 	Backspace    =   8
 	Tab          =   9
@@ -113,8 +113,8 @@ enum Key
 	SingleQuote  = 222
 	
 KeyListener
-	Key key
-	void(Key key) do
+	KeyCode key
+	void(KeyCode key) do
 	
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up, Canceled
@@ -161,7 +161,7 @@ unit html
 		if(!keyDownListeners) keyDownListeners = []
 		keyDownListeners.clear
 	
-	onKeyDown: Key key
-		       stored void(Key key) do
+	onKeyDown: KeyCode key
+		       stored void(KeyCode key) do
 		keyDownListeners.add {key, do}
 

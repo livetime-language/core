@@ -228,7 +228,7 @@ HtmlEvent
 	inline js Vector2 touchPosition() new Vector2(this.clientX/system.scale, this.clientY/system.scale)
 
 HtmlKeyboardEvent
-	Key keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
+	KeyCode keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
 	HTMLElement target        // The element that triggered the event
 	HTMLElement currentTarget // The element to the event handler is attached to
 	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event

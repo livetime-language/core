@@ -1,4 +1,4 @@
-enum Key
+enum KeyCode
 	None         =   0
 	Backspace    =   8
 	Tab          =   9
@@ -201,7 +201,7 @@ global transient input
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
 		internalUsers[0].scrollDelta = {deltaX, deltaY}
 
-	internal handleKeyEvent: InputType inputType, Key keyCode, string key
+	internal handleKeyEvent: InputType inputType, KeyCode keyCode, string key
 
 	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
 	internal updateGamepads

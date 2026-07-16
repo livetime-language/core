@@ -16,7 +16,7 @@
 // 	// List of inputs filled by parseInput and used by onTouchDown, onWheel, onKeyDown, ...
 // 	visible Touch[] downTouches, movingTouches, upTouches
 // 	visible ScrollEvent[] wheelEvents
-// 	visible Key[] downKeys, upKeys
+// 	visible KeyCode[] downKeys, upKeys
 // 	visible string[] pressedKeys, textInputs, textCompositions
 // 	visible string[] navigations
 
@@ -84,7 +84,7 @@ priority class Player
 	
 	// Text input
 	internal string textInput
-	internal Key[] keysCurrentlyDown
+	internal KeyCode[] keysCurrentlyDown
 	
 	// Controller input
 	visible Gamepad gamepad = {}
@@ -142,7 +142,7 @@ transient class ScrollEvent
 	
 	markAsHandled() handled = true
 	
-enum Key
+enum KeyCode
 	Unknown 			=    0
 	Backspace			=    8
 	Tab     			=    9
@@ -433,7 +433,7 @@ enum Cursor
 	
 class DigitalButton
 	string name
-	Key key
+	KeyCode key
 	
 	bool state, prevState
 	bool down => state and not prevState
@@ -441,7 +441,7 @@ class DigitalButton
 	
 	toString => name
 	
-	internal assign: string name, Key key
+	internal assign: string name, KeyCode key
 		this.name = name
 		this.key = key
 		state = false
@@ -514,7 +514,7 @@ skipInit global unit input
 	// transient InternalUser localUser
 	transient internal Player localPlayer
 	transient bool isCertain
-	transient ControllerButtonPlayerAndIndex[Key] controllerButtonMap
+	transient ControllerButtonPlayerAndIndex[KeyCode] controllerButtonMap
 
 	// A list of all players
 	global Player[] players
@@ -679,7 +679,7 @@ skipInit global unit input
 	// 	inputs.writeUnsignedInt16 cast type
 	// 	inputs.writeString text
 			
-	internal handleKeyEvent: InputType inputType, int scanCode, Key keyCode
+	internal handleKeyEvent: InputType inputType, int scanCode, KeyCode keyCode
 		// if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		// let inputs = localUser.inputs
 		// int composite = cast inputType                                  // inputType:   0 - 31 (5 bit)
@@ -985,7 +985,7 @@ skipInit global unit input
 	// 				internalUser.textInputs.add textInput
 	// 			else
 	// 			if inputType == KeyDown
-	// 				Key key = cast inputs.readInt32
+	// 				KeyCode key = cast inputs.readInt32
 	// 				let keyPressed = inputs.readString
 	// 				internalUser.downKeys.add key
 	// 				player.keysCurrentlyDown.ensure key
@@ -997,7 +997,7 @@ skipInit global unit input
 	// 				if core.logging: core.parseLog += " KeyDown {key}"
 	// 			else
 	// 			if inputType == KeyUp
-	// 				Key key = cast inputs.readInt32
+	// 				KeyCode key = cast inputs.readInt32
 	// 				internalUser.upKeys.add key
 	// 				player.keysCurrentlyDown.remove key
 					
@@ -1700,9 +1700,9 @@ skipInit global unit input
 	// // ---------------------------------------------- Keys ----------------------------------------------
 	
 	// // Do something when a player presses a key
-	// global onKeyDown: Key key                             // The key that will trigger the event
+	// global onKeyDown: KeyCode key                             // The key that will trigger the event
 	// 	              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
-	// 	              void(Key key, Player pressedBy) do  // Do this for each key that is pressed
+	// 	              void(KeyCode key, Player pressedBy) do  // Do this for each key that is pressed
 	// 	for getTargetedPlayers(by) -> player
 	// 		for internalUsers[.id].downKeys
 	// 			if . == key
@@ -1710,14 +1710,14 @@ skipInit global unit input
 				
 	// // Do something when a player presses a key
 	// global onKeyDown: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
-	// 	              void(Key key, Player pressedBy) do  // Do this for each key that is pressed
+	// 	              void(KeyCode key, Player pressedBy) do  // Do this for each key that is pressed
 	// 	for getTargetedPlayers(by) -> player
 	// 		for internalUsers[.id].downKeys -> key
 	// 				do key, player
 				
 	// // Do something when a player releases a key
 	// global onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
-	// 	            void(Key key, Player pressedBy) do  // Do this for each key that is released
+	// 	            void(KeyCode key, Player pressedBy) do  // Do this for each key that is released
 	// 	for getTargetedPlayers(by) -> player
 	// 		for internalUsers[.id].upKeys -> key
 	// 			do key, player
@@ -1730,7 +1730,7 @@ skipInit global unit input
 	// 			do character, player
 			
 	// // Returns true if a given key is currently held down
-	// isKeyDown: Key key          // The key to check
+	// isKeyDown: KeyCode key          // The key to check
 	// 	       Player by = null // Only consider keys pressed by this player 
 	// 	if (core.mode == Connected || core.simulateConnection) && by
 	// 		let player = playersById[by.id]
