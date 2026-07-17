@@ -630,6 +630,10 @@ internal transient skipInit unit PeerNetwork
 			await Promise.race([
 				(async () => {
 					await IndexedDB.start("up4playing", 2);
+					// The restore keys our OWN stream by input.localUser.id - wait until the
+					// identity lease decided who we are (it may adopt a stored identity the
+					// server reassigned us earlier, see core.onIdentityLeaseDecided)
+					if(core.identityLeaseDecision) await core.identityLeaseDecision;
 					await core.restoreInputsFromDB();
 				})(),
 				new Promise(resolve => setTimeout(resolve, 3000))
@@ -773,6 +777,7 @@ internal transient skipInit unit PeerNetwork
 			for input.internalUsers as user
 				if . and not .local
 					bool missingRemovedBytes = .removed and .inputFrame < .removedAfterFrame
+					bool neverSeenPlaceholder = not .removed and not .presentOnServer and .inputFrame == -1 and .inputs.writePos == 0
 					// A removed user's missing bytes can be lost FOR GOOD (the leaver's storage is
 					// gone with the tab, and the survivors' copies died in a storage wipe + reload
 					// storm): the RemoveUser event then references a cut nobody can reach and the
@@ -791,6 +796,27 @@ internal transient skipInit unit PeerNetwork
 							.removedFetchStallStart = now
 							core.log "#removal <{.id}> Amending removal: stream fetch stalled at {.inputs.writePos} bytes (claim {.inputFrame} < removedAfterFrame {.removedAfterFrame}) for a full grace period -> cutting at what we hold"
 							input.handleRemoveUser .id, .inputFrame
+					// A server-listed away user that NO living peer holds a single byte or cut of can
+					// never be removed by the host: the host may never have learned the id exists (its
+					// rejoin predated the slot - a stale recovery info minted it after a stateless
+					// restart, lifecycle seed 457934412), while WE quarantine certainFrame at -1 behind
+					// the placeholder forever, deferring the lobby exit for the whole room. The user
+					// provably never contributed a record: every living peer explicitly answered our
+					// 1 Hz fetches with "holds nothing" (gossipAnswered, same confirmations as the
+					// host's gossip) and a full grace passed with zero progress - a live peer holding
+					// bytes would have delivered, one silent that long is itself removal-eligible (the
+					// amended-removal reasoning above). Removing at cut -1 reaches exactly the world
+					// every ignorant client already plays (no record of the user ever parses), and the
+					// event in our stream heals every future joiner at parse time instead of each
+					// waiting out its own grace. Not gated on amHost: the host can't act on a user it
+					// doesn't know, and duplicate events from two concluding clients apply lower-only
+					else if neverSeenPlaceholder and core.mode == Connected and not .removalEventWritten
+						if .removedFetchStallStart == 0
+							.removedFetchStallStart = now
+						else if now > .removedFetchStallStart + removalGraceMillis and removalGossipComplete ., now
+							.removalEventWritten = true
+							core.log "#removal <{.id}> Removing never-seen server-listed user: no living peer holds a byte or a cut after a full grace of fetches"
+							input.handleRemoveUser .id, -1
 					else
 						.removedFetchStallStart = 0
 
@@ -1906,9 +1932,13 @@ internal transient skipInit unit PeerNetwork
 
 		// A removal gossip answer: the peer reported how much of the user's stream it holds. Once
 		// we hold everything it reported, its copy is merged - the host concludes the gossip when
-		// every living peer answered (removalGossipComplete)
-		if streamUser.removalGossipStart != 0 and not streamUser.removalEventWritten and streamUser.inputs.writePos >= totalLength
-			if not streamUser.gossipAnswered.includes peer.id then streamUser.gossipAnswered.add peer.id
+		// every living peer answered (removalGossipComplete). The same confirmations feed the
+		// never-seen placeholder removal (tick): it too needs an explicit "holds nothing more than
+		// you" from EVERY living peer before it may conclude the user never contributed anything
+		bool unresolvedPlaceholder = not streamUser.removed and not streamUser.presentOnServer and streamUser.inputFrame == -1
+		if (streamUser.removalGossipStart != 0 and not streamUser.removalEventWritten) or unresolvedPlaceholder
+			if streamUser.inputs.writePos >= totalLength
+				if not streamUser.gossipAnswered.includes peer.id then streamUser.gossipAnswered.add peer.id
 
 	// --------------------------------------------- Restoring our stream after a rejoin ---------------------------------------------
 

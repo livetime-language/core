@@ -1320,6 +1320,11 @@ internal transient skipInit unit core
 	bool identityLeaseOwner
 	// The Join is held back (see sendJoinMessage) until the lease decided who we are
 	bool identityLeasePending
+	// Resolves when the lease decided who we are. The IndexedDB restore awaits it: the restore
+	// keys our OWN stream by input.localUser.id, and the decision may change that id (a stored
+	// identity the server reassigned us earlier wins over a preassigned one) - restoring first
+	// would attach the old id's stream to the new identity with no refusal left to re-home it
+	private dynamic identityLeaseDecision
 
 	join: string gameId, string roomString, int userId
 		statistics.scheduleSendIn 30 seconds
@@ -1403,10 +1408,13 @@ internal transient skipInit unit core
 	internal js void requestIdentityLease
 		const name = "livetime-identity-" + core.roomId;
 		let decided = false;
+		let resolveDecision;
+		core.identityLeaseDecision = new Promise(resolve => resolveDecision = resolve);
 		const decide = owner => {
 			if(decided) return;
 			decided = true;
 			if(core.identityLeasePending) { core.identityLeasePending = false; core.onIdentityLeaseDecided(owner); }
+			resolveDecision();
 		};
 		if(!(navigator.locks && navigator.locks.request)) {
 			// No Web Locks API (old browser): behave like before the lease existed - this tab
@@ -1444,10 +1452,19 @@ internal transient skipInit unit core
 				log "Rejoining room {roomId} as stored user {localUserId}"
 			else if not owner
 				log "Another tab of this browser holds this room's identity -> joining as a new player"
-		else if info and info.userId == localUserId and info.token
+		else if info and info.token and currentTime - info.time < 24 hours
 			// Preassigned id (staging x-suffix): the identity is fixed, the lease only decides
 			// where it is persisted - but the session token proving the id is ours still comes
-			// from storage
+			// from storage. When the stored identity DIFFERS from the preassigned id, the server
+			// reassigned us in an earlier session (a refused tokenless claim mints a fresh id,
+			// see onJoinResponse's claimRefused branch) - the stored identity is who we are now.
+			// Re-claiming the stale preassigned id tokenless would mint yet another fresh user on
+			// EVERY reload, each stranding the previous id as a never-heard-from phantom for the
+			// others to remove (lifecycle seed 457934412)
+			if info.userId != localUserId
+				log "Server reassigned this room's identity earlier -> rejoining as stored user {info.userId} instead of preassigned user {localUserId}"
+				localUserId = info.userId
+				input.localUser.id = info.userId
 			ServerNetwork.sessionToken = info.token
 
 	// The lease was granted after the initial decision: the owner tab closed and we (the
