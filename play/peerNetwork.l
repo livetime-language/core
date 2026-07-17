@@ -444,12 +444,35 @@ internal transient skipInit unit ServerNetwork
 					PeerNetwork.onRemovedNotice
 					return
 
+			bool claimRefused
 			if core.localUserId != -1 and userId != core.localUserId
 				// Our claimed id was refused (no valid session token: browsing data cleared, or
 				// the id belongs to another tab or browser) - the server made us a fresh player.
-				// localUserId follows the verdict so the previous-session restore below is
-				// skipped; storeRoomInfo below records the new identity and its token
 				core.log "#server Claimed user id {core.localUserId} was refused -> joining as fresh user {userId}"
+				// The stream we restored from IndexedDB at boot belongs to the OLD id's timeline:
+				// hand it to that user's slot (we may be the only client holding those bytes) and
+				// start the fresh identity with an empty stream. Keeping the bytes as OUR stream
+				// would resurrect the old user's records under the new id, stamped far in the
+				// past - below every survivor's snapshot pin (hidden-join forks all around) - and
+				// the restored claim floor would freeze our claim at the old stream's claim,
+				// stalling certainFrame for the whole room until we are removed and never letting
+				// us append an input of our own (lifecycle seed 285888347)
+				let oldUser = input.internalUsers[core.localUserId]
+				if oldUser and not oldUser.local and oldUser.inputs.writePos == 0 and input.localUser.inputs.writePos > 0
+					oldUser.inputs = input.localUser.inputs
+					oldUser.inputFrame = input.localUser.storedClaim
+					oldUser.storedInputsUpTo = input.localUser.storedInputsUpTo
+					oldUser.storedClaim = input.localUser.storedClaim
+					oldUser.storedEpoch = input.localUser.storedEpoch
+					oldUser.restoredFromDBUpTo = input.localUser.restoredFromDBUpTo
+					core.markRemoteChange 0
+				input.localUser.inputs = {}
+				input.localUser.inputFrame = -1
+				input.localUser.epochStartPos = 0
+				input.localUser.storedClaim = -1
+				input.localUser.storedInputsUpTo = 0
+				input.localUser.restoredFromDBUpTo = 0
+				claimRefused = true
 				core.localUserId = userId
 
 			input.localUser.id = userId
@@ -468,8 +491,9 @@ internal transient skipInit unit ServerNetwork
 
 			// When we join with a preassigned userId, we may be rejoining after a page refresh and
 			// the other users may still hold our previous session's input stream -> restore it from
-			// them before the session starts (onPong delays startConnected until the restore settled)
-			if core.localUserId != -1 and userCount > 1
+			// them before the session starts (onPong delays startConnected until the restore settled).
+			// A refused claim skips this: the fresh id has no previous session anywhere
+			if core.localUserId != -1 and not claimRefused and userCount > 1
 				PeerNetwork.startRestore
 		catch
 			core.onError error

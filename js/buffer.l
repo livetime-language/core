@@ -230,17 +230,25 @@ internal transient class Buffer
 	
 	// Both float writers replace any NaN with the canonical NaN: JS engines do not keep NaN payload
 	// bits stable (they can change on heap moves and differ between clients), and snapshot bytes are
-	// checksummed across clients - a payload flip would be a false "Out of sync" (F36)
+	// checksummed across clients - a payload flip would be a false "Out of sync" (F36).
+	// The value must be coerced to a number BEFORE the NaN check: an unassigned float field is
+	// undefined, which passes === but makes Chromium's setFloat64 write the engine-internal
+	// "undefined" NaN pattern (0xFFF6FFFFFFF6FFFF) raw into the buffer. A restore reads that back
+	// as a plain NaN and the next serialize writes the canonical pattern - the same state then
+	// checksums differently on a client that rewound and one that never did (lifecycle seed
+	// 285888347, Time.now in the lobby)
 	js void writeFloat32: float value
 		if(this.writePos+4 > this.buffer.byteLength)
 			this.expandBuffer(this.writePos+4)
-		this.dataView.setFloat32(this.writePos, value === value ? value : NaN)
+		let number = +value
+		this.dataView.setFloat32(this.writePos, number === number ? number : NaN)
 		this.writePos += 4
 
 	js void writeFloat64: float value
 		if(this.writePos+8 > this.buffer.byteLength)
 			this.expandBuffer(this.writePos+8)
-		this.dataView.setFloat64(this.writePos, value === value ? value : NaN)
+		let number = +value
+		this.dataView.setFloat64(this.writePos, number === number ? number : NaN)
 		this.writePos += 8
 		
 	js void writeBool: bool value
