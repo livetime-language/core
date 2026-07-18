@@ -49,13 +49,15 @@ move: Player p, Vector2 delta = {0,0}	// Define a function that takes a Player a
 	p.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
 tick	// app.tick is called every frame (30 times per second by default)
 	move player, delta:{1,0}	// You don't need parenthesis when calling a function that doesn't return anything
-	setPixel {x,y}, color:LightGray	// Colors: Black, DarkGrey, LightGrey, White, Blue, Red, Green, Yellow, Earth, Sand, Pink, Violet, DarkBlue, DarkRed, DarkGreen, Orange
-	drawSprite sprites.blueCircle, pos:{x, y}	// Draw sprite
+	setPixel {x,y}, color:LightGray	// Colors: Black, DarkGray, LightGray, White, Blue, Red, Green, Yellow, Earth, Sand, Pink, Violet, DarkBlue, DarkRed, DarkGreen, Orange
 	drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
 	drawRect pos:{x,y}, size:{8,8}, fillColor:Red, outlineColor:Green	// Draw rectangle, leave out fillColor for no fill, leave out outlineColor for no outline
 	drawCircle pos:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle, radius can also be a Vector2 for an ellipse
+	drawSprite sprites.blueCircle, pos:{x, y}, transparentColor:Black	// Draw sprite with optional transparent color (Black if left out)
+	drawSprite sprites.blueCircle, frame:0, flipX:true, flipY:true	// Draw sprite with optional mirroring and animation frame (0 if left out)
+	drawSprite sprites.blueCircle, replaceColor:Blue with:DarkBlue	// Draw sprite with optional color replacement (none if left out)
+	drawTilemap tilemaps.level, pos:{0,0}, sourcePos:{0,0}, size:{32,32}	// Draw tilemap with optional sourcePos (in tiles) and size (in tiles, full tilemap if left out)
 	clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
-	replaceColor Black with:White	// All drawing functions will replace color a with color b until stopReplacingColors is called
 	if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
 		print "Player 0 clicked at {getPointer(player:0)}"	// Pointer position of player 0 (mouse, touch or pen)
 	if justPressed(A, player:1) then print "Player 1 pressed A"	// Available buttons: Up, Down, Left, Right, A, B, X, Y, Start, Select, LeftMouseButton, RightMouseButton
@@ -67,8 +69,8 @@ js void navigateTo: string url	// js keyword indicates that function body is in 
 // File: classes/sprites.l	// Contains available sprites. Add sprites as needed.
 blueCircle = Sprite [	// Each letter represets a color:
 	"  bbbb  "	//   Black
-	" b    b "	// d DarkGrey
-	"b      b"	// l LightGrey
+	" b    b "	// d DarkGray
+	"b      b"	// l LightGray
 	"b      b"	// w White
 	"b      b"	// b Blue
 	"b      b"	// r Red
