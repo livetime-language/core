@@ -312,7 +312,7 @@ Object Button
     implicit Player[] clickableBy = null // Only this user can click the button
 	enabled = true               // When not enabled, the button can't be clicked and is drawn transparently (50% by default)
 	alphaWhenDisabled = .5       // The opacity of the button will be multiplied with this factor when its disabled
-	Key hotkey                   // This keyboard shortcut will execute the onClick handler
+	KeyCode hotkey                   // This keyboard shortcut will execute the onClick handler
     void(Touch touch) onClick    // Execute this code when the user clicks the button
 	bool removeOnClick = false   // Remove the button after the user clicks it
 	
@@ -328,7 +328,7 @@ Object StandardButton
     text = ""                    // The text of the button
     implicit Player[] clickableBy = null // Only this user can click the button
 	enabled = true               // When not enabled, the button can't be clicked and is drawn transparently (50% by default)
-	Key hotkey                   // This keyboard shortcut will execute the onClick handler
+	KeyCode hotkey                   // This keyboard shortcut will execute the onClick handler
     void(Touch touch) onClick    // Execute this code when the user clicks the button
 	bool removeOnClick = false   // Remove the button after the user clicks it
 	

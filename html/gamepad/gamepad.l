@@ -53,7 +53,7 @@ unit html
 internal DigitalButton
 	string name
 	int index
-	Key key
+	KeyCode key
 	Image image
 	
 	bool isPressed

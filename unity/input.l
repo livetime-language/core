@@ -36,7 +36,7 @@ class CoreUser
 	
 	// Controller
 	visible Gamepad gamepad = {}
-	Key[] mapKeyToController = [Right, Down, Left, Up, Space, X, Alt, Ctrl]
+	KeyCode[] mapKeyToController = [Right, Down, Left, Up, Space, X, Alt, Ctrl]
 	int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
 	// If a user was lost by anybody and nobody who is still connected to that user
@@ -96,7 +96,7 @@ transient class WheelEvent
 	
 	markAsHandled() handled = true
 	
-enum Key
+enum KeyCode
 	None         =   0
 	Backspace    =   8
 	Tab          =   9
@@ -398,7 +398,7 @@ skipInit unit Input
 		// 			internalUser.textInputs.add textInput
 		// 		else
 		// 		if inputType == KeyDown
-		// 			Key key = cast inputs.readInt32
+		// 			KeyCode key = cast inputs.readInt32
 		// 			let keyPressed = inputs.readString
 		// 			internalUser.downKeys.add key
 		// 			if keyPressed: internalUser.pressedKeys.add keyPressed
@@ -407,7 +407,7 @@ skipInit unit Input
 					
 		// 		else
 		// 		if inputType == KeyUp
-		// 			Key key = cast inputs.readInt32
+		// 			KeyCode key = cast inputs.readInt32
 		// 			internalUser.upKeys.add key
 		// 			let keyIndex = user.mapKeyToController.indexOf(key)
 		// 			if keyIndex != -1: user.controllerKeyDownFrame[keyIndex] = 0
@@ -1065,9 +1065,9 @@ skipInit unit Input
 	// 			for user.textInputs -> text
 	// 				do text
 				
-	// onKeyDown: Key key
+	// onKeyDown: KeyCode key
 	// 	       int userId = -1
-	// 	       void(Key key, int keyUserId) do
+	// 	       void(KeyCode key, int keyUserId) do
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = internalUsers[userId]
 	// 			for user.downKeys
@@ -1079,9 +1079,9 @@ skipInit unit Input
 	// 				if . == key
 	// 					do key, user.id
 				
-	// onKeyDown: Key key
+	// onKeyDown: KeyCode key
 	// 	       int[] userId
-	// 	       void(Key key, int keyUserId) do
+	// 	       void(KeyCode key, int keyUserId) do
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
 	// 	for internalUsers -> user
@@ -1090,7 +1090,7 @@ skipInit unit Input
 	// 				if . == key
 	// 					do key, user.id
 				
-	// onKeyDown: int userId = -1, void(Key key, int keyUserId) do
+	// onKeyDown: int userId = -1, void(KeyCode key, int keyUserId) do
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = internalUsers[userId]
 	// 			for user.downKeys -> key
@@ -1100,7 +1100,7 @@ skipInit unit Input
 	// 			for user.downKeys -> key
 	// 				do key, user.id
 				
-	// onKeyUp: int userId = -1, void(Key key, int keyUserId) do
+	// onKeyUp: int userId = -1, void(KeyCode key, int keyUserId) do
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = internalUsers[userId]
 	// 			for user.upKeys -> key

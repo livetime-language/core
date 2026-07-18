@@ -56,7 +56,7 @@ tests
 	// Example:
 	//     pressKey Space by bluePlayer
 	importance:5
-	void pressKey: Key key	// The key to press
+	void pressKey: KeyCode key	// The key to press
 	               string character = ""	// The character to type
 		           nocolon Player by = input.players[0]	// The player
 		let internalUser = input.internalUsers[by.id]

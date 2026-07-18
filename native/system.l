@@ -45,8 +45,8 @@ global transient skipInit unit system
 			while (SDL_PollEvent(&event)) {
 				switch(event.type) {
 					case SDL_QUIT:    running = false; break;
-					case SDL_KEYDOWN: input::handleKeyEvent(InputType_KeyDown, event.key.keysym.scancode, (Key)event.key.keysym.sym); break;
-					case SDL_KEYUP:   input::handleKeyEvent(InputType_KeyUp,   event.key.keysym.scancode, (Key)event.key.keysym.sym); break;
+					case SDL_KEYDOWN: input::handleKeyEvent(InputType_KeyDown, event.key.keysym.scancode, (KeyCode)event.key.keysym.sym); break;
+					case SDL_KEYUP:   input::handleKeyEvent(InputType_KeyUp,   event.key.keysym.scancode, (KeyCode)event.key.keysym.sym); break;
 				}
 			}
 			core::onFrame();

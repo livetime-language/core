@@ -2052,7 +2052,7 @@ enum lowercase string PrintType
 	Warning	// Use for warnings
 	
 	Touch
-	Key
+	KeyCode
 	Gamepad
 	
 // A collection of basic system functions

@@ -619,7 +619,7 @@ transient skipInit global unit graphics
 		                                VerticalAlignment valign = Middle	// The vertical alignment of the image
 			                            clickableMargin = Vector2(16,16)	// The margin around the image within which it is clickable
 		                                showClickableArea = false	// Highlight the clickable area for debugging
-		                                hotkey = Key.None	// This keyboard shortcut will execute the onClick handler
+		                                hotkey = KeyCode.None	// This keyboard shortcut will execute the onClick handler
 		                                void(Touch touch) onClick	// Execute this code when the user touches or clicks the image or presses the hotkey
 		                                SourceCodeLocation location
 		drawImage image, position, scale, frame, size, visibleFor, layer, alpha, color, align, valign, location
@@ -656,7 +656,7 @@ transient skipInit global unit graphics
 		                                flipY = false	// Mirror the image vertically
 		                                clickableMargin = Vector2(16,16)	// The margin around the image within which it is clickable
 		                                showClickableArea = false	// Highlight the clickable area for debugging
-		                                hotkey = Key.None	// This keyboard shortcut will execute the onClick handler
+		                                hotkey = KeyCode.None	// This keyboard shortcut will execute the onClick handler
 		                                void(Touch touch) onClick	// Execute this code when the user touches or clicks the image or presses the hotkey
 		                                SourceCodeLocation location
 		drawImage image, position, scale, frame, size, visibleFor, layer, alpha, color, angle, flipX, flipY, location
@@ -797,7 +797,7 @@ transient skipInit global unit graphics
 		             implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
 		             clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
 		             showClickableArea = false            // Highlight the clickable area for debugging
-		             hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		             hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
 		             overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
 		             maxWidth = 0.0                       // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
 		             lineHeight = 0.0                     // The height of each line when overflow is set to 'Wrap'
@@ -973,7 +973,7 @@ transient skipInit global unit graphics
 		                                implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
 		                                clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
 		                                showClickableArea = false            // Highlight the clickable area for debugging
-		                                hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		                                hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
 		                                overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
 		                                float maxWidth = float.maxValue        // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
 		                                float lineHeight = 0.0                // The height of each line when overflow is set to 'Wrap'
@@ -1193,7 +1193,7 @@ transient skipInit global unit graphics
 		                    Color accentColor = null             // Tint the accent image with this color, defaults to the color of the local player
 		                    implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                    implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
-		                    hotkey = Key.None                    // This keyboard shortcut will execute the onClick handler
+		                    hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
 		                    implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
 		                    alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                    enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)

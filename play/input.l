@@ -18,14 +18,14 @@ internal transient class InternalUser
 	// List of inputs filled by parseInput and used by onTouchDown, onWheel, onKeyDown, ...
 	visible Touch[] downTouches, movingTouches, upTouches
 	visible ScrollEvent[] wheelEvents
-	visible Key[] downKeys, upKeys
+	visible KeyCode[] downKeys, upKeys
 	visible string[] pressedKeys, textInputs, textCompositions
 	visible string[] navigations
 
 	// Modern Input
 	visible bool[] justPressed, isPressed, justReleased
 	Vector2 pointerPosition, scrollDelta
-	string typedCharacters
+	Key[] allJustPressed
 	string focus, prevFocus
 
 	// Video + Audio
@@ -59,7 +59,7 @@ internal transient class InternalUser
 
 	InternalUser
 		// Modern Input
-		for input.inputButtonCount
+		for Key.keys.length
 			isPressed[i] = false
 	
 	startInputFrame: int index
@@ -79,11 +79,11 @@ internal transient class InternalUser
 		navigations.clear
 
 		// Modern Input
-		for input.inputButtonCount
+		for Key.keys.length
 			justPressed[i] = false
 			justReleased[i] = false
+		allJustPressed.clear
 		scrollDelta = {0,0}
-		typedCharacters = ""
 		prevFocus = focus
 		
 	collectStatistics: int frame
@@ -132,7 +132,7 @@ priority class Player
 	
 	// Text input
 	internal string textInput
-	internal Key[] keysCurrentlyDown
+	internal KeyCode[] keysCurrentlyDown
 	
 	// Controller input
 	visible Gamepad gamepad = {by:this}
@@ -202,7 +202,7 @@ internal transient ScrollEvent
 	
 	markAsHandled() handled = true
 	
-enum Key
+enum KeyCode
 	None         =   0
 	Backspace    =   8
 	Tab          =   9
@@ -361,7 +361,7 @@ enum Cursor
 internal DigitalButton
 	string name
 	int index
-	Key key
+	KeyCode key
 	
 	bool isPressed
 	bool wasJustPressed	=> isPressed and not wasPreviouslyPressed
@@ -370,7 +370,7 @@ internal DigitalButton
 	
 	toString => name
 	
-	internal assign: string name, Key key
+	internal assign: string name, KeyCode key
 		this.name = name
 		this.key = key
 		isPressed = false
@@ -454,7 +454,7 @@ skipInit global unit input
 	transient InternalUser localUser
 	transient internal Player localPlayer
 	transient bool isCertain
-	transient ControllerButtonPlayerAndIndex[Key] controllerButtonMap
+	transient ControllerButtonPlayerAndIndex[KeyCode] controllerButtonMap
 	
 	// A list of all players
 	Player[] players
@@ -517,6 +517,7 @@ skipInit global unit input
 		if(system.isHeadless || system.isEmbedded) return
 		let pointerX = 0, pointerY = 0, clickWithAltKeyX = 0, clickWithAltKeyY = 0
 		window.onpointerdown = e => {
+			console.log("onpointerdown", e.pointerType, e.pointerId, e.button)
 			if(e.button == 0 && system.playMode <= 1 /*Stop,Pause*/) {
 				system.record();
 				if(input.ignoreFirstClick) return;
@@ -536,6 +537,7 @@ skipInit global unit input
 			return false;
 		}
 		window.onkeydown = e => {
+			console.log("onkeydown", e.key, e.code, e.keyCode, e.ctrlKey, e.altKey, e.metaKey)
 			let keyCode = e.keyCode
 			let key = e.key
 			let ctrlOrCmd = e.ctrlKey || e.metaKey
@@ -612,8 +614,7 @@ skipInit global unit input
 				clickWithAltKeyX = pointerX; clickWithAltKeyY = pointerY;
 				input.handleTouchEvent(1, clickWithAltKeyX, clickWithAltKeyY, "touch", /*pointerId*/127, /*button*/0, /*shift*/false, /*alt*/false, /*ctrl*/false);
 			} else {
-				let typedKey = key && key.length == 1 && !e.ctrlKey && !e.metaKey ? key : ""
-				input.handleKeyEvent(5, keyCode, typedKey)
+				input.handleKeyEvent(5, e.code, e.key, e.ctrlKey, e.altKey, e.metaKey)
 				if(keyCode == 9) e.preventDefault();
 			}
 		}
@@ -621,7 +622,7 @@ skipInit global unit input
 			if(e.key == "Alt" && input.enableClickingWithAltKey) {
 				input.handleTouchEvent(3, clickWithAltKeyX, clickWithAltKeyY, "touch", /*pointerId*/127, /*button*/0, /*shift*/false, /*alt*/false, /*ctrl*/false);
 			} else {
-				input.handleKeyEvent(6, e.keyCode)
+				input.handleKeyEvent(6, e.code, e.key, e.ctrlKey, e.altKey, e.metaKey)
 			}
 		}
 			
@@ -663,18 +664,22 @@ skipInit global unit input
 		inputs.writeUnsignedInt16 cast type
 		inputs.writeString text
 			
-	internal handleKeyEvent: InputType inputType, Key keyCode, string key
+	internal handleKeyEvent: InputType inputType, string code, string key, bool ctrl, bool alt, bool meta
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 					
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
-		inputs.writeInt32 cast keyCode
-		if inputType == KeyDown then inputs.writeString (key or characterForKeyCode[keyCode])
+		int keyIndex = Key.keys.indexWhere.code == code
+		inputs.writeInt32 keyIndex
+		if inputType == KeyDown then inputs.writeString key.length == 1 and not ctrl and not meta ? key : ""
+
+		if inputType == KeyDown then print "------ DOWN ------ ", code, key, keyIndex
+		else if inputType == KeyUp then print "------ UP ------ ", code, key, keyIndex
 			
 		// Pass event to embedded system
-		run??.runningApp?.input.handleKeyEvent(inputType, keyCode, key)
+		run??.runningApp?.input.handleKeyEvent(inputType, code, key, ctrl, alt, meta)
 		
 	internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 		int touchType, id
@@ -903,12 +908,12 @@ skipInit global unit input
 					internalUser.textInputs.add textInput
 				else
 				if inputType == KeyDown
-					keyDown internalUser, player, key:cast inputs.readInt32, character: inputs.readString
+					keyDown internalUser, player, keyIndex:inputs.readInt32, character: inputs.readString
 					int controllerButtonIndex = cast((value shiftRight 5) mod 16)
 					player.controllerKeyDownFrame[controllerButtonIndex] = frame
 				else
 				if inputType == KeyUp
-					keyUp internalUser, player, key:cast inputs.readInt32
+					keyUp internalUser, player, keyIndex:inputs.readInt32
 					int controllerButtonIndex = cast((value shiftRight 5) mod 16)
 						player.controllerKeyDownFrame[controllerButtonIndex] = 0
 				else
@@ -1098,7 +1103,7 @@ skipInit global unit input
 		// player.onTouchDown??(touch)
 
 		// Modern Input
-		int buttonIndex = InputButton.LeftMouseButton + type
+		int buttonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
 		internalUser.justPressed[buttonIndex] = true
 		internalUser.isPressed[buttonIndex] = true
 		internalUser.pointerPosition = referencePos
@@ -1191,48 +1196,57 @@ skipInit global unit input
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
-					  Key key
+					  int keyIndex
 					  string character
-		print key, character
-		internalUser.downKeys.add key
-		player.keysCurrentlyDown.ensure key
-		if character
-			internalUser.pressedKeys.add character
-			print type:Key "Press key {character} by {player}"
-		else
-			print type:Key "Press key {key} by {player}"
+		// print key, character
+		// internalUser.downKeys.add key
+		// player.keysCurrentlyDown.ensure key
+		// if character
+		// 	internalUser.pressedKeys.add character
+		// 	print type:KeyCode "Press key {character} by {player}"
+		// else
+		// 	print type:KeyCode "Press key {key} by {player}"
 			
 		// Call input handlers
 		// app.onKeyDown??(key, character)
 		// player.onKeyDown??(key, character)
 
 		// Modern Input
-		if character
-			internalUser.typedCharacters += character
-		else
-		if key == Backspace
-			internalUser.typedCharacters += "\b"
+		// if character
+		// 	internalUser.typedCharacters += character
+		// else
+		// if key == Backspace
+		// 	internalUser.typedCharacters += "\b"
+
+		internalUser.justPressed[keyIndex] = true
+		internalUser.isPressed[keyIndex] = true
+		Key key = Key.keys[keyIndex]
+		internalUser.allJustPressed.add key or {type:Keyboard, code:key ? key.code : "", character}
 			
-		let controllerButton = controllerButtonMap[key]
-			InternalUser user = input.internalUsers[controllerButton.userId]
-			user.justPressed[controllerButton.buttonIndex] = true
-			user.isPressed[controllerButton.buttonIndex] = true		
+		// let controllerButton = controllerButtonMap[key]
+		// 	InternalUser user = input.internalUsers[controllerButton.userId]
+		// 	user.justPressed[controllerButton.buttonIndex] = true
+		// 	user.isPressed[controllerButton.buttonIndex] = true
 
 	internal keyUp: InternalUser internalUser
 	                Player player
-					Key key
-		internalUser.upKeys.add key
-		player.keysCurrentlyDown.remove key
+					int keyIndex
+		// internalUser.upKeys.add key
+		// player.keysCurrentlyDown.remove key
 
-		// Call input handlers
-		// app.onKeyUp??(key)
-		// player.onKeyUp??(key)
+		// // Call input handlers
+		// // app.onKeyUp??(key)
+		// // player.onKeyUp??(key)
 			
 		// Modern Input
-		let controllerButton = controllerButtonMap[key]
-			InternalUser user = input.internalUsers[controllerButton.userId]
-			user.justReleased[controllerButton.buttonIndex] = true
-			user.isPressed[controllerButton.buttonIndex] = false		
+		Key key = Key.keys[keyIndex]
+		internalUser.justReleased[keyIndex] = true
+		internalUser.isPressed[keyIndex] = false
+
+		// let controllerButton = controllerButtonMap[key]
+		// 	InternalUser user = input.internalUsers[controllerButton.userId]
+		// 	user.justReleased[controllerButton.buttonIndex] = true
+		// 	user.isPressed[controllerButton.buttonIndex] = false		
 						
 	internal updatePlayers
 		players.sortBy.id
@@ -1754,10 +1768,10 @@ skipInit global unit input
 	// ---------------------------------------------- Keys ----------------------------------------------
 	
 	// Do something when a player presses a key
-	global importance:0 onKeyDown: Key modifier 
-		              Key key                             // The key that will trigger the event
+	global importance:0 onKeyDown: KeyCode modifier 
+		              KeyCode key                             // The key that will trigger the event
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
-		              void(Key key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys
 				if . == key
@@ -1776,12 +1790,12 @@ skipInit global unit input
 						do key, player, actualCmdOrCtrl, actualAlt, actualShift
 				
 	// Do something when a player presses a key
-	global importance:0 onKeyDown: Key key                             // The key that will trigger the event
+	global importance:0 onKeyDown: KeyCode key                             // The key that will trigger the event
 		              bool cmdOrCtrl = false
 		              bool alt = false
 		              bool shift = false
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
-		              void(Key key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys
 				if . == key
@@ -1799,7 +1813,7 @@ skipInit global unit input
 				
 	// Do something when a player presses a key
 	global importance:0 onKeyDown: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
-		              void(Key key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys as key
 				bool actualCmdOrCtrl, actualShift, actualAlt
@@ -1814,7 +1828,7 @@ skipInit global unit input
 				
 	// Do something when a player releases a key
 	global importance:0 onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
-		            void(Key key, Player pressedBy) do  // Do this for each key that is released
+		            void(KeyCode key, Player pressedBy) do  // Do this for each key that is released
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].upKeys as key
 				do key, player
@@ -1827,7 +1841,7 @@ skipInit global unit input
 				do character, player
 			
 	// Returns true if a given key is currently held down
-	isKeyDown: Key key          // The key to check
+	isKeyDown: KeyCode key          // The key to check
 		       Player by = null // Only consider keys pressed by this player 
 		if (core.mode == Connected || core.simulateConnection) && by
 			let player = playersById[by.id]
@@ -1871,48 +1885,89 @@ enum InputButton
 	MiddleMouseButton
 	RightMouseButton
 
-global static class keys
-	global const Backspace	= "\b"
-	global const Enter	= "\n"
-	global const Tab	= "\t"
-	global const Space	= " "
-	global const Esc 	= "\x1b"
-	global const Shift	= "⇧"
-	global const Ctrl	= "⌃"
-	global const Alt	= "⌥"
-	global const CmdOrCtrl	= "⌘"
-	global const CursorLeft	= "←"
-	global const CursorUp	= "↑"
-	global const CursorRight= "→"
-	global const CursorDown	= "↓"
+enum KeyType: Keyboard, Pointer, Gamepad
+
+class Key
+	KeyType type
+	string code
+	string character
+	int index
+
+	inline string toString() this.character
+
+	global const A = {type:Gamepad, code:"A"}
+	global const B = {type:Gamepad, code:"B"}
+	global const X = {type:Gamepad, code:"X"}
+	global const Y = {type:Gamepad, code:"Y"}
+	global const LeftBumper = {type:Gamepad, code:"LeftBumper"}
+	global const RightBumper = {type:Gamepad, code:"RightBumper"}
+	global const LeftTrigger = {type:Gamepad, code:"LeftTrigger"}
+	global const RightTrigger = {type:Gamepad, code:"RightTrigger"}
+	global const Select = {type:Gamepad, code:"Select"}
+	global const Start = {type:Gamepad, code:"Start"}
+	global const LeftStickButton = {type:Gamepad, code:"LeftStickButton"}
+	global const RightStickButton = {type:Gamepad, code:"RightStickButton"}
+	global const Up = {type:Gamepad, code:"Up"}
+	global const Down = {type:Gamepad, code:"Down"}
+	global const Left = {type:Gamepad, code:"Left"}
+	global const Right = {type:Gamepad, code:"Right"}
+
+	global const LeftMouseButton = {type:Pointer, code:"LeftMouseButton"}
+	global const MiddleMouseButton = {type:Pointer, code:"MiddleMouseButton"}
+	global const RightMouseButton = {type:Pointer, code:"RightMouseButton"}
+
+	global const Backspace	= {type:Keyboard, code:"Backspace"}
+	global const Enter	= {type:Keyboard, code:"Enter", character:"\n"}
+	global const Tab	= {type:Keyboard, code:"Tab", character:"\t"}
+	global const Space	= {type:Keyboard, code:"Space", character:" "}
+	global const Esc 	= {type:Keyboard, code:"Escape"}
+	global const ShiftLeft	= {type:Keyboard, code:"ShiftLeft"}
+	global const ShiftRight	= {type:Keyboard, code:"ShiftRight"}
+	global const CtrlLeft	= {type:Keyboard, code:"CtrlLeft"}
+	global const CtrlRight	= {type:Keyboard, code:"CtrlRight"}
+	global const AltLeft	= {type:Keyboard, code:"AltLeft"}
+	global const AltRight	= {type:Keyboard, code:"AltRight"}
+	global const MetaLeft	= {type:Keyboard, code:"MetaLeft"}
+	global const MetaRight	= {type:Keyboard, code:"MetaRight"}
+	global const CapsLock	= {type:Keyboard, code:"CapsLock"}
+	global const ArrowLeft	= {type:Keyboard, code:"ArrowLeft"}
+	global const ArrowUp	= {type:Keyboard, code:"ArrowUp"}
+	global const ArrowRight	= {type:Keyboard, code:"ArrowRight"}
+	global const ArrowDown	= {type:Keyboard, code:"ArrowDown"}
+
+	static Key[] keys
+	inline js static dynamic keysObject => Key
+	init
+		int i
+		forDynamic keysObject
+			keys.add .
+			.index = i++
 
 input
-	string[Key] characterForKeyCode = {
-		Key.Left:	"←"
-		Key.Up:	"↑"
-		Key.Right:	"→"
-		Key.Down:	"↓"
-		Key.Enter:	"\n"
-		Key.Tab:	"\t"
-		Key.Escape:	"\x1b"
+	string[KeyCode] characterForKeyCode = {
+		KeyCode.Left:	"←"
+		KeyCode.Up:	"↑"
+		KeyCode.Right:	"→"
+		KeyCode.Down:	"↓"
+		KeyCode.Enter:	"\n"
+		KeyCode.Tab:	"\t"
+		KeyCode.Escape:	"\x1b"
 	}
 
-	const int inputButtonCount = 19
-
 	// Returns true if the player has just pressed the given button this frame (it was not pressed in the previous frame).
-	global justPressed: InputButton button, int player = 0
-		if button >= LeftMouseButton then player = 0
-		return internalUsers[player].justPressed[button]
+	global justPressed: Key key, int player = 0
+		if key.type != Gamepad then player = 0
+		return internalUsers[player].justPressed[key.index]
 
 	// Returns true if the player is currently pressing the given button.
-	global isPressed: InputButton button, int player = 0
-		if button >= LeftMouseButton then player = 0
-		return internalUsers[player].isPressed[button]
+	global isPressed: Key key, int player = 0
+		if key.type != Gamepad then player = 0
+		return internalUsers[player].isPressed[key.index]
 	
 	// Returns true if the player has just released the given button this frame (it was pressed in the previous frame).
-	global justReleased: InputButton button, int player = 0
-		if button >= LeftMouseButton then player = 0
-		return internalUsers[player].justReleased[button]
+	global justReleased: Key key, int player = 0
+		if key.type != Gamepad then player = 0
+		return internalUsers[player].justReleased[key.index]
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	global getPointer: int player = 0
@@ -1924,9 +1979,9 @@ input
 		player = 0
 		return internalUsers[player].scrollDelta
 
-	global getTypedCharacters: int player = 0
+	global allJustPressed: int player = 0
 		player = 0
-		return internalUsers[player].typedCharacters
+		return internalUsers[player].allJustPressed
 
 	global getFocus: int player = 0
 		player = 0
