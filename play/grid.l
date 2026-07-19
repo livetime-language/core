@@ -50,7 +50,7 @@ class Grid<T>
 		                     Vector2 pos,
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
-		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new IntVector2(i%this.size.x, Math.floor(i/this.size.x)), i)}
+		for(let _i=0, _subject=this.items, _len=_subject.length; _i<_len; ++_i) { let it = _subject[_i]; if(it) do(it, new IntVector2(_i%this.size.x, Math.floor(_i/this.size.x)), _i)}
 			
 	inline js void each: includeEmpty = false // Include items that are null
 		                 inline -> void(
@@ -58,7 +58,7 @@ class Grid<T>
 		                     Vector2 pos,
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
-		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new Vector2(x,y), i)}
+		for(let _size=this.size, _y=0, _items=this.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) do(_items[_y*_size.x + _x], new Vector2(_x,_y), _y*_size.x + _x)
 
 	// The amount of items in the grid	
 	importance:4 inline int length() this.items.length
@@ -133,7 +133,7 @@ global transient skipInit unit system
 		                           Vector2 pos,
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new Vector2(i%subject.size.x, Math.floor(i/subject.size.x)), i)}
+		for(let _i=0, _subject=subject.items, _len=_subject.length; _i<_len; ++_i) { let it = _subject[_i]; if(it) do(it, new Vector2(_i%subject.size.x, Math.floor(_i/subject.size.x)), _i)}
 			
 	global inline js void for: Grid<T> subject      // The grid to iterate over
 		                       includeEmpty = false // Include items that are null
@@ -142,7 +142,7 @@ global transient skipInit unit system
 		                           Vector2 pos,
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)
+		for(let _size=subject.size, _y=0, _items=subject.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) do(_items[_y*_size.x + _x], new IntVector2(_x,_y), _y*_size.x + _x)
 		
 struct Vector2
 	serialize: Buffer buffer

@@ -466,7 +466,7 @@ skipInit global unit input
 		
 	// Do something for every player
 	inline js void everybody: void(Player it) do
-		for(let i=0, _len=input.players.length; i<_len; ++i) { let it = input.players[i]; do()}
+		for(let _i=0, _len=input.players.length; _i<_len; ++_i) { let it = input.players[_i]; do()}
 		
 	// Returns true if the given condition is true for every player
 	inline js bool everybody: bool(Player it) predicate
