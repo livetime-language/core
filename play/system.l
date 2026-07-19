@@ -86,7 +86,7 @@ global transient skipInit unit system
 		if(typeof(backend) != "undefined") await backend.connect2()
 
 	// This is called when the application starts for the first time	
-	private start: bool isDebug, float referenceSizeX, float referenceSizeY, int userCount, bool simulateConnection
+	private start: bool isDebug
 		try
 			system.log "system.start"
 			let now = PlainDate.preciseTime
@@ -96,11 +96,9 @@ global transient skipInit unit system
 			this.engineStarted = false
 			this.homeFrame = 0
 			this.homeInterrruptAtOutputIndex = -1
-			this.isDebug = isDebug
-			this.userCount = userCount
+			this.isDebug = isDebug or false
 			initBackend
 			statistics.startTime = now
-			core.simulateConnection = simulateConnection
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
 			// isMobile = true
