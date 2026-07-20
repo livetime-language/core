@@ -53,10 +53,12 @@ tick	// app.tick is called every frame (30 times per second by default)
 	drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
 	drawRect pos:{x,y}, size:{8,8}, fillColor:Red, outlineColor:Green	// Draw rectangle, leave out fillColor for no fill, leave out outlineColor for no outline
 	drawCircle center:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle around center, radius can also be a Vector2 for an ellipse
+	drawLine {0,0} to {8,8}, color:Orange	// Draw line
 	drawSprite sprites.blueCircle, pos:{x, y}, transparentColor:Black	// Draw sprite with optional transparent color (Black if left out)
 	drawSprite sprites.blueCircle, frame:0, flipX:true, flipY:true	// Draw sprite with optional mirroring and animation frame (0 if left out)
 	drawSprite sprites.blueCircle, replaceColor:Blue with:DarkBlue	// Draw sprite with optional color replacement (none if left out)
 	drawTilemap tilemaps.level, pos:{0,0}, sourcePos:{0,0}, size:{32,32}	// Draw tilemap with optional sourcePos (in tiles) and size (in tiles, full tilemap if left out)
+	Sprite s = tilemaps.level.tiles[x + y * size.x]	// Get tile of a tilemap 
 	clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
 	if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
 		print "Player 0 clicked at {getPointer(player:0)}"	// Pointer position of player 0 (mouse, touch or pen)
@@ -67,7 +69,7 @@ tick	// app.tick is called every frame (30 times per second by default)
 js void navigateTo: string url	// js keyword indicates that function body is in JavaScript. Return type is required.
 	location.href = url;	// JavaScript code. Do not use nested functions.
 // File: classes/sprites.l	// Contains available sprites. Add sprites as needed.
-blueCircle = Sprite [	// Each letter represets a color:
+blueCircle = Sprite([	// Each letter represets a color:
 	"  bbbb  "	//   Black
 	" b    b "	// d DarkGray
 	"b      b"	// l LightGray
@@ -76,8 +78,8 @@ blueCircle = Sprite [	// Each letter represets a color:
 	"b      b"	// r Red
 	" b    b "	// g Green
 	"  bbbb  "	// y Yellow
-]	// e Earth
-redSquare = Sprite [	// s Sand
+])	// e Earth
+redSquare = Sprite(tags:"blocking,hazard", [	// s Sand
 	"rrrrrrrr"	// p Pink
 	"r      r"	// v Violet
 	"r      r"	// B DarkBlue
@@ -86,7 +88,7 @@ redSquare = Sprite [	// s Sand
 	"r      r"	// o Orange
 	"r      r"
 	"rrrrrrrr"
-]
+])
 // This is the full APT. Do not use any other functions!
 
 // The following is a complete example game: the board game "Go"
