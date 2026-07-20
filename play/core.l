@@ -312,6 +312,7 @@ internal transient skipInit unit core
 		// Reset read pos to replay inputs from the beginning
 		for input.internalUsers if .
 			.inputs.readPos = 0
+			.reset
 			
 		graphics.startFrame
 		if !startInLobby and not testLobby
