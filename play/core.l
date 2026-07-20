@@ -778,9 +778,6 @@ internal transient skipInit unit core
 	// proportional to the window (see checkRewindAndReplayState), which bounds the total replay
 	// work to a constant rate no matter how long the outage lasts (03b). Remote inputs then
 	// integrate in slightly larger batches as the window grows.
-	// Note: a ring of intermediate snapshots would bound the window itself, but the serializer's
-	// _objectIndex reuse stamps only allow restoring the snapshot that was serialized LAST -
-	// interleaving extra serialize calls corrupts the next restore (verified by test)
 	private int nextPredictionPassFrame
 	
 	// Diagnostics for the resilience tests and the statistics graphs
@@ -906,10 +903,7 @@ internal transient skipInit unit core
 		int replayToFrame = frame
 		
 		// The pin is only re-serialized when it moves - re-saving an identical snapshot on every
-		// animation frame was one of the hidden costs of the old code. The pin is also the only
-		// valid rewind root: the serializer's _objectIndex stamps belong to the last serialize
-		// call, so restoring any snapshot other than the most recently serialized one corrupts
-		// the object-reuse decisions of deserialize
+		// animation frame was one of the hidden costs of the old code.
 		if pinAdvances then snapshotFrame = -1
 		
 		rewind snapshot
