@@ -2137,7 +2137,9 @@ class Key
 			.index = i++
 
 input
-	string[KeyCode] characterForKeyCode = {
+	// Static lookup table, identical on every client - transient so the snapshot serializer
+	// never touches it (serializeInternal has no KeyCode-keyed dictionary support)
+	transient string[KeyCode] characterForKeyCode = {
 		KeyCode.Left:	"←"
 		KeyCode.Up:	"↑"
 		KeyCode.Right:	"→"
