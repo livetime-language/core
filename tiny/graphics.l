@@ -346,6 +346,9 @@ transient global skipInit graphics
 		screenGridSize.create screen.size / tileSize
 		onResize
 
+	setFont: Font font
+		this.font = font
+
 	global void setPixel: Vector2 pos
 		                  implicit Color color
 		if system.fastForward then return
