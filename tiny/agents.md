@@ -58,7 +58,8 @@ tick	// app.tick is called every frame (30 times per second by default)
 	drawSprite sprites.blueCircle, frame:0, flipX:true, flipY:true	// Draw sprite with optional mirroring and animation frame (0 if left out)
 	drawSprite sprites.blueCircle, replaceColor:Blue with:DarkBlue	// Draw sprite with optional color replacement (none if left out)
 	drawTilemap tilemaps.level, pos:{0,0}, sourcePos:{0,0}, size:{32,32}	// Draw tilemap with optional sourcePos (in tiles) and size (in tiles, full tilemap if left out)
-	Sprite s = tilemaps.level.tiles[x + y * size.x]	// Get tile of a tilemap 
+	Sprite sprite = tilemaps.level.tiles[x + y * size.x]	// Get tile of a tilemap
+	sprite.hasTag("movable")	// Check if a sprite has a tag
 	clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
 	if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
 		print "Player 0 clicked at {getPointer(player:0)}"	// Pointer position of player 0 (mouse, touch or pen)

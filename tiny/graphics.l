@@ -864,6 +864,16 @@ class Sprite
 			result.add line
 		return result
 
+	hasTag: string tag
+		int start = 0
+		while true
+			int index = tags.indexOf(tag, start)
+			if index == -1 then return false
+			int end = index + tag.length
+			if (index == 0 or tags.getCharCodeAt(index-1) == 44) and (end == tags.length or tags.getCharCodeAt(end) == 44) // 44 is ","
+				return true
+			start = end + 1
+
 class Tilemap
 	Sprite[] tiles
 	Vector2 size
