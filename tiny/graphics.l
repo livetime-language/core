@@ -279,14 +279,13 @@ transient global skipInit graphics
 		font = fonts.monogram
 
 	setup
+		initHandlers
 		setResolution {224, 168}
 		// setResolution {256, 192}
-		initHandlers
 
 	js void initHandlers
 		if(system.isEmbedded) return
 		window.onresize = () => this.onResize()
-		this.onResize()
 
 	internal js void onResize
 		if(system.isEmbedded) return
@@ -343,6 +342,7 @@ transient global skipInit graphics
 		pixels = screen.pixels
 		screenSize.create screen.size
 		screenGridSize.create screen.size / tileSize
+		onResize
 
 	global void setPixel: Vector2 pos
 		                  implicit Color color
