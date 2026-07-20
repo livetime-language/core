@@ -14,7 +14,16 @@ internal transient immutable RoomInfo
 	string token
 
 enum SendInputsMode: None, Peer, Server
-	
+
+// One shared-rewind history slot: the world bytes and the frame whose step captured them
+// (the state entering that frame). captureFrame decides whether the entry is certified
+// history (captureFrame <= certainFrame+1, the same rule as the snapshot pin) or still
+// prediction - predicted entries are discarded on a rollback below them, exactly like the
+// predicted world state itself (see core.cleanupSpeculativeRewindEntries)
+internal transient RewindEntry
+	Buffer bytes = {}
+	int captureFrame
+
 internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
@@ -252,6 +261,21 @@ internal transient skipInit unit core
 		nextPredictionPassFrame = 0
 		replayFrom = -1 // A stale root must never be re-rooted after a reset (see checkRewindAndReplayState)
 		pinSaveDeferred = false
+		// Shared rewind: the replay from frame 0 re-derives the hold flags (serialized player
+		// state) and re-captures the history deterministically. The emptied entries are pooled,
+		// so a debug replay reuses their memory. input is a skipInit unit, so its serialized
+		// rewind fields must be reset explicitly
+		isRewinding = false
+		for rewindHistory as entry
+			rewindEntryPool.add entry
+		rewindHistory.clear
+		for rewindShadow as entry
+			rewindEntryPool.add entry
+		rewindShadow.clear
+		speculativeRewindPositions.clear
+		rewindPrunedBelow = 0
+		input.rewindPlayhead = 0
+		input.rewindFloor = 0
 		checksumValues.clear
 		checksumFrames.clear
 		checksumRosters.clear
@@ -315,6 +339,17 @@ internal transient skipInit unit core
 		input.localPlayer = input.playersById[localUserId]
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
 		input.updatePlayers
+		// Shared rewind: a rewind must never cross a restart back into the previous game or
+		// the lobby - the floor jumps past the current playhead, making every older history
+		// entry unreachable (which also shields them from the _constCache rebuild in initAll:
+		// entries serialized against the previous unit singletons must never be restored).
+		// playhead+1, not playhead: restart runs MID-tick, so the position the current step
+		// ends on was built half old world, half new - the first capturable step-boundary
+		// state is the next one. A pop clamps to alignUp(floor), whose entry the capture (or
+		// the fill) provides once the playhead crosses it. restart is deterministic (guarded
+		// on isCertain above) and input is skipInit, so the playhead itself keeps counting
+		// across the restart on every client identically
+		input.rewindFloor = input.rewindPlayhead + 1
 		lobby.inLobby = false
 		app??.start()
 	
@@ -676,20 +711,34 @@ internal transient skipInit unit core
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame filter we got all inputs
 		checkSaveState
-		
+
+		// Shared rewind: the state entering this step is the world at the current playhead -
+		// capture it if the deterministic schedule wants an entry here that no step has
+		// captured yet (the very first position, and self-healing after unusual paths)
+		checkFillRewindHistory
+
 		// Update game controllers
 		input.updateGamepads
-		
+
 		// Parse inputs
 		input.parseInputs(frame)
-		
+
+		// Shared rewind: while any player holds system.rewindKey, restore the world state
+		// further back in its own history instead of simulating it forward
+		bool rewound = checkRewindMechanic
+
 		// Physics
-		Physics.step
-		
+		if not rewound then Physics.step
+
 		// Tick
 		tick draw
-		
+
 		HTMLElement??.tickAll()
+
+		// Shared rewind: the applied tick advanced the playhead by one position - capture the
+		// world on the deterministic schedule and advance the history floor. Runs after
+		// HTMLElement.tickAll so a captured entry equals the state the next step enters with
+		checkSaveRewindHistory
 				
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
@@ -697,8 +746,13 @@ internal transient skipInit unit core
 	internal tick: bool draw
 		// if targetFrame != -1 and frame > targetFrame	return
 
-		// Set time
-		Time.now = serverStartTime + math.round(frame * frameTime)
+		// Set time: the app clock follows the surviving timeline (the rewind playhead), not the
+		// raw frame counter. Without rewinds the two are identical (the playhead advances +1
+		// per applied tick); after a rewind the world continues from the rewound moment, so
+		// its clock must too - otherwise every timer and animation would see the discarded
+		// span pass in an instant on release, and the states displayed while rewinding would
+		// show the live time instead of their own (deterministic: the playhead is serialized)
+		Time.now = serverStartTime + math.round(input.rewindPlayhead * frameTime)
 			
 		// Start frame
 		system.isDrawing = draw
@@ -721,8 +775,11 @@ internal transient skipInit unit core
 				if lobby.inLobby then	lobby.tick
 				else	app??.tick()
 
-			// Advance frame
+			// Advance frame. The rewind playhead advances with it: every applied tick is one
+			// position on the surviving timeline (a rewind frame popped the playhead back
+			// before this tick, so it ends at target+1 - see checkRewindMechanic)
 			frame++
+			input.rewindPlayhead++
 			if frames < frame	then frames = frame
 			if frame > frameWithNewWatches	then frameWithNewWatches = frame
 		finally			
@@ -754,7 +811,252 @@ internal transient skipInit unit core
 	private int nextSnapshotFrame = -1
 	
 	private Buffer[] milestones
-	
+
+	// --- Shared rewind (system.rewindKey) ---------------------------------------------------
+	// While any player holds system.rewindKey, every client steps the world state BACKWARD
+	// through its own history instead of simulating forward - a synced "rewind time" mechanic.
+	// On release the game continues forward from the rewound state with the live inputs
+	// (records consumed before a pop are never re-read - the mechanic never touches readPos).
+	// The network layer is completely unaffected: frames, claims, input streams, certainty,
+	// checksums and the rollback snapshot pin all keep advancing normally - the rewind only
+	// changes what the deterministic step function does with the world state.
+	//
+	// The history is keyed by input.rewindPlayhead - the number of ticks applied along the
+	// SURVIVING timeline - not by the frame counter. Forward frames push the playhead +1 and
+	// capture the world every rewindStepFrames positions; rewind frames POP it back by
+	// rewindFrames and capture nothing. That makes the history a stack of the world's own
+	// past: a rewind, a release and a second hold rewinds FURTHER back, it never scrubs back
+	// through the previous rewind's descent or the future that rewind discarded ("never
+	// rewind the rewinding" - a frame-keyed ring records exactly that and was rejected).
+	// A rewind frame restores the target entry and then ticks it once (LiveTime fuses logic
+	// and drawing, so displaying a state means ticking it), with all input events cleared -
+	// the visible result is the world playing backward rewindFrames+1 - 1 = rewindFrames
+	// positions per tick, animations included, since Time.now derives from the playhead.
+	//
+	// Everything the mechanic reads is deterministic, so rollback replays and boot replays
+	// reproduce every decision bit-identically:
+	// - Activation: Player.holdingRewindKey, serialized player state updated by the exact same
+	//   parsed input events that drive InternalUser.isPressed - gamepad buttons (absolute,
+	//   per-frame Gamepad records), keyboard keys (KeyDown/KeyUp) and mouse buttons/touches
+	//   (TouchDown/TouchUp) - so every key isPressed supports works. The transient isPressed
+	//   arrays deliberately are NOT used: they leak the live value into replay windows.
+	//   The claim gate in anyPlayerHoldsRewindKey keeps prediction conservative: a remote
+	//   hold only rewinds up to the holder's claim, so an outage can never predict a runaway
+	//   descent, and corrections mostly ADD rewind frames.
+	// - History entries: captured in live steps AND replay steps alike, so predicted captures
+	//   are corrected exactly like the state itself. Entries are certified/speculative by the
+	//   pin rule (captureFrame <= certainFrame+1); a speculative capture that displaces a
+	//   certified entry shadows it, and every rollback discards the speculative entries at or
+	//   above its root and restores the shadows (cleanupSpeculativeRewindEntries) - a pass
+	//   that pops into the history and predicts the release forward must not leave its branch
+	//   ascent in slots a deeper later pass pops to. The generated serializer keeps each
+	//   buffer's object cache on the buffer itself (buffer._objects), which is what makes ANY
+	//   entry restorable at any later time. Pruning happens only below the PINNED floor (or at
+	//   capture time in plain local sessions, which have no prediction) - anything younger
+	//   would race the rollback, because history content this client dropped may still be a
+	//   pop target of a replay another client runs.
+	// - Target: input.rewindPlayhead and input.rewindFloor are serialized state, restored by
+	//   the pin like everything else, so every pass re-derives identical pop targets. The
+	//   floor bounds memory (playhead - rewindHistoryFrames) and jumps at every restart, so a
+	//   rewind can never cross a restart (which also shields entries from initAll's
+	//   _constCache rebuild).
+	visible bool isRewinding         // The world state was rewound this frame (for overlays/tests)
+	internal int rewindKeyBit        // system.rewindKey's button bit in Gamepad records (0 = disabled or not a gamepad key), set by input.parseInputs
+	internal int rewindKeyIndex      // system.rewindKey's Key.keys index for KeyDown/KeyUp and TouchDown/TouchUp events (-1 = disabled), set by input.parseInputs
+	private RewindEntry[int] rewindHistory // World snapshots keyed by playhead position (multiples of rewindStepFrames)
+	private RewindEntry[int] rewindShadow  // Certified entries displaced by a speculative capture, restored when a rollback discards the displacer
+	private int[] speculativeRewindPositions // Positions captured beyond certainty since the last rollback (see cleanupSpeculativeRewindEntries)
+	private RewindEntry[] rewindEntryPool  // Pruned/discarded entries, reused by later captures
+	private int rewindPrunedBelow    // Entries below this position were handed to the pool (monotone, aligned)
+	private int[] rewindScratchIds   // Reused by checkRewindMechanic to carry the hold flags across a restore
+	private bool[] rewindScratchHolds
+
+	// Local sessions rewind too - they share the whole deterministic step machinery, only
+	// without the network layer on top
+	private bool rewindMechanicEnabled
+		return system.enableRewind and (mode == Connected or mode == Local)
+
+	private int rewindStepFrames
+		return math.max(system.rewindFrames, 1)
+
+	private int alignUpToRewindStep: int position
+		int step = rewindStepFrames
+		return position + ((step - (position mod step)) mod step)
+
+	// The state entering a step is the world at the current playhead: if the deterministic
+	// capture schedule wants an entry here that no step has captured yet, capture it now.
+	// This is what creates the entry at position 0 (checkSaveRewindHistory only runs after
+	// ticks) and self-heals holes after unusual paths. It must never overwrite: replay steps
+	// re-capture through checkSaveRewindHistory, which always does
+	private checkFillRewindHistory
+		if not rewindMechanicEnabled or lobby.inLobby then return
+		if input.rewindPlayhead mod rewindStepFrames != 0 then return
+		if not rewindHistory[input.rewindPlayhead] then captureRewindHistory
+
+	// Capture the world every rewindStepFrames playhead positions and advance the history
+	// floor - called at the end of every applied step, in live and replay passes alike, so
+	// the entries converge on every client exactly like the state itself. Rewind frames end
+	// on an unaligned playhead (target+1), so they capture nothing - the descent itself never
+	// enters the history
+	private checkSaveRewindHistory
+		if not rewindMechanicEnabled or lobby.inLobby then return
+		// The memory/reach bound: the floor follows the playhead at rewindHistoryFrames
+		// distance. Monotone and serialized, so every replay pass clamps pop targets identically
+		if input.rewindPlayhead - system.rewindHistoryFrames > input.rewindFloor
+			input.rewindFloor = input.rewindPlayhead - system.rewindHistoryFrames
+		if input.rewindPlayhead mod rewindStepFrames == 0 then captureRewindHistory
+		// Plain local sessions have no snapshot pin (and no prediction that could race the
+		// floor) - prune at the capture instead
+		if mode == Local and not simulateRollback then pruneRewindHistory
+
+	// Capture the state entering `frame` into the slot for the current playhead. A capture is
+	// certified when every input feeding it is final (frame <= certainFrame+1, the pin rule);
+	// anything above that is prediction. A speculative capture that displaces a certified
+	// entry keeps the certified bytes in a shadow slot: a rollback below the speculative
+	// write discards it and brings the certified value back (cleanupSpeculativeRewindEntries) -
+	// without that, a pass that pops into the history and then steps forward again (a
+	// PREDICTED release, e.g. while a remote hold's records are still arriving) leaves its
+	// branch ascent in slots that a deeper later pass still pops to, certifying discarded
+	// prediction (found by the rewind latency test: a branch click's touch state was baked
+	// into the pinned state at frame 198)
+	private captureRewindHistory
+		int position = input.rewindPlayhead
+		bool certified = frame <= certainFrame + 1
+		RewindEntry entry = rewindHistory[position]
+		if entry
+			if certified
+				// A certified write supersedes any certified value a discarded branch displaced
+				dropRewindShadow position
+			else if entry.captureFrame <= certainFrame + 1 and not rewindShadow[position]
+				// First speculative displacement of a certified entry: shadow it
+				rewindShadow[position] = entry
+				rewindHistory.remove position
+				entry = null
+		if not entry
+			if rewindEntryPool.length > 0 then	entry = rewindEntryPool.pop
+			else	entry = {}
+			rewindHistory[position] = entry
+		if not certified then speculativeRewindPositions.add position
+		entry.captureFrame = frame
+		Snapshot.serialize entry.bytes
+
+	private dropRewindShadow: int position
+		let shadow = rewindShadow[position]
+		if shadow
+			rewindShadow.remove position
+			rewindEntryPool.add shadow
+
+	// A rollback to rootFrame discarded every predicted step at or above it - discard the
+	// history entries those steps captured the same way, and restore the certified values
+	// they displaced. Entries the pass roots above are certified now, so their shadows die.
+	// Called right after every rewind to the snapshot pin; O(entries captured beyond
+	// certainty since the last rollback)
+	private cleanupSpeculativeRewindEntries: int rootFrame
+		for speculativeRewindPositions as position
+			let entry = rewindHistory[position]
+			if entry and entry.captureFrame >= rootFrame
+				rewindHistory.remove position
+				rewindEntryPool.add entry
+				let shadow = rewindShadow[position]
+				if shadow
+					rewindHistory[position] = shadow
+					rewindShadow.remove position
+			else
+				dropRewindShadow position
+		speculativeRewindPositions.clear
+
+	// Entries below the pinned (certain) floor can never be a pop target again on any replay
+	// path: targets are clamped to the serialized floor, which is monotone and already past
+	// them in every state at or above the pin. Pruning anything younger would race the
+	// rollback: a predicted floor advance can be rolled back, and the replay would then need
+	// an entry this client just dropped while another client kept it - a permanent fork.
+	// Called from checkSaveState right after the pin save (the floor value serialized there
+	// is final) and from checkSaveRewindHistory in plain local sessions
+	private pruneRewindHistory
+		int step = rewindStepFrames
+		int line = alignUpToRewindStep(input.rewindFloor)
+		while rewindPrunedBelow < line
+			let entry = rewindHistory[rewindPrunedBelow]
+			if entry
+				rewindHistory.remove rewindPrunedBelow
+				rewindEntryPool.add entry
+			dropRewindShadow rewindPrunedBelow
+			rewindPrunedBelow += step
+
+	// Is frame a rewind frame? Decided from the serialized hold flags, claim-gated: beyond a
+	// remote player's claim their records for this frame may still arrive, and treating a
+	// stale hold as active would let a later correction REMOVE rewind frames - the
+	// mis-predicted branch could then have overwritten history entries the corrected timeline
+	// still pops to. With the gate, corrections only ever ADD rewind frames (claims are
+	// monotone, flags at claimed frames are final), which keeps every client's history cache
+	// valid. The local player's records are final at write, so a local hold rewinds
+	// instantly; remote holds engage when their records arrive (~their claim lag). A removed
+	// player stops mattering at the removal cut: their claim freezes there, and past
+	// removedAfterFrame the Player has left input.players entirely
+	private bool anyPlayerHoldsRewindKey
+		for input.players
+			if .holdingRewindKey
+				let user = input.internalUsers[.id]
+				if user and (user.local or frame <= user.inputFrame) then return true
+		return false
+
+	// While any player holds the rewind key at this frame, restore the world state
+	// rewindFrames further back instead of simulating forward. Returns true when the state
+	// was rewound: the caller skips the physics step, and tick draws (and deterministically
+	// evolves by one position, with cleared events) the restored world
+	private bool checkRewindMechanic
+		bool wasRewinding = isRewinding
+		isRewinding = false
+		if not rewindMechanicEnabled or lobby.inLobby then return false
+		if not anyPlayerHoldsRewindKey
+			if wasRewinding and not system.fastForward then log "#rewind Released at frame {frame}: the world continues from playhead {input.rewindPlayhead}"
+			return false
+		int step = rewindStepFrames
+		// The previous rewind frame ended at target+1 (the display tick), so stepping back
+		// from playhead-1 keeps the descent at exactly rewindFrames positions per tick
+		int target = input.rewindPlayhead - 1 - system.rewindFrames
+		target -= target mod step
+		int floorAligned = alignUpToRewindStep(input.rewindFloor)
+		if target < floorAligned then target = floorAligned
+		// Fully rewound (holding at the oldest state re-pops it every frame), or no history
+		// below us yet (right after a restart, before the first aligned capture)
+		if target >= input.rewindPlayhead then return false
+		let entry = rewindHistory[target]
+		if not entry
+			// Deterministically absent on every client (captures follow a deterministic
+			// schedule): only right after a restart before the first capture. Anything else
+			// would be a bug - never desync over it, step forward instead
+			if not system.fastForward then log "#rewind No history entry at playhead {target} (floor {input.rewindFloor}) - stepping forward"
+			return false
+		if verbose then log "#rewind #{frame} pop {input.rewindPlayhead} -> {target} (entry from frame {entry.captureFrame})"
+		if not wasRewinding and not system.fastForward then log "#rewind Started at frame {frame} from playhead {input.rewindPlayhead}"
+		// The hold flags and the floor are properties of the PRESENT - the restore overwrites
+		// them with their historical values, so carry them across (reused scratch lists)
+		rewindScratchIds.clear
+		rewindScratchHolds.clear
+		for input.players
+			rewindScratchIds.add .id
+			rewindScratchHolds.add .holdingRewindKey
+		int floorNow = input.rewindFloor
+		Snapshot.deserialize entry.bytes
+		input.refreshLocalPlayer
+		// Users who joined after the target vanish from the restored world - recreate them
+		// (and re-remove restored players whose removal cut lies below this frame)
+		input.ensureRewindRestoredPlayers frame
+		for input.players
+			.holdingRewindKey = false
+		for rewindScratchIds.length as i
+			let holder = input.playersById[rewindScratchIds[i]]
+			if holder then holder.holdingRewindKey = rewindScratchHolds[i]
+		input.rewindPlayhead = target
+		input.rewindFloor = floorNow
+		isRewinding = true
+		// This frame's parsed events must not fire into the restored past - nobody can act
+		// while time rewinds. clearEvent keeps isPressed, so held keys stay held
+		for input.internalUsers as user
+			user?.clearEvent
+		return true
+
 	// Arrival tracking for the rollback replay: rewind+replay only runs when something that can
 	// change the deterministic parse actually arrived since the last completed pass (03a).
 	// earliestChangedFrame is the first frame whose parsed inputs may differ from what the last
@@ -905,8 +1207,12 @@ internal transient skipInit unit core
 		// The pin is only re-serialized when it moves - re-saving an identical snapshot on every
 		// animation frame was one of the hidden costs of the old code.
 		if pinAdvances then snapshotFrame = -1
-		
+
 		rewind snapshot
+
+		// The rollback just discarded every predicted step at or above the root - the rewind
+		// history entries those steps captured are discarded prediction too
+		cleanupSpeculativeRewindEntries rewindFrame
 		
 		// Passes with a frozen pin cost the full window every time: space them out so the total
 		// replay work stays at a constant rate however long the outage lasts (03b)
@@ -996,6 +1302,9 @@ internal transient skipInit unit core
 			pinSaveDeferred = false
 			snapshotFrame = frame
 			saveState snapshot
+			// The pin serialized the current rewind floor - everything below it is now
+			// certainly unreachable for every replay path, so the history can let it go
+			pruneRewindHistory
 			
 	string[] serializeLogs
 			

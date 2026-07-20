@@ -180,7 +180,16 @@ priority class Player
 	internal int[] controllerKeyDownFrame = [0, 0, 0, 0, 0, 0]
 	
 	internal bool isReadyInLobby
-	
+
+	// This player is holding system.rewindKey (see core.checkRewindMechanic). Updated by the
+	// exact same parsed input events that drive InternalUser.isPressed - gamepad records
+	// (absolute, per frame), KeyDown/KeyUp and TouchDown/TouchUp - but stored on the
+	// SERIALIZED player: the transient isPressed arrays are not part of snapshots, so inside
+	// a rollback replay window they hold the live value, not the value the window originally
+	// saw, and a hold whose down-event lies below the snapshot pin could never be replayed
+	// correctly. As serialized state, the pin restores the flag and replays re-derive it
+	internal bool holdingRewindKey
+
 	// The current player instance, equivalent to "this"
 	inline js Player me() this
 	
@@ -506,8 +515,21 @@ skipInit global unit input
 	
 	// A list of all players
 	Player[] players
-		
+
 	bool active = true
+
+	// Shared rewind (see core.checkRewindMechanic). Both fields are deliberately part of the
+	// serialized, checksummed state: the snapshot pin restores them and rollback replays
+	// re-derive exactly the rewind targets the live pass chose - any divergence is a loud
+	// checksum mismatch instead of a silent fork.
+	// rewindPlayhead counts the ticks applied along the SURVIVING timeline (rewind frames pop
+	// it back, forward frames push it +1) - it is the app's time axis: Time.now derives from
+	// it, and the history entries a rewind can restore are keyed by it. rewindFloor is the
+	// lowest position a rewind may reach: it follows rewindPlayhead - system.rewindHistoryFrames
+	// (the memory bound) and jumps to the playhead at every restart, so a rewind can never
+	// cross a restart back into the previous game or the lobby
+	internal int rewindPlayhead
+	internal int rewindFloor
 		
 	// The player hosting the current session
 	Player host
@@ -917,9 +939,10 @@ skipInit global unit input
 		// pending, like the DOM input handlers
 		if PeerNetwork.holdingConfirmationPending then return
 		let gamepads = getGamepads
-		if gamepads == null then return
-		InternalGamepad gp = gamepads[0]
-		if !gp or gp.axes.length < 2 then return
+		InternalGamepad gp = gamepads != null ? gamepads[0] : null
+		if !gp or gp.axes.length < 2
+			checkReleaseRewindKeyWithoutGamepad
+			return
 			
 		let isPlayStation = gp.id.includes("54c") or gp.id.includes("810")
 		
@@ -959,8 +982,29 @@ skipInit global unit input
 		inputs.writeFloat32 math.abs(leftStickX) > Gamepad.deadZone ? leftStickX : 0
 		inputs.writeFloat32 math.abs(leftStickY) > Gamepad.deadZone ? leftStickY : 0
 		inputs.writeUnsignedInt16 buttons
-			
+
+	// A gamepad that vanishes mid-hold would leave the rewind key held forever: its per-frame
+	// records simply stop, so no release ever reaches the other clients and the whole room
+	// keeps rewinding. The local client owns its input stream, so it appends one neutral
+	// Gamepad record - every client (this one included) then releases deterministically when
+	// parsing it. Called from updateGamepads when no usable gamepad is connected; stops
+	// repeating as soon as the record has parsed and cleared the flag (the next frame)
+	private checkReleaseRewindKeyWithoutGamepad
+		if core.rewindKeyBit == 0 or not localPlayer or not localPlayer.holdingRewindKey then return
+		let inputs = localUser.inputs
+		inputs.writeInt32 localUser.inputFrame
+		inputs.writeInt16 cast InputType.Gamepad
+		inputs.writeFloat32 0
+		inputs.writeFloat32 0
+		inputs.writeUnsignedInt16 0
+
 	internal parseInputs: int frame
+		// The rewind key, resolved for this parse pass (see Player.holdingRewindKey):
+		// rewindKeyBit is its button bit in Gamepad records (0 = not a gamepad key),
+		// rewindKeyIndex its Key.keys index for the KeyDown/KeyUp and TouchDown/TouchUp
+		// events (-1 = rewind disabled). Together they cover every key isPressed supports
+		core.rewindKeyBit = system.enableRewind and system.rewindKey and system.rewindKey.type == Gamepad and system.rewindKey.index < 16 ? 1 shiftLeft system.rewindKey.index : 0
+		core.rewindKeyIndex = system.enableRewind and system.rewindKey ? system.rewindKey.index : -1
 		for internalUsers as internalUser if internalUser
 			// Events are normally cleared at the end of core.tick, but when an exception aborts
 			// the step after parsing, stale events survive in these transient lists. Clear them
@@ -1052,6 +1096,12 @@ skipInit global unit input
 					
 					// Controller buttons
 					let buttons	= inputs.readUnsignedInt16
+
+					// Gamepad records carry the rewind key's hold state absolutely, once per
+					// frame - a vanishing gamepad is released by the neutral record appended
+					// in checkReleaseRewindKeyWithoutGamepad
+					if core.rewindKeyBit != 0 then player.holdingRewindKey = (buttons bitwiseAnd core.rewindKeyBit) != 0
+
 					c.A.isPressed	= (buttons bitwiseAnd 1) != 0
 					c.B.isPressed	= (buttons bitwiseAnd 2) != 0
 					c.X.isPressed	= (buttons bitwiseAnd 4) != 0
@@ -1237,6 +1287,7 @@ skipInit global unit input
 		int buttonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
 		internalUser.justPressed[buttonIndex] = true
 		internalUser.isPressed[buttonIndex] = true
+		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = true
 		internalUser.pointerPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
@@ -1309,6 +1360,9 @@ skipInit global unit input
 		int buttonIndex = InputButton.LeftMouseButton + type
 		internalUser.justReleased[buttonIndex] = true
 		internalUser.isPressed[buttonIndex] = false
+		// Same clamp as touchDown: a finger/pen touch counts as the left mouse button
+		int rewindButtonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
+		if rewindButtonIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 		internalUser.pointerPosition = referencePos
 
 	internal scroll: InternalUser internalUser
@@ -1351,6 +1405,7 @@ skipInit global unit input
 
 		internalUser.justPressed[keyIndex] = true
 		internalUser.isPressed[keyIndex] = true
+		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = true
 		Key key = Key.keys[keyIndex]
 		internalUser.allJustPressed.add key or {type:Keyboard, code:key ? key.code : "", character}
 			
@@ -1373,6 +1428,7 @@ skipInit global unit input
 		Key key = Key.keys[keyIndex]
 		internalUser.justReleased[keyIndex] = true
 		internalUser.isPressed[keyIndex] = false
+		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -1527,6 +1583,31 @@ skipInit global unit input
 		playersById[removeUserId] = null
 		updatePlayers
 		print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
+
+	// A rewind pop (core.checkRewindMechanic) restores the world as it was at an older
+	// position - including its players list. Users who joined AFTER that position vanish from
+	// the restored world, but their records were already consumed (the mechanic never rewinds
+	// readPos), so parseInputs' recreate-on-first-record path only brings them back when they
+	// act again - and the Join record that carried their name never re-parses. Recreate them
+	// right after the restore instead, from the identity the transient InternalUser keeps
+	// (set at Join parse). The mirror case: the restored world can resurrect a Player whose
+	// user was removed at a cut below the current frame - remove them again immediately.
+	// Deterministic: readPos progress, the InternalUser identity fields and the removal cuts
+	// are the same on every client at the same claims, and rollback replays re-execute this
+	internal ensureRewindRestoredPlayers: int frame
+		for internalUsers as user if user
+			if user.inputs.readPos == 0 then continue // Never parsed a record - no player existed live either
+			if user.removed and frame > user.removedAfterFrame
+				removeRemovedPlayer user.id, frame
+				continue
+			if playersById[user.id] then continue
+			Player player = {id:user.id, playerIndex:players.length}
+			player._id = user._id
+			player.playerName = user.name
+			players.add player
+			playersById[user.id] = player
+			if user.local then localPlayer = player
+			updatePlayers
 
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
@@ -2135,6 +2216,12 @@ class Key
 		forDynamic keysObject
 			keys.add .
 			.index = i++
+
+		// system.rewindKey's declaration default (LeftTrigger) cannot bind in system.init:
+		// the transient system unit initializes before Key.init has created the Key constants.
+		// Wire the default here - an app that sets its own rewindKey in app.init runs after
+		// this and wins
+		if not system.rewindKey then system.rewindKey = LeftTrigger
 
 input
 	// Static lookup table, identical on every client - transient so the snapshot serializer

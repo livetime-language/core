@@ -19,9 +19,20 @@ global transient skipInit unit system
 	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
 
-	// Rewind
+	// Rewind: while any player holds rewindKey, all clients step the world state BACKWARD by
+	// rewindFrames frames per tick instead of simulating forward, and on release the game
+	// continues forward from the rewound moment (see core.checkRewindMechanic). rewindKey
+	// supports every key input.isPressed supports - gamepad buttons (LeftTrigger, A, ...),
+	// keyboard keys (ShiftLeft, Space, ...) and mouse buttons/touches (LeftMouseButton, ...) -
+	// and the hold rides the input records those keys already produce, so the mechanic adds
+	// nothing to the input streams. rewindHistoryFrames bounds how far back a rewind can reach
+	// and the memory the history uses (rewindHistoryFrames / rewindFrames snapshot buffers).
+	// All four values are compile-time configuration: they feed the deterministic simulation,
+	// so every client of a room must run the same values (changing them mid-session desyncs)
+	public bool enableRewind = true
 	public Key rewindKey = LeftTrigger
 	public int rewindFrames = 4
+	public int rewindHistoryFrames = 900
 	
 	// Info
 	public inline js string appName	=> _appName
