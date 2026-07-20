@@ -363,8 +363,7 @@ struct IntVector2
 	int y // The y-coordinate of the vector
 	SourceCodeLocation location
 	
-	// Used to specify that the vector is not set or invalid
-	static importance:4 inline IntVector2 none() IntVector2(-9007199254740991, -9007199254740991, null)
+	static importance:4 inline IntVector2 none() IntVector2(-2147483648, -2147483648, null)
 		
 	// {0,0}
 	static importance:4 inline IntVector2 zero() IntVector2(0, 0, null)
@@ -467,8 +466,8 @@ struct IntVector2
 	bool >= float length: return math.sqrt(x*x + y*y) >= length
 		
 	// Returns true if the vector is not equal to IntVector2.none
-	inline js bool toBool() (this != null && (this.x != -9007199254740991 || this.y != -9007199254740991))
-	inline js bool !() (this == null || (this.x == -9007199254740991 && this.y == -9007199254740991))
+	inline js bool toBool() (this != null && (this.x != -2147483648 || this.y != -2147483648))
+	inline js bool !() (this == null || (this.x == -2147483648 && this.y == -2147483648))
 
 	IntVector2 -() return {-this.x, -this.y, this.location}
 	

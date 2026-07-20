@@ -73,11 +73,10 @@ immutable struct int
 	inline js int ** int value
 		Math.pow(this, value)
 		
-	// The largest possible integer value
-	const importance:5 int maxValue = 9007199254740991
-	
+	const importance:5 int maxValue = 2147483647
+
 	// The smallest possible integer value
-	const importance:5 int minValue = -9007199254740991
+	const importance:5 int minValue = -2147483648
 	
 	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
 	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
@@ -106,9 +105,12 @@ immutable struct int
 	
 	importance:4 inline js string toString => this?.toString()
 		
-	inline js int fromHex(string value) parseInt(value, 16)
+	// Hex is a 32-bit pattern view: fromHex wraps to the canonical signed int32 (fromHex("ff000000")
+	// == 0xff000000 == -16777216) and toHex prints the unsigned pattern ("ff000000", not "-1000000"),
+	// so fromHex(x.toHex) == x for every int
+	inline js int fromHex(string value) (parseInt(value, 16) | 0)
 
-	inline js string toHex => this.toString(16)
+	inline js string toHex => (this >>> 0).toString(16)
 		
 	inline js string formatWithSpaces => this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 

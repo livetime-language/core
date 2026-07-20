@@ -109,10 +109,14 @@ immutable Color
 		green = hex.length >= 4 ? hex.substring(2,4).parseInt(16) : 0
 		blue = hex.length >= 6 ? hex.substring(4,6).parseInt(16) : 0
 		alpha = hex.length >= 8 ? hex.substring(6,8).parseInt(16) : 255
-		value = (red shiftLeft 0) + (green * 256) + (blue * 65536) + (alpha * 16777216)
+		// Compose bitwise, not with arithmetic: alpha * 16777216 stays a positive number above int32
+		// range in JS, while shiftLeft wraps to the canonical signed int32 that pixels and int
+		// literals like 0xff000000 use in every backend
+		value = red bitwiseOr (green shiftLeft 8) bitwiseOr (blue shiftLeft 16) bitwiseOr (alpha shiftLeft 24)
 
 	Color: int hex
-		if(hex <= 0xffffff)
+		// A negative hex is a full 32-bit RRGGBBAA pattern whose red byte is >= 0x80
+		if(hex >= 0 and hex <= 0xffffff)
 			red = hex.shiftRight(16) bitwiseAnd 0xff
 			green = hex.shiftRight(8) bitwiseAnd 0xff
 			blue = hex bitwiseAnd 0xff
@@ -122,7 +126,7 @@ immutable Color
 			green = hex.shiftRight(16) bitwiseAnd 0xff
 			blue = hex.shiftRight(8) bitwiseAnd 0xff
 			alpha = hex bitwiseAnd 0xff
-		value = (red shiftLeft 0) + (green * 256) + (blue * 65536) + (alpha * 16777216)
+		value = red bitwiseOr (green shiftLeft 8) bitwiseOr (blue shiftLeft 16) bitwiseOr (alpha shiftLeft 24)
 
 	Color: int value
 		red = value shiftRight 0 bitwiseAnd 0xff
@@ -172,14 +176,16 @@ Screen
 	js void setup: Vector2 size
 		this.size = size
 		if(system.isEmbedded) {
-			this.pixels = new Uint32Array(size.x * size.y);
+			// Int32Array, not Uint32Array: element reads must yield the canonical signed int32
+			// so pixel values equal Color.value and folded int literals like 0xff000000
+			this.pixels = new Int32Array(size.x * size.y);
 		} else {
 			this.canvas = document.createElement("canvas")
 			this.canvas.width = this.size.x
 			this.canvas.height = this.size.y
 			this.context = this.canvas.getContext("2d")
 			this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
-			this.pixels = new Uint32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
+			this.pixels = new Int32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
 		}
 		this.clear();
 
