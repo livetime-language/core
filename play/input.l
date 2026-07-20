@@ -23,7 +23,9 @@ internal transient class InternalUser
 	visible string[] navigations
 
 	// Modern Input
-	visible bool[] justPressed, isPressed, justReleased
+	// For each key, we store the frame when it was pressed and the frame when it was released
+	// If the user presses and releases a key in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
+	visible int[] pressedAtFrame, releasedAtFrame
 	Vector2 pointerPosition, scrollDelta
 	Key[] allJustPressed
 	string focus, prevFocus
@@ -57,10 +59,12 @@ internal transient class InternalUser
 	int certainFrame
 	int prevCertainFrame
 
-	InternalUser
+	reset
 		// Modern Input
+		clearEvent
 		for Key.keys.length
-			isPressed[i] = false
+			pressedAtFrame[i] = -2
+			releasedAtFrame[i] = -1
 	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
@@ -79,9 +83,6 @@ internal transient class InternalUser
 		navigations.clear
 
 		// Modern Input
-		for Key.keys.length
-			justPressed[i] = false
-			justReleased[i] = false
 		allJustPressed.clear
 		scrollDelta = {0,0}
 		prevFocus = focus
@@ -963,11 +964,10 @@ skipInit global unit input
 					// Modern input
 					int bit = 1
 					for 16
-						bool isPressed = (buttons bitwiseAnd bit) != 0
-						bool wasPressed = internalUser.isPressed[i]
-						internalUser.isPressed[i] = isPressed
-						internalUser.justPressed[i] = isPressed and not wasPressed
-						internalUser.justReleased[i] = not isPressed and wasPressed
+						if internalUser.pressedAtFrame[i] >= internalUser.releasedAtFrame[i]
+							if buttons bitwiseAnd bit == 0 then internalUser.releasedAtFrame[i] = core.frame
+						else
+							if buttons bitwiseAnd bit != 0 then internalUser.pressedAtFrame[i] = core.frame
 						bit = bit shiftLeft 1
 				else
 				if inputType == String
@@ -1104,8 +1104,7 @@ skipInit global unit input
 
 		// Modern Input
 		int buttonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
-		internalUser.justPressed[buttonIndex] = true
-		internalUser.isPressed[buttonIndex] = true
+		internalUser.pressedAtFrame[buttonIndex] = core.frame
 		internalUser.pointerPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
@@ -1176,8 +1175,7 @@ skipInit global unit input
 
 		// Modern Input
 		int buttonIndex = InputButton.LeftMouseButton + type
-		internalUser.justReleased[buttonIndex] = true
-		internalUser.isPressed[buttonIndex] = false
+		internalUser.releasedAtFrame[buttonIndex] = core.frame
 		internalUser.pointerPosition = referencePos
 
 	internal scroll: InternalUser internalUser
@@ -1218,8 +1216,7 @@ skipInit global unit input
 		// if key == Backspace
 		// 	internalUser.typedCharacters += "\b"
 
-		internalUser.justPressed[keyIndex] = true
-		internalUser.isPressed[keyIndex] = true
+		internalUser.pressedAtFrame[keyIndex] = core.frame
 		Key key = Key.keys[keyIndex]
 		internalUser.allJustPressed.add key or {type:Keyboard, code:key ? key.code : "", character}
 			
@@ -1240,8 +1237,7 @@ skipInit global unit input
 			
 		// Modern Input
 		Key key = Key.keys[keyIndex]
-		internalUser.justReleased[keyIndex] = true
-		internalUser.isPressed[keyIndex] = false
+		internalUser.releasedAtFrame[keyIndex] = core.frame
 
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -1944,30 +1940,38 @@ class Key
 			.index = i++
 
 input
-	string[KeyCode] characterForKeyCode = {
-		KeyCode.Left:	"←"
-		KeyCode.Up:	"↑"
-		KeyCode.Right:	"→"
-		KeyCode.Down:	"↓"
-		KeyCode.Enter:	"\n"
-		KeyCode.Tab:	"\t"
-		KeyCode.Escape:	"\x1b"
-	}
+	int keyRepeatAfter = 0
+	int keyRepeatEvery = 0
 
-	// Returns true if the player has just pressed the given button this frame (it was not pressed in the previous frame).
+	setRepeat: int after = 0, int every = 0
+		keyRepeatAfter = after
+		keyRepeatEvery = every
+
+	// Returns true if the player has just pressed the given button this frame
 	global justPressed: Key key, int player = 0
 		if key.type != Gamepad then player = 0
-		return internalUsers[player].justPressed[key.index]
+		
+		// Pressed this frame?
+		let user = internalUsers[player]
+		int pressedAtFrame = user.pressedAtFrame[key.index]
+		int framesSincePress = core.frame - pressedAtFrame
+		if framesSincePress == 0 then return true
 
-	// Returns true if the player is currently pressing the given button.
+		// Repeating?
+		if keyRepeatEvery == 0 then return false
+		int releasedAtFrame = user.releasedAtFrame[key.index]
+		return pressedAtFrame >= releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
+
+	// Returns true if the player is currently pressing the given button
 	global isPressed: Key key, int player = 0
 		if key.type != Gamepad then player = 0
-		return internalUsers[player].isPressed[key.index]
+		let user = internalUsers[player]
+		return user.pressedAtFrame[key.index] >= user.releasedAtFrame[key.index]
 	
-	// Returns true if the player has just released the given button this frame (it was pressed in the previous frame).
+	// Returns true if the player has just released the given button this frame
 	global justReleased: Key key, int player = 0
 		if key.type != Gamepad then player = 0
-		return internalUsers[player].justReleased[key.index]
+		return internalUsers[player].releasedAtFrame[key.index] == core.frame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	global getPointer: int player = 0
