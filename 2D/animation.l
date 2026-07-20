@@ -201,7 +201,9 @@ transient global skipInit unit audio
 		              bool needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain then return
 		
-		if Time.ticks == 0
+		// Boot special case, keyed to the engine's first step (core.frame, not Time.ticks:
+		// the rewind playhead revisits 0 when a local session rewinds to its start)
+		if core.frame == 0
 			fx.add PlaySoundAnimation startTime:math.ceil(Time.now+core.frameTime)+delay, sound
 		else
 		if delay

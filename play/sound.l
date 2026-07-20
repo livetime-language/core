@@ -32,12 +32,16 @@ skipInit immutable Sound
 		
 	play: needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain then return
-			
+
 		// We can play sounds immediately to ensure there is no lag
-		// If a sound turns out to be wrong after receiving new inputs, we stop it
-		let playingSound = audio.playingSounds.find(.sound == this and .frame == Time.ticks)
+		// If a sound turns out to be wrong after receiving new inputs, we stop it.
+		// The dedup identity is core.frame, NOT Time.ticks: the frame counter is unique per
+		// engine step, while a Time.ticks value (the rewind playhead) recurs after a shared
+		// rewind - a lingering entry from the rewound-away run would falsely suppress the
+		// same sound in the replayed run
+		let playingSound = audio.playingSounds.find(.sound == this and .frame == core.frame)
 		if !playingSound
-			audio.playingSounds.add playingSound = {this, frame:Time.ticks, isConfirmed:true}
+			audio.playingSounds.add playingSound = {this, frame:core.frame, isConfirmed:true}
 			if core.isPremiere then doPlay playingSound
 		else
 			playingSound.isConfirmed = true
@@ -64,7 +68,7 @@ skipInit immutable Sound
 		this.nextAudioElement.src = _basePath+this.file;
 		
 	isPlaying
-		return audio.playingSounds.any.sound == this and .frame < Time.ticks
+		return audio.playingSounds.any.sound == this and .frame < core.frame
 
 internal transient PlayingSound
 	immutable Sound sound
@@ -86,7 +90,7 @@ transient global skipInit unit audio
 	internal finishFrame
 		// Stop sounds that turned out to be wrong after receiving new inputs
 		playingSounds.each
-			if .frame == Time.ticks and !.isConfirmed
+			if .frame == core.frame and !.isConfirmed
 				.sound.stop
 		
 	internal reload

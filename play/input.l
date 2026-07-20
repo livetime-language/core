@@ -1254,7 +1254,10 @@ skipInit global unit input
 			touch.phase = Down
 			touch.position = referencePos
 			touch.startPosition = referencePos
-			touch.startFrame = core.frame
+			// App time, like Time.ticks: `Time.ticks - touch.startFrame` must stay meaningful
+			// across a shared rewind (the raw frame counter keeps advancing while the world is
+			// rewound; the playhead is the world's own clock)
+			touch.startFrame = input.rewindPlayhead
 			touch.type = type
 
 			// Evaluate: Set isDown directly instead of in player.postprocessEvents #easier-to-reason-about #evaluate

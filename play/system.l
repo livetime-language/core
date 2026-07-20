@@ -393,5 +393,10 @@ skipInit static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 float now
 	
-	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second)
-	static importance:5 inline js int ticks => core.frame
+	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second).
+	// Counted along the SURVIVING timeline (the rewind playhead), like Time.now: without rewinds this
+	// equals the frame counter, and after a shared rewind (system.rewindKey) it continues from the
+	// rewound moment - so a run that was rewound away and replayed behaves identically to the first
+	// one. Engine code that needs a per-step identity must use core.frame instead (a playhead value
+	// recurs after a rewind, a frame number never does)
+	static importance:5 inline js int ticks => input.rewindPlayhead
