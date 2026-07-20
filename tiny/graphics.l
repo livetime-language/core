@@ -329,12 +329,14 @@ transient global skipInit graphics
 		if system.fastForward then return
 		screen.clear
 		helpText = ""
+		color = White
 
 	finishFrame
 		screen.finishFrame
 
 	int[] pixels
 	Font font
+	Color color
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 	global string helpText
@@ -491,7 +493,7 @@ transient global skipInit graphics
 
 	global drawText: string text
 	                 Vector2 pos = {0,0}
-					 implicit Color color = Colors.White
+					 implicit Color color = graphics.color
 					 void() onClick = null
 					 string help = ""
 					 Vector2 margin = {0,0}
@@ -541,7 +543,7 @@ transient global skipInit graphics
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
 		let target = screen.pixels
-		if fillColor == null and outlineColor == null then fillColor = White
+		if fillColor == null and outlineColor == null then fillColor = graphics.color
 		if fillColor != null
 			int stride = floor(screen.size.x)
 			int startX = x, endX = x + sizeX
@@ -656,6 +658,42 @@ transient global skipInit graphics
 
 	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
 		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor
+
+	global void drawLine: Vector2 from = {0,0}
+		                  Vector2 to = {0,0}
+						  implicit Color color = graphics.color
+		if system.fastForward then return
+
+		// Bresenham line (Zingl): the dominant axis advances every iteration,
+		// so the pixel count is known upfront. Pixels outside the clip rectangle are skipped.
+		int x = from.x.floor
+		int y = from.y.floor
+		int x1 = to.x.floor
+		int y1 = to.y.floor
+		int dx = abs(x1 - x)
+		int ady = abs(y1 - y)
+		int dy = 0 - ady
+		int stepX = x < x1 ? 1 : -1
+		int stepY = y < y1 ? 1 : -1
+		int err = dx + dy
+		int e2
+
+		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
+		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+		int stride = floor(screen.size.x)
+		int[] target = screen.pixels
+		int colorValue = color.value
+
+		for (dx atLeast ady) + 1
+			if clipX1 <= x < clipX2 and clipY1 <= y < clipY2
+				target[y * stride + x] = colorValue
+			e2 = 2 * err
+			if e2 >= dy
+				err += dy
+				x += stepX
+			if e2 <= dx
+				err += dx
+				y += stepY
 
 	global void drawTilemap: Tilemap tilemap	// The tilemap to draw
 		                     Vector2 pos = {0,0}	// The screen position to draw to in pixels 
