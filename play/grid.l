@@ -1,6 +1,14 @@
 	
 class Grid<T>
-	Vector2 size
+	// IntVector2, NOT Vector2: the declared type drives the generated deserializer's
+	// fresh-object fallback (new IntVector2), while serialization dispatches on the actual
+	// object - and every Grid construction produces an IntVector2 size. With Vector2 declared
+	// here, a rewind that had to fresh-create a Grid (its live object was replaced since the
+	// pinned snapshot was serialized, e.g. by a replayed restart's unit init) read the size as
+	// 2 float64s where 2 int32s were written - the 8-byte misalignment turned the neighboring
+	// fields into NaN/null garbage that was then serialized into checksummed snapshots
+	// (lifecycle seed 285888347). The 3D engine's Grid always declared IntVector2
+	IntVector2 size
 	T[] items
 	transient void(T item, Vector2 pos)[string] itemForCharacter = null
 	

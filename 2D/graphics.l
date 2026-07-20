@@ -1198,6 +1198,7 @@ transient skipInit global unit graphics
 		                    alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                    enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
 		                    alphaWhenDisabled = .5               // The opacity of the button will be multiplied with this factor when its disabled
+		                    markAsHandled = true                 // Mark the touch as handled so it won't trigger more touch events. Buttons that only exist on SOME clients (drawn behind a client-local condition) must pass false: touch.handled is rolled-back state, and marking it on one client forks the checksums
 		                    void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the button or presses the hotkey
 	                        SourceCodeLocation location
 		float scale = 1.0
@@ -1212,7 +1213,7 @@ transient skipInit global unit graphics
 					if textColorOnHover	then textColor = textColorOnHover
 					if switchFrameOnHover	then frame = frameOnHover
 					if scaleOnHover != 1.0	then scale = scaleOnHover
-			input.onTouchDown position, sizeWithMargin, by:effectiveClickableBy, showClickableArea, do:onClick
+			input.onTouchDown position, sizeWithMargin, by:effectiveClickableBy, showClickableArea, markAsHandled, do:onClick
 			if hotkey
 				input.onKeyDown hotkey, by:effectiveClickableBy
 					onClick null
@@ -2361,7 +2362,7 @@ internal transient immutable DisplayItem DisplayImage
 		if(this.clippingPath) this.startClipping()
 		graphics.context.imageSmoothingEnabled = false;
 			
-		if(this.color.hex == "#ffffff" || this.color.hex == "#ffffffff" || this.color == null) {
+		if(this.color == null || this.color.hex == "#ffffff" || this.color.hex == "#ffffffff") {
 			try{ graphics.context.drawImage(this.htmlImage, this.sx, this.sy, this.sw, this.sh, this.x, this.y, this.w, this.h) }
 			catch(e) { log("DisplayImage: "+e.message) }
 		} else {

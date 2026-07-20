@@ -1,6 +1,10 @@
 unit lobby
 	bool inLobby = true
-	bool enableFullscreen = true
+	// transient: this is CLIENT-LOCAL config (core.join sets it from system.isStaging, which
+	// depends on the page URL). It must never be serialized into snapshots - checksummed state
+	// holding a per-client value forks mixed staging/non-staging rooms the moment they compare
+	// checksums before a restart resets it (churn desync, seed 318786320)
+	transient bool enableFullscreen = true
 	Vector2[] points
 	
 	// Names
@@ -57,11 +61,26 @@ unit lobby
 	tick
 		tickSettings
 		drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
-		if (PeerNetwork.error or core.errorMessage) and system.isStaging
-			drawText PeerNetwork.error, size:40
+		// Show caught exceptions in staging, but NEVER return early: core.errorMessage is
+		// client-local (set by core.onError, not part of the rolled-back state), so skipping
+		// the rest of the tick forks the deterministic timeline of just this client - a
+		// rejoiner replaying from frame 0 with a stale error never re-ran the lobby exit and
+		// desynced for good (churn desync, seed 339031744)
+		if core.errorMessage and system.isStaging
 			drawText core.errorMessage, size:14, position:{0,40}
-			return
-		
+
+		// A failed or degraded media setup must not hide the lobby, because the join continues without media
+		// -> Show what is missing and a Retry button, in production too
+		if PeerNetwork.error
+			drawText PeerNetwork.error, position:{0,-512}, size:24, color:Yellow
+			let localPlayer = input.players.find.id == input.localUser.id
+				// markAsHandled:false - this button only exists on the client whose media setup
+				// failed (PeerNetwork.error is client-local), and touch.handled is rolled-back
+				// state: marking it here would fork this client's checksums
+				drawStandardButton "Retry", {0,-448}, clickableBy:localPlayer, markAsHandled:false
+					print "Media setup retry clicked by {touch.by}", type:Action
+					PeerNetwork.retryMediaSetup
+
 		// Control show names
 		onKeyDown by input.host
 			let cmd = pressedBy.keysCurrentlyDown.includes LeftMetaKey
@@ -107,7 +126,13 @@ unit lobby
 					restart
 						
 				Vector2 closePos = pos+{videoWidth/2-15,-halfVideoHeight-25}
-				let state = input.internalUsers[player.id]?.connectionState
+				let internalUser = input.internalUsers[player.id]
+				let state = internalUser?.connectionState
+				// A hidden tab or a closed page is not a connection problem - show it as such (F6)
+				if internalUser and not internalUser.local
+					if internalUser.leaving then state = "left"
+					else
+					if internalUser.hidden then state = "away"
 				if state && state != "connected"
 					drawText state, size:80, color:state == "failed" ? Red : Yellow, position:pos+{0, -halfVideoHeight-40}
 					drawText "x", size:50, color:#808080, position:closePos
@@ -228,6 +253,11 @@ unit lobby
 						
 Player
 	bool showSettingsInLobby
+
+internal transient skipInit unit core
+	// Called by core.tick while a Connected session catches up after a long pause (F5)
+	internal drawCatchUpOverlay
+		drawText "Catching up... {math.round(catchUpProgress*100)}%", size:40, color:White
 	
 internal Object LobbyTextField
 	string text

@@ -19,9 +19,10 @@ transient skipInit global unit graphics
 		                            implicit layer = 0                   // Higher layers are drawn in front of lower layers
 		                            alpha = 1.0                          // The opacity of the button (0: fully transparent, 1: fully visible)
 		                            enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
+		                            markAsHandled = true                 // Mark the touch as handled so it won't trigger more touch events. Buttons that only exist on SOME clients (drawn behind a client-local condition) must pass false: touch.handled is rolled-back state, and marking it on one client forks the checksums
 		                            void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the button or presses the hotkey
 	                                SourceCodeLocation location
-		drawButton Button, accentImage:ButtonAccent, textColorOnHover:Black, textSize:24, text, position, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, onClick, location
+		drawButton Button, accentImage:ButtonAccent, textColorOnHover:Black, textSize:24, text, position, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, markAsHandled, onClick, location
 		
 	// Draw a large button with the default style.
 	//

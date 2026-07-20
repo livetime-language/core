@@ -9,11 +9,35 @@ internal transient class InternalUser
 	
 	// Event Stream
 	bool collectInputs          // When we are done pinging, we add a join event and start collecting inputs
-	int inputFrame = -1         // We received all inputs from this player up to and including this frame
+	int inputFrame = -1         // We received all inputs from this player up to and including this frame (their claim)
 	int receivedMyInputsUpToPos // We received all inputs from this player up to this pos
 	int[] lastTouchMoveIndex
 	Buffer inputs = {}          // The stream of inputs of this user
-	int storedInputsUpTo
+	int storedInputsUpTo        // This user's stream is persisted to IndexedDB up to this pos (see core.storeInputsToDB)
+	int storedClaim = -1        // The claim persisted in this user's IndexedDB meta row (see core.storeInputsToDB)
+	int sentInputsUpToPos       // Local user only: our stream bytes below this pos may already be on the wire and must never be mutated in place (see the TouchMove patch guard in input.handleTouchEvent)
+	int epoch                   // The epoch of this user's input stream: a new value means the user restarted with a fresh session (0 = unknown, see PeerNetwork.onTick)
+	int storedEpoch             // The epoch persisted with this user's IndexedDB meta row: the lineage our restored copy of their stream belongs to (0 = unknown, see PeerNetwork.onTick's dead-lineage cut)
+	int restoredFromDBUpTo      // How much of this user's stream came from OUR IndexedDB restore rather than the live mesh - only those bytes are lineage-suspect (see PeerNetwork.onTick's dead-lineage cut)
+	int epochStartPos           // Local user only: bytes below this pos were restored after a rejoin, our own new bytes start here
+	int historyTotalLength = -1 // While we restore our stream after a rejoin: how many bytes of it this peer reported to hold (-1 = no reply yet, see PeerNetwork.tickRestore)
+	float lastStreamSentTime    // Last Removed notice sent to this user (rate limit, see PeerNetwork.sendRemovedNotice)
+	float[int] lastStreamSentTimeByUserId // Last stream answer per requested user id (rate limit without starving parallel recoveries)
+
+	// Removal (deterministic, driven by a RemoveUser event in the host's input stream)
+	bool removed                // This user was removed from the game
+	int removedAfterFrame = int.maxValue // Inputs of a removed user are only parsed up to and including this frame
+	int storedRemovedAfterFrame = int.maxValue // The removal cut persisted in this user's IndexedDB meta row (see core.storeInputsToDB)
+	float removalGossipStart    // When the host started collecting this silent user's stream from all peers (0 = not started)
+	bool removalEventWritten    // The host wrote the RemoveUser event for this user
+	int[] gossipAnswered = []   // Peers that answered the removal gossip with a stream answer we fully cover (host only, see PeerNetwork.removalGossipComplete)
+	float removedFetchStallStart // Removed-but-incomplete stream: since when the fetch made no progress (0 = not stalled, see PeerNetwork's amend logic)
+	int removedFetchProgressPos // The writePos at the last fetch progress (stall detection baseline)
+
+	// Diagnostics (only used for logging)
+	int droppedTickCount        // Ticks from this user that were dropped as non-contiguous (packet loss indicator)
+	float lastDropLogTime       // Rate limit for logging dropped Ticks
+	int lastTickTransport       // 0: nothing sent yet, 1: data channel, 2: server relay (logged on change)
 	
 	// List of inputs filled by parseInput and used by onTouchDown, onWheel, onKeyDown, ...
 	visible Touch[] downTouches, movingTouches, upTouches
@@ -37,16 +61,33 @@ internal transient class InternalUser
 	// Connection
 	dynamic peerConnection
 	dynamic[] dataChannels
+	dynamic latestDataChannel // The channel created with the current offer; may still be connecting (dataChannels only lists open ones)
+	dynamic[] pendingIceCandidates // ICE candidates that arrived before the remote description was set
+	bool settingRemoteDescription  // A received offer/answer is being applied; queue ICE candidates until setRemoteDescription resolved
 	string connectionType
 	bool offerByMe
 	bool receivedAnswer
 	bool connected
 	int connectionTries
+	int silentPeriods // Consecutive silence periods without any incoming data channel message; relayed messages don't count (see PeerNetwork.tick)
+	// Consecutive channel-silence reconnects with no channel message in between. Grows the silence
+	// timeout so a high-latency link gets enough time to finish signaling+ICE+DTLS before the
+	// watchdog kills the almost-complete connection again (see PeerNetwork.tick)
+	int channelReconnects
 	string connectionState
-	
+	bool hidden                    // The user's tab is hidden: it is throttled and may fall silent, tolerate a longer silence (F6, see PeerNetwork.tick)
+	bool leaving                   // The user's page is closing or navigating away: don't burn reconnect attempts; cleared by any incoming message (F6)
+	bool reconnectNotified         // app.onTryingToReconnectTo was called for the current silence (cleared by any incoming message)
+	bool presentOnServer           // The server listed this user as currently connected in the JoinResponse
+	dynamic logConnectionTypeTimer // Pending connection-type report, cancelled when the connection is recreated (F30, see PeerNetwork.logConnectionType)
+
 	float startToConnectTime = float.maxValue
 	float startDataChannelTime = float.maxValue
-	float lastIncomingMessageTime = float.maxValue
+	float lastIncomingMessageTime = float.maxValue // Last message on any transport (drives reconnect notifications and removal)
+	float lastTickReceivedTime                     // Last accepted Tick - proof this user counts us as a live player (0 = never, drives the Removed-notice arbitration, see PeerNetwork.onRemovedMessage)
+	float lastIncomingChannelTime = float.maxValue // Last message on the data channel (drives P2P connection repair)
+	float lastChannelMessageTime = float.maxValue  // Last message on the data channel; never reset by the repair watchdog (drives the silent-channel relay mirror, see PeerNetwork.channelSuspect)
+	float lastAckProgressTime = float.maxValue     // Last time this user acked new bytes of our stream or had nothing outstanding (drives the silent-channel relay mirror)
 	
 	// Statistics
 	private int[] aheadHistory    // Rolling buffer of ahead values, used to calculate bufferFrames
@@ -171,7 +212,7 @@ internal UserAccount
 	string name
 	string colorPreferences
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object
+enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object, RemoveUser
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -448,6 +489,12 @@ enum ShowPointersMode
 	LocalAndRemote	// Show the mouse pointers of all players
 	WhenDown	// Show the mouse pointers of all players, but only when they are down (clicking or touching)
 	
+// A networkData callback answer (storage.get / http.*) that resolved while input recording
+// was blocked; kept until recording resumes so the app still hears back (see input.handleObject)
+internal transient PendingObjectRecord
+	immutable int id
+	immutable string data
+
 // Collect user input
 skipInit global unit input
 	transient visible InternalUser[] internalUsers
@@ -455,6 +502,7 @@ skipInit global unit input
 	transient internal Player localPlayer
 	transient bool isCertain
 	transient ControllerButtonPlayerAndIndex[KeyCode] controllerButtonMap
+	transient PendingObjectRecord[] pendingObjectRecords
 	
 	// A list of all players
 	Player[] players
@@ -576,22 +624,6 @@ skipInit global unit input
 				if(e.ctrlKey) { core.restore(index); e.preventDefault(); }
 			}
 			else
-			// Reload
-			if(ctrlOrCmd && key == "F1") {/*keep room, keep userId, keep master*/ ServerNetwork.sendReload(false, false, true ); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F2") {/*keep room, keep userId, everybody*/   ServerNetwork.sendReload(false, false, false); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F3") {/*new  room, keep userId, everybody*/   ServerNetwork.sendReload(true,  false, false); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F4") {/*new  room, new  userId, everybody*/   ServerNetwork.sendReload(true,  true,  false);  e.preventDefault();} else
-			
-			// Switch send interval
-			if(ctrlOrCmd && key == "F5") {core.switchSendInterval( 3); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F6") {core.switchSendInterval(10); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F7") {core.switchSendInterval(20); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F8") {core.switchSendInterval(30); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F9") {core.switchSendInterval(40); e.preventDefault();} else
-				
-			if(ctrlOrCmd && key == "F10") {core.switchSendInputMode(1); e.preventDefault();} else
-			if(ctrlOrCmd && key == "F11") {core.switchSendInputMode(2); e.preventDefault();} else
-			
 			if(key == "F5" && system.isDebug) {
 				system.stop();
 				e.preventDefault();
@@ -645,6 +677,12 @@ skipInit global unit input
 		
 	private setLastTouchMoveIndex: int id, int index
 		let lastMoveIndex = localUser.lastTouchMoveIndex
+		let i = 0
+		while i < lastMoveIndex.length
+			if lastMoveIndex[i] == id
+				lastMoveIndex[i+1] = index
+				return
+			i += 2
 		lastMoveIndex.add id
 		lastMoveIndex.add index
 	
@@ -657,7 +695,7 @@ skipInit global unit input
 		return 0
 		
 	private handleTextInput: InputType type, string text
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		
 		inputs.writeInt32 localUser.inputFrame
@@ -665,7 +703,7 @@ skipInit global unit input
 		inputs.writeString text
 			
 	internal handleKeyEvent: InputType inputType, string code, string key, bool ctrl, bool alt, bool meta
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 					
@@ -692,11 +730,22 @@ skipInit global unit input
 		Vector2 referencePos = graphics.getPixelPos(x, y)
 		gizmo.onTouch inputType, id, pixelPos, referencePos, shift, alt, cmdOrCtrl
 		
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return		
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return		
 		let inputs = localUser.inputs
 
 		if inputType == TouchMove
 			int index = getLastTouchMoveIndex id
+			// Coalescing patches the previous move record of this input frame IN PLACE. Mutating
+			// stream bytes is only safe while they have never left this device: normally
+			// core.onFrame clears lastTouchMoveIndex (startInputFrame) before it transmits
+			// (PeerNetwork.sendInputs), so a patchable record is always younger than the last
+			// transmission. But the stream can also be sent between animation frames
+			// (onHeartbeat while hidden, stream answers to a restoring rejoiner) - patching an
+			// already-sent record would fork the copy the receiver holds into a permanent
+			// checksum desync, so in that case append a fresh record instead
+			if index and index < localUser.sentInputsUpToPos
+				core.log "TouchMove record at {index} was already sent (sent up to {localUser.sentInputsUpToPos}) - appending a new record instead of patching sent bytes"
+				index = 0
 			if index
 				// We already moved the pointer this input frame, so just update the last move
 				inputs.setInt16 index, math.round(referencePos.x)
@@ -739,7 +788,7 @@ skipInit global unit input
 		inputs.writeInt16 math.round(referencePos.y)
 		
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		
 		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
@@ -774,14 +823,14 @@ skipInit global unit input
 				
 	// Handles navigating back or forward in the browser	
 	internal handleNavigate: string url
-		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs then return
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Navigate
 		inputs.writeString url
 		
 	internal handleString: int id, string data
-		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs then return
+		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.String
@@ -789,24 +838,84 @@ skipInit global unit input
 		inputs.writeString data
 		
 	internal handleJson: int id, string data
-		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs then return
+		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Json
 		inputs.writeInt id
 		inputs.writeString data
 		
+	// Callback delivery for the async networkData APIs (storage.get, http.get/post/put/delete).
+	// Guarded like handleString/handleJson, with two differences: an empty answer is still a
+	// valid delivery (storage.get answers "" for a missing key), and a blocked delivery must
+	// not be dropped - the record is what fires the app's callback on every client, so dropping
+	// it would mean the app never hears back. While recording is not possible (catch-up replay,
+	// holding-confirmation gate, no local user yet) the delivery is queued and flushed from
+	// core.onFrame once recording resumes
 	internal handleObject: int id, string data
+		if core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused
+			pendingObjectRecords.add {id:id, data:data}
+			return
+		writeObjectRecord id, data
+
+	private writeObjectRecord: int id, string data
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeInt16 cast InputType.Object
 		inputs.writeInt id
 		inputs.writeString data
+
+	// Deliver the networkData callbacks that resolved while input recording was blocked.
+	// Called from core.onFrame after the step loop, so the records are stamped with the
+	// current monotonic inputFrame and travel with the next Tick
+	internal flushPendingObjectRecords
+		if !pendingObjectRecords.length then return
+		if core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
+		core.log "Flushing {pendingObjectRecords.length} networkData callback records that resolved while input recording was blocked"
+		for pendingObjectRecords
+			writeObjectRecord .id, .data
+		pendingObjectRecords.clear
+
+	// A snapshot restore may create FRESH Player objects instead of reusing the live ones (the
+	// serializer's object-reuse stamps only match the most recently serialized snapshot, and
+	// checksum serializations restamp the graph between rewind passes). players/playersById/host
+	// are part of the restored state and stay consistent, but localPlayer is a transient pointer
+	// into that graph - re-derive it after every deserialize, or it keeps pointing at a dead
+	// object whose fields (playerIndex!) are frozen at their last live values (lifecycle seed
+	// 946832364: the veteran's ready clicks landed on another player's lobby slot forever)
+	internal refreshLocalPlayer
+		if localUser
+			let player = playersById[localUser.id]
+			if player then localPlayer = player
+
+	// Write a RemoveUser event into our own input stream: the removal of a player becomes part
+	// of the deterministic timeline and is applied by every client when the event is parsed.
+	// lastFrame is the last frame of the removed user's stream that still counts - the host
+	// merged the streams of all living peers first, so it covers everything any client committed
+	internal handleRemoveUser: int userId, int lastFrame
+		if core.mode == None || !localUser || !localUser.collectInputs then return
+		let inputs = localUser.inputs
+		inputs.writeInt32 localUser.inputFrame
+		inputs.writeInt16 cast InputType.RemoveUser
+		inputs.writeInt userId
+		inputs.writeInt lastFrame
+		print "Removing player {userId}, their inputs count up to frame {lastFrame}", type:Action
 		
 	// Returns a "GamepadList" (which doesn't have the functions of a LiveTime list)
 	private inline js dynamic getGamepads() navigator.getGamepads()
 	
 	internal updateGamepads
+		// Gamepad state is only recorded during a live Record step. Replay steps (the rollback
+		// replay in core.checkRewindAndReplayState, debug timeline navigation) run with
+		// system.fastForward and inputFrame does not advance there - recording would append a
+		// duplicate record with the same stamp on every replayed step, bloating the stream by
+		// the replay window on every animation frame. Catch-up steps run with fastForward:false
+		// and monotonic stamps, so they keep recording intentionally - they carry the live stick
+		// state (which is why this doesn't check core.inputRecordingPaused, true during a catch-up)
+		if system.fastForward or system.playMode != Record then return
+		// Gamepad records must not be appended while a rejoin's holding confirmations are
+		// pending, like the DOM input handlers
+		if PeerNetwork.holdingConfirmationPending then return
 		let gamepads = getGamepads
 		if gamepads == null then return
 		InternalGamepad gp = gamepads[0]
@@ -860,11 +969,25 @@ skipInit global unit input
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
+			// A removed user's Player leaves the game at the first frame past removedAfterFrame:
+			// all their records have been parsed by then, so the recreate-on-first-record path
+			// below can't resurrect them (see removeUserDeterministically)
+			if player and internalUser.removed and frame > internalUser.removedAfterFrame
+				removeRemovedPlayer userId, frame
+				player = null
 			player?.gamepad.startFrame
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
 				if nextFrame > frame then break
+				// Only parse records that are covered by the sender's claim: claimed records are
+				// guaranteed to be complete in the buffer (a chunked transfer can end mid-record)
+				// and identical on every client. Our own records are always complete
+				if not internalUser.local and nextFrame > internalUser.inputFrame then break
+				// A removed user's stream ends deterministically after removedAfterFrame:
+				// clients may have received different amounts from a dead user, but every client
+				// parses exactly the records up to this frame
+				if internalUser.removed and nextFrame > internalUser.removedAfterFrame then break
 				inputs.readPos += 4
 				
 				// We create the player as soon as we receive the first input from that player,
@@ -1010,15 +1133,23 @@ skipInit global unit input
 						user.index = player.playerIndex
 						user.name = player.playerName
 						playersById[player.id] = player
-						
+					refreshLocalPlayer
+
 				else
 				if inputType == Join
 					player._id = internalUser._id = inputs.readString
 					player.playerLanguage = cast inputs.readInt8
-					player.playerName = internalUser.name = inputs.readString 
+					player.playerName = internalUser.name = inputs.readString
 					player.playerEmail = inputs.readString
 					string colorPreferencesString = inputs.readString
 					player.colorPreferences = colorPreferencesString.split(",").map.toInt
+					print "Player {userId} joined at frame {frame}", type:Reaction
+					app.onJoin??(userId)
+				else
+				if inputType == RemoveUser
+					int removeUserId = inputs.readInt
+					int lastFrame = inputs.readInt
+					removeUserDeterministically removeUserId, lastFrame, frame
 	
 		// for players
 		// 	let internalUser = internalUsers[.id]
@@ -1093,7 +1224,7 @@ skipInit global unit input
 		player.pointerPosition = referencePos
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}", input.isCertain
-		
+
 		internalUser.focus = ""
 
 		// Call input handlers
@@ -1252,8 +1383,12 @@ skipInit global unit input
 		players.sortBy.id
 		for players
 			.playerIndex = i
-			.playerColor = graphics.defaultColors[i]
-			.playerDarkColor = graphics.darkDefaultColors[i]
+			// More players than palette entries must wrap, not read out of bounds: an undefined
+			// playerColor throws in the draw path, and that caught error used to poison this
+			// client's replays (churn desync, seed 339031744 - a removed user's arriving stream
+			// transiently resurrects their player, so the count can exceed the palette)
+			.playerColor = graphics.defaultColors[i mod graphics.defaultColors.length]
+			.playerDarkColor = graphics.darkDefaultColors[i mod graphics.darkDefaultColors.length]
 			internalUsers[.id].index = i
 			
 		if core.mode == Local and not core.simulateConnection
@@ -1319,22 +1454,80 @@ skipInit global unit input
 	private getTargetedPlayers: Player[] by
 		return by and by.length > 0 and by[0] and not core.everybodyCanClickForEverybody ? by : players
 		
-	Player[] playersToRemove
-		
+
+	// Remove a player deterministically: writes a RemoveUser event into the local input stream,
+	// so the same player is removed at the same frame on all clients
 	removePlayer: Player player
-		if not isCertain then return
-		core.log "Removing player {player.id} at frame {core.frame}"
-		playersToRemove.add player
-		
-	internal removePlayersIfNecessary
-		for playersToRemove
-			players.remove .
-			playersById[.id] = null
-			updatePlayers
-			InternalUser user = internalUsers[.id]
-				PeerNetwork.disconnect user
-		playersToRemove.clear
-					
+		if not player then return
+		let user = internalUsers[player.id]
+		if not user or user.removed then return
+		handleRemoveUser player.id, user.local ? user.inputFrame : math.max(user.inputFrame, 0)
+
+	// Applies a parsed RemoveUser event. Runs during live play and again during replays after a
+	// rewind, so everything here must be idempotent. The InternalUser and its input bytes are kept
+	// (snapshots and replays reference them), only the Player leaves the game
+	internal removeUserDeterministically: int removeUserId, int lastFrame, int atFrame
+		let user = internalUsers[removeUserId]
+		if not user then return
+		if not user.removed
+			user.removed = true
+			user.removedAfterFrame = lastFrame
+			// The removal changes certainty and the snapshot pin for past frames - conservatively
+			// rewind the next pass to the pinned snapshot (runs once, the flag is idempotent)
+			core.markRemoteChange 0
+			PeerNetwork.onUserRemoved user
+			checkRemovalCutBelowPin user, lastFrame
+		else
+		if lastFrame < user.removedAfterFrame
+			// Amended removal: the original event's cut referenced stream bytes the mesh no longer
+			// holds (every storage wiped between the removal and a reload storm) - a permanent
+			// certainFrame deadlock, since a removed user only stops binding certainty once their
+			// bytes reach removedAfterFrame. The host detects the stalled fetch and re-removes with
+			// the cut it actually holds (PeerNetwork tick); applying is lower-only, so replays that
+			// re-parse the ORIGINAL event after this one can't raise the cut back (lifecycle seed
+			// 246528788). Safe to apply at any time: while the deadlock lasts, every client's
+			// snapshot pin is held at frame 0 by the same missing claim, so the conservative
+			// rewind below replays the amended timeline from the start
+			user.removedAfterFrame = lastFrame
+			core.markRemoteChange 0
+			print "Removal of player {removeUserId} amended: their inputs now count up to frame {lastFrame}", type:Reaction
+			checkRemovalCutBelowPin user, lastFrame
+		// The Player only leaves once the removed user's stream has deterministically ended. After
+		// a room clock reset the RemoveUser event can land at a frame BEFORE removedAfterFrame (the
+		// event is re-based onto the reset timeline, the removed user's old stream stamps are not):
+		// removing the Player here while their records are still being parsed would resurrect them
+		// as a fresh Player in parseInputs - a permanent ghost no removal ever cleans up again
+		// (lifecycle seed 167873016). parseInputs removes the Player once frame > removedAfterFrame
+		if atFrame > lastFrame
+			removeRemovedPlayer removeUserId, atFrame
+
+	// A removal cut below inputs we already applied AND below the pinned snapshot - the only
+	// valid rewind root - means our certified timeline includes inputs the removal just
+	// discarded. The conservative rewind above can't reach below the pin, so parsing on would
+	// keep the phantom inputs baked in for good: a permanent silent desync against every client
+	// whose copy of the removed stream ends at the cut (lifecycle seeds 170692360, 485951509 -
+	// the host's gossip merge prevents this for LIVING clients, but a client that applied the
+	// tail while partitioned, or restored it from an old stored copy, can still get here).
+	// Rebuild from the mesh instead: the reload replays every stream from frame 0 with the
+	// persisted cut applied up front (core.applyStoredStream), landing us on the group timeline
+	// with our identity and inputs intact
+	private checkRemovalCutBelowPin: InternalUser user, int lastFrame
+		if user.inputFrame <= lastFrame then return                            // We hold nothing past the cut
+		if core.snapshotFrame == -1 or core.snapshotFrame <= lastFrame + 1 then return // The rewind reaches the cut - the replay heals us
+		core.log "#fork <{user.id}> Removal cut {lastFrame} lies below their applied claim {user.inputFrame} and the snapshot pin {core.snapshotFrame}: our timeline may include discarded inputs -> rebuilding from the mesh"
+		core.rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s removal cut {lastFrame} is below the snapshot pin {core.snapshotFrame}"
+
+	// The deterministic end of a removal: the Player leaves the game. Called when the parse frame
+	// is past removedAfterFrame, so no records of the removed user can still follow. Idempotent -
+	// replays after a rewind run it again
+	private removeRemovedPlayer: int removeUserId, int atFrame
+		let player = playersById[removeUserId]
+		if not player then return
+		players.remove player
+		playersById[removeUserId] = null
+		updatePlayers
+		print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
+
 	// ---------------------------------------------- Touch Down ----------------------------------------------
 	
 	// Do something when the player touches or clicks within a given area.
@@ -1970,14 +2163,18 @@ input
 		return internalUsers[player].justReleased[key.index]
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
-	global getPointer: int player = 0
-		player = 0
-		return internalUsers[player].pointerPosition
+	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
+	// players' pointers are available and deterministic
+	global Vector2 getPointer: int player = 0
+		let requestedPlayer = players[player]
+			return requestedPlayer.pointerPosition
+		return {0,0}
 
-	// Returns the current scroll delta of the player's input device.
-	global getScrollDelta: int player = 0
-		player = 0
-		return internalUsers[player].scrollDelta
+	// Returns the current scroll delta of the player's input device. player is the playerIndex
+	global Vector2 getScrollDelta: int player = 0
+		let requestedPlayer = players[player]
+			return internalUsers[requestedPlayer.id].scrollDelta
+		return {0,0}
 
 	global allJustPressed: int player = 0
 		player = 0
