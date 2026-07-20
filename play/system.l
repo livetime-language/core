@@ -18,6 +18,10 @@ global transient skipInit unit system
 	public bool isHeadless = false
 	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
+
+	// Rewind
+	public Key rewindKey = LeftTrigger
+	public int rewindFrames = 4
 	
 	// Info
 	public inline js string appName	=> _appName

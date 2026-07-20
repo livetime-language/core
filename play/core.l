@@ -19,7 +19,7 @@ internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
 	bool enabledMilestones = false
-	int milestoneInterval = 1800
+	int milestoneInterval = 300
 	int smoothStrength = 90
 	bool smoothTouchPosition = true
 	bool everybodyCanClickForEverybody = false
