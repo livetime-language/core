@@ -82,7 +82,7 @@ fonts
 		"                                                                                                "
 	])
 
-	pico8 = Font(name: "pico8", charSize:{4,6}, charSizeWithoutPadding:{3,5}, pixelsAsStrings:[
+	pico8 = Font(name: "pico8", charSize:{4,6}, charSizeWithoutPadding:{3,5}, onlyUppercase:true, pixelsAsStrings:[
 		"     w  w w w w www w w ww   w   w   w  w w                   w www ww  www www w w www www www www www           w     w   www "
 		"     w  w w www ww    w ww  w   w     w  w   w               w  w w  w    w   w w w w   w     w w w w w  w   w   w  www  w    w "
 		"     w      w w  ww  w  www     w     w www www     www      w  w w  w  www  ww www www www   w www www         w         w  ww "
@@ -103,7 +103,7 @@ fonts
 		"                                                                                                                                "
 	])
 
-	c64 = Font(name: "c64", charSize:{8,8}, charSizeWithoutPadding:{8,8}, pixelsAsStrings:[
+	c64 = Font(name: "c64", charSize:{8,8}, pixelsAsStrings:[
 		"           vv    vv  vv  vv  vv    vv    vv   v   vvvv       vv     vv    vv                                                    "
 		"           vv    vv  vv  vv  vv   vvvvv  vv  vv  vv  vv     vv     vv      vv    vv  vv    vv                                 vv"
 		"           vv    vv  vv vvvvvvvv vv         vv    vvvv     vv     vv        vv    vvvv     vv                                vv "

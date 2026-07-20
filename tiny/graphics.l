@@ -139,6 +139,7 @@ immutable Font
 	Vector2 charSizeWithoutPadding
 	Vector2 sourceSize
 	int startChar = 32
+	bool onlyUppercase = false
 
 	visible int charsPerRow
 	visible ImmutableList<int> pixels
@@ -147,6 +148,7 @@ immutable Font
 		if not pixelsAsStrings then return
 		let maxWidth = pixelsAsStrings.max.length
 		if sourceSize.x == 0 and sourceSize.y == 0 then sourceSize = charSize
+		if charSizeWithoutPadding.x == 0 and charSizeWithoutPadding.y == 0 then charSizeWithoutPadding = charSize
 		charsPerRow = maxWidth / charSize.x
 		int[] pixels
 		int index
@@ -499,6 +501,7 @@ transient global skipInit graphics
 		int charH = floor(font.charSizeWithoutPadding.y)
 		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
 		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+		if font.onlyUppercase then text = text.toUpperCase
 		Vector2 p = pos
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
