@@ -133,14 +133,28 @@ immutable Color
 struct int
 	inline Color toColor => new Color(value:this)
 		
-BitmapFont
+immutable Font
 	string name
 	Vector2 charSize
-	Vector2 charSizeWithoutSpacing
+	Vector2 charSizeWithoutPadding
 	Vector2 sourceSize
-	int charsPerRow
-	int startChar
-	int[] pixels
+	int startChar = 32
+
+	visible int charsPerRow
+	visible ImmutableList<int> pixels
+
+	Font: string[] pixelsAsStrings = null
+		if not pixelsAsStrings then return
+		let maxWidth = pixelsAsStrings.max.length
+		if sourceSize.x == 0 and sourceSize.y == 0 then sourceSize = charSize
+		charsPerRow = maxWidth / charSize.x
+		int[] pixels
+		int index
+		for pixelsAsStrings as line
+			for line.length as i
+				pixels[index + i] = line[i] != " " ? 1 : 0
+			index += maxWidth
+		this.pixels = pixels
 
 Screen
 	Vector2 size
@@ -260,10 +274,9 @@ transient global skipInit graphics
 			colors.add color
 			colorByLetter[color.letter] = color.value
 
-		// openTiles
-		openFonts
 		screen = {}
 		screens = [screen]
+		font = fonts.monogram
 
 	setup
 		setResolution {224, 168}
@@ -311,36 +324,6 @@ transient global skipInit graphics
 				closestColor = .
 		return closestColor
 
-	inline js string fontsData => (typeof _data_fonts === "string" ? _data_fonts : "")
-	inline js string tilesData => (typeof _data_tiles === "string" ? _data_tiles : "")
-
-	// private openTiles
-	// 	tiles = []
-	// 	tileCollections = []
-	// 	TileCollection collection, prevCollection
-	// 	int index = 0
-	// 	for tilesData.split("\n") as line
-	// 		if line.startsWith "#"
-	// 			int colonIndex = line.indexOf ":"
-	// 			string key = line.substring(1, colonIndex).trim.toLowerCase
-	// 			string value = line.substring(colonIndex+1).trim
-	// 			if not collection then collection = {}
-	// 			collection[key] = value
-	// 		else
-	// 		if line.length > 0
-	// 			for line.length as i
-	// 				PaletteEntry entry = colorByLetter[line[i]]
-	// 				tiles[index + i] = entry ? entry.index : 0
-	// 			index += tilesStride
-
-	private openFonts
-		font = {name: "monogram", sourceSize:{6,12}, charSize:{6,10}, charSizeWithoutSpacing:{5,9}, charsPerRow: 16, startChar: 32 }
-		int index = 0
-		for fontsData.split("\n") as line
-			int pixelOffset = floor(i*font.sourceSize.x*font.charsPerRow)
-			for line.length as i
-				if line[i] != "0" then font.pixels[pixelOffset + i] = 1
-
 	startFrame
 		if system.fastForward then return
 		screen.clear
@@ -350,7 +333,7 @@ transient global skipInit graphics
 		screen.finishFrame
 
 	int[] pixels
-	BitmapFont font
+	Font font
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 	global string helpText
@@ -406,7 +389,6 @@ transient global skipInit graphics
 		if not isClick and not help then return
 
 		let pointerPos = getPointer()
-		// if help == "x" print help, pos - margin, pointerPos, pos + size + margin*2, pos - margin <= pointerPos < pos + size + margin*2
 		if pos - margin <= pointerPos < pos + size + margin*2
 			if help then helpText = help
 			if isClick then onClick()
@@ -513,15 +495,15 @@ transient global skipInit graphics
 		int fontStride = floor(font.charsPerRow * font.sourceSize.x)
 		let target = screen.pixels
 		int colorValue = color.value
-		int charW = floor(font.charSizeWithoutSpacing.x)
-		int charH = floor(font.charSizeWithoutSpacing.y)
+		int charW = floor(font.charSizeWithoutPadding.x)
+		int charH = floor(font.charSizeWithoutPadding.y)
 		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
 		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
 		Vector2 p = pos
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
 			int glyphX = floor(p.x), glyphY = floor(p.y)
-			int tileOffset = floor((char mod 16) * font.sourceSize.x + math.floor(char / 16) * fontStride * font.sourceSize.y)
+			int tileOffset = floor((char mod font.charsPerRow) * font.sourceSize.x + math.floor(char / font.charsPerRow) * fontStride * font.sourceSize.y)
 			int startX = 0, endX = charW
 			int startY = 0, endY = charH
 			if glyphX + startX < clipX1 then startX = clipX1 - glyphX
@@ -697,6 +679,7 @@ transient global skipInit graphics
 
 		int tileW = tileSize.x.floor
 		int tileH = tileSize.y.floor
+
 		// Screen origin so that tilemap tile (sourcePos) lands at pos
 		int originX = (pos.x - sourcePos.x * tileW).floor
 		int originY = (pos.y - sourcePos.y * tileH).floor
@@ -800,6 +783,7 @@ class Sprite
 class Tilemap
 	Sprite[] tiles
 	Vector2 size
+	string name = "main"
 
 	Tilemap: string[] tilesAsStrings = null
 		if not tilesAsStrings then return
