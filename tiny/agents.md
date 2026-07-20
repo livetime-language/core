@@ -52,7 +52,7 @@ tick	// app.tick is called every frame (30 times per second by default)
 	setPixel {x,y}, color:LightGray	// Colors: Black, DarkGray, LightGray, White, Blue, Red, Green, Yellow, Earth, Sand, Pink, Violet, DarkBlue, DarkRed, DarkGreen, Orange
 	drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
 	drawRect pos:{x,y}, size:{8,8}, fillColor:Red, outlineColor:Green	// Draw rectangle, leave out fillColor for no fill, leave out outlineColor for no outline
-	drawCircle pos:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle, radius can also be a Vector2 for an ellipse
+	drawCircle center:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle around center, radius can also be a Vector2 for an ellipse
 	drawSprite sprites.blueCircle, pos:{x, y}, transparentColor:Black	// Draw sprite with optional transparent color (Black if left out)
 	drawSprite sprites.blueCircle, frame:0, flipX:true, flipY:true	// Draw sprite with optional mirroring and animation frame (0 if left out)
 	drawSprite sprites.blueCircle, replaceColor:Blue with:DarkBlue	// Draw sprite with optional color replacement (none if left out)

@@ -581,7 +581,7 @@ transient global skipInit graphics
 		for rowStart + x0 to rowStart + x1 + 1 as i
 			target[i] = colorValue
 
-	global void drawCircle: Vector2 pos = {0,0}
+	global void drawCircle: Vector2 center = {0,0}
 		                    Vector2 radius
 							implicit Color fillColor = null
 							implicit Color outlineColor = null
@@ -591,73 +591,113 @@ transient global skipInit graphics
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
 		if radius.y == 0 then radius.y = radius.x
-			
-		// Pixel art ellipse/circle fitting exactly in the bounding box [pos, pos + radius*2].
-		// Bresenham midpoint rasterizer (Zingl): one connected 1px outline, no spurious pixels,
-		// handles even and odd diameters, no anti-aliasing. Fill and outline are both optional.
+
+		// Pixel art ellipse/circle centered on center, fitting exactly in the bounding box
+		// [center - radius, center + radius]. Bresenham midpoint rasterizer (Zingl): one connected
+		// 1px outline, no spurious pixels, handles even and odd diameters, no anti-aliasing.
+		// Clipping and pixel writes are inlined; per-row work is hoisted out of the inner loops.
 		int width = round(radius.x * 2)
 		int height = round(radius.y * 2)
 		if width >= 1 and height >= 1
-			int x0 = pos.x.floor
-			int y0 = pos.y.floor
+			int x0 = (center.x - radius.x).floor
+			int y0 = (center.y - radius.y).floor
 			int x1 = x0 + width - 1
 			int y1 = y0 + height - 1
 
-			int a = x1 - x0                 // horizontal diameter
-			int b = y1 - y0                 // vertical diameter
-			int b1 = b mod 2                // 1 for odd height
-			int dx = 4 * (1 - a) * b * b
-			int dy = 4 * (b1 + 1) * a * a
-			int err = dx + dy + b1 * a * a
-			int e2
+			int clipX1 = screen.clipX1, clipX2 = screen.clipX2
+			int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+			if x0 < clipX2 and x1 >= clipX1 and y0 < clipY2 and y1 >= clipY1
+				int stride = floor(screen.size.x)
+				int[] target = screen.pixels
+				int maxX = clipX2 - 1
 
-			y0 += floor((b + 1) / 2)        // start at the vertical centre
-			y1 = y0 - b1
-			int xStep = 8 * b * b
-			int yStep = 8 * a * a
+				int a = x1 - x0                 // horizontal diameter
+				int b = y1 - y0                 // vertical diameter
+				int b1 = b mod 2                // 1 for odd height
+				int dx = 4 * (1 - a) * b * b
+				int dy = 4 * (b1 + 1) * a * a
+				int err = dx + dy + b1 * a * a
+				int e2
 
-			bool hasFill = fillColor != null
-			bool hasOutline = outlineColor != null
-			int fillValue = hasFill ? fillColor.value : 0
+				y0 += floor((b + 1) / 2)        // start at the vertical centre
+				y1 = y0 - b1
+				int xStep = 8 * b * b
+				int yStep = 8 * a * a
 
-			while x0 <= x1
-				if hasFill
-					hLine x0, x1, y0, fillValue
-					hLine x0, x1, y1, fillValue
-				if hasOutline
-					setPixel {x1, y0}, outlineColor
-					setPixel {x0, y0}, outlineColor
-					setPixel {x0, y1}, outlineColor
-					setPixel {x1, y1}, outlineColor
-				e2 = 2 * err
-				if e2 <= dy
-					y0 += 1
-					y1 -= 1
-					dy += yStep
-					err += dy
-				if e2 >= dx or 2 * err > dy
-					x0 += 1
-					x1 -= 1
-					dx += xStep
-					err += dx
+				bool hasFill = fillColor != null
+				bool hasOutline = outlineColor != null
+				int fillValue = hasFill ? fillColor.value : 0
+				int outlineValue = hasOutline ? outlineColor.value : 0
+				int rowY0 = y0 * stride         // row offsets, stepped by stride instead of multiplying per row
+				int rowY1 = y1 * stride
 
-			// Finish the tips of very flat ellipses (a tiny radius on one axis)
-			while y0 - y1 < b
-				if hasFill
-					hLine x0 - 1, x1 + 1, y0, fillValue
-					hLine x0 - 1, x1 + 1, y1, fillValue
-				if hasOutline
-					setPixel {x0 - 1, y0}, outlineColor
-					setPixel {x1 + 1, y0}, outlineColor
-					setPixel {x0 - 1, y1}, outlineColor
-					setPixel {x1 + 1, y1}, outlineColor
-				y0 += 1
-				y1 -= 1
+				while x0 <= x1
+					bool y0Visible = clipY1 <= y0 < clipY2
+					bool y1Visible = clipY1 <= y1 < clipY2
+					if hasFill and (y0Visible or y1Visible)
+						int left = x0 atLeast clipX1
+						int right = x1 atMost maxX
+						if left <= right
+							if y0Visible
+								for rowY0 + left to rowY0 + right + 1 as i
+									target[i] = fillValue
+							if y1Visible
+								for rowY1 + left to rowY1 + right + 1 as i
+									target[i] = fillValue
+					if hasOutline
+						bool x0Visible = clipX1 <= x0 < clipX2
+						bool x1Visible = clipX1 <= x1 < clipX2
+						if y0Visible
+							if x1Visible then target[rowY0 + x1] = outlineValue
+							if x0Visible then target[rowY0 + x0] = outlineValue
+						if y1Visible
+							if x0Visible then target[rowY1 + x0] = outlineValue
+							if x1Visible then target[rowY1 + x1] = outlineValue
+					e2 = 2 * err
+					if e2 <= dy
+						y0 += 1
+						y1 -= 1
+						rowY0 += stride
+						rowY1 -= stride
+						dy += yStep
+						err += dy
+					if e2 >= dx or 2 * err > dy
+						x0 += 1
+						x1 -= 1
+						dx += xStep
+						err += dx
 
-		handleClickAndHelp onClick, help, pos, radius*2, margin
+				// Finish the tips of very flat ellipses (a tiny radius on one axis)
+				if y0 - y1 < b
+					int tipLeft = x0 - 1
+					int tipRight = x1 + 1
+					int left = tipLeft atLeast clipX1
+					int right = tipRight atMost maxX
+					bool fillSpan = hasFill and left <= right
+					bool tipLeftVisible = hasOutline and clipX1 <= tipLeft < clipX2
+					bool tipRightVisible = hasOutline and clipX1 <= tipRight < clipX2
+					while y0 - y1 < b
+						if clipY1 <= y0 < clipY2
+							if fillSpan
+								for rowY0 + left to rowY0 + right + 1 as i
+									target[i] = fillValue
+							if tipLeftVisible then target[rowY0 + tipLeft] = outlineValue
+							if tipRightVisible then target[rowY0 + tipRight] = outlineValue
+						if clipY1 <= y1 < clipY2
+							if fillSpan
+								for rowY1 + left to rowY1 + right + 1 as i
+									target[i] = fillValue
+							if tipLeftVisible then target[rowY1 + tipLeft] = outlineValue
+							if tipRightVisible then target[rowY1 + tipRight] = outlineValue
+						y0 += 1
+						y1 -= 1
+						rowY0 += stride
+						rowY1 -= stride
 
-	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
-		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor
+		handleClickAndHelp onClick, help, center - radius, radius*2, margin
+
+	global void drawCircle: Vector2 center = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
+		drawCircle center, radius:{radius, radius}, fillColor, outlineColor
 
 	global void drawLine: Vector2 from = {0,0}
 		                  Vector2 to = {0,0}

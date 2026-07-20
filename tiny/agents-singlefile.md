@@ -52,7 +52,7 @@ app	// Static classes have lowercase names. Access its members with app.players,
 		drawSprite sprites.blueCircle, pos:{x, y}	// Draw sprite
 		drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
 		drawRect pos:{x,y}, size:{8,8}, fillColor:Red, outlineColor:Green	// Draw rectangle, leave out fillColor for no fill, leave out outlineColor for no outline
-		drawCircle pos:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle, radius can also be a Vector2 for an ellipse
+		drawCircle center:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle around center, radius can also be a Vector2 for an ellipse
 		clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
 		replaceColor Black with:White	// All drawing functions will replace color a with color b until stopReplacingColors is called
 		if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
