@@ -98,11 +98,9 @@ global transient skipInit unit system
 			this.engineStarted = false
 			this.homeFrame = 0
 			this.homeInterrruptAtOutputIndex = -1
-			this.isDebug = isDebug
-			this.userCount = 2
+			this.isDebug = isDebug or false
 			if backend?? then await backend??.connect2()
 			statistics.startTime = now
-			core.simulateConnection = false
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
 		
 			// isMobile = true
@@ -237,7 +235,7 @@ global transient skipInit unit system
 
 	public embeddedTick
 		core.step fastForward:false draw:true
-		return graphics.screen.pixels
+		return graphics??.screen.pixels
 	
 	// This is called every animation frame
 	private tick

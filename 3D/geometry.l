@@ -1855,7 +1855,7 @@ global transient skipInit unit system
 		                                    Vector2 pos,                  // The position of the current item
 		                                    int i                         // The index of the current item of the list we are iterating over with forCentered
 		                                ) do                              // Do this for each item in a list
-		for(let i=0, _subject=subject, _start = start, _delta = delta, _len=_subject.length, _x = _start.x, _y= _start.y; i<_len; ++i, _x += _delta.x, _y += _delta.y) { let it = _subject[i], pos = new Vector2(_x, _y, _start.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _start.location, _delta.location) : null); do()}
+		for(let _i=0, _subject=subject, _start = start, _delta = delta, _len=_subject.length, _x = _start.x, _y= _start.y; _i<_len; ++_i, _x += _delta.x, _y += _delta.y) { let it = _subject[_i], pos = new Vector2(_x, _y, _start.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _start.location, _delta.location) : null); do()}
 
 	global inline js void forPositions: int to                            // The exclusive upper bound to iterate towards
 		                                Vector2 start = {0,0}             // Left or top align items at this position
@@ -1864,18 +1864,18 @@ global transient skipInit unit system
 		                                    Vector2 pos,                  // The position of the current item
 		                                    int i                         // The index of the current item of the list we are iterating over with forCentered
 		                                ) do                              // Do this for each item in a list
-		for(let i=0, _start = start, _delta = delta, _len=to, _x = _start.x, _y= _start.y; i<_len; ++i, _x += _delta.x, _y += _delta.y) { let pos = new Vector2(_x, _y, _start.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _start.location, _delta.location) : null); do()}
+		for(let _i=0, _start = start, _delta = delta, _len=to, _x = _start.x, _y= _start.y; _i<_len; ++_i, _x += _delta.x, _y += _delta.y) { let pos = new Vector2(_x, _y, _start.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _start.location, _delta.location) : null); do()}
 
 	global inline js void forPositions: T[] subject                       // The list to iterate over
 		                                Vector2 start = {0,0}             // Left or top align items at this position
-		                                implicit Vector2 elta = {300,300} // Distance between items
+		                                implicit Vector2 delta = {300,300} // Distance between items
 		                                float width                       // Wrap to the next row when we reach this width
 		                                -> void(
 		                                    T it,                         // The current item of the list we are iterating over with forCentered
 		                                    Vector2 pos,                  // The position of the current item
 		                                    int i                         // The index of the current item of the list we are iterating over with forCentered
 		                                ) do                              // Do this for each item in a list
-		for(let i=0, _subject=subject, _start = start, _delta = delta, _width = width, _len=_subject.length, _x = _start.x, _y= _start.y; i<_len; ++i, _x += _delta.x) { if(_x >= _start.x+_width) {_x = _start.x; _y += _delta.y} let it = _subject[i], pos = new Vector2(_x, _y, _start.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _start.location, _delta.location) : null); do()}
+		for(let _i=0, _subject=subject, _start = start, _delta = delta, _width = width, _len=_subject.length, _x = _start.x, _y= _start.y; _i<_len; ++_i, _x += _delta.x) { if(_x >= _start.x+_width) {_x = _start.x; _y += _delta.y} let it = _subject[_i], pos = new Vector2(_x, _y, _start.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _start.location, _delta.location) : null); do()}
 
 	global inline js void forPositions: T[] subject                       // The list to iterate over
 		                                Vector2 center = {0,0}            // Center items at this position
@@ -1885,7 +1885,7 @@ global transient skipInit unit system
 		                                    Vector2 pos,                  // The position of the current item
 		                                    int i                         // The index of the current item of the list we are iterating over with forCentered
 		                                ) do                              // Do this for each item in a list
-		for(let i=0, _subject=subject, _center = center, _delta = delta, _len=_subject.length, _x = _center.x-(_len-1)*_delta.x/2, _y=_center.y-(_len-1)*_delta.y/2; i<_len; ++i, _x += _delta.x, _y += _delta.y) { let it = _subject[i], pos = new Vector2(_x, _y, _center.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _center.location, _delta.location) : null); do()}
+		for(let _i=0, _subject=subject, _center = center, _delta = delta, _len=_subject.length, _x = _center.x-(_len-1)*_delta.x/2, _y=_center.y-(_len-1)*_delta.y/2; _i<_len; ++_i, _x += _delta.x, _y += _delta.y) { let it = _subject[_i], pos = new Vector2(_x, _y, _center.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _center.location, _delta.location) : null); do()}
 
 	global inline js void forPositions: int to                            // The exclusive upper bound to iterate towards
 		                                Vector2 center = {0,0}            // Center items at this position
@@ -1894,7 +1894,7 @@ global transient skipInit unit system
 		                                    Vector2 pos,                  // The position of the current item
 		                                    int i,                        // The index of the current item of the list we are iterating over with forCentered
 		                                ) do                              // Do this for each item in a list
-		for(let i=0, _center = center, _delta = delta, _len=to, _x = _center.x-(_len-1)*_delta.x/2, _y=_center.y-(_len-1)*_delta.y/2; i<_len; ++i, _x += _delta.x, _y += _delta.y) { let pos = new Vector2(_x, _y, _center.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _center.location, _delta.location) : null); do()}
+		for(let _i=0, _center = center, _delta = delta, _len=to, _x = _center.x-(_len-1)*_delta.x/2, _y=_center.y-(_len-1)*_delta.y/2; _i<_len; ++_i, _x += _delta.x, _y += _delta.y) { let pos = new Vector2(_x, _y, _center.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _center.location, _delta.location) : null); do()}
 
 	global inline js void forPositions: T[] subject                       // The list to iterate over
 		                                Vector2 end = {0,0}               // Right or bottom align items at this position
@@ -1904,7 +1904,7 @@ global transient skipInit unit system
 		                                    Vector2 pos,                  // The position of the current item
 		                                    int i                         // The index of the current item of the list we are iterating over with forCentered
 		                                ) do                              // Do this for each item in a list
-		for(let i=0, _subject=subject, _end = end, _delta = delta, _len=_subject.length, _x = _end.x-(_len-1)*_delta.x, _y=_end.y-(_len-1)*_delta.y; i<_len; ++i, _x += _delta.x, _y += _delta.y) { let it = _subject[i], pos = new Vector2(_x, _y, _end.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _end.location, _delta.location) : null); do()}
+		for(let _i=0, _subject=subject, _end = end, _delta = delta, _len=_subject.length, _x = _end.x-(_len-1)*_delta.x, _y=_end.y-(_len-1)*_delta.y; _i<_len; ++_i, _x += _delta.x, _y += _delta.y) { let it = _subject[_i], pos = new Vector2(_x, _y, _end.location || _delta.location ? new SourceCodeLocation(null, 0, 0, _end.location, _delta.location) : null); do()}
 
 // Converts positions within an isomatic grid with the origin in the north
 // Tilt your head slighly to the right to visualize the directions
@@ -2091,7 +2091,7 @@ class Grid<T>
 		                     IntVector2 pos,
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
-		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) { let pos = new IntVector2(i%this.size.x, Math.floor(i/this.size.x)); do()}}
+		for(let _i=0, _subject=this.items, _len=_subject.length; _i<_len; ++_i) { let it = _subject[_i]; if(it) { let pos = new IntVector2(_i%this.size.x, Math.floor(_i/this.size.x)); do()}}
 			
 	inline js void each: includeEmpty = false // Include items that are null
 		                 -> void(
@@ -2099,7 +2099,7 @@ class Grid<T>
 		                     IntVector2 pos,
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
-		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) { let it = _items[y*_size.x + x]; let pos = new IntVector2(x,y); do()}
+		for(let _size=this.size, _y=0, _items=this.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) { let it = _items[_y*_size.x + _x]; let pos = new IntVector2(_x,_y); do()}
 			
 	// Return a list that includes the selected field or expression for each item
 	inline js TValue[] map: TValue(T it) selector
@@ -2145,7 +2145,7 @@ global transient skipInit unit system
 		                           int x,          // The x component of the current position we are iterating over with the for-loop
 		                           int y           // The y component of the current position we are iterating over with the for-loop
 		                       ) do                // Do this the given number of times
-		for(let _size=subject, y=0; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) { let pos = new IntVector2(x,y); do()}
+		for(let _size=subject, _y=0; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) { let pos = new IntVector2(_x,_y); do()}
 			
 	global inline js void for: IntVector2 subject  // The exclusive upper bound to iterate towards
 		                       <- void(
@@ -2153,7 +2153,7 @@ global transient skipInit unit system
 		                           int x,          // The x component of the current position we are iterating over with the for-loop
 		                           int y           // The y component of the current position we are iterating over with the for-loop
 		                       ) do                // Do this the given number of times
-		for(let _size=subject, y=_size.y-1; y>=0; --y) for(let x=_size.x-1; x>=0; --x) { let pos = new IntVector2(x,y); do()}
+		for(let _size=subject, _y=_size.y-1; _y>=0; --_y) for(let _x=_size.x-1; _x>=0; --_x) { let pos = new IntVector2(_x,_y); do()}
 			
 	global inline js void for: Grid<T> subject    // The grid to iterate over
 		                       -> void(
@@ -2161,7 +2161,7 @@ global transient skipInit unit system
 		                           IntVector2 pos,
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) { let pos = new IntVector2(i%subject.size.x, Math.floor(i/subject.size.x)); do()}}
+		for(let _i=0, _subject=subject.items, _len=_subject.length; _i<_len; ++_i) { let it = _subject[_i]; if(it) { let pos = new IntVector2(_i%subject.size.x, Math.floor(_i/subject.size.x)); do()}}
 			
 	global inline js void for: Grid<T> subject      // The grid to iterate over
 		                       includeEmpty = false // Include items that are null
@@ -2170,7 +2170,7 @@ global transient skipInit unit system
 		                           IntVector2 pos,
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) { let it = _items[y*_size.x + x]; let pos = new IntVector2(x,y); do()}
+		for(let _size=subject.size, _y=0, _items=subject.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) { let it = _items[_y*_size.x + _x]; let pos = new IntVector2(_x,_y); do()}
 
 	global inline js TResult[] for: IntVector2 to     // Iterator over both dimensions of the vector towards this exclusive upper bound
 		                            TResult(
