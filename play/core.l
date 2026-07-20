@@ -266,6 +266,7 @@ internal transient skipInit unit core
 		// so a debug replay reuses their memory. input is a skipInit unit, so its serialized
 		// rewind fields must be reset explicitly
 		isRewinding = false
+		rewindLogStarted = false
 		for rewindHistory as entry
 			rewindEntryPool.add entry
 		rewindHistory.clear
@@ -1004,12 +1005,21 @@ internal transient skipInit unit core
 	// rewindFrames further back instead of simulating forward. Returns true when the state
 	// was rewound: the caller skips the physics step, and tick draws (and deterministically
 	// evolves by one position, with cleared events) the restored world
+	// Live-step transition logging only: on a client that merely FOLLOWS a remote hold, the
+	// pops happen inside fastForward replay passes (the claim gate keeps the live prediction
+	// forward), so keying the logs on the pass-crossing isRewinding flag spammed a spurious
+	// "Released" line on every live frame of the hold
+	private bool rewindLogStarted
+	private checkLogRewindReleased
+		if rewindLogStarted and not system.fastForward
+			rewindLogStarted = false
+			log "#rewind Released at frame {frame}: the world continues from playhead {input.rewindPlayhead}"
+
 	private bool checkRewindMechanic
-		bool wasRewinding = isRewinding
 		isRewinding = false
 		if not rewindMechanicEnabled or lobby.inLobby then return false
 		if not anyPlayerHoldsRewindKey
-			if wasRewinding and not system.fastForward then log "#rewind Released at frame {frame}: the world continues from playhead {input.rewindPlayhead}"
+			checkLogRewindReleased
 			return false
 		int step = rewindStepFrames
 		// The previous rewind frame ended at target+1 (the display tick), so stepping back
@@ -1029,7 +1039,9 @@ internal transient skipInit unit core
 			if not system.fastForward then log "#rewind No history entry at playhead {target} (floor {input.rewindFloor}) - stepping forward"
 			return false
 		if verbose then log "#rewind #{frame} pop {input.rewindPlayhead} -> {target} (entry from frame {entry.captureFrame})"
-		if not wasRewinding and not system.fastForward then log "#rewind Started at frame {frame} from playhead {input.rewindPlayhead}"
+		if not rewindLogStarted and not system.fastForward
+			rewindLogStarted = true
+			log "#rewind Started at frame {frame} from playhead {input.rewindPlayhead}"
 		// The hold flags and the floor are properties of the PRESENT - the restore overwrites
 		// them with their historical values, so carry them across (reused scratch lists)
 		rewindScratchIds.clear
