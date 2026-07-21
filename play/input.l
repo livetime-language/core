@@ -1892,6 +1892,8 @@ class Key
 	string code
 	string character
 	int index
+	Key mapTo
+	int playerIndex
 
 	inline string toString() this.character
 
@@ -1917,13 +1919,13 @@ class Key
 	global const RightMouseButton = {type:Pointer, code:"RightMouseButton"}
 
 	global const Backspace	= {type:Keyboard, code:"Backspace"}
-	global const Enter	= {type:Keyboard, code:"Enter", character:"\n"}
-	global const Tab	= {type:Keyboard, code:"Tab", character:"\t"}
-	global const Space	= {type:Keyboard, code:"Space", character:" "}
+	global const Enter	= {type:Keyboard, code:"Enter",	character:"\n"}
+	global const Tab	= {type:Keyboard, code:"Tab",	character:"\t"}
+	global const Space	= {type:Keyboard, code:"Space",	character:" ", mapTo:A, playerIndex:0}
 	global const Esc 	= {type:Keyboard, code:"Escape"}
 	global const ShiftLeft	= {type:Keyboard, code:"ShiftLeft"}
 	global const ShiftRight	= {type:Keyboard, code:"ShiftRight"}
-	global const CtrlLeft	= {type:Keyboard, code:"CtrlLeft"}
+	global const CtrlLeft	= {type:Keyboard, code:"CtrlLeft", mapTo:B, playerIndex:0}
 	global const CtrlRight	= {type:Keyboard, code:"CtrlRight"}
 	global const AltLeft	= {type:Keyboard, code:"AltLeft"}
 	global const AltRight	= {type:Keyboard, code:"AltRight"}
