@@ -82,7 +82,7 @@ class Music
 transient global skipInit audio
 	// Play an audio track (like Pico-8 sfx()). channel -1 picks a free channel automatically.
 	global js void playSound: AudioTrack audioTrack, int channel = -1, int startIndex = 0, int length = 0
-		if(_global.core && !_global.core.isPremiere) return;
+		if((_global.core && !_global.core.isPremiere) || !audioTrack) return;
 		audio.setup();
 		audio.sendMessage({type: "sound", id: audio.defineTrack(audioTrack), channel: channel, offset: startIndex, length: length});
 
@@ -101,7 +101,7 @@ transient global skipInit audio
 	// Play music, optionally fading in over fadeDuration milliseconds (like Pico-8 music()).
 	// reservedChannels is a bitmask of channels only music may use (like the Pico-8 channel mask).
 	global js void playMusic: Music music, float fadeDuration = 0, int startPattern = 0, int reservedChannels = 0
-		if(_global.core && !_global.core.isPremiere) return;
+		if((_global.core && !_global.core.isPremiere) || !music) return;
 		audio.setup();
 		const patterns = [];
 		for(let i = 0; i < music.patterns.length; i++) {
@@ -126,7 +126,7 @@ transient global skipInit audio
 
 	// Set the tracks that notes with waveform Custom1 - Custom8 play as instruments
 	global js void setInstruments: AudioTrack[] audioTracks
-		if(_global.core && !_global.core.isPremiere) return;
+		if((_global.core && !_global.core.isPremiere) || !audioTracks) return;
 		audio.setup();
 		const ids = [];
 		for(let i = 0; i < 8; i++) ids.push(i < audioTracks.length && audioTracks[i] ? audio.defineTrack(audioTracks[i]) : -1);
@@ -196,6 +196,15 @@ transient global skipInit audio
 		const INV = 1 / SR;                          // seconds per output sample
 		const DELAY1 = Math.round(366 * SR / 22050); // reverb 1: 2 ticks
 		const DELAY2 = Math.round(732 * SR / 22050); // reverb 2: 4 ticks
+		// loudness of the noise waveform per key, measured from PICO-8 recordings at 12 keys
+		const NOISE_KEYS = [0, 6, 9, 15, 21, 27, 33, 39, 46, 52, 58, 63];
+		const NOISE_BOOSTS = [2.74, 2.51, 2.31, 1.92, 1.71, 1.54, 1.42, 1.39, 1.42, 1.49, 1.53, 1.59];
+		const NOISE_GAIN = new Float64Array(64);
+		for(let k = 0, a = 0; k < 64; k++) {
+			while(a < NOISE_KEYS.length - 2 && k > NOISE_KEYS[a + 1]) a++;
+			const t = (k - NOISE_KEYS[a]) / (NOISE_KEYS[a + 1] - NOISE_KEYS[a]);
+			NOISE_GAIN[k] = NOISE_BOOSTS[a] + (NOISE_BOOSTS[a + 1] - NOISE_BOOSTS[a]) * t;
+		}
 		function keyToFreq(key) { return 440 * Math.pow(2, (key - 33) / 12); }
 		function mix(a, b, t) { return a + (b - a) * t; }
 		function clamp(x, lo, hi) { return x < lo ? lo : x > hi ? hi : x; }
@@ -222,13 +231,14 @@ transient global skipInit audio
 		}
 		function makeSynth() {
 			return {instrument: 0, custom: 0, key: 0, freq: 0, volume: 0, phi: 0,
-				lastAdvance: 0, lastSample: 0, isMusic: false,
+				lastAdvance: 0, lastSample: 0, holdCount: 0, holdSample: 0, isMusic: false,
 				noiz: false, buzz: false, detune: 0, reverb: 0, dampen: 0};
 		}
 		function copySynth(dst, src) {
 			dst.instrument = src.instrument; dst.custom = src.custom;
 			dst.key = src.key; dst.freq = src.freq; dst.volume = src.volume; dst.phi = src.phi;
 			dst.lastAdvance = src.lastAdvance; dst.lastSample = src.lastSample; dst.isMusic = src.isMusic;
+			dst.holdCount = src.holdCount; dst.holdSample = src.holdSample;
 			dst.noiz = src.noiz; dst.buzz = src.buzz;
 			dst.detune = src.detune; dst.reverb = src.reverb; dst.dampen = src.dampen;
 		}
@@ -265,12 +275,20 @@ transient global skipInit audio
 						ret = (t < 0.5 && ret > -1.875) ? ret * 0.2 - 1 : ret + 0.5;
 					}
 					return ret / 9;
-				case 6: { // noise: a pitch-tracking smoothed random walk
+				case 6: { // noise
+					if(noiz) { // pure white noise, held for 64-key samples (measured from Pico-8 recordings)
+						state.holdCount -= 22050 * INV;
+						if(state.holdCount <= 0) {
+							state.holdCount += Math.max(1, 64 - key);
+							state.holdSample = Math.random() * 2 - 1;
+						}
+						state.lastAdvance = phi;
+						return state.holdSample * 0.25;
+					}
+					// a pitch-tracking smoothed random walk
 					const scale = (phi - state.lastAdvance) * 8.858923; // 8.858923 = 22050 / freq(63)
 					const sample = (state.lastSample + scale * (Math.random() * 2 - 1)) / (1 + scale);
-					const factor = 1 - key / 63;
-					ret = sample * 1.5 * (1 + factor * factor);
-					if(noiz) ret *= 2 * (t < 0.5 ? t : t - 1); // "pure white noise" switch
+					ret = sample * NOISE_GAIN[Math.min(63, Math.max(0, Math.round(key)))];
 					state.lastAdvance = phi;
 					state.lastSample = sample;
 					return ret;
@@ -472,31 +490,35 @@ transient global skipInit audio
 					let freq = keyToFreq(key) * freqFactor;
 					if(volume > 0) {
 						const fx = t.fx[noteId];
+						// effect curves advance once per tick, like the Pico-8 tracker (measured from recordings)
+						const tick = Math.floor((offset - noteId) * speed);
+						const s = tick / speed;
+						const tickTime = Math.floor(offset * speed) * 183 / 22050; // in seconds since the start of the track
 						switch(fx) {
-							case 1: { // slide from the previous note and volume
-								const s = offset % 1;
-								freq = mix(keyToFreq(cur.prevKey), freq, s);
+							case 1: { // slide from the previous note and volume, linear in semitones
+								const prevFreq = keyToFreq(cur.prevKey);
+								freq = prevFreq * Math.pow(freq / prevFreq, s);
 								if(cur.prevVol > 0) volume = mix(cur.prevVol, volume, s);
 								break;
 							}
-							case 2: { // vibrato: 7.5 Hz triangle, a quarter semitone deep
-								const s = Math.abs((7.5 * offset / offsetPerSecond) % 1 - 0.5) - 0.25;
-								freq = mix(freq, freq * 1.059463094359, s);
+							case 2: { // vibrato: 7.5 Hz triangle, a quarter semitone deep, starting at zero rising
+								const lfo = Math.abs((7.5 * tickTime + 0.75) % 1 - 0.5) - 0.25;
+								freq = mix(freq, freq * 1.059463094359, lfo);
 								break;
 							}
-							case 3: // drop: fall to zero within the note
-								freq *= 1 - offset % 1;
+							case 3: // drop: fall towards zero within the note
+								freq *= 1 - s;
 								break;
 							case 4: // fade in
-								volume *= offset % 1;
+								volume *= (tick + 1) / speed;
 								break;
 							case 5: // fade out
-								volume *= 1 - offset % 1;
+								volume *= 1 - s;
 								break;
 							case 6:
 							case 7: { // arpeggio over the note's group of four, at 4 or 8 ticks per step
 								const m = (speed <= 8 ? 32 : 16) / (fx == 6 ? 4 : 8);
-								const n = Math.floor(m * 7.5 * offset / offsetPerSecond);
+								const n = Math.floor(m * 7.5 * tickTime);
 								const arpNote = (noteId & ~3) | (n & 3);
 								freq = keyToFreq(t.pitch[arpNote]);
 								break;
