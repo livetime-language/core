@@ -195,13 +195,15 @@ Sound
 		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
 		return this
 
-transient global skipInit unit audio
+transient global skipInit unit sounds
 	global importance:4 playSound: Sound sound
 		              float delay = 0 // The delay before the sound starts in milliseconds
 		              bool needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain then return
 		
-		if Time.ticks == 0
+		// Boot special case, keyed to the engine's first step (core.frame, not Time.ticks:
+		// the rewind playhead revisits 0 when a local session rewinds to its start)
+		if core.frame == 0
 			fx.add PlaySoundAnimation startTime:math.ceil(Time.now+core.frameTime)+delay, sound
 		else
 		if delay

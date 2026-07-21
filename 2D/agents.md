@@ -35,11 +35,11 @@ So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}.
 The background is black by default. 
 
 # Compile and test
-Run "npm run compile" to compile.
+Check your code with "livetime check", build with "livetime build".
 Open "assets/index.html" in a browser and check no text or images overlap unintentionally.
 
 Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
-Use "npm run test" to run all unit tests.
+Use "livetime test" to run all unit tests.
 
 # Library Source Code
 When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"

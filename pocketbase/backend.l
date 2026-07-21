@@ -506,7 +506,7 @@ global transient priority unit system
 		                           T it,      // The current item of the list we are iterating over with the for-loop
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) do(_subject[i], i)
+		for(let _i=0, _subject=subject.items, _len=_subject.length; _i<_len; ++_i) do(_subject[_i], _i)
 		
 	// Do something a given number of times or for each item in a list
 	global inline js void for: DatabaseTable<T> subject    // The list to iterate over
@@ -514,4 +514,4 @@ global transient priority unit system
 		                           T it,      // The current item of the list we are iterating over with the for-loop
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let _subject=subject.items, i=_subject.length-1; i>=0; --i) do(_subject[i], i)
+		for(let _subject=subject.items, _i=_subject.length-1; _i>=0; --_i) do(_subject[_i], _i)

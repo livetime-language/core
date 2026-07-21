@@ -1,12 +1,34 @@
 enum NetworkMode: None, Ping, Local, Connected
-internal transient immutable RoomInfo: int time, userId
+
+// Everything a client remembers about a room: the identity to rejoin with (including the
+// session token proving the id is ours) and the recovery info a freshly restarted server needs
+// to recreate the room (seed, start time). Stored in sessionStorage (this tab's own identity,
+// survives a reload) and - only by the tab holding the identity lease - in localStorage (the
+// browser's identity, survives a browser restart). See core.requestIdentityLease
+internal transient immutable RoomInfo
+	int time
+	int userId
+	string seed
+	float serverStartTime
+	int maxUserId
+	string token
+
 enum SendInputsMode: None, Peer, Server
-	
+
+// One shared-rewind history slot: the world bytes and the frame whose step captured them
+// (the state entering that frame). captureFrame decides whether the entry is certified
+// history (captureFrame <= certainFrame+1, the same rule as the snapshot pin) or still
+// prediction - predicted entries are discarded on a rollback below them, exactly like the
+// predicted world state itself (see core.cleanupSpeculativeRewindEntries)
+internal transient RewindEntry
+	Buffer bytes = {}
+	int captureFrame
+
 internal transient skipInit unit core
 	int eventStreamVersion = 2
 	int sendInterval = 1
 	bool enabledMilestones = false
-	int milestoneInterval = 1800
+	int milestoneInterval = 300
 	int smoothStrength = 90
 	bool smoothTouchPosition = true
 	bool everybodyCanClickForEverybody = false
@@ -30,6 +52,7 @@ internal transient skipInit unit core
 	public float startTime          // The time the room was created, syncroniced between all clients
 	public float serverStartTime     // Used to calculate the same Time.now from core.frame for all users in core.step
 	int frame               // Current frame, will increase by 1 at the end of every step (every targetFrameTime ms)
+	int certainFrame = -1   // The last frame whose inputs are final from every user (min over users of min(inputFrame, smoothFrame), set in step)
 	internal int frames             // Total number of frames we have inputs for
 	internal int frameWithNewWatches// First frame with new watches, do not send watches for frames below this
 	int watchIndex
@@ -39,15 +62,104 @@ internal transient skipInit unit core
 	UserAccount account
 	
 	// Checksum
-	public float[] checksums
+	// Kept in a fixed-size ring keyed by frame instead of a flat float[frame] array, which grew
+	// for the whole session (F29). Each slot remembers the frame it belongs to, so a stale entry
+	// can never be mistaken for the requested frame - it just reads as missing
+	const checksumWindow = 4096
+	private float[] checksumValues
+	private int[] checksumFrames
+	private int[] checksumRosters
+	private int maxChecksumFrame = -1
 	public int lastChecksumFrame
+
+	float getChecksum: int frame
+		if frame < 0 then return 0
+		return checksumFrames[frame mod checksumWindow] == frame ? checksumValues[frame mod checksumWindow] : 0
+
+	// The roster hash stored with a checksum: which players' inputs fed the state it was
+	// computed from. Two internally consistent forks of a partitioned room differ exactly here,
+	// and their state checksums MUST differ - comparing them would report a determinism bug
+	// where there is none, so mismatched-roster checksums are skipped instead (the fork itself
+	// is the removal protocol's job to arbitrate)
+	int getChecksumRoster: int frame
+		if frame < 0 then return 0
+		return checksumFrames[frame mod checksumWindow] == frame ? checksumRosters[frame mod checksumWindow] : 0
+
+	// Presence is keyed by the ring's frame slot, never by the value: a genuine checksum of 0
+	// (1 in 2^32 per frame, and the sessions are long-lived) must be stored and compared like
+	// any other value - the old 0-sentinel skipped the compare for exactly those frames
+	bool hasChecksum: int frame
+		return frame >= 0 and checksumFrames[frame mod checksumWindow] == frame
+
+	private setChecksum: int frame, float value, int roster
+		if frame < 0 then return // Peers send checksumFrame -1 until their first checksum exists
+		checksumFrames[frame mod checksumWindow] = frame
+		checksumValues[frame mod checksumWindow] = value
+		checksumRosters[frame mod checksumWindow] = roster
+		if frame > maxChecksumFrame then maxChecksumFrame = frame
+
+	// Newly parseable input can legitimately change predicted snapshots at and after its first
+	// affected frame. Drop that checksum suffix immediately: otherwise the replay compares its
+	// corrected state against this client's own stale pre-replay checksum and reports a false
+	// desync. This matters especially when removal metadata lowers a historical stream cut and
+	// marks frame 0 changed while a long integration replay is pending (lobby seed 705089693).
+	//
+	// Usually the affected suffix is one frame, so walk frame numbers rather than all 4096 ring
+	// slots. A jump wider than the ring clears by slot instead, keeping the work bounded.
+	private invalidateChecksumsFrom: int firstChangedFrame
+		if firstChangedFrame > maxChecksumFrame then return
+		if maxChecksumFrame - firstChangedFrame >= checksumWindow
+			for checksumFrames.length as i
+				if checksumFrames[i] >= firstChangedFrame then checksumFrames[i] = -1
+		else
+			for firstChangedFrame to maxChecksumFrame+1 as frame
+				int index = frame mod checksumWindow
+				if checksumFrames[index] == frame then checksumFrames[index] = -1
+		maxChecksumFrame = firstChangedFrame - 1
+		if lastChecksumFrame >= firstChangedFrame then lastChecksumFrame = firstChangedFrame - 1
+
+	// A deterministic hash of the current roster (the player ids whose inputs feed the
+	// simulation). Players enter on their first parsed input record and leave through
+	// removeUserDeterministically, so every client on the same timeline computes the same
+	// value for the same frame
+	internal int rosterHash
+		int hash = 0
+		for input.players
+			hash = (hash * 31 + .id + 1) mod 1000000007
+		return hash
+
+	private float lastRosterSkipLogTime
+
+	// Rate-limited: during a live partition every Tick of the diverged side carries a
+	// mismatched-roster checksum (~30/s per peer)
+	private logRosterSkip: int frame
+		if currentTime < lastRosterSkipLogTime + 2000 then return
+		lastRosterSkipLogTime = currentTime
+		log "#checksum Skipped checksum compare for frame {frame}: rosters diverged (fork, arbitrated by the removal protocol)"
+
+	// Catch-up after a long pause in Connected mode (background tab, laptop sleep, late join):
+	// stepping is budgeted per animation frame so the tab never blocks for seconds, and the
+	// progress is exposed so the app can draw an overlay instead of looking frozen (F5)
+	visible bool catchingUp
+	visible float catchUpProgress
+	private int catchUpFromFrame
+	const maxCatchUpMillisPerFrame = 100
+
+	// New input records must not be appended while we replay a catch-up (the stamps would lag
+	// the claims we already sent) or while a rejoin's holding confirmations are pending (the
+	// bytes would fork the longer copy of our previous stream a returning peer may still hold,
+	// see PeerNetwork.holdingConfirmationPending). Checked by every input record handler
+	bool inputRecordingPaused
+		return catchingUp or PeerNetwork.holdingConfirmationPending
 	
 	IndexedDBStore inputStore = {"input", indices:[{"roomId"}]}
-	IndexedDBStore roomStore  = {"room"}
 	
 	startConnected: int frame
 		if mode == Connected then return
-			
+
+		// A late joiner's first seconds are catch-up noise - collectStatistics gates on this
+		joinFrame = frame
+
 		account = system.getLocalStorageObject("user") or {}
 		if not account._id
 			account._id = generateObjectId
@@ -55,10 +167,22 @@ internal transient skipInit unit core
 				
 		log "startConnected", joinFrame, this.frame, this.frames
 		if this.frames == 0
-			log "handleJoin", frame
-			input.localUser.startInputFrame 0
-			input.handleJoin frame, account
-		
+			if input.localUser.epochStartPos > 0
+				// We restored our previous session's input stream after a rejoin: it already contains
+				// our Join event, so we resume that player instead of joining again - the replay from
+				// frame 0 recreates our player from the restored stream
+				log "resume", input.localUser.epochStartPos
+			else if PeerNetwork.holdingConfirmationPending
+				// We restored nothing, but not every peer confirmed its holdings - one of them may
+				// still hold our previous session's stream, and a fresh Join at position 0 would
+				// fork it. The Join is written when the confirmations settle
+				// (PeerNetwork.finishHoldingConfirmations) or the restore rebuilds our old stream
+				log "handleJoin deferred until every live peer confirmed its holdings"
+			else
+				log "handleJoin", frame
+				input.localUser.startInputFrame 0
+				input.handleJoin frame, account
+
 		mode = Connected
 		input.localUser.collectInputs = true
 		snapshotFrame = -1
@@ -87,7 +211,6 @@ internal transient skipInit unit core
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
-		startTime = serverStartTime = currentTime
 		frames = 0
 		targetFrame = -1
 		interrruptAtOutputIndex = -1
@@ -95,7 +218,7 @@ internal transient skipInit unit core
 		watchIndex = 0
 		startInLobby = false
 		errorMessage = ""
-		audio.stop
+		sounds.stop
 		isPremiere = true
 		startTime = serverStartTime = currentTime
 		reset
@@ -123,7 +246,6 @@ internal transient skipInit unit core
 		input.players.clear
 		input.playersById.clear
 		input.host = null
-		input.playersToRemove.clear
 		errorMessage = ""
 		HTMLElement??.clear()
 		math.randomValueIndex = 0
@@ -133,9 +255,35 @@ internal transient skipInit unit core
 		lobby.inLobby = startInLobby
 		Time.now = serverStartTime
 		snapshotFrame = -1
-		checksums.clear
+		integrationReplayTo = -1
+		remoteInputsChanged = true
+		earliestChangedFrame = int.maxValue
+		nextPredictionPassFrame = 0
+		replayFrom = -1 // A stale root must never be re-rooted after a reset (see checkRewindAndReplayState)
+		pinSaveDeferred = false
+		// Shared rewind: the replay from frame 0 re-derives the hold flags (serialized player
+		// state) and re-captures the history deterministically. The emptied entries are pooled,
+		// so a debug replay reuses their memory. input is a skipInit unit, so its serialized
+		// rewind fields must be reset explicitly
+		isRewinding = false
+		rewindLogStarted = false
+		for rewindHistory as entry
+			rewindEntryPool.add entry
+		rewindHistory.clear
+		for rewindShadow as entry
+			rewindEntryPool.add entry
+		rewindShadow.clear
+		speculativeRewindPositions.clear
+		rewindPrunedBelow = 0
+		input.rewindPlayhead = 0
+		input.rewindFloor = 0
+		checksumValues.clear
+		checksumFrames.clear
+		checksumRosters.clear
+		maxChecksumFrame = -1
 		lastChecksumFrame = -1
-		audio.stop
+		catchingUp = false
+		sounds.stop
 		graphics.clearDebugInfo
 		initAll
 		
@@ -164,6 +312,7 @@ internal transient skipInit unit core
 		// Reset read pos to replay inputs from the beginning
 		for input.internalUsers if .
 			.inputs.readPos = 0
+			.reset
 			
 		graphics.startFrame
 		if !startInLobby and not testLobby
@@ -192,6 +341,17 @@ internal transient skipInit unit core
 		input.localPlayer = input.playersById[localUserId]
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
 		input.updatePlayers
+		// Shared rewind: a rewind must never cross a restart back into the previous game or
+		// the lobby - the floor jumps past the current playhead, making every older history
+		// entry unreachable (which also shields them from the _constCache rebuild in initAll:
+		// entries serialized against the previous unit singletons must never be restored).
+		// playhead+1, not playhead: restart runs MID-tick, so the position the current step
+		// ends on was built half old world, half new - the first capturable step-boundary
+		// state is the next one. A pop clamps to alignUp(floor), whose entry the capture (or
+		// the fill) provides once the playhead crosses it. restart is deterministic (guarded
+		// on isCertain above) and input is skipInit, so the playhead itself keeps counting
+		// across the restart on every client identically
+		input.rewindFloor = input.rewindPlayhead + 1
 		lobby.inLobby = false
 		app??.start()
 	
@@ -328,7 +488,6 @@ internal transient skipInit unit core
 		now = currentTime
 		if lastAnimationFrame	then frameTimes.add now - lastAnimationFrame
 
-		ServerNetwork.tick
 		PeerNetwork.tick
 		statistics.tick
 		if mode == None or mode == Ping then return
@@ -342,6 +501,10 @@ internal transient skipInit unit core
 			targetFrame = frame
 			startTime = math.round(now - targetFrame*frameTime)
 			log "Paused {prevTargetFrame-frame} frames, adjusting startTime. prevTargetTime:{prevTargetFrame} frame:{frame} targetFrame:{math.floor((now - startTime)/frameTime)}"
+
+		// A backwards clock re-anchor (F20) can drop targetFrame below frame mid-catch-up;
+		// the step loop then doesn't run, so the flag must be cleared here (F5)
+		if catchingUp and frame >= targetFrame then catchingUp = false
 		
 		if frame < targetFrame
 			// Create artificial inputs to test the smoothness
@@ -350,41 +513,88 @@ internal transient skipInit unit core
 					input.handleKeyEvent KeyDown, cast KeyCode.F24, "", ctrl:false, alt:false, meta:false
 				
 			frameAtBeginningOfOnFrame = frame
-			
+
+			// A long pause (background tab, sleep, late join) leaves us many frames behind.
+			// Stepping them all in one synchronous loop would freeze the tab for seconds and
+			// silence our Ticks (peers would start reconnect churn), so the loop below is
+			// budgeted and the catch-up is spread over several animation frames, with Ticks,
+			// acks and pings still going out in between (F5)
+			if mode == Connected and not catchingUp and targetFrame - frame > ticksPerSecond*2
+				catchingUp = true
+				catchUpFromFrame = frame
+				log "#catchup {targetFrame - frame} frames behind -> catching up in budgeted chunks"
+
 			try
-				sendInputs targetFrame-1
 				// Replay all frames from the first uncertain frame until the current frame
 				// when we received all inputs for frames that we were uncertain about before
 				checkRewindAndReplayState
-			
-			catch 
+
+			catch
 				onError error
-					
+
 			// Ensure that step is called every frameTime milliseconds
 			try
+				let catchUpDeadline = now + maxCatchUpMillisPerFrame
 				while frame < targetFrame
+					// A fork rebuild is scheduled: stepping on would parse the fork's records at
+					// wrong frames and broadcast checksums of that corrupted state - stay quiet
+					// until the reload lands
+					if rebuildPending then break
 					if system.playMode == Record
 						for input.internalUsers as user
-							if user?.local then user.startInputFrame frame+1
-					step fastForward:false, draw:frame == targetFrame-1
-					if not system.isDebug then collectStatistics
+							// Never regress the stamp for new records: during a catch-up replay frame
+							// counts up from below claims we (or our pre-reload session) already sent,
+							// and a record stamped at or below a sent claim can't be rewound to its
+							// true frame by peers (their snapshot is only pinned down to claim+1) -
+							// they would apply it at their current frame and desync forever.
+							// While a rejoin's holding confirmations are pending, the counter (and
+							// with it the claim we send) instead stays at the floor adopted from
+							// confirmed peers: old records of our previous session may still surface
+							// from a peer holding more of our stream, and a claim covering their
+							// frames would break the receivers' rewind pinning the same way
+							if user?.local and not PeerNetwork.holdingConfirmationPending then user.startInputFrame math.max(frame+1, user.inputFrame)
+					// Frames below integrationReplayTo re-step frames the player already saw (a
+					// budgeted integration replay, see checkRewindAndReplayState): they run
+					// fastForwarded like a synchronous replay - sounds and app effects must not
+					// fire again - are never drawn, and don't feed the smoothing statistics
+					bool integrating = frame < integrationReplayTo
+					// While catching up or integrating, stop stepping when the budget is used up.
+					// A catch-up chunk draws its last frame so the player sees progress instead
+					// of a frozen canvas; an integration keeps the last live frame on the canvas
+					bool lastStepOfChunk = frame == targetFrame-1 or ((catchingUp or integrating) and currentTime >= catchUpDeadline)
+					bool drawThisStep = lastStepOfChunk and not integrating
+					step fastForward:integrating, draw:drawThisStep
+					if not system.isDebug and not integrating then collectStatistics
+					if lastStepOfChunk then break
 			catch
 				onError .
-				
-				lastNetworkFrame = now
-				
-			// Store local inputs
+
+			if catchingUp
+				catchUpProgress = math.min((frame - catchUpFromFrame) / math.max(targetFrame - catchUpFromFrame, 1), 1)
+				if frame >= targetFrame
+					catchingUp = false
+					log "#catchup Caught up at frame {frame}"
+
+			// Deliver networkData callbacks (storage.get / http.*) that resolved while input
+			// recording was blocked - queued in input.handleObject, written here once recording
+			// is possible again so the app still hears back after a catch-up or holding gate
+			input.flushPendingObjectRecords
+
+			// Send inputs after the step loop: stepping writes gamepad records stamped frame+1,
+			// so a claim sent before the loop would cover bytes that only travel in a later message.
+			// localUser.inputFrame-1 claims exactly the frames no future write can be stamped with
+			// (at least -1: receivers drop claims below their initial inputFrame of -1)
+			try
+				sendInputs math.max(input.localUser.inputFrame-1, -1)
+			catch
+				onError .
+
+			// Store all input streams (our own and the copies we hold of every other user's)
 			if IndexedDB.isReady
-				core.storeInputsToDB input.localUser
-				core.storeRoomToDB
+				core.storeInputsToDB
 				
 		lastAnimationFrame = now
 		if system.playMode == Play and frame >= frames then system.record()
-			
-		// Ping
-		if currentTime - lastPingTime > 1000
-			lastPingTime = currentTime
-			PeerNetwork.ping
 			
 	private int frameAtBeginningOfOnFrame	// The frame at the beginning of onFrame, used to calculate iteration
 	private float now	// The time at the beginning of onFrame
@@ -392,19 +602,34 @@ internal transient skipInit unit core
 	private float prevLogTime
 	
 	// Logs
+	// Each line carries a millisecond timestamp and the current frame, so client logs can be
+	// correlated with each other and with the server log (which logs microseconds) after a
+	// real-world incident
 	js void log: logstring text
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 
-		let now = new Date()
-		let str = now.getHours().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getMinutes().toLocaleString('en-US', {minimumIntegerDigits:2}) + ":" + now.getSeconds().toLocaleString('en-US', {minimumIntegerDigits:2}) + "." + now.getMilliseconds().toLocaleString('en-US', {minimumIntegerDigits:3}) + " " + text
+		let d = new Date()
+		let pad = (n, l) => String(n).padStart(l, "0")
+		let timestamp = pad(d.getHours(),2)+":"+pad(d.getMinutes(),2)+":"+pad(d.getSeconds(),2)+"."+pad(d.getMilliseconds(),3)
+		let str = timestamp + " [" + core.frame + "] " + text
 		statistics.systemLogs.push(str)
+		// Bound the unsent backlog: in debug mode, or when the statistics server is unreachable,
+		// nothing ever flushes it (F28). The sent prefix is trimmed in statistics.trimSentData
+		if(statistics.systemLogs.length > 20000) {
+			statistics.systemLogs.splice(0, 10000);
+			statistics.successfullySentSystemLogs = Math.max(0, statistics.successfullySentSystemLogs - 10000);
+		}
 		console.log(str)
 		core.logs += str + "\n"
+		// Bound the in-memory log: drop the oldest half once it exceeds ~2 MB (F28)
+		if(core.logs.length > 2097152) {
+			core.logs = core.logs.substring(core.logs.indexOf("\n", core.logs.length - 1048576) + 1);
+		}
 			
 	internal string logs
 	internal bool hasErrors
-	private float lastNetworkFrame, lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
+	private float lastAnimationFrame, drawTime, tickTime, restoreTime, replayTime, saveTime
 	internal int displayItems
 	int tickMessageSize
 	bool verbose = false
@@ -454,9 +679,7 @@ internal transient skipInit unit core
 		if mode != Connected then return
 		
 		if frame >= lastSendFrame + sendInterval
-			switch sendInputsMode
-				Peer	PeerNetwork.sendInputs inputFrame
-				Server	ServerNetwork.sendInputs inputFrame
+			PeerNetwork.sendInputs inputFrame
 			lastSendFrame = frame
 	
 	internal switchToPlayer: Player player
@@ -467,14 +690,6 @@ internal transient skipInit unit core
 		for prevPlayer.touches
 			input.handleUpdateTouchAfterSwitchingUser .id, .position
 		system.updatePageIconAndTitle
-			
-	switchSendInterval: int sendInterval
-		this.sendInterval = sendInterval
-		ServerNetwork.sendSwitch sendInputsMode, sendInterval
-		
-	switchSendInputMode: SendInputsMode sendInputsMode
-		this.sendInputsMode = sendInputsMode
-		ServerNetwork.sendSwitch sendInputsMode, sendInterval
 
 	// Save state, parse inputs, step physics, process tick, and calculate checksum
 	// This is called in onFrame and during replays. 
@@ -487,7 +702,10 @@ internal transient skipInit unit core
 
 		// Flags
 		system.fastForward = fastForward
-		int certainFrame = input.internalUsers.min math.min(.inputFrame, .smoothFrame) filter: . != null
+		// A removed user stops blocking certainty once we hold their complete final stream
+		// (their claims reached the removal frame) - before that, their missing bytes are part
+		// of the timeline and must arrive (fetched from peers) before frames become certain
+		certainFrame = input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.inputFrame, .smoothFrame)) filter: . != null
 		input.isCertain = frame <= certainFrame
 		
 		// Send current frame to editor	
@@ -495,21 +713,34 @@ internal transient skipInit unit core
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame filter we got all inputs
 		checkSaveState
-		
+
+		// Shared rewind: the state entering this step is the world at the current playhead -
+		// capture it if the deterministic schedule wants an entry here that no step has
+		// captured yet (the very first position, and self-healing after unusual paths)
+		checkFillRewindHistory
+
 		// Update game controllers
 		input.updateGamepads
-		
+
 		// Parse inputs
 		input.parseInputs(frame)
-		
+
+		// Shared rewind: while any player holds system.rewindKey, restore the world state
+		// further back in its own history instead of simulating it forward
+		bool rewound = checkRewindMechanic
+
 		// Physics
-		Physics.step
-		
+		if not rewound then Physics.step
+
 		// Tick
 		tick draw
-		
+
 		HTMLElement??.tickAll()
-		input.removePlayersIfNecessary
+
+		// Shared rewind: the applied tick advanced the playhead by one position - capture the
+		// world on the deterministic schedule and advance the history floor. Runs after
+		// HTMLElement.tickAll so a captured entry equals the state the next step enters with
+		checkSaveRewindHistory
 				
 	// Clear screen, process application tick, draw all graphics, cleanup, and advance frame
 	// This is all the logic that is executed in a unit test for each frame.
@@ -517,19 +748,28 @@ internal transient skipInit unit core
 	internal tick: bool draw
 		// if targetFrame != -1 and frame > targetFrame	return
 
-		// Set time
-		Time.now = serverStartTime + math.round(frame * frameTime)
+		// Set time: the app clock follows the surviving timeline (the rewind playhead), not the
+		// raw frame counter. Without rewinds the two are identical (the playhead advances +1
+		// per applied tick); after a rewind the world continues from the rewound moment, so
+		// its clock must too - otherwise every timer and animation would see the discarded
+		// span pass in an instant on release, and the states displayed while rewinding would
+		// show the live time instead of their own (deterministic: the playhead is serialized)
+		Time.now = serverStartTime + math.round(input.rewindPlayhead * frameTime)
 			
 		// Start frame
 		system.isDrawing = draw
 		if frame > 0 then graphics.startFrame
-		audio.startFrame
+		sounds.startFrame
 
 		// Debug info
 		if system.showDebugInfo
 			if draw then statistics.tickGraph
 			networkVisualizer.tick
-			
+
+		// Show the progress while catching up after a long pause, instead of looking frozen (F5)
+		// Implemented in the 2D layer (lib/core/2D/lobby.l), missing in headless builds
+		if draw and catchingUp then this.drawCatchUpOverlay??()
+
 		try
 			resetStateIndex()
 			Framework??.tick
@@ -537,8 +777,11 @@ internal transient skipInit unit core
 				if lobby.inLobby then	lobby.tick
 				else	app??.tick()
 
-			// Advance frame
+			// Advance frame. The rewind playhead advances with it: every applied tick is one
+			// position on the surviving timeline (a rewind frame popped the playhead back
+			// before this tick, so it ends at target+1 - see checkRewindMechanic)
 			frame++
+			input.rewindPlayhead++
 			if frames < frame	then frames = frame
 			if frame > frameWithNewWatches	then frameWithNewWatches = frame
 		finally			
@@ -547,7 +790,7 @@ internal transient skipInit unit core
 				drawTimes.add drawTime = PlainDate.measure
 					graphics.finishFrame
 				if system.playMode != Manipulator then input.updateCursor
-			audio.finishFrame
+			sounds.finishFrame
 
 			// Cleanup
 			for input.internalUsers as user
@@ -566,41 +809,478 @@ internal transient skipInit unit core
 		
 	private Buffer snapshot = {}
 	private Buffer secondSnapshotForTesting = {}
-	private int snapshotFrame = -1
+	internal int snapshotFrame = -1 // The pinned snapshot's frame: the only valid rewind root (read by input.removeUserDeterministically's fork check)
 	private int nextSnapshotFrame = -1
 	
 	private Buffer[] milestones
+
+	// --- Shared rewind (system.rewindKey) ---------------------------------------------------
+	// While any player holds system.rewindKey, every client steps the world state BACKWARD
+	// through its own history instead of simulating forward - a synced "rewind time" mechanic.
+	// On release the game continues forward from the rewound state with the live inputs
+	// (records consumed before a pop are never re-read - the mechanic never touches readPos).
+	// The network layer is completely unaffected: frames, claims, input streams, certainty,
+	// checksums and the rollback snapshot pin all keep advancing normally - the rewind only
+	// changes what the deterministic step function does with the world state.
+	//
+	// The history is keyed by input.rewindPlayhead - the number of ticks applied along the
+	// SURVIVING timeline - not by the frame counter. Forward frames push the playhead +1 and
+	// capture the world every rewindStepFrames positions; rewind frames POP it back by
+	// rewindFrames and capture nothing. That makes the history a stack of the world's own
+	// past: a rewind, a release and a second hold rewinds FURTHER back, it never scrubs back
+	// through the previous rewind's descent or the future that rewind discarded ("never
+	// rewind the rewinding" - a frame-keyed ring records exactly that and was rejected).
+	// A rewind frame restores the target entry and then ticks it once (LiveTime fuses logic
+	// and drawing, so displaying a state means ticking it), with all input events cleared -
+	// the visible result is the world playing backward rewindFrames+1 - 1 = rewindFrames
+	// positions per tick, animations included, since Time.now derives from the playhead.
+	//
+	// Everything the mechanic reads is deterministic, so rollback replays and boot replays
+	// reproduce every decision bit-identically:
+	// - Activation: Player.holdingRewindKey, serialized player state updated by the exact same
+	//   parsed input events that drive InternalUser.isPressed - gamepad buttons (absolute,
+	//   per-frame Gamepad records), keyboard keys (KeyDown/KeyUp) and mouse buttons/touches
+	//   (TouchDown/TouchUp) - so every key isPressed supports works. The transient isPressed
+	//   arrays deliberately are NOT used: they leak the live value into replay windows.
+	//   The claim gate in anyPlayerHoldsRewindKey keeps prediction conservative: a remote
+	//   hold only rewinds up to the holder's claim, so an outage can never predict a runaway
+	//   descent, and corrections mostly ADD rewind frames.
+	// - History entries: captured in live steps AND replay steps alike, so predicted captures
+	//   are corrected exactly like the state itself. Entries are certified/speculative by the
+	//   pin rule (captureFrame <= certainFrame+1); a speculative capture that displaces a
+	//   certified entry shadows it, and every rollback discards the speculative entries at or
+	//   above its root and restores the shadows (cleanupSpeculativeRewindEntries) - a pass
+	//   that pops into the history and predicts the release forward must not leave its branch
+	//   ascent in slots a deeper later pass pops to. The generated serializer keeps each
+	//   buffer's object cache on the buffer itself (buffer._objects), which is what makes ANY
+	//   entry restorable at any later time. Pruning happens only below the PINNED floor (or at
+	//   capture time in plain local sessions, which have no prediction) - anything younger
+	//   would race the rollback, because history content this client dropped may still be a
+	//   pop target of a replay another client runs.
+	// - Target: input.rewindPlayhead and input.rewindFloor are serialized state, restored by
+	//   the pin like everything else, so every pass re-derives identical pop targets. The
+	//   floor bounds memory (playhead - rewindHistoryFrames) and jumps at every restart, so a
+	//   rewind can never cross a restart (which also shields entries from initAll's
+	//   _constCache rebuild).
+	visible bool isRewinding         // The world state was rewound this frame (for overlays/tests)
+	internal int rewindKeyBit        // system.rewindKey's button bit in Gamepad records (0 = disabled or not a gamepad key), set by input.parseInputs
+	internal int rewindKeyIndex      // system.rewindKey's Key.keys index for KeyDown/KeyUp and TouchDown/TouchUp events (-1 = disabled), set by input.parseInputs
+	private RewindEntry[int] rewindHistory // World snapshots keyed by playhead position (multiples of rewindStepFrames)
+	private RewindEntry[int] rewindShadow  // Certified entries displaced by a speculative capture, restored when a rollback discards the displacer
+	private int[] speculativeRewindPositions // Positions captured beyond certainty since the last rollback (see cleanupSpeculativeRewindEntries)
+	private RewindEntry[] rewindEntryPool  // Pruned/discarded entries, reused by later captures
+	private int rewindPrunedBelow    // Entries below this position were handed to the pool (monotone, aligned)
+	private int[] rewindScratchIds   // Reused by checkRewindMechanic to carry the hold flags across a restore
+	private bool[] rewindScratchHolds
+
+	// Local sessions rewind too - they share the whole deterministic step machinery, only
+	// without the network layer on top
+	private bool rewindMechanicEnabled
+		return system.enableRewind and (mode == Connected or mode == Local)
+
+	private int rewindStepFrames
+		return math.max(system.rewindFrames, 1)
+
+	private int alignUpToRewindStep: int position
+		int step = rewindStepFrames
+		return position + ((step - (position mod step)) mod step)
+
+	// The state entering a step is the world at the current playhead: if the deterministic
+	// capture schedule wants an entry here that no step has captured yet, capture it now.
+	// This is what creates the entry at position 0 (checkSaveRewindHistory only runs after
+	// ticks) and self-heals holes after unusual paths. It must never overwrite: replay steps
+	// re-capture through checkSaveRewindHistory, which always does
+	private checkFillRewindHistory
+		if not rewindMechanicEnabled or lobby.inLobby then return
+		if input.rewindPlayhead mod rewindStepFrames != 0 then return
+		if not rewindHistory[input.rewindPlayhead] then captureRewindHistory
+
+	// Capture the world every rewindStepFrames playhead positions and advance the history
+	// floor - called at the end of every applied step, in live and replay passes alike, so
+	// the entries converge on every client exactly like the state itself. Rewind frames end
+	// on an unaligned playhead (target+1), so they capture nothing - the descent itself never
+	// enters the history
+	private checkSaveRewindHistory
+		if not rewindMechanicEnabled or lobby.inLobby then return
+		// The memory/reach bound: the floor follows the playhead at rewindHistoryFrames
+		// distance. Monotone and serialized, so every replay pass clamps pop targets identically
+		if input.rewindPlayhead - system.rewindHistoryFrames > input.rewindFloor
+			input.rewindFloor = input.rewindPlayhead - system.rewindHistoryFrames
+		if input.rewindPlayhead mod rewindStepFrames == 0 then captureRewindHistory
+		// Plain local sessions have no snapshot pin (and no prediction that could race the
+		// floor) - prune at the capture instead
+		if mode == Local and not simulateRollback then pruneRewindHistory
+
+	// Capture the state entering `frame` into the slot for the current playhead. A capture is
+	// certified when every input feeding it is final (frame <= certainFrame+1, the pin rule);
+	// anything above that is prediction. A speculative capture that displaces a certified
+	// entry keeps the certified bytes in a shadow slot: a rollback below the speculative
+	// write discards it and brings the certified value back (cleanupSpeculativeRewindEntries) -
+	// without that, a pass that pops into the history and then steps forward again (a
+	// PREDICTED release, e.g. while a remote hold's records are still arriving) leaves its
+	// branch ascent in slots that a deeper later pass still pops to, certifying discarded
+	// prediction (found by the rewind latency test: a branch click's touch state was baked
+	// into the pinned state at frame 198)
+	private captureRewindHistory
+		int position = input.rewindPlayhead
+		bool certified = frame <= certainFrame + 1
+		RewindEntry entry = rewindHistory[position]
+		if entry
+			if certified
+				// A certified write supersedes any certified value a discarded branch displaced
+				dropRewindShadow position
+			else if entry.captureFrame <= certainFrame + 1 and not rewindShadow[position]
+				// First speculative displacement of a certified entry: shadow it
+				rewindShadow[position] = entry
+				rewindHistory.remove position
+				entry = null
+		if not entry
+			if rewindEntryPool.length > 0 then	entry = rewindEntryPool.pop
+			else	entry = {}
+			rewindHistory[position] = entry
+		if not certified then speculativeRewindPositions.add position
+		entry.captureFrame = frame
+		Snapshot.serialize entry.bytes
+
+	private dropRewindShadow: int position
+		let shadow = rewindShadow[position]
+		if shadow
+			rewindShadow.remove position
+			rewindEntryPool.add shadow
+
+	// A rollback to rootFrame discarded every predicted step at or above it - discard the
+	// history entries those steps captured the same way, and restore the certified values
+	// they displaced. Entries the pass roots above are certified now, so their shadows die.
+	// Called right after every rewind to the snapshot pin; O(entries captured beyond
+	// certainty since the last rollback)
+	private cleanupSpeculativeRewindEntries: int rootFrame
+		for speculativeRewindPositions as position
+			let entry = rewindHistory[position]
+			if entry and entry.captureFrame >= rootFrame
+				rewindHistory.remove position
+				rewindEntryPool.add entry
+				let shadow = rewindShadow[position]
+				if shadow
+					rewindHistory[position] = shadow
+					rewindShadow.remove position
+			else
+				dropRewindShadow position
+		speculativeRewindPositions.clear
+
+	// Entries below the pinned (certain) floor can never be a pop target again on any replay
+	// path: targets are clamped to the serialized floor, which is monotone and already past
+	// them in every state at or above the pin. Pruning anything younger would race the
+	// rollback: a predicted floor advance can be rolled back, and the replay would then need
+	// an entry this client just dropped while another client kept it - a permanent fork.
+	// Called from checkSaveState right after the pin save (the floor value serialized there
+	// is final) and from checkSaveRewindHistory in plain local sessions
+	private pruneRewindHistory
+		int step = rewindStepFrames
+		int line = alignUpToRewindStep(input.rewindFloor)
+		while rewindPrunedBelow < line
+			let entry = rewindHistory[rewindPrunedBelow]
+			if entry
+				rewindHistory.remove rewindPrunedBelow
+				rewindEntryPool.add entry
+			dropRewindShadow rewindPrunedBelow
+			rewindPrunedBelow += step
+
+	// Is frame a rewind frame? Decided from the serialized hold flags, claim-gated: beyond a
+	// remote player's claim their records for this frame may still arrive, and treating a
+	// stale hold as active would let a later correction REMOVE rewind frames - the
+	// mis-predicted branch could then have overwritten history entries the corrected timeline
+	// still pops to. With the gate, corrections only ever ADD rewind frames (claims are
+	// monotone, flags at claimed frames are final), which keeps every client's history cache
+	// valid. The local player's records are final at write, so a local hold rewinds
+	// instantly; remote holds engage when their records arrive (~their claim lag). A removed
+	// player stops mattering at the removal cut: their claim freezes there, and past
+	// removedAfterFrame the Player has left input.players entirely
+	private bool anyPlayerHoldsRewindKey
+		for input.players
+			if .holdingRewindKey
+				let user = input.internalUsers[.id]
+				if user and (user.local or frame <= user.inputFrame) then return true
+		return false
+
+	// While any player holds the rewind key at this frame, restore the world state
+	// rewindFrames further back instead of simulating forward. Returns true when the state
+	// was rewound: the caller skips the physics step, and tick draws (and deterministically
+	// evolves by one position, with cleared events) the restored world
+	// Live-step transition logging only: on a client that merely FOLLOWS a remote hold, the
+	// pops happen inside fastForward replay passes (the claim gate keeps the live prediction
+	// forward), so keying the logs on the pass-crossing isRewinding flag spammed a spurious
+	// "Released" line on every live frame of the hold
+	private bool rewindLogStarted
+	private checkLogRewindReleased
+		if rewindLogStarted and not system.fastForward
+			rewindLogStarted = false
+			log "#rewind Released at frame {frame}: the world continues from playhead {input.rewindPlayhead}"
+
+	private bool checkRewindMechanic
+		isRewinding = false
+		if not rewindMechanicEnabled or lobby.inLobby then return false
+		if not anyPlayerHoldsRewindKey
+			checkLogRewindReleased
+			return false
+		int step = rewindStepFrames
+		// The previous rewind frame ended at target+1 (the display tick), so stepping back
+		// from playhead-1 keeps the descent at exactly rewindFrames positions per tick
+		int target = input.rewindPlayhead - 1 - system.rewindFrames
+		target -= target mod step
+		int floorAligned = alignUpToRewindStep(input.rewindFloor)
+		if target < floorAligned then target = floorAligned
+		// Fully rewound (holding at the oldest state re-pops it every frame), or no history
+		// below us yet (right after a restart, before the first aligned capture)
+		if target >= input.rewindPlayhead then return false
+		let entry = rewindHistory[target]
+		if not entry
+			// Deterministically absent on every client (captures follow a deterministic
+			// schedule): only right after a restart before the first capture. Anything else
+			// would be a bug - never desync over it, step forward instead
+			if not system.fastForward then log "#rewind No history entry at playhead {target} (floor {input.rewindFloor}) - stepping forward"
+			return false
+		if verbose then log "#rewind #{frame} pop {input.rewindPlayhead} -> {target} (entry from frame {entry.captureFrame})"
+		if not rewindLogStarted and not system.fastForward
+			rewindLogStarted = true
+			log "#rewind Started at frame {frame} from playhead {input.rewindPlayhead}"
+		// The hold flags and the floor are properties of the PRESENT - the restore overwrites
+		// them with their historical values, so carry them across (reused scratch lists)
+		rewindScratchIds.clear
+		rewindScratchHolds.clear
+		for input.players
+			rewindScratchIds.add .id
+			rewindScratchHolds.add .holdingRewindKey
+		int floorNow = input.rewindFloor
+		Snapshot.deserialize entry.bytes
+		input.refreshLocalPlayer
+		// Users who joined after the target vanish from the restored world - recreate them
+		// (and re-remove restored players whose removal cut lies below this frame)
+		input.ensureRewindRestoredPlayers frame
+		for input.players
+			.holdingRewindKey = false
+		for rewindScratchIds.length as i
+			let holder = input.playersById[rewindScratchIds[i]]
+			if holder then holder.holdingRewindKey = rewindScratchHolds[i]
+		input.rewindPlayhead = target
+		input.rewindFloor = floorNow
+		isRewinding = true
+		// This frame's parsed events must not fire into the restored past - nobody can act
+		// while time rewinds. clearEvent keeps isPressed, so held keys stay held
+		for input.internalUsers as user
+			user?.clearEvent
+		return true
+
+	// Arrival tracking for the rollback replay: rewind+replay only runs when something that can
+	// change the deterministic parse actually arrived since the last completed pass (03a).
+	// earliestChangedFrame is the first frame whose parsed inputs may differ from what the last
+	// replay predicted: when it lies above the current frame, forward stepping parses the new
+	// records at their true stamps anyway and no replay is needed at all
+	private bool remoteInputsChanged = true
+	private int earliestChangedFrame = int.maxValue
+	private bool pinSaveDeferred // Rate-limits the deferred-pin-save log to one line per episode
+	
+	// While a large integration replay is spread over several animation frames (03c), new rewinds
+	// are blocked and nextSnapshotFrame stays frozen until the replay reached this frame
+	// (see checkRewindAndReplayState); -1 = no integration replay in progress
+	int integrationReplayTo = -1
+
+	// A fork rebuild (reload + full replay from the mesh) is scheduled: stop stepping and
+	// replaying until it lands, see the fork detection in checkRewindAndReplayState
+	internal bool rebuildPending
+	
+	// While the snapshot pin is frozen (a silent peer, a rejoin's holding gate), every pass
+	// replays the whole window back to the pin. Those prediction passes run on a cooldown
+	// proportional to the window (see checkRewindAndReplayState), which bounds the total replay
+	// work to a constant rate no matter how long the outage lasts (03b). Remote inputs then
+	// integrate in slightly larger batches as the window grows.
+	private int nextPredictionPassFrame
+	
+	// Diagnostics for the resilience tests and the statistics graphs
+	internal int replayPassCount        // Executed rewind+replay passes
+	internal int skippedReplayPassCount // Passes skipped because they would have reproduced the current state
+	internal int replayedFrameCount     // Total frames stepped by replay passes
+	internal int lastReplayFrameCount   // Frames stepped by the most recent replay pass
+	internal int maxReplayFrameCount    // Largest single replay window (tests reset this between phases)
+	
+	// Called by PeerNetwork whenever something arrived that can change the deterministic parse:
+	// a user's claim advanced (records above it became parseable), a user appeared or was removed,
+	// or restored history bytes were adopted. firstChangedFrame is the first frame whose parsed
+	// inputs may differ from the last replay's prediction - a claim advance changes nothing below
+	// oldClaim+1, because records are never stamped at or below their sender's claim
+	internal markRemoteChange: int firstChangedFrame
+		invalidateChecksumsFrom firstChangedFrame
+		remoteInputsChanged = true
+		if firstChangedFrame < earliestChangedFrame then earliestChangedFrame = firstChangedFrame
+
+	// A stream can arrive immediately before a Tick carrying the sender's checksum. Do this
+	// fork check from the checksum handler as well as the next animation frame: otherwise a
+	// hidden user that joined AND left below our snapshot pin has the same current roster as us,
+	// so the checksum looks comparable and falsely trips the desync self-heal before the normal
+	// fork recovery gets a chance to inspect the newly arrived history.
+	private bool checkForForkBelowSnapshot
+		if rebuildPending then return true
+		if snapshotFrame == -1 then return false
+		for input.internalUsers as user
+			if user and not user.local and user.inputs.canRead
+				int firstUnparsedFrame = user.inputs.peekInt32
+				bool willParse = firstUnparsedFrame <= user.inputFrame and (not user.removed or firstUnparsedFrame <= user.removedAfterFrame)
+				if willParse and firstUnparsedFrame < snapshotFrame
+					log "#fork <{user.id}> Unparsed record stamped {firstUnparsedFrame} below the snapshot pin {snapshotFrame}: we certified these frames without user {user.id} -> rebuilding from the mesh"
+					rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s record at frame {firstUnparsedFrame} is below the snapshot pin {snapshotFrame}"
+					if rebuildPending then return true
+		return false
 	
 	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
-			
+		if rebuildPending then return
+
+		// Fork detection: a user we only just discovered can hold records stamped below the
+		// pinned snapshot - the only valid rewind root. Known users can't (their claims pin the
+		// snapshot down, that is the pin's invariant), it takes a user whose join a partition
+		// hid from us while our certainty advanced without their inputs. Those records can
+		// never replay at their true frames: our certified timeline is a fork of the group's.
+		// Parsing on would apply them at wrong frames and desync us for good - rebuild
+		// deliberately instead: the reload replays every stream from frame 0 and lands us on
+		// the group timeline with our identity and inputs intact. (The checksum self-heal
+		// would find the same way out, but only after recording a false determinism failure
+		// and broadcasting checksums of the corrupted state to healthy peers)
+		if checkForForkBelowSnapshot then return
+
+		// A budgeted integration replay is still stepping toward integrationReplayTo: don't
+		// restart it on every arriving chunk (that made a returning peer's recovery cost many
+		// consecutive full-window replays, O(window²) in total). nextSnapshotFrame stays frozen
+		// too, so the pinned snapshot is re-saved at the frame this pass planned for - every byte
+		// below it was already present when the pass started. Arrivals during the pass stay
+		// recorded in remoteInputsChanged/earliestChangedFrame and the next pass integrates them
+		if integrationReplayTo != -1
+			if frame < integrationReplayTo then return
+			integrationReplayTo = -1
+
 		if mode == Local and simulateRollback then	nextSnapshotFrame = frame - 5
-		else	nextSnapshotFrame = (input.internalUsers.min math.min(.smoothFrame, .inputFrame) filter: . and not .local)+1
+		else
+			// Removed users with a complete final stream no longer hold the snapshot back: when
+			// every remote user is gone for good this becomes int.maxValue+1, snapshots stop and
+			// the rewind below runs one final time to replay the last received bytes into the state.
+			// The LOCAL user is part of the min for the same reason it is part of certainFrame:
+			// the snapshot must never advance beyond certainFrame+1. Frames above it are not final
+			// yet, and decisions the app deferred at uncertain frames (core.restart returns while
+			// not input.isCertain) must stay replayable until their frames become certain. In
+			// normal play the local inputFrame is frame+1 and never binds - it only pins the
+			// snapshot down while our own claim trails the remote claims, e.g. while a rejoin's
+			// holding confirmations are pending (PeerNetwork.holdingConfirmationPending)
+			nextSnapshotFrame = (input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.smoothFrame, .inputFrame)) filter: . != null)+1
+
+		if snapshotFrame == -1
+			// The boot catch-up sweep is still stepping toward the live frame with its pin save
+			// pending - re-rooting now would restart the sweep from its root on every animation frame
+			if catchingUp then return
+			// No pin yet because the pass simply hasn't reached its target (a fresh boot whose
+			// stale restored claims put the target far above the current frame): keep waiting,
+			// checkSaveState pins when the frame gets there. Only an actively DEFERRED save
+			// re-roots - re-rooting here would redo the full window on every animation frame
+			if not pinSaveDeferred then return
+			// The last pass (or the boot sweep) deferred its pin save because records below the
+			// planned pin arrived mid-pass. Its rewind root is still the last serialized snapshot
+			// (nothing was serialized since the rewind), so re-root there and let the pass below
+			// rewind again - this time the arrival's records parse at their true stamps
+			if replayFrom == -1 then return
+			log "#pin Pin save was deferred -> re-rooting at frame {replayFrom} for a clean integration pass"
+			snapshotFrame = replayFrom
+			pinSaveDeferred = false
 		
-		if snapshotFrame != -1
-			if verbose
-				core.log "rewindAndReplayState", snapshotFrame, frame, nextSnapshotFrame
-				for input.internalUsers
-					core.log "\t<{.id}>", .smoothFrame, .inputFrame, .local
-			
-			let prevSnapshotFrame = snapshotFrame
-			snapshotFrame = -1
-			rewind snapshot
-			replay prevSnapshotFrame to frame
+		bool pinAdvances = nextSnapshotFrame > snapshotFrame
+		if not pinAdvances
+			// Skip the pass when it provably reproduces the current state (03a): nothing relevant
+			// arrived, or every newly parseable record is stamped above the current frame - forward
+			// stepping parses those at their true stamps anyway. Without this, one silent peer
+			// meant replaying its whole silence window on every animation frame, with the total
+			// work growing quadratically over the outage
+			if not remoteInputsChanged or earliestChangedFrame > frame
+				skippedReplayPassCount++
+				remoteInputsChanged = false
+				earliestChangedFrame = int.maxValue
+				replayFrom = -1
+				return
+			// The pin is frozen, so this pass replays the whole window. Respect the cooldown set
+			// by the previous pass (03b) - arrivals keep accumulating in earliestChangedFrame
+			if frame < nextPredictionPassFrame then return
+		
+		if verbose
+			core.log "rewindAndReplayState", snapshotFrame, frame, nextSnapshotFrame
+			for input.internalUsers
+				core.log "\t<{.id}>", .smoothFrame, .inputFrame, .local
+		
+		remoteInputsChanged = false
+		earliestChangedFrame = int.maxValue
+		
+		int rewindFrame = snapshotFrame
+		int replayToFrame = frame
+		
+		// The pin is only re-serialized when it moves - re-saving an identical snapshot on every
+		// animation frame was one of the hidden costs of the old code.
+		if pinAdvances then snapshotFrame = -1
+
+		rewind snapshot
+
+		// The rollback just discarded every predicted step at or above the root - the rewind
+		// history entries those steps captured are discarded prediction too
+		cleanupSpeculativeRewindEntries rewindFrame
+		
+		// Passes with a frozen pin cost the full window every time: space them out so the total
+		// replay work stays at a constant rate however long the outage lasts (03b)
+		nextPredictionPassFrame = replayToFrame + math.floor((replayToFrame - rewindFrame) / ticksPerSecond)
+		
+		// The threshold is generous (5 seconds of frames): mid-sized windows replay synchronously
+		// in well under a frame budget, and the synchronous path is bit-identical to the old code
+		if replayToFrame - rewindFrame > ticksPerSecond*5
+			// A huge window (a peer returning after a long outage, a removal releasing a backlog)
+			// is not replayed synchronously - that froze the tab for seconds and silenced our own
+			// Ticks. It is spread over several animation frames with the catch-up budget instead:
+			// core.onFrame's step loop steps frames below integrationReplayTo fastForwarded and
+			// budgeted (03c). Unlike a real catch-up this does not pause input recording: new
+			// records are stamped localUser.inputFrame, which stays monotonic above every claim
+			// we have sent, so records arriving between chunks are safe
+			frame = replayFrom = rewindFrame
+			integrationReplayTo = replayToFrame
+			replayPassCount++
+			lastReplayFrameCount = replayToFrame - rewindFrame
+			if lastReplayFrameCount > maxReplayFrameCount then maxReplayFrameCount = lastReplayFrameCount
+			replayedFrameCount += lastReplayFrameCount
+			log "#catchup Integrating {lastReplayFrameCount} replayed frames in budgeted chunks (rewound to {rewindFrame})"
+		else
+			replay rewindFrame to replayToFrame
 
 	private rewind: Buffer snapshot
 		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
-			
+			input.refreshLocalPlayer
+
+			// Users discovered AFTER this snapshot was saved have no stored readPos: reset them
+			// to 0 so the replay re-parses their whole stream. Keeping the live readPos silently
+			// skipped every record the live state had already consumed - including the Join that
+			// carries the account id - while the deserialize above rolled the players list back
+			// to before the user existed: the player was then recreated by whatever record came
+			// next, at a wrong frame, a permanent fork (churn desync, seed 321831152). For a
+			// late-discovered user the pin lies below their first record, so the replay parses
+			// them at true stamps; records below the pin are the hidden-join fork, detected
+			// before every pass in checkRewindAndReplayState
+			for input.internalUsers as user
+				if user then user.inputs.readPos = 0
+
 			let userCount = snapshot.readInt
 			for userCount
 				let userId = snapshot.readInt
+				int storedReadPos = snapshot.readInt
 				let user = input.internalUsers[userId]
-					user.inputs.readPos = snapshot.readInt
+					user.inputs.readPos = storedReadPos
 		
 	private replay: int from, int to
+		replayPassCount++
+		lastReplayFrameCount = to - from
+		if lastReplayFrameCount > maxReplayFrameCount then maxReplayFrameCount = lastReplayFrameCount
+		replayedFrameCount += lastReplayFrameCount
 		replayTime = PlainDate.measure
 			frame = replayFrom = from
 			while frame < to
@@ -616,8 +1296,28 @@ internal transient skipInit unit core
 			watch "Milestone {milestoneIndex}"
 			
 		if (mode == Connected or simulateRollback) and snapshotFrame == -1 and frame >= nextSnapshotFrame
+			// Stream bytes that arrive while a budgeted replay pass is stepping can carry records
+			// stamped below the pass's cursor: parseInputs applies those at the cursor frame, not
+			// their true frames, so the state here is a fork of the group timeline. Saving it would
+			// make the fork the permanent rewind root AND broadcast its checksum to healthy peers
+			// (lifecycle seed 426625824: a rejoiner's stream backfill landed mid-pass and one client
+			// sprayed poisoned checksums until the whole room burned its self-heal reloads).
+			// Defer the save instead: checkRewindAndReplayState re-roots at the pass's rewind frame
+			// and the next pass parses the arrival at its true stamps. The replayFrom bound keeps
+			// conservative full-invalidation marks (markRemoteChange 0 from removal events or a
+			// user appearing) out of this gate - those either leave the parse deterministic or
+			// schedule their own fork rebuild, and deferring on them would redo passes for nothing
+			if remoteInputsChanged and earliestChangedFrame < frame and earliestChangedFrame >= replayFrom
+				if not pinSaveDeferred
+					pinSaveDeferred = true
+					log "#pin Deferring the pin save at {frame}: records below it arrived mid-replay (first changed frame {earliestChangedFrame}, pass rooted at {replayFrom})"
+				return
+			pinSaveDeferred = false
 			snapshotFrame = frame
 			saveState snapshot
+			// The pin serialized the current rewind floor - everything below it is now
+			// certainly unreachable for every replay path, so the history can let it go
+			pruneRewindHistory
 			
 	string[] serializeLogs
 			
@@ -627,30 +1327,54 @@ internal transient skipInit unit core
 			Snapshot.serialize snapshot
 			if system.logSerialize
 				serializeLogs[frame mod 100] = Snapshot.serializeLog
-				
+
+		// Checksum
+		// The snapshot is the state before this frame, so it is final once every frame below it is
+		// certain - that includes the steady-play snapshot at certainFrame+1, which the previous
+		// isCertain gate (frame <= certainFrame) skipped, so checksums never fired in smooth play (F35)
+		// Computed here, before the internalUsers section below is appended: user membership and
+		// readPos are local bookkeeping that depends on when signaling created each user, not on
+		// the simulation - including them made the checksum differ between clients around joins
+		if input.players.length >= 2 and frame <= certainFrame + 1
+			float myChecksum = snapshot.checksum
+			int myRoster = rosterHash
+			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
+			if hasChecksum frame
+				if getChecksumRoster(frame) == myRoster
+					// Exact compare: the checksums are exact int32 hashes (transported as float64,
+					// lossless for int32) - there is no reason to accept any tolerance
+					float theirChecksum = getChecksum frame
+					if theirChecksum != myChecksum then onWrongChecksum frame, mine:myChecksum theirs:theirChecksum
+				else
+					// The stored checksum came from a diverged roster (see getChecksumRoster) and
+					// is incomparable - ours replaces it below so peers on our own timeline still
+					// get compared for this frame
+					logRosterSkip frame
+			// Our own computed value always ends up in the ring, even after a mismatch: sendInputs
+			// advertises the ring entry at lastChecksumFrame as OUR checksum, and when the slot
+			// kept the peer's value every client echoed foreign checksums as its own - a single
+			// transient wrong value then circulated the room as "theirs" long after its origin
+			// self-corrected, driving healthy clients' wrongChecksumCount over the self-heal
+			// threshold (lifecycle seed 426625824)
+			setChecksum frame, myChecksum, myRoster
+			lastChecksumFrame = frame
+
 		// To check if serialization works consistently, deserialize, serialize a second snapshot and compare it with the first
 		if simulateRollback
 			Snapshot.deserialize snapshot
 			Snapshot.serialize secondSnapshotForTesting
 			if(snapshot != secondSnapshotForTesting)
 				onError {"Inconsistent serialization"}
-												
+
 		snapshot.writeInt input.internalUsers.count . != null
 		for input.internalUsers
 			if .
 				snapshot.writeInt .id
 				snapshot.writeInt .inputs.readPos
 				
-		// Checksum
-		if input.players.length >= 2 and input.isCertain
-			float myChecksum = snapshot.checksum
-			float theirChecksum = checksums[frame]
-			if verbose then core.log "<{input.localUser.id}*> #{frame} {myChecksum} writePos:{snapshot.writePos}"
-			if !theirChecksum                             checksums[frame] = myChecksum; else
-			if !theirChecksum.isApproximately(myChecksum) onWrongChecksum frame, mine: myChecksum theirs:theirChecksum
-			lastChecksumFrame = frame
-				
-	inline js int currentTime => Date.now()
+	// Monotonic milliseconds anchored to the wall clock at page load: frame pacing must not follow
+	// Date.now(), which steps arbitrarily on NTP corrections, manual clock changes and resume (F20)
+	inline js int currentTime => Math.round(performance.timeOrigin + performance.now())
 		
 	private adjustStartTime
 		startTime = math.round(currentTime - frame*frameTime - (frameTime*.5))
@@ -699,69 +1423,160 @@ internal transient skipInit unit core
 		let date = Date.now
 		file.saveBinary "{system.appName} {date.dayShortMonthNameYearString} {date.hourMinuteSecondString} v{system.buildVersion}.state", buffer
 		
-	const chunkSize = 256
-	
-	storeRoomToDB
-		// TEMP: Storing event stream in database is disabled for now
-		return
-		roomStore.put {
-			id: roomId
-			frame
-			frames
-			eventStreamVersion
-			math.randomSeed
-			startInLobby
-			system.isStaging
-			localUserId: input.localUser.id
-		}
-	
-	storeInputsToDB: InternalUser user
-		// TEMP: Storing event stream in database is disabled for now
-		return
+	const dbChunkSize = 4096
+	private float lastInputStoreTime
+	private dynamic storedStreamRows // Stream rows loaded by restoreInputsFromDB, keyed by userId, consumed by applyStoredStream
+
+	// Persist every user's input stream to IndexedDB in fixed chunks (the tail chunk is rewritten
+	// as it fills) plus one meta row carrying the claim. Our own stream lets the player pick up
+	// where they left off after a page refresh even when all peers are gone. The copies of the
+	// OTHER users' streams are what keeps a removed user's inputs recoverable when every survivor
+	// reloads at once: those bytes live nowhere else once the user is gone, and the RemoveUser
+	// event in the host's persisted stream would otherwise make every replay wait forever for
+	// bytes no client can provide (a permanent certainFrame deadlock).
+	// Failures are ignored: persistence is best-effort.
+	// force skips the rate limit: pagehide/hidden flush the tail immediately - inputs younger
+	// than the persist interval exist only in memory, and when every holder reloads at once
+	// (both players hit refresh, a shared crash) those bytes would be lost everywhere
+	storeInputsToDB: bool force = false
+		if roomId <= 0 then return
+		if not force and currentTime < lastInputStoreTime + 500 then return
+		lastInputStoreTime = currentTime
+		// Remote users first: IndexedDB commits the puts in order, so whenever a RemoveUser event
+		// in our own persisted stream survives, the removed user's bytes it cuts at survived too
+		for input.internalUsers as user
+			if user and not user.local then storeUserInputsToDB user
+		storeUserInputsToDB input.localUser
+
+	private storeUserInputsToDB: InternalUser user
 		let inputs = user.inputs
-		if inputs.writePos > user.storedInputsUpTo
-			// let chunkStart = math.floor(inputs.writePos / chunkSize) * chunkSize
-			let start = inputs.writePos - (inputs.writePos mod chunkSize)
-			let id = "{roomId}-{user.id}-{start}"
-			print "[{frame}] <{user.id}> Storing inputs {id} ({start} to {inputs.writePos})"
-			inputStore.put {id, roomId, userId:user.id, start, inputs:inputs.subArrayBuffer(start to inputs.writePos)}
-				print "[{frame}] <{user.id}> Storing inputs successful"
-			else
-				print "[{frame}] <{user.id}> Storing inputs failed"
-			user.storedInputsUpTo = inputs.writePos
-			
-	openFromDB
-		// TEMP: Storing event stream in database is disabled for now
-		return
-		await IndexedDB.start system.isStaging ? "up4playing-{localUserId}" : "up4playing", version:2
-		
-		let room = await roomStore.get roomId
-		int targetFrame = room.frame - 1
-		frames = room.frames
-		let randomSeed = room.randomSeed
-		startInLobby = room.startInLobby
-		system.isStaging = room.isStaging
-		localUserId = room.localUserId
-		
-		print "#database opening from db {room.toJson}"
-		dynamic[] rooms = await inputStore.getAllFromIndex "roomId", roomId
-		rooms.sortBy.start
-		forDynamic rooms as room
-			int userId = room.userId
-			int start = .start
-			dynamic inputs = .inputs
-			let user = input.internalUsers[.userId] ?= {id:.userId, local:.userId == localUserId, collectInputs:true}
-			if user.local
-				input.localUser = user
-			user.inputs.insertArrayBuffer .inputs
-			print "#database", userId, start, inputs.toString()
-		print "#database", input.localUser.inputs.toString
-			
-		// Replay
-		for input.internalUsers if .
-			.startInputFrame frames
-		math.setRandomSeed randomSeed
-		replay 0 to targetFrame
+		// The claim gates parsing on a restoring client, so it is persisted alongside the bytes.
+		// It can advance without new bytes arriving (a peer's stream answer raised it), hence the
+		// separate storedClaim check
+		int claim = user.local ? math.max(user.inputFrame - 1, -1) : user.inputFrame
+		// The removal cut is persisted too: a stored stream can be LONGER than the cut (its claim
+		// arrived live, before the removal did), and the RemoveUser event that cuts it sits at a
+		// LATER frame in the host's stream - a restoring replay would parse the discarded tail
+		// before it ever reaches the event and bake it into the timeline for good, forking against
+		// clients whose copy ends at the cut (lifecycle seeds 170692360, 485951509)
+		int removedAfterFrame = user.removed ? user.removedAfterFrame : int.maxValue
+		if inputs.writePos <= user.storedInputsUpTo and claim <= user.storedClaim and removedAfterFrame >= user.storedRemovedAfterFrame then return
+
+		int start = user.storedInputsUpTo - (user.storedInputsUpTo mod dbChunkSize)
+		while start < inputs.writePos
+			int end = math.min(start + dbChunkSize, inputs.writePos)
+			inputStore.put {id:"{roomId}-{user.id}-{start}", roomId, userId:user.id, start, bytes:inputs.subArrayBuffer(start to end)}
+			start += dbChunkSize
+		// The meta row is written after the chunks it covers: a restore may only adopt the claim
+		// when it restored every byte up to writePos, so a torn write can never claim unheld bytes.
+		// The epoch records which lineage of the user's stream these bytes belong to: after our
+		// reload, their live epoch must match it before our copy may extend past their epochStartPos
+		// (see PeerNetwork.onTick's dead-lineage cut)
+		inputStore.put {id:"{roomId}-{user.id}-meta", roomId, userId:user.id, writePos:inputs.writePos, claim, removedAfterFrame, epoch:user.epoch}
+		user.storedInputsUpTo = inputs.writePos
+		user.storedClaim = claim
+		user.storedRemovedAfterFrame = removedAfterFrame
+
+	// Delete the persisted chunk rows of a cut stream tail so a reload can never restore the
+	// dead lineage again. The boundary chunk keeps its (partially stale) row until the next
+	// persist rewrites it - until then the meta row's writePos exceeds what the chunks restore
+	// contiguously, so applyStoredStream refuses the stored claim and nothing stale is parsed.
+	// Best-effort like every persistence call
+	js void truncateStoredStream: InternalUser user, int fromPos
+		if(core.roomId <= 0 || !IndexedDB.db) return;
+		let boundary = fromPos - ((fromPos % core.dbChunkSize + core.dbChunkSize) % core.dbChunkSize);
+		for(let start = boundary; start < user.storedInputsUpTo; start += core.dbChunkSize)
+			core.inputStore.delete(core.roomId + "-" + user.id + "-" + start);
+		if(user.storedInputsUpTo > boundary) user.storedInputsUpTo = boundary;
+		user.storedClaim = -1;
+
+	// Load the input streams stored for this room back from IndexedDB after a page refresh
+	// (called by PeerNetwork.connect before the signaling connection starts). Our own stream is
+	// applied immediately; the other users' streams are stashed and applied once their
+	// InternalUser exists (see PeerNetwork.onJoinResponse and ServerNetwork.getOrCreateUser)
+	js async void restoreInputsFromDB
+		if(core.roomId <= 0 || core.localUserId == -1 || !IndexedDB.db) return;
+		let rows = await core.inputStore.getAllFromIndex("roomId", core.roomId);
+		core.storedStreamRows = new Map();
+		for(let row of rows) {
+			if(row.userId == null) continue;
+			let list = core.storedStreamRows.get(row.userId);
+			if(!list) core.storedStreamRows.set(row.userId, list = []);
+			list.push(row);
+		}
+		core.applyStoredStream(input.localUser);
+		// The restored bytes are pre-epoch history: this session must append after them, never
+		// write into them. Setting the boundary here (not only in finishRestore) keeps it truthful
+		// even when the restore protocol never runs - e.g. when we rejoin a freshly restarted server
+		// that lists nobody else. Peers that hold up to this much of our old stream then accept our
+		// new epoch instead of refusing it forever, and startConnected resumes our player instead
+		// of writing a second Join event
+		input.localUser.epochStartPos = input.localUser.inputs.writePos;
+		// Users that already exist pick up their stored streams now (only happens when the
+		// database open lost its 3s race against the signaling connection)
+		for(let user of input.internalUsers) if(user && !user.local) core.applyStoredStream(user);
+
+	// Apply the stored chunk rows for this user's stream (chunks are applied in order and only
+	// while they extend the stream contiguously - a missing chunk ends the restore) and adopt the
+	// stored claim when every byte it covers was restored - the same completeness rule
+	// onStreamData uses, so an adopted claim never covers bytes we don't hold.
+	// For a removed user this is what breaks the stream-loss deadlock after every survivor
+	// reloaded at once: their bytes and claim reach removedAfterFrame again, so the replay parses
+	// their stream up to the removal cut and certainFrame releases them
+	js void applyStoredStream: InternalUser user
+		if(!user || !core.storedStreamRows) return;
+		let rows = core.storedStreamRows.get(user.id);
+		if(!rows) return;
+		core.storedStreamRows.delete(user.id); // Applied at most once, to a freshly created user
+		let inputs = user.inputs;
+		if(!user.local && inputs.writePos > 0) return; // Bytes already arrived over the network - the stream protocol fills the rest
+		let meta = null;
+		let chunks = [];
+		for(let row of rows) {
+			if(row.bytes) chunks.push(row);
+			else meta = row;
+		}
+		chunks.sort((a, b) => a.start - b.start);
+		for(let row of chunks) {
+			if(row.start > inputs.writePos) {
+				// Gap: nothing beyond it may be used
+				core.log("#db Gap in user "+user.id+"'s stored input chunks: next chunk starts at "+row.start+", we have "+inputs.writePos+" -> stopping the restore here");
+				break;
+			}
+			if(row.start + row.bytes.byteLength <= inputs.writePos) continue;
+			inputs.writePos = row.start;
+			inputs.insertArrayBuffer(row.bytes);
+		}
+		user.storedInputsUpTo = inputs.writePos;
+		user.restoredFromDBUpTo = inputs.writePos;
+		let claim = meta && inputs.writePos >= meta.writePos ? meta.claim : -1;
+		user.storedClaim = claim;
+		// The lineage these bytes were persisted under. Rows written by older builds have no
+		// epoch field and restore as 0 (unknown) - a live epoch continuing below our copy then
+		// cuts the tail, the safe side (see PeerNetwork.onTick)
+		user.storedEpoch = meta && meta.epoch != null ? meta.epoch : 0;
+		if(user.local) {
+			// Our previous session already claimed inputs up to this frame - new records must be
+			// stamped above it even when no peer is reachable to report the floor (the same rule
+			// as PeerNetwork.adoptOwnClaimFloor)
+			if(claim + 1 > user.inputFrame) user.inputFrame = claim + 1;
+		} else if(claim > user.inputFrame) {
+			user.inputFrame = claim;
+			core.markRemoteChange(0);
+		}
+		// A persisted removal cut is re-applied BEFORE the replay parses a single record: the
+		// stored stream may be longer than the cut, and the RemoveUser event that cuts it sits at
+		// a later frame - parsing the discarded tail first would bake it into the timeline for
+		// good (see storeUserInputsToDB). Lower-only, like every cut application. Rows written by
+		// older builds have no removedAfterFrame field and restore as not-removed
+		let storedCut = meta && meta.removedAfterFrame != null ? meta.removedAfterFrame : Number.MAX_SAFE_INTEGER;
+		user.storedRemovedAfterFrame = storedCut;
+		if(!user.local && storedCut < user.removedAfterFrame) {
+			user.removed = true;
+			user.removedAfterFrame = storedCut;
+			core.log("#db User "+user.id+"'s stored stream carries a removal cut at frame "+storedCut+" -> the replay parses it only up to the cut");
+		}
+		core.log("#db Restored "+inputs.writePos+" bytes of user "+user.id+"'s stream from IndexedDB ("+chunks.length+" chunks stored for room "+core.roomId+", claim "+claim+")");
 	
 	openState
 		file.openBinary
@@ -819,7 +1634,20 @@ internal transient skipInit unit core
 	int roomId
 	string gameId
 	int localUserId
-	
+
+	// This tab holds the room's identity lease (a Web Lock, auto-released when the tab dies):
+	// it resumes the identity stored in localStorage and is the only tab that persists to it.
+	// A second live tab of the same browser joins as a brand-new player instead of stealing the
+	// live identity (the Testrun206/331 two-tab theft)
+	bool identityLeaseOwner
+	// The Join is held back (see sendJoinMessage) until the lease decided who we are
+	bool identityLeasePending
+	// Resolves when the lease decided who we are. The IndexedDB restore awaits it: the restore
+	// keys our OWN stream by input.localUser.id, and the decision may change that id (a stored
+	// identity the server reassigned us earlier wins over a preassigned one) - restoring first
+	// would attach the old id's stream to the new identity with no refusal left to re-home it
+	private dynamic identityLeaseDecision
+
 	join: string gameId, string roomString, int userId
 		statistics.scheduleSendIn 30 seconds
 		isPremiere = true
@@ -836,16 +1664,28 @@ internal transient skipInit unit core
 		this.frames = 0
 		// Local sessions reset outputIndex from -1 to 0 in core.stop, connected sessions must do it here
 		this.outputIndex = 0
-		// TEMP: Storing event stream in database is disabled for now
-		// try
-		// 	await openFromDB
-		// catch 
-		// 	input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
 		input.localUser = {this.localUserId, local:true, connected:true, connectionId:0}
-		await PeerNetwork.setupLocalMedia 
+		// Each session tags its input stream with a fresh random epoch: peers use it to detect
+		// that we restarted and lost our in-memory stream (see PeerNetwork.onTick)
+		input.localUser.epoch = PeerNetwork.generateEpoch
+
+		// A page refresh must not turn us into a new player - the old player would freeze as a
+		// permanent ghost - so the identity for this room is resumed from storage. But the SAME
+		// identity in two live tabs is identity theft (both fight over the id): the stored
+		// identity belongs to the tab holding the room's Web Lock. requestIdentityLease decides
+		// asynchronously (the Join waits, see sendJoinMessage) and onIdentityLeaseDecided adopts
+		// the identity; a second live tab joins as a brand-new player instead
+		if this.roomId > 0
+			identityLeasePending = true
+			requestIdentityLease
+
+		// Open IndexedDB (restores the stored input streams after a page refresh), then connect to the
+		// signaling server. The media setup runs in parallel: signaling doesn't need media, and
+		// a media failure must never abort the join (setupLocalMedia never throws)
+		PeerNetwork.connect
+		PeerNetwork.setupLocalMedia
 			enableVideo:not system.isStaging || core.enableVideoForStaging
 			enableAudio:not system.isStaging || core.enableAudioForStaging
-		ServerNetwork.setupServerConnection
 		lobby.enableFullscreen = !system.isStaging
 		
 	private js void initAll
@@ -859,11 +1699,135 @@ internal transient skipInit unit core
 			}
 		}		
 		
-	internal storeUserId
-		system.setLocalStorageObject "room"+roomId, RoomInfo(currentTime, input.localUser.id)
-		
+	// Remember everything needed to rejoin this room after a page refresh (userId + session
+	// token) and to recreate it on a freshly restarted server (seed, start time, highest known
+	// user id). Our own identity always survives a reload of THIS tab via sessionStorage; only
+	// the lease-owning tab writes the shared localStorage record (what a future tab resumes
+	// after a browser restart) - a second live tab must never overwrite the owner's identity
+	internal storeRoomInfo
+		int maxUserId = input.localUser.id
+		for input.internalUsers
+			if . and .id > maxUserId then maxUserId = .id
+		RoomInfo info = {currentTime, input.localUser.id, math.randomSeed, serverStartTime, maxUserId, ServerNetwork.sessionToken}
+		system.setSessionStorageObject "room"+roomId, info
+		if identityLeaseOwner then system.setLocalStorageObject "room"+roomId, info
+
+	// The identity we may resume for this room: this tab's own (sessionStorage - a reload of
+	// this tab always continues as the same player), falling back to the browser's stored
+	// identity (localStorage) only for the tab that holds the identity lease
+	internal RoomInfo getStoredRoomInfo
+		RoomInfo own = system.getSessionStorageObject("room"+roomId)
+		if own then return own
+		if identityLeaseOwner then return system.getLocalStorageObject("room"+roomId)
+		return null
+
+	// Requests this room's identity lease: an exclusive, origin-wide Web Lock the browser
+	// auto-releases when the holding tab closes, crashes or navigates. Exactly one tab per
+	// browser profile owns a room's stored identity at any time - a second live tab must not
+	// claim it (identity theft, see the identity-contention spec). The request stays queued in
+	// the background after losing the initial decision: when the owner tab closes, the
+	// surviving tab inherits the persistence duty (onIdentityLeaseAcquiredLate)
+	internal js void requestIdentityLease
+		const name = "livetime-identity-" + core.roomId;
+		let decided = false;
+		let resolveDecision;
+		core.identityLeaseDecision = new Promise(resolve => resolveDecision = resolve);
+		const decide = owner => {
+			if(decided) return;
+			decided = true;
+			if(core.identityLeasePending) { core.identityLeasePending = false; core.onIdentityLeaseDecided(owner); }
+			resolveDecision();
+		};
+		if(!(navigator.locks && navigator.locks.request)) {
+			// No Web Locks API (old browser): behave like before the lease existed - this tab
+			// uses the shared localStorage identity
+			core.identityLeaseOwner = true;
+			decide(true);
+			return;
+		}
+		try {
+			navigator.locks.request(name, () => {
+				const late = decided || !core.identityLeasePending;
+				core.identityLeaseOwner = true;
+				decide(true);
+				if(late) core.onIdentityLeaseAcquiredLate();
+				return new Promise(() => {});  // Hold the lease until this tab dies
+			}).catch(() => decide(false));
+			// Decision window: a closing owner tab (the user just closed it, a browser session
+			// restore is racing us) releases the lease within moments - give it a second before
+			// concluding a live tab owns the identity and we are a second player
+			setTimeout(() => decide(false), 1000);
+		} catch(e) {
+			core.identityLeaseOwner = true;
+			decide(true);
+		}
+
+	// The lease decided who we are - adopt the stored identity (or none) and let the held-back
+	// Join go out (see sendJoinMessage)
+	internal onIdentityLeaseDecided: bool owner
+		RoomInfo info = getStoredRoomInfo
+		if localUserId == -1
+			if info and currentTime - info.time < 24 hours
+				localUserId = info.userId
+				input.localUser.id = info.userId
+				ServerNetwork.sessionToken = info.token or ""
+				log "Rejoining room {roomId} as stored user {localUserId}"
+			else if not owner
+				log "Another tab of this browser holds this room's identity -> joining as a new player"
+		else if info and info.token and currentTime - info.time < 24 hours
+			// Preassigned id (staging x-suffix): the identity is fixed, the lease only decides
+			// where it is persisted - but the session token proving the id is ours still comes
+			// from storage. When the stored identity DIFFERS from the preassigned id, the server
+			// reassigned us in an earlier session (a refused tokenless claim mints a fresh id,
+			// see onJoinResponse's claimRefused branch) - the stored identity is who we are now.
+			// Re-claiming the stale preassigned id tokenless would mint yet another fresh user on
+			// EVERY reload, each stranding the previous id as a never-heard-from phantom for the
+			// others to remove (lifecycle seed 457934412)
+			if info.userId != localUserId
+				log "Server reassigned this room's identity earlier -> rejoining as stored user {info.userId} instead of preassigned user {localUserId}"
+				localUserId = info.userId
+				input.localUser.id = info.userId
+			ServerNetwork.sessionToken = info.token
+
+	// The lease was granted after the initial decision: the owner tab closed and we (the
+	// surviving tab) inherit the persistence duty, or we opened a brand-new room whose lease was
+	// free. From now on our identity survives a browser restart via localStorage
+	internal onIdentityLeaseAcquiredLate
+		log "#server This tab now holds the identity lease for room {roomId}"
+		if ServerNetwork.joined and input.localUser and input.localUser.id != -1
+			storeRoomInfo
+
+	// A checksum received over the network (carried in the trailing fields of every peer and
+	// server-relay Tick). When we haven't computed ours for that frame yet, store theirs -
+	// saveState compares against it once its own snapshot reaches that frame
+	internal onRemoteChecksum: int checksumFor, float checksum, int roster
+		// StreamData and Tick handlers can append old history and then receive a checksum before
+		// the next onFrame. Detect the resulting below-pin fork first; comparing a checksum from
+		// that history against our already-certified snapshot would be a false desync.
+		if checkForForkBelowSnapshot then return
+		// A checksum carried by the same Tick that made history newly parseable describes the
+		// sender's state before our queued rewind has integrated that history. Do not seed the
+		// freshly-invalidated ring with it: saveState would otherwise compare the corrected replay
+		// against this in-flight value (lobby seed 705089693). Budgeted integration spans multiple
+		// animation frames, so ignore peer checksums for its whole duration; fresh checksums resume
+		// immediately after both clients have had a chance to settle.
+		if integrationReplayTo != -1 then return
+		if remoteInputsChanged and checksumFor >= earliestChangedFrame then return
+		if hasChecksum checksumFor
+			if getChecksumRoster(checksumFor) != roster
+				// The sender computed its state from a different roster (a fork after a
+				// partition) - the values are incomparable, see getChecksumRoster
+				logRosterSkip checksumFor
+				return
+			float myChecksum = getChecksum checksumFor
+			if myChecksum != checksum then onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
+		else
+			setChecksum checksumFor, checksum, roster
+
 	string snapshotLogWithWrongChecksum
-		
+
+	private int wrongChecksumCount
+
 	onWrongChecksum: int frame, float mine, float theirs
 		string message = " Out of sync. frame:{frame} mine:{mine} theirs:{theirs}"
 		string serializeLog = serializeLogs[frame mod 100]
@@ -873,6 +1837,13 @@ internal transient skipInit unit core
 			core.log "\n{serializeLog}"
 			// file.saveText "{input.localUser.id}-snapshot{frame}.json", serializeLog
 		onError {message}
+
+		// Self-heal from a persistent divergence: reload the page and rebuild the state by
+		// replaying the streams as the mesh holds them (our own inputs survive in IndexedDB and
+		// on our peers). Rate-limited inside selfHealReload to avoid reload loops
+		if ++wrongChecksumCount >= 3 and mode == Connected and not system.isDebug
+			statistics.scheduleSendIn 0 seconds
+			PeerNetwork.selfHealReload "out of sync at frame {frame}"
 		
 	onError: Error error
 		if error.message == "interrrupt" then return
@@ -1033,24 +2004,55 @@ skipInit transient unit statistics
 			if not sessionStarted then startSession
 			else                   saveStatistics
 			nextSendTime = PlainDate.realTime + core.sendStatisticsEvery
-	
+
+		// Only outside an active send: a send in flight references absolute indices
+		if not currentlySendingStatistics then trimSentData
+
+	// Drop data that was already flushed to the statistics server, so logs, pings and graph
+	// values don't grow for the whole session (F28/F29). A tail of the graph values is kept
+	// for the on-screen debug graphs, and a hard cap bounds the graphs even when the
+	// statistics server is unreachable for a long time
+	private trimSentData
+		if successfullySentSystemLogs > 0
+			systemLogs.removeRange 0..successfullySentSystemLogs
+			successfullySentSystemLogs = 0
+		if successfullySentGameLogs > 0
+			gameLogs.removeRange 0..successfullySentGameLogs
+			successfullySentGameLogs = 0
+		if successfullySentServerPings > 0
+			serverPings.removeRange 0..successfullySentServerPings
+			successfullySentServerPings = 0
+		for graphs as graph
+			int removeCount = math.min(graph.successfullySentUntil, graph.values.length - 150)
+			if graph.values.length > 10000 then removeCount = graph.values.length - 5000
+			if removeCount > 0
+				graph.values.removeRange 0..removeCount
+				graph.successfullySentUntil = math.max(graph.successfullySentUntil - removeCount, 0)
+
 	// Log game events (like scores, playtimes, etc)
 	log: dynamic value
 		value.frame = Time.ticks
 		this.gameLogs.add value
+		// Bound the unsent backlog when the statistics server is unreachable (F29)
+		if gameLogs.length > 10000
+			gameLogs.removeRange 0..5000
+			successfullySentGameLogs = math.max(successfullySentGameLogs - 5000, 0)
 	
 	private startSession
+		// Debug sessions never post statistics. Checked before anything else: the old code
+		// returned AFTER setting currentlySendingStatistics, leaving the flag stuck true for
+		// the whole session (trimSentData disabled, tick re-entering forever)
+		if system.isDebug then return
 		core.log "#statistics Start Session"
 		if currentlySendingStatistics then return
 		currentlySendingStatistics = true
-		
+
 		let user = storage.getObjectDirectly("user")
 		let server = system.hostname.getUntil(".")
 		let userId = input.localUser.id
 		id = core.roomId*100 + userId
 		int sendingSystemLogsUntil = systemLogs.length
 
-		if system.isDebug then return
 		http.postDirectly "{url}/startSession", body:{
 			id
 			gameId: core.gameId
@@ -1071,6 +2073,7 @@ skipInit transient unit statistics
 			currentlySendingStatistics = false
 	
 	private saveStatistics
+		if system.isDebug then return
 		core.log "#statistics Send Statistics"
 		if currentlySendingStatistics then return
 		currentlySendingStatistics = true
@@ -1121,6 +2124,8 @@ skipInit transient unit statistics
 		int index = infoNames.indexOf name
 		if index == -1 then index = infoNames.length; infoNames.add name
 		infos.add {value, index, frame:core.frame}
+		// Only the recent infos are ever drawn (F29)
+		if infos.length > 1000 then infos.removeRange 0..500
 		
 	internal tickGraph
 		input.onTouchDown position, size, align:Left, valign:Top
@@ -1205,4 +2210,3 @@ tests
 		// if core.frame <= core.targetFrame
 		system.fastForward = core.frame != core.targetFrame
 		core.tick draw:core.frame == core.targetFrame
-

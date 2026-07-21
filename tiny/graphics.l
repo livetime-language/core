@@ -109,10 +109,14 @@ immutable Color
 		green = hex.length >= 4 ? hex.substring(2,4).parseInt(16) : 0
 		blue = hex.length >= 6 ? hex.substring(4,6).parseInt(16) : 0
 		alpha = hex.length >= 8 ? hex.substring(6,8).parseInt(16) : 255
-		value = (red shiftLeft 0) + (green * 256) + (blue * 65536) + (alpha * 16777216)
+		// Compose bitwise, not with arithmetic: alpha * 16777216 stays a positive number above int32
+		// range in JS, while shiftLeft wraps to the canonical signed int32 that pixels and int
+		// literals like 0xff000000 use in every backend
+		value = red bitwiseOr (green shiftLeft 8) bitwiseOr (blue shiftLeft 16) bitwiseOr (alpha shiftLeft 24)
 
 	Color: int hex
-		if(hex <= 0xffffff)
+		// A negative hex is a full 32-bit RRGGBBAA pattern whose red byte is >= 0x80
+		if(hex >= 0 and hex <= 0xffffff)
 			red = hex.shiftRight(16) bitwiseAnd 0xff
 			green = hex.shiftRight(8) bitwiseAnd 0xff
 			blue = hex bitwiseAnd 0xff
@@ -122,7 +126,7 @@ immutable Color
 			green = hex.shiftRight(16) bitwiseAnd 0xff
 			blue = hex.shiftRight(8) bitwiseAnd 0xff
 			alpha = hex bitwiseAnd 0xff
-		value = (red shiftLeft 0) + (green * 256) + (blue * 65536) + (alpha * 16777216)
+		value = red bitwiseOr (green shiftLeft 8) bitwiseOr (blue shiftLeft 16) bitwiseOr (alpha shiftLeft 24)
 
 	Color: int value
 		red = value shiftRight 0 bitwiseAnd 0xff
@@ -133,14 +137,30 @@ immutable Color
 struct int
 	inline Color toColor => new Color(value:this)
 		
-BitmapFont
+immutable Font
 	string name
 	Vector2 charSize
-	Vector2 charSizeWithoutSpacing
+	Vector2 charSizeWithoutPadding
 	Vector2 sourceSize
-	int charsPerRow
-	int startChar
-	int[] pixels
+	int startChar = 32
+	bool onlyUppercase = false
+
+	visible int charsPerRow
+	visible ImmutableList<int> pixels
+
+	Font: string[] pixelsAsStrings = null
+		if not pixelsAsStrings then return
+		let maxWidth = pixelsAsStrings.max.length
+		if sourceSize.x == 0 and sourceSize.y == 0 then sourceSize = charSize
+		if charSizeWithoutPadding.x == 0 and charSizeWithoutPadding.y == 0 then charSizeWithoutPadding = charSize
+		charsPerRow = maxWidth / charSize.x
+		int[] pixels
+		int index
+		for pixelsAsStrings as line
+			for line.length as i
+				pixels[index + i] = line[i] != " " ? 1 : 0
+			index += maxWidth
+		this.pixels = pixels
 
 Screen
 	Vector2 size
@@ -156,14 +176,16 @@ Screen
 	js void setup: Vector2 size
 		this.size = size
 		if(system.isEmbedded) {
-			this.pixels = new Uint32Array(size.x * size.y);
+			// Int32Array, not Uint32Array: element reads must yield the canonical signed int32
+			// so pixel values equal Color.value and folded int literals like 0xff000000
+			this.pixels = new Int32Array(size.x * size.y);
 		} else {
 			this.canvas = document.createElement("canvas")
 			this.canvas.width = this.size.x
 			this.canvas.height = this.size.y
 			this.context = this.canvas.getContext("2d")
 			this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
-			this.pixels = new Uint32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
+			this.pixels = new Int32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
 		}
 		this.clear();
 
@@ -260,20 +282,18 @@ transient global skipInit graphics
 			colors.add color
 			colorByLetter[color.letter] = color.value
 
-		// openTiles
-		openFonts
 		screen = {}
 		screens = [screen]
+		font = fonts.monogram
 
 	setup
+		initHandlers
 		setResolution {224, 168}
 		// setResolution {256, 192}
-		initHandlers
 
 	js void initHandlers
 		if(system.isEmbedded) return
 		window.onresize = () => this.onResize()
-		this.onResize()
 
 	internal js void onResize
 		if(system.isEmbedded) return
@@ -311,46 +331,18 @@ transient global skipInit graphics
 				closestColor = .
 		return closestColor
 
-	inline js string fontsData => (typeof _data_fonts === "string" ? _data_fonts : "")
-	inline js string tilesData => (typeof _data_tiles === "string" ? _data_tiles : "")
-
-	// private openTiles
-	// 	tiles = []
-	// 	tileCollections = []
-	// 	TileCollection collection, prevCollection
-	// 	int index = 0
-	// 	for tilesData.split("\n") as line
-	// 		if line.startsWith "#"
-	// 			int colonIndex = line.indexOf ":"
-	// 			string key = line.substring(1, colonIndex).trim.toLowerCase
-	// 			string value = line.substring(colonIndex+1).trim
-	// 			if not collection then collection = {}
-	// 			collection[key] = value
-	// 		else
-	// 		if line.length > 0
-	// 			for line.length as i
-	// 				PaletteEntry entry = colorByLetter[line[i]]
-	// 				tiles[index + i] = entry ? entry.index : 0
-	// 			index += tilesStride
-
-	private openFonts
-		font = {name: "monogram", sourceSize:{6,12}, charSize:{6,10}, charSizeWithoutSpacing:{5,9}, charsPerRow: 16, startChar: 32 }
-		int index = 0
-		for fontsData.split("\n") as line
-			int pixelOffset = floor(i*font.sourceSize.x*font.charsPerRow)
-			for line.length as i
-				if line[i] != "0" then font.pixels[pixelOffset + i] = 1
-
 	startFrame
 		if system.fastForward then return
 		screen.clear
 		helpText = ""
+		color = White
 
 	finishFrame
 		screen.finishFrame
 
 	int[] pixels
-	BitmapFont font
+	Font font
+	Color color
 	global Vector2 screenSize
 	global Vector2 screenGridSize
 	global string helpText
@@ -360,6 +352,10 @@ transient global skipInit graphics
 		pixels = screen.pixels
 		screenSize.create screen.size
 		screenGridSize.create screen.size / tileSize
+		onResize
+
+	setFont: Font font
+		this.font = font
 
 	global void setPixel: Vector2 pos
 		                  implicit Color color
@@ -406,7 +402,6 @@ transient global skipInit graphics
 		if not isClick and not help then return
 
 		let pointerPos = getPointer()
-		// if help == "x" print help, pos - margin, pointerPos, pos + size + margin*2, pos - margin <= pointerPos < pos + size + margin*2
 		if pos - margin <= pointerPos < pos + size + margin*2
 			if help then helpText = help
 			if isClick then onClick()
@@ -504,7 +499,7 @@ transient global skipInit graphics
 
 	global drawText: string text
 	                 Vector2 pos = {0,0}
-					 implicit Color color = Colors.White
+					 implicit Color color = graphics.color
 					 void() onClick = null
 					 string help = ""
 					 Vector2 margin = {0,0}
@@ -513,15 +508,16 @@ transient global skipInit graphics
 		int fontStride = floor(font.charsPerRow * font.sourceSize.x)
 		let target = screen.pixels
 		int colorValue = color.value
-		int charW = floor(font.charSizeWithoutSpacing.x)
-		int charH = floor(font.charSizeWithoutSpacing.y)
+		int charW = floor(font.charSizeWithoutPadding.x)
+		int charH = floor(font.charSizeWithoutPadding.y)
 		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
 		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+		if font.onlyUppercase then text = text.toUpperCase
 		Vector2 p = pos
 		for text.length
 			int char = text.getCharCodeAt(i) - 32
 			int glyphX = floor(p.x), glyphY = floor(p.y)
-			int tileOffset = floor((char mod 16) * font.sourceSize.x + math.floor(char / 16) * fontStride * font.sourceSize.y)
+			int tileOffset = floor((char mod font.charsPerRow) * font.sourceSize.x + math.floor(char / font.charsPerRow) * fontStride * font.sourceSize.y)
 			int startX = 0, endX = charW
 			int startY = 0, endY = charH
 			if glyphX + startX < clipX1 then startX = clipX1 - glyphX
@@ -553,7 +549,7 @@ transient global skipInit graphics
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
 		let target = screen.pixels
-		if fillColor == null and outlineColor == null then fillColor = White
+		if fillColor == null and outlineColor == null then fillColor = graphics.color
 		if fillColor != null
 			int stride = floor(screen.size.x)
 			int startX = x, endX = x + sizeX
@@ -591,7 +587,7 @@ transient global skipInit graphics
 		for rowStart + x0 to rowStart + x1 + 1 as i
 			target[i] = colorValue
 
-	global void drawCircle: Vector2 pos = {0,0}
+	global void drawCircle: Vector2 center = {0,0}
 		                    Vector2 radius
 							implicit Color fillColor = null
 							implicit Color outlineColor = null
@@ -601,73 +597,149 @@ transient global skipInit graphics
 		if system.fastForward then return
 		if fillColor == null and outlineColor == null then fillColor = Colors.White
 		if radius.y == 0 then radius.y = radius.x
-			
-		// Pixel art ellipse/circle fitting exactly in the bounding box [pos, pos + radius*2].
-		// Bresenham midpoint rasterizer (Zingl): one connected 1px outline, no spurious pixels,
-		// handles even and odd diameters, no anti-aliasing. Fill and outline are both optional.
+
+		// Pixel art ellipse/circle centered on center, fitting exactly in the bounding box
+		// [center - radius, center + radius]. Bresenham midpoint rasterizer (Zingl): one connected
+		// 1px outline, no spurious pixels, handles even and odd diameters, no anti-aliasing.
+		// Clipping and pixel writes are inlined; per-row work is hoisted out of the inner loops.
 		int width = round(radius.x * 2)
 		int height = round(radius.y * 2)
 		if width >= 1 and height >= 1
-			int x0 = pos.x.floor
-			int y0 = pos.y.floor
+			int x0 = (center.x - radius.x).floor
+			int y0 = (center.y - radius.y).floor
 			int x1 = x0 + width - 1
 			int y1 = y0 + height - 1
 
-			int a = x1 - x0                 // horizontal diameter
-			int b = y1 - y0                 // vertical diameter
-			int b1 = b mod 2                // 1 for odd height
-			int dx = 4 * (1 - a) * b * b
-			int dy = 4 * (b1 + 1) * a * a
-			int err = dx + dy + b1 * a * a
-			int e2
+			int clipX1 = screen.clipX1, clipX2 = screen.clipX2
+			int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+			if x0 < clipX2 and x1 >= clipX1 and y0 < clipY2 and y1 >= clipY1
+				int stride = floor(screen.size.x)
+				int[] target = screen.pixels
+				int maxX = clipX2 - 1
 
-			y0 += floor((b + 1) / 2)        // start at the vertical centre
-			y1 = y0 - b1
-			int xStep = 8 * b * b
-			int yStep = 8 * a * a
+				int a = x1 - x0                 // horizontal diameter
+				int b = y1 - y0                 // vertical diameter
+				int b1 = b mod 2                // 1 for odd height
+				int dx = 4 * (1 - a) * b * b
+				int dy = 4 * (b1 + 1) * a * a
+				int err = dx + dy + b1 * a * a
+				int e2
 
-			bool hasFill = fillColor != null
-			bool hasOutline = outlineColor != null
-			int fillValue = hasFill ? fillColor.value : 0
+				y0 += floor((b + 1) / 2)        // start at the vertical centre
+				y1 = y0 - b1
+				int xStep = 8 * b * b
+				int yStep = 8 * a * a
 
-			while x0 <= x1
-				if hasFill
-					hLine x0, x1, y0, fillValue
-					hLine x0, x1, y1, fillValue
-				if hasOutline
-					setPixel {x1, y0}, outlineColor
-					setPixel {x0, y0}, outlineColor
-					setPixel {x0, y1}, outlineColor
-					setPixel {x1, y1}, outlineColor
-				e2 = 2 * err
-				if e2 <= dy
-					y0 += 1
-					y1 -= 1
-					dy += yStep
-					err += dy
-				if e2 >= dx or 2 * err > dy
-					x0 += 1
-					x1 -= 1
-					dx += xStep
-					err += dx
+				bool hasFill = fillColor != null
+				bool hasOutline = outlineColor != null
+				int fillValue = hasFill ? fillColor.value : 0
+				int outlineValue = hasOutline ? outlineColor.value : 0
+				int rowY0 = y0 * stride         // row offsets, stepped by stride instead of multiplying per row
+				int rowY1 = y1 * stride
 
-			// Finish the tips of very flat ellipses (a tiny radius on one axis)
-			while y0 - y1 < b
-				if hasFill
-					hLine x0 - 1, x1 + 1, y0, fillValue
-					hLine x0 - 1, x1 + 1, y1, fillValue
-				if hasOutline
-					setPixel {x0 - 1, y0}, outlineColor
-					setPixel {x1 + 1, y0}, outlineColor
-					setPixel {x0 - 1, y1}, outlineColor
-					setPixel {x1 + 1, y1}, outlineColor
-				y0 += 1
-				y1 -= 1
+				while x0 <= x1
+					bool y0Visible = clipY1 <= y0 < clipY2
+					bool y1Visible = clipY1 <= y1 < clipY2
+					if hasFill and (y0Visible or y1Visible)
+						int left = x0 atLeast clipX1
+						int right = x1 atMost maxX
+						if left <= right
+							if y0Visible
+								for rowY0 + left to rowY0 + right + 1 as i
+									target[i] = fillValue
+							if y1Visible
+								for rowY1 + left to rowY1 + right + 1 as i
+									target[i] = fillValue
+					if hasOutline
+						bool x0Visible = clipX1 <= x0 < clipX2
+						bool x1Visible = clipX1 <= x1 < clipX2
+						if y0Visible
+							if x1Visible then target[rowY0 + x1] = outlineValue
+							if x0Visible then target[rowY0 + x0] = outlineValue
+						if y1Visible
+							if x0Visible then target[rowY1 + x0] = outlineValue
+							if x1Visible then target[rowY1 + x1] = outlineValue
+					e2 = 2 * err
+					if e2 <= dy
+						y0 += 1
+						y1 -= 1
+						rowY0 += stride
+						rowY1 -= stride
+						dy += yStep
+						err += dy
+					if e2 >= dx or 2 * err > dy
+						x0 += 1
+						x1 -= 1
+						dx += xStep
+						err += dx
 
-		handleClickAndHelp onClick, help, pos, radius*2, margin
+				// Finish the tips of very flat ellipses (a tiny radius on one axis)
+				if y0 - y1 < b
+					int tipLeft = x0 - 1
+					int tipRight = x1 + 1
+					int left = tipLeft atLeast clipX1
+					int right = tipRight atMost maxX
+					bool fillSpan = hasFill and left <= right
+					bool tipLeftVisible = hasOutline and clipX1 <= tipLeft < clipX2
+					bool tipRightVisible = hasOutline and clipX1 <= tipRight < clipX2
+					while y0 - y1 < b
+						if clipY1 <= y0 < clipY2
+							if fillSpan
+								for rowY0 + left to rowY0 + right + 1 as i
+									target[i] = fillValue
+							if tipLeftVisible then target[rowY0 + tipLeft] = outlineValue
+							if tipRightVisible then target[rowY0 + tipRight] = outlineValue
+						if clipY1 <= y1 < clipY2
+							if fillSpan
+								for rowY1 + left to rowY1 + right + 1 as i
+									target[i] = fillValue
+							if tipLeftVisible then target[rowY1 + tipLeft] = outlineValue
+							if tipRightVisible then target[rowY1 + tipRight] = outlineValue
+						y0 += 1
+						y1 -= 1
+						rowY0 += stride
+						rowY1 -= stride
 
-	global void drawCircle: Vector2 pos = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
-		drawCircle pos, radius:{radius, radius}, fillColor, outlineColor
+		handleClickAndHelp onClick, help, center - radius, radius*2, margin
+
+	global void drawCircle: Vector2 center = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
+		drawCircle center, radius:{radius, radius}, fillColor, outlineColor
+
+	global void drawLine: Vector2 from = {0,0}
+		                  Vector2 to = {0,0}
+						  implicit Color color = graphics.color
+		if system.fastForward then return
+
+		// Bresenham line (Zingl): the dominant axis advances every iteration,
+		// so the pixel count is known upfront. Pixels outside the clip rectangle are skipped.
+		int x = from.x.floor
+		int y = from.y.floor
+		int x1 = to.x.floor
+		int y1 = to.y.floor
+		int dx = abs(x1 - x)
+		int ady = abs(y1 - y)
+		int dy = 0 - ady
+		int stepX = x < x1 ? 1 : -1
+		int stepY = y < y1 ? 1 : -1
+		int err = dx + dy
+		int e2
+
+		int clipX1 = screen.clipX1, clipX2 = screen.clipX2
+		int clipY1 = screen.clipY1, clipY2 = screen.clipY2
+		int stride = floor(screen.size.x)
+		int[] target = screen.pixels
+		int colorValue = color.value
+
+		for (dx atLeast ady) + 1
+			if clipX1 <= x < clipX2 and clipY1 <= y < clipY2
+				target[y * stride + x] = colorValue
+			e2 = 2 * err
+			if e2 >= dy
+				err += dy
+				x += stepX
+			if e2 <= dx
+				err += dx
+				y += stepY
 
 	global void drawTilemap: Tilemap tilemap	// The tilemap to draw
 		                     Vector2 pos = {0,0}	// The screen position to draw to in pixels 
@@ -697,6 +769,7 @@ transient global skipInit graphics
 
 		int tileW = tileSize.x.floor
 		int tileH = tileSize.y.floor
+
 		// Screen origin so that tilemap tile (sourcePos) lands at pos
 		int originX = (pos.x - sourcePos.x * tileW).floor
 		int originY = (pos.y - sourcePos.y * tileH).floor
@@ -797,9 +870,20 @@ class Sprite
 			result.add line
 		return result
 
+	hasTag: string tag
+		int start = 0
+		while true
+			int index = tags.indexOf(tag, start)
+			if index == -1 then return false
+			int end = index + tag.length
+			if (index == 0 or tags.getCharCodeAt(index-1) == 44) and (end == tags.length or tags.getCharCodeAt(end) == 44) // 44 is ","
+				return true
+			start = end + 1
+
 class Tilemap
 	Sprite[] tiles
 	Vector2 size
+	string name = "main"
 
 	Tilemap: string[] tilesAsStrings = null
 		if not tilesAsStrings then return
@@ -811,7 +895,7 @@ class Tilemap
 			for line.length as i
 				int keyIndex = i*2
 				let key = line[keyIndex to keyIndex+2]
-				tiles[index + i] = tilemaps.stringToSprite[key] or null
+				tiles[index + i] = key == "  " ? null : tilemaps??.stringToSprite[key] or null
 			index += maxWidth
 
 	toStrings

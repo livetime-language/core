@@ -1,38 +1,39 @@
-// system.start
-// core.join
+// Resilient netcode for LiveTime
+//
+// system.start -> core.join -> PeerNetwork.connect
+//
+// ServerNetwork (signaling + relay fallback + clock sync)
+//     setupServerConnection      Connects the WebSocket, rotates through candidate URLs, reconnects forever
+//     onConnectedToServer        Sends Join (with recovery info so a restarted server can recreate the room)
+//     onJoinResponse             Creates the users already in the room -> PeerNetwork.initiate for each
+//     tick                       Reconnect, ping cadence, slew core.startTime toward the reference
+//     onPong                     Clock sync: estimate the shared room start time, detect clock steps
+//     relay                      Wraps any peer message so it travels via the server when the data channel is down
+//
+// PeerNetwork (WebRTC mesh + deterministic input streams)
+//     initiate                   Creates a peer connection as the offerer
+//     onReceivedOffer/Answer/Ice Perfect negotiation with a polite/impolite rule
+//     tick                       Peer health, ICE restarts, reconnect notifications, removal of dead players
+//     sendInputs                 Ack-driven idempotent Ticks, record-aligned chunking, channel or server relay
+//     onTick                     Contiguous append of input bytes at explicit positions, claims, checksums
+//     StreamRequest/StreamData   Any user's input stream can be fetched from any peer (rejoin restore,
+//                                catch-up after removal, pre-removal gossip)
+//
+// Transport rules
+//     Every peer message can travel over the unreliable data channel or, when that is not open,
+//     wrapped in a Relay message over the signaling WebSocket. Both paths deliver the same bytes and
+//     every handler is idempotent (explicit positions, contiguous appends, max-claims), so duplicates,
+//     reordering and losses on any path are harmless.
 
-// ServerNetwork
-//     setup
-//     onConnectedToServer
-//     sendJoinMessage
-//     onJoinResponse            ->    PeerNetwork.initiate for each user already in the room
-//     ping
-//     onPong
-//     startConnected 
-	
-// PeerNetwork (for each user already in the room)
-//     initiate
-//     setupPeerConnection
-//     setupRemoteMedia
-//     setupDataChannel
-//     onNegotiationNeeded
-//     createOffer               ->    onReceivedOffer called on the peer we are connection to
-//                                         \/
-//     onReceivedAnswer          <-    createAnswer
-//     onConnectionStateChange
+// Messages between a client and the signaling server
+enum ServerMessageType: Join, JoinResponse, Ping, Pong, Relay, ProtocolMismatch, IdentityReassigned
 
-internal transient immutable Signal
-	int receiverId
-	string type
-	string sdp
+// Messages between two peers (via data channel or wrapped in a server Relay)
+enum PeerMessageType: Tick, Ping, Pong, Offer, Answer, IceCandidate, StreamRequest, StreamData, Status, Leaving, Removed
 
-internal transient immutable IceMessage
-	int receiverId
-	object iceCandidate
-	
 enum VideoShape: Rectangle, Square, Circle
 enum RelayMode: Never, Auto, Always
-		
+
 internal transient immutable MediaDeviceInfo
 	string deviceId
 	string groupId
@@ -43,92 +44,1158 @@ internal transient MediaDevices
 	MediaDeviceInfo[] audioInput
 	MediaDeviceInfo[] audioOutput
 	MediaDeviceInfo[] videoInput
-	
+
+// The connection to the signaling server
+internal transient skipInit unit ServerNetwork
+	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
+	const int protocolVersion = 7
+	// The session token minted by the server when our user id was first handed out: every claim
+	// of the id must present it (a claim without it joins as a fresh player instead of stealing
+	// the identity). Loaded from the stored RoomInfo at boot, refreshed from every JoinResponse
+	string sessionToken
+	// A JoinResponse start time this far off the one our identity was stored under means the
+	// room runs a different timeline than our previous session (a stateless restart reset the
+	// clock) - resuming would leave our inputs dead for exactly the shift, so past this we wipe
+	// and rejoin fresh instead (see onJoinResponse). Recovery-recreated rooms reconstruct the
+	// start time from a client's stored value or its measured elapsed - at most seconds off
+	const float roomClockResetMillis = 10000
+	private object socket
+	private Buffer sendBuffer = {}
+	int nextConnectionId = 1
+	bool connected
+	bool joined              // We received a JoinResponse over the current or an earlier connection
+	// The server registers our membership per connection: every new socket needs its own
+	// JoinResponse before relays flow. Reset in setupServerConnection, drives the Join resend
+	bool joinedOnThisConnection
+	float startToConnectTime = float.maxValue
+	int retries
+
+	tick
+		// Use core.currentTime (monotonic) like onPong: the ping time below round-trips through the
+		// server and is subtracted from core.currentTime there, so both must share one clock
+		let now = core.currentTime
+
+		// While playing, a better ping estimate must not snap core.startTime - targetFrame would
+		// jump or stall - so onPong only updates referenceStartTime once we are Connected and we
+		// slew startTime toward it here, at most about one frame per second
+		if core.mode == Connected and referenceStartTime
+			let maxAdjust = (now - lastSlewTime) * core.frameTime / 1000
+			core.startTime += math.max(math.min(referenceStartTime - core.startTime, maxAdjust), -maxAdjust)
+		lastSlewTime = now
+
+		// Reconnect to server: Try again if we aren't connected some time after starting to connect.
+		// The timeout grows with every failed attempt (5s up to 20s): on a high-latency link the
+		// TCP+TLS+WebSocket handshake alone can take ~5s, so a fixed 5s cutoff would abort every
+		// almost-complete attempt forever (seen with 600ms delay: ~5 minutes to join).
+		// This never gives up: when the server restarts or the internet drops for minutes, the next
+		// attempt after the outage succeeds and the re-join recovers the room
+		if not connected and now > startToConnectTime + 5000 + math.min(retries, 5) * 3000
+			core.log "#server WebSocket not connected after {now - startToConnectTime} ms -> Reconnecting (try {retries+1})"
+			setupServerConnection
+			retries++
+
+		// The Join itself can be swallowed by a half-dead connection (socket open, nothing flows):
+		// without the JoinResponse for THIS socket the server doesn't know us and we would sit
+		// connected-but-unregistered indefinitely, sending nothing the server reacts to.
+		// The Join is idempotent - resend it until the response arrives
+		if connected and not joinedOnThisConnection and now > lastJoinSentTime + 2000
+			core.log "#server No JoinResponse after {math.round(now - lastJoinSentTime)} ms -> Resending Join"
+			sendJoinMessage
+
+		// Ping for clock sync only after THIS socket joined the room. On a reconnect to a
+		// stateless server the Join may still be delayed while a later Ping arrives first;
+		// without room membership the server has no room clock and cannot answer meaningfully.
+		// Treating that zero-age Pong as real would falsely re-anchor startTime and stall the
+		// running frame loop until wall time caught back up (chaos seed 862343571).
+		if joinedOnThisConnection and (core.mode == Ping or core.mode == Connected) and now >= nextPingTime
+			sendBuffer.reset
+			sendBuffer.writeInt8 cast ServerMessageType.Ping
+			sendBuffer.writeFloat64 now
+			send sendBuffer
+			nextPingTime = now + (core.mode == Ping ? 200 : pongCount < 20 ? 1000 : 30000)
+
+	js void setupServerConnection
+		// Same monotonic clock as core.currentTime (inlined here: js blocks can't call inline functions)
+		ServerNetwork.startToConnectTime = Math.round(performance.timeOrigin + performance.now())
+		ServerNetwork.connected = false
+		ServerNetwork.joinedOnThisConnection = false
+
+		if(ServerNetwork.socket) {
+			core.log("#server Closing Previous Websocket");
+			ServerNetwork.socket.onopen = null
+			ServerNetwork.socket.onclose = null
+			ServerNetwork.socket.onmessage = null
+			ServerNetwork.socket.onerror = null
+			try { ServerNetwork.socket.close() } catch {}
+		}
+
+		// Candidate URLs: the page's own origin first (the Go server serves the page and the
+		// WebSocket from one executable), then the well-known endpoints. While we never managed to
+		// connect we rotate through the candidates; once a URL worked we stick to it, because the
+		// room lives on that server
+		if(!ServerNetwork.serverUrls) {
+			let urls = [];
+			// An explicit ?server=ws://host:port/ws in the page URL wins - used by the e2e tests
+			// (which start servers on random ports) and for pointing a client at a staging server
+			try {
+				let override = new URLSearchParams(location.search).get("server");
+				if(override) urls.push(override);
+			} catch {}
+			if(location.hostname == "localhost" || location.hostname == "127.0.0.1")
+				urls.push("ws://localhost:3112/ws");
+			else
+				urls.push("wss://signal.up4playing.com/ws");
+			ServerNetwork.serverUrls = [...new Set(urls)];
+			ServerNetwork.serverUrlIndex = 0;
+		}
+		let url = ServerNetwork.serverUrls[ServerNetwork.serverUrlIndex % ServerNetwork.serverUrls.length];
+		if(!ServerNetwork.joined) ServerNetwork.serverUrlIndex++;
+
+		core.log("#server Creating Websocket to "+url);
+		ServerNetwork.socket = new WebSocket(url);
+		ServerNetwork.socket.binaryType = "arraybuffer";
+
+		ServerNetwork.socket.onopen = () => {
+			core.log("#server Websocket Open ("+url+")");
+			ServerNetwork.connected = true;
+			// A later outage starts with the fast 5s timeout again
+			ServerNetwork.retries = 0;
+			// Stick to the URL that worked for all future reconnects
+			ServerNetwork.serverUrls = [url];
+			ServerNetwork.serverUrlIndex = 0;
+			ServerNetwork.workingServerHost = new URL(url.replace("ws://", "http://").replace("wss://", "https://")).hostname;
+			ServerNetwork.onConnectedToServer();
+		}
+		ServerNetwork.socket.onclose = ev => {
+			core.log("#server Websocket Closed "+ev.code+" "+ev.reason);
+			ServerNetwork.connected = false;
+		}
+		ServerNetwork.socket.onerror = ev => {
+			core.log("#server Websocket Error");
+			ServerNetwork.connected = false;
+		}
+		ServerNetwork.socket.onmessage = ev => {
+			ServerNetwork.onMessageFromServer(new Buffer(ev.data, 0, 0, 0));
+		}
+
+	// The hostname of the signaling server that accepted us - the TURN server lives on the same machine
+	string workingServerHost
+
+	private getOrCreateUser: int id
+		let existing = input.internalUsers[id]
+		if existing then return existing
+		InternalUser user = {id, local:false}
+		input.internalUsers[id] = user
+		// The stream copy we persisted for this user before our reload (for a removed user those
+		// bytes may exist nowhere else any more, see core.storeInputsToDB)
+		core.applyStoredStream user
+		// A user appearing mid-session invalidates every prediction (their records may sit at
+		// any frame above the pin) - force the next pass back to the pinned snapshot
+		core.markRemoteChange 0
+		// Keep the stored room recovery info aware of every user we ever saw: after a server
+		// restart the first rejoiner's maxKnownUserId is what tells the server (and through its
+		// user list, everyone else) that the currently unreachable users exist at all
+		if core.roomId > 0 and input.localUser then core.storeRoomInfo
+		return user
+
+	// Called when we first connect to the server or when we reconnect
+	private onConnectedToServer
+		core.log "#server Connected to Server", input.localUser.id, core.roomId
+		sendJoinMessage
+
+	js int bufferedAmount
+		return ServerNetwork.socket ? ServerNetwork.socket.bufferedAmount : 0
+
+	private js int send: Buffer buffer
+		try {
+			if(!ServerNetwork.socket || ServerNetwork.socket.readyState != 1) return 0
+			let data = buffer.toByteArray()
+			ServerNetwork.socket.send(data)
+			return data.byteLength
+		} catch(e) {
+			core.log("#server send failed: "+e.message)
+			return 0
+		}
+
+	private onMessageFromServer: Buffer buffer
+		try
+			int typeValue = buffer.readInt8
+			if typeValue == cast ServerMessageType.JoinResponse	then onJoinResponse buffer; else
+			if typeValue == cast ServerMessageType.Pong	then onPong buffer; else
+			if typeValue == cast ServerMessageType.Relay	then onRelay buffer; else
+			if typeValue == cast ServerMessageType.ProtocolMismatch	then onProtocolMismatch buffer; else
+			if typeValue == cast ServerMessageType.IdentityReassigned	then onIdentityReassigned buffer
+			else	core.log "#error Unknown server message type {typeValue} - client/server version mismatch?"
+		catch
+			core.log "#error Failed to handle server message ({buffer.writePos} bytes): {error.stack}"
+
+	private float lastJoinSentTime
+
+	// The Join carries everything a freshly restarted server needs to recreate the room:
+	// seed, start time and the highest user id we know. This is what makes a server restart
+	// invisible to the players - the first client to reconnect rebuilds the room
+	private sendJoinMessage
+		// Who we are isn't decided yet (the room's identity lease is being resolved, see
+		// core.requestIdentityLease) - the resend loop in tick retries until it is
+		if core.identityLeasePending then return
+		lastJoinSentTime = core.currentTime
+		RoomInfo info = core.getStoredRoomInfo or {}
+		string seed = core.mode == Connected ? math.randomSeed : (info.seed or "")
+		float serverStartTime = core.mode == Connected ? core.serverStartTime : (info.serverStartTime or 0)
+		float elapsed = 0
+		if core.mode == Connected	then elapsed = core.currentTime - core.startTime
+		else if info.serverStartTime	then elapsed = core.currentTime - info.serverStartTime
+		int maxKnownUserId = -1
+		for input.internalUsers if . and .id > maxKnownUserId
+			maxKnownUserId = .id
+		if info and info.maxUserId > maxKnownUserId then maxKnownUserId = info.maxUserId
+
+		// The recovery fields are what a freshly restarted server rebuilds the room from - log
+		// them so a bad recovery (wrong seed, wrong time base) can be traced from both sides
+		core.log "#server Sending Join: room:'{core.roomString}' userId:{input.localUser.id} v{system.buildVersion} protocol:{protocolVersion} token:{sessionToken ? "set" : "-"} recovery(seed:{seed ? seed : "-"} serverStartTime:{serverStartTime} elapsed:{math.round(elapsed)}ms maxKnownUserId:{maxKnownUserId})"
+
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast ServerMessageType.Join
+		sendBuffer.writeString core.roomString
+		sendBuffer.writeInt32 input.localUser.id
+		sendBuffer.writeInt32 system.buildVersion
+		sendBuffer.writeInt16 protocolVersion
+		sendBuffer.writeString seed
+		sendBuffer.writeFloat64 serverStartTime
+		sendBuffer.writeFloat64 elapsed
+		sendBuffer.writeInt32 maxKnownUserId
+		sendBuffer.writeString sessionToken
+		send sendBuffer
+
+	// The server refused our Join because we speak an outdated protocol - we are an old build,
+	// usually served from the browser cache after a redeploy. Reload with a cache-busting query
+	// so the browser refetches index.html (which references the newly deployed scripts) and the
+	// player rejoins on the current build without doing anything themselves
+	private bool versionReloadPending
+
+	private onProtocolMismatch: Buffer buffer
+		int serverProtocol = buffer.readInt16
+		core.log "#server Join refused: we speak protocol {protocolVersion}, the server speaks {serverProtocol} -> reloading to fetch the current build"
+		// The Join resend loop keeps firing until the reload happens - count the reload only once
+		if versionReloadPending then return
+		versionReloadPending = true
+		reloadForNewVersion
+
+	// Rate-limited against reload loops (e.g. a CDN still serving the old build after a reload)
+	js void reloadForNewVersion
+		try {
+			let count = parseInt(sessionStorage.getItem("versionReloads") || "0");
+			let last = parseInt(sessionStorage.getItem("versionReloadTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#server Not reloading again, already reloaded "+count+" times and still incompatible");
+				return;
+			}
+			sessionStorage.setItem("versionReloads", ""+(count+1));
+			sessionStorage.setItem("versionReloadTime", ""+Date.now());
+		} catch {}
+		// A changed query string makes the browser treat the page as a new URL and refetch
+		// index.html instead of serving it from cache. Existing params (?server/?turn/?relay
+		// overrides) survive; identity and inputs live in localStorage/IndexedDB and survive too
+		let url = new URL(location.href);
+		url.searchParams.set("reload", ""+Date.now());
+		setTimeout(() => location.replace(url), 500);
+
+	// The server granted our user id to its rightful owner: a freshly restarted (stateless)
+	// server had handed the id to our Join(-1) without knowing an unreachable player already
+	// held it, and that player returned with recovery info proving prior ownership (see the
+	// provisional arbitration in server/hub.go handleJoin). Our identity is void - wipe it and
+	// rejoin as a brand-new player, exactly like a peer-level removal notice
+	private onIdentityReassigned: Buffer buffer
+		int reassignedId = buffer.readInt32
+		core.log "#server Our user id {reassignedId} was reassigned to its original owner -> rejoining as a new player"
+		PeerNetwork.onRemovedNotice
+
+	bool alreadyJoinedBefore
+
+	private onJoinResponse: Buffer buffer
+		try
+			// Read the fields in the exact order the server writes them in server/main.go
+			int roomId = cast buffer.readFloat64
+			let userId = buffer.readInt32
+			let version = buffer.readInt32
+			let serverProtocolVersion = buffer.readInt16
+			if serverProtocolVersion != protocolVersion
+				// Only an OLDER server answers a mismatched Join with a JoinResponse (a newer one
+				// rejects it with a ProtocolMismatch and we reload) - its field layout past this
+				// point may differ from what we parse below, so stop instead of reading garbage.
+				// joinedOnThisConnection stays false, so the tick loop keeps resending the Join
+				// every 2 s until the server is updated mid-deploy
+				core.log "#server Protocol version mismatch: client uses {protocolVersion}, server uses {serverProtocolVersion} -> ignoring the JoinResponse, waiting for the server to be updated"
+				return
+			let seed = buffer.readString
+			let serverStartTime = buffer.readFloat64
+			// Ephemeral TURN credentials, minted per join (empty when the server runs without
+			// TURN). Read before the rejoin early-out: rejoins happen on every reconnect and
+			// are what keeps the expiring credential fresh for later peer-connection setups
+			PeerNetwork.turnUsername = buffer.readString
+			PeerNetwork.turnCredential = buffer.readString
+			// The session token binding our id to us: presented in every future claim, so a
+			// second tab or another browser can never steal the id (it would join as a fresh
+			// player instead). Stored in RoomInfo by storeRoomInfo to survive a browser restart
+			let token = buffer.readString
+			if token then sessionToken = token
+			let userCount = buffer.readInt16
+
+			joined = true
+			joinedOnThisConnection = true
+
+			if alreadyJoinedBefore
+				// We re-joined after a WebSocket reconnect. The WebRTC peer connections are not
+				// affected by a signaling outage, so the first-join setup must not run again.
+				// New users may have joined the room while we were away - create them so the
+				// health loop connects to them
+				string rejoinUsers = ""
+				for userCount
+					let id = buffer.readInt32
+					let present = buffer.readBool
+					rejoinUsers += " {id}:{present ? "up" : "away"}"
+					if id != input.localUser.id
+						let user = getOrCreateUser id
+						user.presentOnServer = present
+						// After a healed split-brain both sides removed each other and neither sends
+						// the other anything any more (Ticks and Pings skip removed users) - the
+						// standoff would last forever. A user we removed but the server still lists
+						// as connected gets the Removed notice now; the notices then arbitrate which
+						// side wipes and rejoins fresh (see PeerNetwork.onRemovedMessage)
+						if present and user.removed then PeerNetwork.sendRemovedNotice user
+				core.log "#server Rejoined room {roomId} as user {userId} (seed:{seed} serverStartTime:{serverStartTime} users:{rejoinUsers})"
+				// The first-join path compares the room clock against the STORED identity
+				// (roomClockResetMillis rule below); a rejoin after a reconnect must apply the
+				// same invariant against the clock our RUNNING timeline is built on. A shifted
+				// clock means the room was recreated on a different timeline while we were away
+				// (or our own base was provisional): Time.now derives from serverStartTime, so
+				// every further frame we compute forks the room - wipe and rejoin fresh instead
+				if core.serverStartTime > 0 and math.abs(serverStartTime - core.serverStartTime) > roomClockResetMillis
+					core.log "#server The room clock shifted by {math.round(serverStartTime - core.serverStartTime)} ms across a reconnect -> our timeline is gone, rejoining as a new player"
+					PeerNetwork.onRemovedNotice
+					return
+				if roomId != core.roomId or userId != input.localUser.id
+					if sessionToken
+						// We claimed our id WITH its session token and the server still resolved
+						// us to a different identity: the id was arbitrated away (a restart-race
+						// eviction whose IdentityReassigned notice we never saw). Re-claiming
+						// would only mint another fresh id per attempt - accept the verdict,
+						// wipe the void identity and restart as a brand-new player
+						core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId} -> our identity was reassigned, rejoining as a new player"
+						PeerNetwork.onRemovedNotice
+						return
+					// The server now routes this connection by the received id (relays, reconnect
+					// kicks) while our deterministic state stays keyed by ours - ignoring the
+					// mismatch left the two split forever (seen when resent userId:-1 Joins each
+					// allocated a fresh id). Claim our identity again: the server honors claimed
+					// ids and remaps the connection back to us; the tick loop keeps resending
+					// until a JoinResponse confirms the expected identity
+					core.log "#error Rejoin resolved to a different identity! expected room {core.roomId} user {input.localUser.id}, received room {roomId} user {userId} -> re-claiming our identity"
+					joinedOnThisConnection = false
+					sendJoinMessage
+				return
+			alreadyJoinedBefore = true
+
+			string joinUsers = ""
+			for userCount
+				let id = buffer.readInt32
+				let present = buffer.readBool
+				InternalUser user
+				if id == userId then user = input.internalUsers[id] ?= input.localUser
+				else             user = input.internalUsers[id] ?= {offerByMe:true, connectionId:nextConnectionId++}
+				user.id = id
+				user.presentOnServer = present
+				// The stream copy we persisted for this user before our reload (for a removed
+				// user those bytes may exist nowhere else any more, see core.storeInputsToDB)
+				if not user.local then core.applyStoredStream user
+				joinUsers += " {id}:{present ? "up" : "away"}"
+			core.log "#server JoinResponse: room:{roomId} userId:{userId} v{version} protocol:{serverProtocolVersion} seed:{seed} serverStartTime:{serverStartTime} users:{joinUsers}"
+
+			if roomId != core.roomId
+				core.log "#server Received room id {roomId}"
+				system.pushState "/{core.gameId}/{roomId}"
+				core.roomId = roomId
+				// A brand-new room: claim its identity lease so a second tab opening the room
+				// link later sees it held (the grant arrives asynchronously and upgrades the
+				// identity persistence to localStorage, see onIdentityLeaseAcquiredLate)
+				core.requestIdentityLease
+
+			// Re-joins after a WebSocket reconnect must resolve to this exact room
+			core.roomString = roomId.toString
+
+			if version > system.buildVersion
+				alert "You are using an old version of this application. Please refresh your browser."
+
+			// A large shift between the room's start time and the one our identity was stored
+			// under means our timeline no longer exists: a stateless server restart let a
+			// brand-new player recreate the room on a reset clock and our recovery info was not
+			// adopted (outside the adoption window in server/hub.go, or the room is younger than
+			// our identity because we ARE a dissolved provisional player whose eviction notice
+			// was lost). Resuming our old input stream onto a different timeline pins every new
+			// input record behind our old claims - inputs stay dead until the clock reaches the
+			// old frame count (the converged-but-stuck-in-lobby stall of lifecycle soak seed
+			// 607420393). The identity belongs to the dead timeline: wipe it and rejoin as a
+			// brand-new player instead
+			if core.localUserId != -1 and userId == core.localUserId
+				RoomInfo stored = core.getStoredRoomInfo
+				if stored and stored.serverStartTime > 0 and math.abs(serverStartTime - stored.serverStartTime) > roomClockResetMillis
+					core.log "#server The room clock shifted by {math.round(serverStartTime - stored.serverStartTime)} ms since our identity was stored -> our timeline is gone, rejoining as a new player"
+					PeerNetwork.onRemovedNotice
+					return
+
+			bool claimRefused
+			if core.localUserId != -1 and userId != core.localUserId
+				// Our claimed id was refused (no valid session token: browsing data cleared, or
+				// the id belongs to another tab or browser) - the server made us a fresh player.
+				core.log "#server Claimed user id {core.localUserId} was refused -> joining as fresh user {userId}"
+				// The stream we restored from IndexedDB at boot belongs to the OLD id's timeline:
+				// hand it to that user's slot (we may be the only client holding those bytes) and
+				// start the fresh identity with an empty stream. Keeping the bytes as OUR stream
+				// would resurrect the old user's records under the new id, stamped far in the
+				// past - below every survivor's snapshot pin (hidden-join forks all around) - and
+				// the restored claim floor would freeze our claim at the old stream's claim,
+				// stalling certainFrame for the whole room until we are removed and never letting
+				// us append an input of our own (lifecycle seed 285888347)
+				let oldUser = input.internalUsers[core.localUserId]
+				if oldUser and not oldUser.local and oldUser.inputs.writePos == 0 and input.localUser.inputs.writePos > 0
+					oldUser.inputs = input.localUser.inputs
+					oldUser.inputFrame = input.localUser.storedClaim
+					oldUser.storedInputsUpTo = input.localUser.storedInputsUpTo
+					oldUser.storedClaim = input.localUser.storedClaim
+					oldUser.storedEpoch = input.localUser.storedEpoch
+					oldUser.restoredFromDBUpTo = input.localUser.restoredFromDBUpTo
+					core.markRemoteChange 0
+				input.localUser.inputs = {}
+				input.localUser.inputFrame = -1
+				input.localUser.epochStartPos = 0
+				input.localUser.storedClaim = -1
+				input.localUser.storedInputsUpTo = 0
+				input.localUser.restoredFromDBUpTo = 0
+				claimRefused = true
+				core.localUserId = userId
+
+			input.localUser.id = userId
+			math.setRandomSeed seed
+			PeerNetwork.retries = 0
+			PeerNetwork.dataChannelId = 0
+			core.serverStartTime = serverStartTime
+			core.mode = Ping
+			core.storeRoomInfo
+			core.log "#server Joining room {roomId} as user {userId}"
+
+			// Create an offer for each user already in the room
+			for input.internalUsers
+				if . and not .local and .presentOnServer
+					PeerNetwork.initiate .
+
+			// When we join with a preassigned userId, we may be rejoining after a page refresh and
+			// the other users may still hold our previous session's input stream -> restore it from
+			// them before the session starts (onPong delays startConnected until the restore settled).
+			// A refused claim skips this: the fresh id has no previous session anywhere
+			if core.localUserId != -1 and not claimRefused and userCount > 1
+				PeerNetwork.startRestore
+		catch
+			core.onError error
+
+	float nextPingTime, fastestPingPongTime = int.maxValue
+	int pongCount
+
+	float referenceStartTime
+	float[] pingPongTimes
+	private float lastSlewTime
+	// Accepted pongs in a row whose start-time estimate was far off core.startTime (clock-step suspicion)
+	private int driftedPongs
+
+	private onPong: Buffer buffer
+		float now = core.currentTime
+		float timeSinceStart = buffer.readFloat64
+		float pingTime = buffer.readFloat64
+		float pingPongTime = now - pingTime
+		float calculatedStartTime = now - pingPongTime/2 - timeSinceStart
+
+		statistics.serverPings.add pingPongTime
+
+		// Ignore extreme outliers: pings that took at least three times as long as the link's own
+		// average round trip. Never use an absolute cutoff - the link itself may have extremely
+		// high latency and must still be able to sync
+		pongCount++
+		pingPongTimes.add pingPongTime maxLength:30
+		let pingPongTimesAverage = pingPongTimes.average
+		if pingPongTimes.length >= 15 and pingPongTime > pingPongTimesAverage * 3
+			core.log "#server ignoring ping-pong outlier", pingPongTime, pingPongTimesAverage
+			return
+
+		// An accepted pong's start-time estimate is off by at most pingPongTime/2, so a much
+		// larger deviation means the clock domains shifted: the machine slept or was suspended and
+		// performance.now paused while the server clock kept running. Slewing can't absorb minutes
+		// -> relearn the reference and snap startTime (the catch-up burst after the snap is budgeted)
+		// The threshold scales with the round trip so extremely high latency isn't mistaken for a step
+		if core.mode == Connected and math.abs(calculatedStartTime - core.startTime) > math.max(1000, pingPongTime)
+			driftedPongs++
+			if driftedPongs == 1
+				// A single pong could be a fluke -> confirm with an immediate second ping before re-anchoring
+				nextPingTime = 0
+			else
+				core.log "#server Clock step of {math.round(calculatedStartTime - core.startTime)} ms detected -> re-anchoring startTime"
+				driftedPongs = 0
+				fastestPingPongTime = pingPongTime
+				referenceStartTime = calculatedStartTime
+				core.startTime = calculatedStartTime
+			return
+		driftedPongs = 0
+
+		// Use the fastest ping-pong-time we have ever seen to calculate the reference start time
+		if pingPongTime < fastestPingPongTime
+			fastestPingPongTime = pingPongTime
+			referenceStartTime = calculatedStartTime
+
+			// Snapping startTime is only safe while the frame loop isn't pacing yet
+			// Once Connected, tick slews startTime gently toward the reference instead
+			if core.mode != Connected
+				core.startTime = referenceStartTime
+
+			core.log "#server New fastest pingPongTime", pongCount, now, pingPongTime, timeSinceStart, core.startTime, referenceStartTime
+
+		// While we restore our previous session's input stream (from IndexedDB and our peers),
+		// we keep pinging and only start the session when the restore settled
+		if pongCount >= 5 and not PeerNetwork.restoring
+			core.startConnected frame:math.floor((now - core.startTime)/core.frameTime)+1
+
+	// Wrap a peer message so the server forwards it to the receiver - the fallback transport
+	// whenever the data channel to that peer is not open
+	relay: int receiverId, Buffer message
+		if not connected then return
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast ServerMessageType.Relay
+		sendBuffer.writeInt32 receiverId
+		sendBuffer.copyFromBuffer message
+		send sendBuffer
+
+	private onRelay: Buffer buffer
+		let senderId = buffer.readInt32
+		if senderId == input.localUser.id then return
+		let sender = getOrCreateUser senderId
+		PeerNetwork.onPeerMessage sender, buffer, viaServer:true
+
 internal transient skipInit unit PeerNetwork
 	RelayMode relayMode = Auto
-	
+
 	internal enableVideo = true
 	internal enableAudio = true
-	
+
 	visible string error
 	int retries
 	int dataChannelId
-	
-	initiate: InternalUser user
-		setupPeerConnection user, offerByMe:true
-		setupRemoteMedia user
-		
+	private object mediaSetupPromise
+	private bool mediaSetupTimedOut // The media setup outlived its timeout; peer connections no longer wait for it (see whenLocalMediaSettled)
+	private bool retryingMedia
+	Buffer sendBuffer = {}
+
+	// TURN credentials for the embedded TURN server in the Go executable. The server mints an
+	// ephemeral, expiring pair into every JoinResponse (see server/turnauth.go) and rejoins
+	// refresh it on every reconnect; the static pair below is only the fallback while no
+	// JoinResponse arrived yet (must match the -turn-user/-turn-password flags of the server)
+	string turnUsername, turnCredential
+	const string fallbackTurnUsername = "livetime"
+	const string fallbackTurnPassword = "Vf3nQx8KwRj5ZtLb7McYs2HdPg9uEa4i"
+
+	// A user is considered gone for good (and removed from the game) after this much silence
+	// (variables instead of consts so resilience tests can shorten them)
+	float removalGraceMillis = 60000
+	// How long the host merges the silent user's stream from all peers before removing them
+	float removalGossipMillis = 10000
+	// The app is told that we are trying to reconnect to a user after this much silence
+	float reconnectNotifyMillis = 4000
+	// An open data channel that has neither delivered a message nor acked our outstanding bytes
+	// for this long is silently dead until proven otherwise (half-dead NAT, dying router): every
+	// peer message is then mirrored over the server relay, so inputs and repair offers keep
+	// flowing within seconds of an outage instead of stalling until a reconnect happens to close
+	// the channel. The protocol is idempotent and ack-driven, so duplicates are harmless
+	float channelSuspectMillis = 3000
+
+	// --------------------------------------------- Connect ---------------------------------------------
+
+	// Called once from core.join: open IndexedDB and restore the stored input streams (our own,
+	// plus the copies we held of every other user's), then connect to the signaling server.
+	// The media setup runs in parallel (core.join starts it right after)
+	connect
+		setupBackgroundBehaviour
+		openDatabaseAndConnect
+
+	// The database open must never block the join for long and must never abort it:
+	// any failure (private mode, quota) just means we join without local input persistence
+	private js async void openDatabaseAndConnect
+		try {
+			await Promise.race([
+				(async () => {
+					await IndexedDB.start("up4playing", 2);
+					// The restore keys our OWN stream by input.localUser.id - wait until the
+					// identity lease decided who we are (it may adopt a stored identity the
+					// server reassigned us earlier, see core.onIdentityLeaseDecided)
+					if(core.identityLeaseDecision) await core.identityLeaseDecision;
+					await core.restoreInputsFromDB();
+				})(),
+				new Promise(resolve => setTimeout(resolve, 3000))
+			]);
+		} catch(e) {
+			core.log("#db IndexedDB not available: "+(e && e.message));
+		}
+		ServerNetwork.setupServerConnection();
+
+	// --------------------------------------------- Tick (peer health) ---------------------------------------------
+
 	tick
-		let now = PlainDate.realTime
-		
+		// All peer-health, removal and restore timers run on core.currentTime (monotonic) for the
+		// same reason frame pacing does: Date.now() steps arbitrarily on NTP corrections, manual
+		// clock changes and resume. A forward step would make every peer look silent at once
+		// (reconnect churn on healthy links, spurious removal gossip); a backward step would put
+		// every watchdog to sleep for the step duration
+		let now = core.currentTime
+		ServerNetwork.tick
+
+		// After a rejoin, restore our previous session's input stream from our peers
+		// before the session starts (ServerNetwork.onPong waits until this settled)
+		if restoring then tickRestore now
+
+		// After a restore that ended with unconfirmed peers, keep asking them for our history
+		// until every live peer confirmed its holdings - only then may we append new inputs
+		if holdingConfirmationPending and not restoring then tickHoldingConfirmations now
+
+		// Handle a removal of our own player that was parsed from the event stream
+		if core.mode == Connected and not system.isDebug and input.localUser and input.localUser.removed then onRemovedNotice
+
+		// Ping peers once per second (RTT statistics and channel liveness)
+		if now > lastPeerPingTime + 1000
+			lastPeerPingTime = now
+			pingPeers
+
 		for input.internalUsers as user
-			if . and not .local
-				// Reconnect to peer is we haven't received anything for a while
-				if now > .lastIncomingMessageTime + 10000					
-					core.log "[{Time.ticks}] <{.id}> #problem -------------------------------- State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last incomming message {now - .lastIncomingMessageTime} ms ago, offerByMe:{.offerByMe} --------------------------------"
-					.startToConnectTime = user.lastIncomingMessageTime = PlainDate.realTime
-					statistics.scheduleSendIn 3 seconds
-					
-					if user.offerByMe
-						retries++
-						if ++user.connectionTries < 3
-							core.log "#peer Restarting ICE (offer by me)"
-							user.peerConnection.restartIce()
+			if . and not .local and not .removed
+				// A user we never heard from starts its silence timers when we first see it, so
+				// zombie entries (listed by the server but never sending) are eventually removed
+				// instead of blocking certainty forever
+				if .lastIncomingMessageTime == float.maxValue then .lastIncomingMessageTime = now
+				if .lastIncomingChannelTime == float.maxValue then .lastIncomingChannelTime = now
+				if .lastChannelMessageTime == float.maxValue then .lastChannelMessageTime = now
+				if .lastAckProgressTime == float.maxValue then .lastAckProgressTime = now
+				if .startToConnectTime == float.maxValue then .startToConnectTime = now
+				// A peer with nothing outstanding is not ack-stalled (see channelSuspect)
+				if input.localUser and .receivedMyInputsUpToPos >= input.localUser.inputs.writePos then .lastAckProgressTime = now
+
+				// Tell the app when a user has fallen silent on every transport, so it can show
+				// a "trying to reconnect" hint. Any incoming message clears the notification
+				if now > .lastIncomingMessageTime + reconnectNotifyMillis and not .reconnectNotified and core.mode == Connected
+					.reconnectNotified = true
+					app.onTryingToReconnectTo??(.id)
+
+				// A leaving peer is gone on purpose (tab closed or navigated away) - reconnect
+				// attempts would be pointless churn; any later message clears the flag
+				if not .leaving
+					// Reconnect the peer connection if the data channel has been silent for a while.
+					// The timeout grows with consecutive fruitless reconnects (10s up to 30s): over a
+					// high-latency TURN relay, signaling+ICE+DTLS take longer than 10s, and a fixed
+					// cutoff would keep killing connections right before the channel opens.
+					// A hidden tab is throttled and may fall silent - tolerate a longer silence
+					float channelSilenceTimeout = .hidden ? 60000 : 10000 + math.min(.channelReconnects, 4) * 5000
+					if now > .lastIncomingChannelTime + channelSilenceTimeout
+						core.log "[{Time.ticks}] <{.id}> #problem ------ State is {.connectionState} after {now-.startToConnectTime} ms, {.connectionTries} retries, last channel message {now - .lastIncomingChannelTime} ms ago, offerByMe:{.offerByMe} ------"
+						.startToConnectTime = .lastIncomingChannelTime = now
+						.channelReconnects++
+						statistics.scheduleSendIn 3 seconds
+
+						if .offerByMe
+							retries++
+							// Without a connection there is nothing to restart (initiate may still be
+							// parked on the media setup) -> go straight to a full re-initiate
+							if ++.connectionTries < 3 and .peerConnection
+								core.log "#peer <{.id}> Restarting ICE (offer by me)"
+								restartIce .
+							else
+								core.log "#peer <{.id}> Recreate peer connection (offer by me)"
+								initiate .
 						else
-							core.log "#peer Recreate peer connection (offer by me)"
-							initiate user
-	
+							// The answerer must not wait for a new offer forever: the offerer may be
+							// gone for good, or both peers ended up as answerers after crossing offers.
+							// Give the offerer one full silence period to reconnect us first, then take over
+							if ++.silentPeriods >= 2
+								retries++
+								core.log "#peer <{.id}> Recreate peer connection (answer by me, taking over as offerer)"
+								initiate .
+
+				// Removal of users that are gone for good, decided by the host (the lowest-id living
+				// user) and made deterministic by writing a RemoveUser event into the host's input
+				// stream. Before writing the event, the host gossips: it fetches the user's stream
+				// from every living peer, so the removal frame covers everything any client committed.
+				// The gossip only concludes once every living peer ANSWERED and its copy is merged -
+				// a timer alone wrote cuts below claims other clients had already applied as certain
+				// when the answers were slower than the window (relayed round trips under a latency
+				// spike or heavy loss), a permanent one-click fork on those clients (lifecycle seeds
+				// 170692360, 485951509). removalGraceMillis is the hard stop when answers never come:
+				// a peer that stays silent that long is itself removal-eligible, so its claim no
+				// longer binds the cut
+				if core.mode == Connected and amHost and now > .lastIncomingMessageTime + removalGraceMillis and not .removalEventWritten
+					if .removalGossipStart == 0
+						.removalGossipStart = now
+						.gossipAnswered.clear
+						core.log "#removal <{.id}> Starting removal gossip (silent for {now - .lastIncomingMessageTime} ms)"
+					bool merged = removalGossipComplete ., now
+					if (merged and now > .removalGossipStart + removalGossipMillis) or now > .removalGossipStart + removalGraceMillis
+						.removalEventWritten = true
+						core.log "#removal <{.id}> Writing RemoveUser event, lastFrame:{.inputFrame} ({merged ? "every living peer answered" : "gossip timed out without every answer"})"
+						input.handleRemoveUser .id, .inputFrame
+
+		// Fetch missing input stream bytes (rejoin restore is handled in tickRestore):
+		// - a removed user whose stream we don't fully have yet (we heard about the removal
+		//   before we received all their inputs)
+		// - a user in removal gossip (the host merges everything the mesh knows before removing)
+		// - a server-away placeholder we have never heard from. A surviving peer may be the only
+		//   holder of both its stream and its persisted removal cut; without fetching that state,
+		//   a fresh roster client keeps the placeholder alive forever and can never become host.
+		if now > lastStreamFetchTime + 1000
+			lastStreamFetchTime = now
+			int requestedStreamCount
+			int internalUserCount = input.internalUsers.length
+			int streamFetchStartUserId = nextStreamFetchUserId
+			for internalUserCount as offset
+				int userId = (streamFetchStartUserId + offset) mod internalUserCount
+				let user = input.internalUsers[userId]
+				if user and not user.local
+					bool missingRemovedBytes = user.removed and user.inputFrame < user.removedAfterFrame
+					bool gossiping = user.removalGossipStart != 0 and not user.removalEventWritten
+					bool unknownAwayPlaceholder = not user.removed and not user.presentOnServer and user.inputFrame == -1
+					if missingRemovedBytes or gossiping or unknownAwayPlaceholder
+						string reason = missingRemovedBytes ? "removed but incomplete" : gossiping ? "removal gossip" : "server-away placeholder"
+						core.log "#stream Requesting user {user.id}'s stream from all peers ({reason}): we hold {user.inputs.writePos} bytes, claims up to {user.inputFrame}, removedAfterFrame:{user.removedAfterFrame}"
+						requestStreamFromAllPeers user.id
+						requestedStreamCount++
+						nextStreamFetchUserId = (userId + 1) mod internalUserCount
+						if requestedStreamCount >= maxStreamFetchesPerPass then break
+
+			// Removal amendment watches every incomplete cut even when this pass's bounded request
+			// batch selected other streams. Progress on any later response resets its own timer.
+			for input.internalUsers as user
+				if . and not .local
+					bool missingRemovedBytes = .removed and .inputFrame < .removedAfterFrame
+					bool neverSeenPlaceholder = not .removed and not .presentOnServer and .inputFrame == -1 and .inputs.writePos == 0
+					// A removed user's missing bytes can be lost FOR GOOD (the leaver's storage is
+					// gone with the tab, and the survivors' copies died in a storage wipe + reload
+					// storm): the RemoveUser event then references a cut nobody can reach and the
+					// removed user binds certainFrame at their stale claim forever. A full grace
+					// period of 1 Hz requests to every peer with ZERO progress means the mesh holds
+					// nothing more (a live peer holding bytes would have delivered; one silent that
+					// long is itself removal-eligible) - the host amends the removal, cutting at
+					// what it actually holds (lifecycle seed 246528788). Progress resets the timer,
+					// so slow transfers never trigger this
+					if missingRemovedBytes
+						if .removedFetchStallStart == 0 or .inputs.writePos > .removedFetchProgressPos
+							.removedFetchStallStart = now
+							.removedFetchProgressPos = .inputs.writePos
+						else
+						if amHost and now > .removedFetchStallStart + removalGraceMillis
+							.removedFetchStallStart = now
+							core.log "#removal <{.id}> Amending removal: stream fetch stalled at {.inputs.writePos} bytes (claim {.inputFrame} < removedAfterFrame {.removedAfterFrame}) for a full grace period -> cutting at what we hold"
+							input.handleRemoveUser .id, .inputFrame
+					// A server-listed away user that NO living peer holds a single byte or cut of can
+					// never be removed by the host: the host may never have learned the id exists (its
+					// rejoin predated the slot - a stale recovery info minted it after a stateless
+					// restart, lifecycle seed 457934412), while WE quarantine certainFrame at -1 behind
+					// the placeholder forever, deferring the lobby exit for the whole room. The user
+					// provably never contributed a record: every living peer explicitly answered our
+					// 1 Hz fetches with "holds nothing" (gossipAnswered, same confirmations as the
+					// host's gossip) and a full grace passed with zero progress - a live peer holding
+					// bytes would have delivered, one silent that long is itself removal-eligible (the
+					// amended-removal reasoning above). Removing at cut -1 reaches exactly the world
+					// every ignorant client already plays (no record of the user ever parses), and the
+					// event in our stream heals every future joiner at parse time instead of each
+					// waiting out its own grace. Not gated on amHost: the host can't act on a user it
+					// doesn't know, and duplicate events from two concluding clients apply lower-only
+					else if neverSeenPlaceholder and core.mode == Connected and not .removalEventWritten
+						if .removedFetchStallStart == 0
+							.removedFetchStallStart = now
+						else if now > .removedFetchStallStart + removalGraceMillis and removalGossipComplete ., now
+							.removalEventWritten = true
+							core.log "#removal <{.id}> Removing never-seen server-listed user: no living peer holds a byte or a cut after a full grace of fetches"
+							input.handleRemoveUser .id, -1
+					else
+						.removedFetchStallStart = 0
+
+		// The periodic status summary: one block every 10 seconds with everything needed to
+		// diagnose a field report from the logs alone - per-peer connection state, transports,
+		// stream positions, claims, silences and drop counters
+		if core.mode != None and now > lastStatusLogTime + 10000
+			lastStatusLogTime = now
+			logStatusSummary now
+
+	private float lastPeerPingTime
+	private float lastStreamFetchTime
+	private float lastStatusLogTime
+	private int nextStreamFetchUserId
+	const int maxStreamFetchesPerPass = 4
+
+	// The removal gossip is complete when every living peer confirmed - via a StreamData answer
+	// (onStreamData) - that we hold at least as much of the user's stream as it does. Only then
+	// does the cut provably cover everything any living client may have applied as certain.
+	// A peer silent past removalGraceMillis stops binding: a live peer holding more bytes would
+	// have answered one of the 1 Hz requests long ago, and one silent that long is itself
+	// removal-eligible
+	private bool removalGossipComplete: InternalUser user, float now
+		for input.internalUsers as peer
+			if peer and not peer.local and not peer.removed and peer.id != user.id
+				if now < peer.lastIncomingMessageTime + removalGraceMillis and not user.gossipAnswered.includes peer.id
+					return false
+		return true
+
+	private logStatusSummary: float now
+		let localUser = input.localUser
+		string wsState = ServerNetwork.connected ? "up" : "DOWN"
+		if not ServerNetwork.joined then wsState += " not-joined"
+		string modeFlags = ""
+		if restoring then modeFlags += " RESTORING"
+		if holdingConfirmationPending then modeFlags += " HOLDING-GATE"
+		if core.catchingUp then modeFlags += " CATCHING-UP"
+		// behind: how far the frame loop lags the shared clock (should be 0..1)
+		// drift: how far core.startTime is from the pong-derived reference (slew should keep it near 0)
+		int framesBehind = math.floor((core.currentTime - core.startTime)/core.frameTime)+1 - core.frame
+		int clockDrift = ServerNetwork.referenceStartTime ? math.round(ServerNetwork.referenceStartTime - core.startTime) : 0
+		string summary = "#status frame:{core.frame} certain:{core.certainFrame} lag:{core.frame - core.certainFrame} behind:{framesBehind} drift:{clockDrift}ms players:{input.players.length} ws:{wsState} host:{amHost}{modeFlags} me:<{localUser.id}> epoch:{localUser.epoch} writePos:{localUser.inputs.writePos} epochStart:{localUser.epochStartPos} inputFrame:{localUser.inputFrame}"
+		for input.internalUsers as user
+			if user and not user.local
+				string channelState = hasOpenChannel(user) ? "open buffered:{channelBufferedAmount(user)}" : "closed"
+				string channelAgo = user.lastIncomingChannelTime == float.maxValue ? "never" : "{math.round(now - user.lastIncomingChannelTime)}ms"
+				string messageAgo = user.lastIncomingMessageTime == float.maxValue ? "never" : "{math.round(now - user.lastIncomingMessageTime)}ms"
+				string smooth = user.smoothFrame == int.maxValue ? "-" : "{user.smoothFrame}"
+				string userFlags = ""
+				if user.hidden then userFlags += " hidden"
+				if user.leaving then userFlags += " leaving"
+				if user.removed then userFlags += " REMOVED@" + user.removedAfterFrame
+				string pcState = user.connectionState ? user.connectionState : "none"
+				string connectionType = user.connectionType ? user.connectionType : "?"
+				summary += "\n    <{user.id}> pc:{pcState} channel:{channelState} type:{connectionType} inputFrame:{user.inputFrame} smooth:{smooth} writePos:{user.inputs.writePos} ackedOfMine:{user.receivedMyInputsUpToPos} lastChannelMsg:{channelAgo} lastMsg:{messageAgo} drops:{user.droppedTickCount} tries:{user.connectionTries}{userFlags}"
+		core.log "{summary}"
+
+	// The host is the living, not removed user with the lowest id (internalUsers is indexed by id,
+	// so the iteration order is the id order). Only the host writes RemoveUser events, so two
+	// clients don't both write one for the same user (and if they briefly disagree, the parse is
+	// idempotent and the first event in the deterministic stream order wins)
+	bool amHost
+		let now = core.currentTime
+		for input.internalUsers as user
+			if user and not user.removed
+				if user.local then return true
+				if now < user.lastIncomingMessageTime + removalGraceMillis then return false
+		return true
+
+	// Called deterministically from input.parseInputs when a RemoveUser event is parsed.
+	// Everything nondeterministic about a removal (closing the connection, statistics) is safe
+	// to repeat - this can run again during a replay
+	onUserRemoved: InternalUser user
+		core.log "#removal <{user.id}> User removed from the game"
+		cancelLogConnectionType user
+		closeDataChannels user
+		closePeerConnection user
+		statistics.scheduleSendIn 3 seconds
+
+	// Our own player was removed from the deterministic timeline: our userId is retired. Wipe the
+	// stored identity and inputs for this room and reload as a fresh player. Guarded against loops
+	onRemovedNotice
+		if removedHandled then return
+		removedHandled = true
+		core.log "#removal We were removed from the game -> rejoining as a new player"
+		wipeRoomStorageAndReload
+
+	private bool removedHandled
+
+	// A peer told us our id is retired. After a symmetric partition that outlasted the removal
+	// grace, BOTH sides removed each other and both send this notice on heal - complying blindly
+	// would wipe every client (total room reset, and the wiped players' fresh room can inherit
+	// RemoveUser events for streams no client holds any more - a permanent certainFrame deadlock).
+	// Deterministic arbitration instead: the side with more living users wins, ties go to the side
+	// with the lowest living user id (then to the lower sender id) - both sides compute the same
+	// winner from the same numbers, so exactly one side complies and rejoins fresh
+	private onRemovedMessage: InternalUser sender, Buffer buffer
+		int senderLivingCount = buffer.readInt
+		int senderLowestLivingId = buffer.readInt
+		if sender.removed and input.localUser
+			// Mutual removal - a split-brain heal. We only wipe when the sender's side wins
+			int livingCount = countLivingUsers
+			int lowestLivingId = lowestLivingUserId
+			bool senderWins = removedNoticeSenderWins sender, senderLivingCount, senderLowestLivingId
+			string sides = "we are {livingCount} users from id {lowestLivingId}, they are {senderLivingCount} users from id {senderLowestLivingId}"
+			if not senderWins
+				core.log "#removal <{sender.id}> Refusing Removed notice: mutual removal and our side wins ({sides})"
+				return
+			core.log "#removal <{sender.id}> Mutual removal and their side wins ({sides})"
+		else
+			// We still count the sender as a live player. A genuinely removed returner receives no
+			// Ticks (nobody sends inputs to a removed user), so a fresh Tick from anyone else proves
+			// we are an active part of the game and this notice is the isolated side of a split-brain
+			// that hasn't removed us everywhere yet - refuse, the removal protocol settles the rest
+			let now = core.currentTime
+			for input.internalUsers as user
+				if . and not .local and not .removed and . != sender and now < .lastTickReceivedTime + 5000
+					int livingCount = countLivingUsers
+					int lowestLivingId = lowestLivingUserId
+					string sides = "we are {livingCount} users from id {lowestLivingId}, they are {senderLivingCount} users from id {senderLowestLivingId}"
+					if removedNoticeSenderWins sender, senderLivingCount, senderLowestLivingId
+						core.log "#removal <{sender.id}> Active user {.id} still counts us in the game, but their side wins ({sides})"
+						break
+					core.log "#removal <{sender.id}> Refusing Removed notice: user {.id} sent us inputs {math.round(now - .lastTickReceivedTime)} ms ago and our side wins ({sides})"
+					// This is a one-sided fork: the sender removed us, but we did not remove
+					// them. Counter with our side summary so the same mutual-removal
+					// arbitration runs on the sender and makes the losing timeline rejoin
+					// fresh. Without the counter, both sides repeat the notice/refusal
+					// forever (lifecycle seed 398819579).
+					sendRemovedNotice sender
+					return
+		onRemovedNotice
+
+	// Compare the two removal sides identically at either end of a Removed exchange. The side
+	// with more living users wins; ties prefer the lowest living id, then the lower endpoint id.
+	private bool removedNoticeSenderWins: InternalUser sender, int senderLivingCount, int senderLowestLivingId
+		int livingCount = countLivingUsers
+		int lowestLivingId = lowestLivingUserId
+		if senderLivingCount != livingCount then return senderLivingCount > livingCount
+		if senderLowestLivingId != lowestLivingId then return senderLowestLivingId < lowestLivingId
+		return sender.id < input.localUser.id
+
+	// Tell a user we consider removed that its id is retired, together with the size of our side
+	// so a healed split-brain arbitrates deterministically (see onRemovedMessage). Also used as a
+	// counter when a one-sided fork says we were removed but another live peer proves otherwise.
+	// Called for any message a removed user sends us and when a rejoin shows a removed user still
+	// on the server.
+	// Rate-limited per user like stream answers
+	sendRemovedNotice: InternalUser user
+		let now = core.currentTime
+		if now < user.lastStreamSentTime + 1000 then return
+		user.lastStreamSentTime = now
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast PeerMessageType.Removed
+		sendBuffer.writeInt countLivingUsers
+		sendBuffer.writeInt lowestLivingUserId
+		send user, sendBuffer
+
+	// The size of our side of the game: every user we still count as living, including ourselves
+	private int countLivingUsers
+		int count = 0
+		for input.internalUsers if . and not .removed
+			count++
+		return count
+
+	// internalUsers is indexed by id, so the first living user has the lowest id
+	private int lowestLivingUserId
+		for input.internalUsers as user
+			if user and not user.removed then return user.id
+		return -1
+
+	js void wipeRoomStorageAndReload
+		try { sessionStorage.removeItem("room"+core.roomId) } catch {}
+		try { sessionStorage.setItem("removedAt", ""+Date.now()) } catch {}
+		// Keep the query string: it can carry the ?server/?turn/?relay overrides
+		let reload = () => { location.href = "/"+core.gameId+"/"+core.roomId+location.search; };
+		// Only the identity-lease owner may clear the SHARED records: the localStorage identity
+		// and the stored input chunks are the owner tab's recovery data - a second tab wiping
+		// them would destroy the owner's ability to restore
+		if(!core.identityLeaseOwner) { reload(); return; }
+		try { localStorage.removeItem("room"+core.roomId) } catch {}
+		try {
+			// Delete every stored input row for this room: our own chunks so a future player with
+			// a reused id can't load them, and our copies of the other users' streams so a stale
+			// copy can't resurrect a fork of a stream whose owner moved on without us (we rejoin
+			// as a fresh player, the room's history is no longer ours to serve)
+			let trans = IndexedDB.db.transaction("input", "readwrite");
+			let store = trans.objectStore("input");
+			let index = store.index("roomId");
+			let req = index.getAllKeys(core.roomId);
+			req.onsuccess = () => {
+				for(let key of req.result) store.delete(key);
+			};
+			trans.oncomplete = reload;
+			trans.onerror = reload;
+			setTimeout(reload, 2000);
+		} catch(e) {
+			reload();
+		}
+
+	// Our post-reload inputs forked from the group timeline (see onOwnHistory): delete only our
+	// OWN stored input chunks for this room - identity, RoomInfo and our copies of the other
+	// users' streams stay (they are valid receipts of the group timeline), so we reload and
+	// rejoin as the same player, and the restore rebuilds our stream from the peers' copies
+	// (which provably hold more of it than we do). Guarded against loops like selfHealReload
+	private bool forkDiscardHandled
+
+	js void discardForkedInputsAndReload
+		if(PeerNetwork.forkDiscardHandled) return;
+		PeerNetwork.forkDiscardHandled = true;
+		try {
+			let count = parseInt(sessionStorage.getItem("forkDiscards") || "0");
+			let last = parseInt(sessionStorage.getItem("forkDiscardTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#restore Not discarding the fork again, already discarded "+count+" times");
+				return;
+			}
+			sessionStorage.setItem("forkDiscards", ""+(count+1));
+			sessionStorage.setItem("forkDiscardTime", ""+Date.now());
+		} catch {}
+		core.log("#restore Deleting our stored input chunks for room "+core.roomId+" and reloading");
+		let reload = () => { location.reload(); };
+		try {
+			let trans = IndexedDB.db.transaction("input", "readwrite");
+			let store = trans.objectStore("input");
+			let index = store.index("roomId");
+			let req = index.getAllKeys(core.roomId);
+			req.onsuccess = () => {
+				for(let key of req.result) {
+					if((""+key).startsWith(core.roomId+"-"+input.localUser.id+"-")) store.delete(key);
+				}
+			};
+			trans.oncomplete = reload;
+			trans.onerror = reload;
+			setTimeout(reload, 2000);
+		} catch(e) {
+			reload();
+		}
+
+	// Reload the page to rebuild from a detected timeline fork (a partition hid another user's
+	// join while our certainty advanced, see the fork detection in core.checkRewindAndReplayState).
+	// Same mechanics as selfHealReload - our identity and inputs survive, the full replay lands
+	// us on the group timeline - but counted separately: this is the expected recovery from a
+	// partition, not the emergency exit from a determinism bug, and the tests treat a desync
+	// self-heal as a failure. Returns true when the reload was scheduled (or a previous call
+	// already scheduled it), false when the rate limit refused it
+	js bool forkRecoveryReload: string reason
+		if(PeerNetwork.forkRecoveryScheduled) return true;
+		try {
+			let count = parseInt(sessionStorage.getItem("forkRecoveryReloads") || "0");
+			let last = parseInt(sessionStorage.getItem("forkRecoveryReloadTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#fork Not rebuilding again ("+reason+"), already reloaded "+count+" times");
+				return false;
+			}
+			sessionStorage.setItem("forkRecoveryReloads", ""+(count+1));
+			sessionStorage.setItem("forkRecoveryReloadTime", ""+Date.now());
+		} catch {}
+		PeerNetwork.forkRecoveryScheduled = true;
+		core.log("#fork Rebuilding from the mesh: "+reason);
+		setTimeout(() => location.reload(), 500);
+		return true;
+
+	private bool forkRecoveryScheduled
+
+	// Reload the page to self-heal from a state divergence: our own input stream survives
+	// (IndexedDB + peers), all other streams are re-fetched from the mesh, and the full replay
+	// rebuilds a state that is consistent with the group. Rate-limited to avoid reload loops
+	js void selfHealReload: string reason
+		try {
+			let count = parseInt(sessionStorage.getItem("selfHealReloads") || "0");
+			let last = parseInt(sessionStorage.getItem("selfHealReloadTime") || "0");
+			if(Date.now() - last > 600000) count = 0;
+			if(count >= 2) {
+				core.log("#selfheal Not reloading again ("+reason+"), already reloaded "+count+" times");
+				return;
+			}
+			sessionStorage.setItem("selfHealReloads", ""+(count+1));
+			sessionStorage.setItem("selfHealReloadTime", ""+Date.now());
+		} catch {}
+		core.log("#selfheal Reloading page: "+reason);
+		setTimeout(() => location.reload(), 500);
+
+	// --------------------------------------------- WebRTC connection ---------------------------------------------
+
+	initiate: InternalUser user
+		// The media setup runs in parallel with the signaling connection
+		// Wait until it settled so the local tracks are added when the peer connection is created
+		await whenLocalMediaSettled
+		setupPeerConnection user, offerByMe:true
+		// Create the data channel before the offer, so the very first SDP round trip negotiates it
+		// and it opens right after DTLS. Creating it later would trigger a renegotiation - one more
+		// full signaling round trip during which a high-latency link looks dead to the watchdog
+		setupDataChannel user
+		setupRemoteMedia user
+
+	private js void restartIce: InternalUser user
+		try {
+			if(user.peerConnection) user.peerConnection.restartIce();
+		} catch(e) {
+			core.log("#peer <"+user.id+"> restartIce failed "+e.message);
+		}
+
+	private js void closePeerConnection: InternalUser user
+		if(!user.peerConnection) return;
+		try {
+			user.peerConnection.onnegotiationneeded = null;
+			user.peerConnection.onsignalingstatechange = null;
+			user.peerConnection.onconnectionstatechange = null;
+			user.peerConnection.onicecandidate = null;
+			user.peerConnection.icecandidateerror = null;
+			user.peerConnection.oniceconnectionstatechange = null;
+			user.peerConnection.onicegatheringstatechange = null;
+			user.peerConnection.ondatachannel = null;
+			user.peerConnection.close();
+		} catch {}
+		user.peerConnection = null;
+		user.connected = false;
+
+	private js void closeDataChannels: InternalUser user
+		for(let dataChannel of user.dataChannels) {
+			try { dataChannel.close(); } catch {}
+		}
+		user.dataChannels.length = 0;
+
 	private js object setupPeerConnection: InternalUser user, bool offerByMe
 		if(user.peerConnection) {
-			try {
-				core.log(`#peer <${user.id}> Close Previous Peer Connection`)
-				user.peerConnection.onnegotiationneeded = null;
-				user.peerConnection.onsignalingstatechange = null;
-				user.peerConnection.onconnectionstatechange = null;
-				user.peerConnection.onicecandidate = null;
-				user.peerConnection.icecandidateerror = null;
-				user.peerConnection.oniceconnectionstatechange = null;
-				user.peerConnection.onicegatheringstatechange = null;
-				user.peerConnection.close();
-			} catch {}
+			core.log(`#peer <${user.id}> Close Previous Peer Connection`)
+			PeerNetwork.closePeerConnection(user);
 		}
 		try {
-			user.startToConnectTime = user.lastIncomingMessageTime = Date.now();
+			// A pending connection-type report belongs to the connection being replaced
+			clearTimeout(user.logConnectionTypeTimer);
+			// Same monotonic clock as core.currentTime (inlined: js blocks can't call inline functions)
+			user.startToConnectTime = user.lastIncomingChannelTime = Math.round(performance.timeOrigin + performance.now());
 			user.offerByMe = offerByMe;
-			
+			// A fresh connection has no answer yet and no silence history
+			// While offerByMe && !receivedAnswer our offer counts as outstanding -> the impolite peer ignores crossing offers (see onReceivedOffer)
+			user.receivedAnswer = false;
+			user.silentPeriods = 0;
+
+			// STUN and TURN both live inside the Go server executable. The TURN server is on the
+			// same host that accepted our WebSocket; UDP first, TCP as the firewall fallback.
+			// ?turn=port in the page URL overrides the port (the e2e tests use random ports)
+			let turnHost = ServerNetwork.workingServerHost || location.hostname;
+			let turnPort = 3478;
+			try { turnPort = parseInt(new URLSearchParams(location.search).get("turn")) || 3478; } catch {}
 			let options = {
-				// We use the ice transport policy "relay" to test our turn server
 				iceTransportPolicy: PeerNetwork.relayMode == 2 ? "relay" : "all",
 				iceServers: [],
-				// iceCandidatePoolSize: 10,
 			}
 			if(PeerNetwork.relayMode > 0) {
-				// OVH turn server
 				options.iceServers.push({
-					urls: 'turn:193.70.81.132:39571',
-					username: 'play-user-x8env28gx41odbxzwjyut2oq871987syq8ovyuqp128djbsjue',
-					credential: 'qoy91n981vlplabb1873jdcgsouz2qm87qmmakqpc2t8hbeyjsyaqkuz'
-				});	
+					urls: [
+						"turn:"+turnHost+":"+turnPort+"?transport=udp",
+						"turn:"+turnHost+":"+turnPort+"?transport=tcp",
+					],
+					username: PeerNetwork.turnUsername || PeerNetwork.fallbackTurnUsername,
+					credential: PeerNetwork.turnCredential || PeerNetwork.fallbackTurnPassword,
+				});
 			}
 			options.iceServers.push({
 				urls: [
-					// OVH stun server
-					// "stun:193.70.81.132:39571",
-					
-					// Google stun server
+					"stun:"+turnHost+":"+turnPort,
 					"stun:stun1.l.google.com:19302",
 					"stun:stun2.l.google.com:19302",
 				],
 			});
-			core.log(`#peer <${user.id}> Setup Peer Connection offerByMe: ${offerByMe}`);
+			core.log(`#peer <${user.id}> Setup Peer Connection offerByMe:${offerByMe} relayMode:${PeerNetwork.relayMode} turn:${turnHost}:${turnPort}`);
 			let peerConnection = user.peerConnection = new RTCPeerConnection(options);
-			
+
 			// Negotiation
 			peerConnection.onnegotiationneeded = e => {
 				core.log(`#peer <${user.id}> Negotiation Needed`);
 				if(offerByMe) PeerNetwork.createOffer(user);
 			}
-			
+
 			// Signaling, Connection
 			peerConnection.onconnectionstatechange = e => {
 				core.log(`#peer <${user.id}> Connection State Change: ${peerConnection.connectionState}`);
@@ -137,24 +1204,30 @@ internal transient skipInit unit PeerNetwork
 				if(user.connected) PeerNetwork.onConnected(user);
 				if(peerConnection.connectionState == "disconnected")
 					setTimeout(() => statistics.saveStatistics(), 7000);
+				// "failed" means ICE gave up - restart immediately instead of waiting for the silence timer.
+				// This is also the path that reconnects TURN allocations after the TURN server restarted
+				if(peerConnection.connectionState == "failed" && offerByMe) {
+					core.log(`#peer <${user.id}> Connection failed -> restarting ICE`);
+					try { peerConnection.restartIce(); } catch {}
+				}
 			}
-			
-			// ICE: Candidate, Error, Connection, Gathering
+
+			// ICE: Candidate, Error
 			let candidateCount = 0
 			peerConnection.onicecandidate = async event => {
 				if (event.candidate) {
 					core.log(`#peer <${user.id}> Gathered Local Ice Candidate ${++candidateCount} -> Send to peer`);
-					ServerNetwork.sendIce(user.id, JSON.stringify(event.candidate));
+					PeerNetwork.sendIceCandidate(user, JSON.stringify(event.candidate));
 				} else {
 					core.log(`#peer <${user.id}> Gathered Local Ice Candidates Complete`);
 				}
 			}
 			peerConnection.icecandidateerror = e => {
-				core.log(`#peer <${user.id}> IDE Candidate Error: ${e.errorText}`);
+				core.log(`#peer <${user.id}> ICE Candidate Error: ${e.errorText}`);
 			}
-			
+
 			return peerConnection;
-		} 
+		}
 		catch(e) {
 			core.log("#peer <"+user.id+"> setupPeerConnection failed " + e.message)
 			console.error(e);
@@ -162,107 +1235,89 @@ internal transient skipInit unit PeerNetwork
 			return null;
 		}
 
+	// Recreates the data channel only if the previous one is gone for good. While it is still
+	// "connecting" it was negotiated with the offer and will open on its own; closing it and
+	// creating a new one would trigger a renegotiation (a full extra signaling round trip)
+	private js void ensureDataChannel: InternalUser user
+		let channel = user.latestDataChannel;
+		if(channel && (channel.readyState == "open" || channel.readyState == "connecting")) return;
+		PeerNetwork.setupDataChannel(user);
+
 	private js void setupDataChannel: InternalUser user
 		try {
-			user.startDataChannelTime = Date.now();
+			user.startDataChannelTime = Math.round(performance.timeOrigin + performance.now());
 			core.log("#peer <"+user.id+"> Data Channel Creating");
-			
-			// Close all previous data channels
-			for(let dataChannel of user.dataChannels) {
-				try   { 
-					dataChannel.close();
-					core.log("#peer <"+user.id+"> Data Channel Closing previous channel (id:"+dataChannel._id+")");
-				} catch {}
-			}
-			user.dataChannels.length = 0;
-			
-			// Create reliable data channel
-			// let dataChannel = user.peerConnection.createDataChannel("channel"); // reliable
-			let dataChannel = user.peerConnection.createDataChannel("channel", {ordered:false, maxRetransmits:0}); // unreliable
-			dataChannel.binaryType = "arraybuffer";
-			dataChannel._id = PeerNetwork.dataChannelId++;
-			
-			// Open
-			dataChannel.onopen = e => {
-				user.dataChannels.splice(0,0,dataChannel);
-				core.log("#peer <"+user.id+"> Data Channel Open (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-			}
-			
-			// Close, Error
-			dataChannel.onclosing = e => {
-				user.dataChannels.remove();
-				core.log("#peer <"+user.id+"> Data Channel Closing (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-			}
-			dataChannel.onclose = e => {
-				user.dataChannels.remove();
-				core.log("#peer <"+user.id+"> Data Channel Close (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-			}
-			dataChannel.onerror = e => {
-				core.log("#peer <"+user.id+"> Data Channel Error " + ev.error.message+" (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-			}
-			
-			// Message
-			dataChannel.onmessage = e => {
-				// core.log("#data <"+user.id+"> received " + e.data.byteLength + " bytes on channel "+ dataChannel._id);
-				PeerNetwork.onMessage(user, new Buffer(e.data, 0, 0, 0));
-			}
-		} 
+			PeerNetwork.closeDataChannels(user);
+
+			// Unreliable, unordered: losses are repaired by the ack-driven cumulative resend
+			let dataChannel = user.peerConnection.createDataChannel("channel", {ordered:false, maxRetransmits:0});
+			user.latestDataChannel = dataChannel;
+			PeerNetwork.attachDataChannel(user, dataChannel);
+		}
 		catch(e) {
 			core.log("#peer <"+user.id+"> setupDataChannel failed " + e.message)
 			console.error(e);
 			core.log(e.stack);
 		}
-		
+
+	private js void attachDataChannel: InternalUser user, object dataChannel
+		dataChannel.binaryType = "arraybuffer";
+		dataChannel._id = PeerNetwork.dataChannelId++;
+
+		dataChannel.onopen = e => {
+			user.dataChannels.splice(0,0,dataChannel);
+			// Same monotonic clock as core.currentTime (inlined: js blocks can't call inline functions)
+			user.lastIncomingChannelTime = Math.round(performance.timeOrigin + performance.now());
+			// The link proved it can establish a channel - the silence watchdog starts fast again
+			user.channelReconnects = 0;
+			core.log("#peer <"+user.id+"> Data Channel Open (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
+			PeerNetwork.logConnectionType(user);
+		}
+		dataChannel.onclosing = e => {
+			let index = user.dataChannels.indexOf(dataChannel);
+			if(index != -1) user.dataChannels.splice(index, 1);
+			core.log("#peer <"+user.id+"> Data Channel Closing (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
+		}
+		dataChannel.onclose = e => {
+			let index = user.dataChannels.indexOf(dataChannel);
+			if(index != -1) user.dataChannels.splice(index, 1);
+			core.log("#peer <"+user.id+"> Data Channel Close (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
+		}
+		dataChannel.onerror = e => {
+			core.log("#peer <"+user.id+"> Data Channel Error (id:"+dataChannel._id+")");
+		}
+		dataChannel.onmessage = e => {
+			user.lastIncomingChannelTime = user.lastChannelMessageTime = Math.round(performance.timeOrigin + performance.now());
+			PeerNetwork.onPeerMessage(user, new Buffer(e.data, 0, 0, 0), false);
+		}
+
 	onConnected: InternalUser user
-		user.startDataChannelTime = user.lastIncomingMessageTime = PlainDate.realTime
+		// Fresh silence window: the channel created with the offer still needs the SCTP handshake
+		user.startDataChannelTime = user.lastIncomingChannelTime = core.currentTime
+		user.connectionTries = 0
 		logConnectionType user
-		
+
+		// The channel was already negotiated with the offer and normally just opens now. Only when
+		// it died for good (SCTP gone but ICE recovered) create a new one - that costs a renegotiation
 		if user.offerByMe
-			setupDataChannel user
-		
+			ensureDataChannel user
+
 		if not statistics.connectTime
 			int connectedCount = input.internalUsers.count.offerByMe and .connected
 			int offerCount = input.internalUsers.count.offerByMe
-			core.log "#peer Connected on try {user.connectionTries}, {connectedCount} of {offerCount} my offers are connected"
-			
+			core.log "#peer Connected, {connectedCount} of {offerCount} of my offers are connected"
+
 			if input.internalUsers.none.offerByMe and not .connected
 				statistics.connectTime = PlainDate.preciseTime - statistics.startTime
 				core.log "#peer All my offers are connected after {statistics.connectTime} ms and {retries} retries"
-			
-	disconnect: InternalUser user
-		core.log "####### disconnect"
-		user.dataChannels.each.close()
-		if user.peerConnection != null then user.peerConnection.close
-		input.internalUsers[user.id] = null
-		
-	js void setBitrate: InternalUser user, float scaleResolutionDownBy = 1, float maxBitrate
-		try {
-			let senderList = user.peerConnection.getSenders();
-			for(let sender of senderList) {
-				const params = sender.getParameters();
-				console.log(params);
-				if (!params.encodings) {
-					params.encodings = [{ }];
-				}
-				params.encodings[0].scaleResolutionDownBy = scaleResolutionDownBy;
-				params.encodings[0].maxBitrate = maxBitrate;
-				// params.encodings[0].adaptivePtime = true;
-				await sender.setParameters(params);
-			}
-		}
-		catch(e) {
-			core.log("#peer <"+user.id+"> setBitrate failed " + e.message)
-			console.error(e);
-			core.log(e.stack);
-		}
-				
+
 	private js void createOffer: InternalUser user
 		try {
-			core.log("#peer <"+user.id+"> Sending offer to "+user.id+", waiting for answer. Try:"+user.connectionTries);
+			core.log("#peer <"+user.id+"> Sending offer, waiting for answer. Try:"+user.connectionTries);
 			let peerConnection = user.peerConnection
 			let offer = await peerConnection.createOffer();
 			await peerConnection.setLocalDescription(offer);
-			ServerNetwork.sendSignal(user.id, "offer", peerConnection.localDescription.sdp)
+			PeerNetwork.sendSdp(user, /*Offer*/3, peerConnection.localDescription.sdp);
 			user.receivedAnswer = false
 		}
 		catch(e) {
@@ -270,242 +1325,1051 @@ internal transient skipInit unit PeerNetwork
 			console.error(e);
 			core.log(e.stack);
 		}
-		
+
+	// Offers, answers and ICE candidates are peer messages: they normally travel via the server
+	// (the data channel doesn't exist yet), but renegotiations can also use an open channel
+	private sendSdp: InternalUser user, int peerType, string sdp
+		sendBuffer.reset
+		sendBuffer.writeInt8 peerType
+		sendBuffer.writeString sdp
+		send user, sendBuffer
+
+	private sendIceCandidate: InternalUser user, string candidate
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast PeerMessageType.IceCandidate
+		sendBuffer.writeString candidate
+		send user, sendBuffer
+
 	js void onReceivedOffer: InternalUser user, string sdp
 		try {
+			// Crossing offers (glare): when both sides offer at the same time and each receives the other's
+			// offer, both would flip to answerer below and wait for an answer forever. Politeness is
+			// deterministic: the peer with the lower id is impolite and ignores the crossing offer (its own
+			// offer stays outstanding and the polite peer answers it); the peer with the higher id is polite
+			// and answers as usual. An offer counts as outstanding from setupPeerConnection/createOffer until
+			// the answer arrives (receivedAnswer). Liveness: if our outstanding offer was lost on the way,
+			// the silence timeout in tick re-offers within 10s and the polite peer answers that one.
+			let polite = input.localUser.id > user.id;
+			if(!polite && user.offerByMe && !user.receivedAnswer && user.peerConnection) {
+				core.log("#peer <"+user.id+"> Ignoring crossing offer: my own offer is outstanding and I'm the impolite peer");
+				return;
+			}
+
+			// This offer starts a new connection generation (runs synchronously, before the first await):
+			// - candidates queued earlier belong to the previous connection -> discard them
+			// - candidates arriving from now on belong to this offer -> queue them until the remote description is set
+			user.pendingIceCandidates.length = 0;
+			user.settingRemoteDescription = true;
+
+			// The media setup runs in parallel with the signaling connection
+			// Wait until it settled so the local tracks are added when the peer connection is created
+			await PeerNetwork.whenLocalMediaSettled();
 			core.log("#peer <"+user.id+"> Received offer -> Send answer");
 			PeerNetwork.setupPeerConnection(user, /*offerByMe*/false);
 			PeerNetwork.setupRemoteMedia(user);
 
-			// Data channel
+			// Data channel (created by the offerer, received here)
 			user.peerConnection.ondatachannel = e => {
 				core.log("#peer <"+user.id+"> Data Channel Received");
-				let dataChannel = e.channel;
-				dataChannel.binaryType = "arraybuffer";
-				dataChannel._id = PeerNetwork.dataChannelId++;
-				
-				// Open
-				dataChannel.onopen = e => {
-					PeerNetwork.logConnectionType(user);
-					user.dataChannels.splice(0,0,dataChannel);
-					core.log("#peer <"+user.id+"> Data Channel Open (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-				}
-				
-				// Close, Error
-				dataChannel.onclosing = e => {
-					user.dataChannels.remove(dataChannel);
-					core.log("#peer <"+user.id+"> Data Channel Closing (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-				}
-				dataChannel.onclose = e => {
-					user.dataChannels.remove(dataChannel);
-					core.log("#peer <"+user.id+"> Data Channel Close (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-				}
-				dataChannel.onerror = e => {
-					core.log("#peer <"+user.id+"> Data Channel Error "+e.error.message+" (id:"+dataChannel._id+", length: "+user.dataChannels.length+")");
-				}
-				
-				// Message
-				dataChannel.onmessage = e => {
-					// core.log("#data <"+user.id+"> received " + e.data.byteLength + " bytes on channel "+ dataChannel._id);
-					PeerNetwork.onMessage(user, new Buffer(e.data, 0, 0, 0));
-				}
+				PeerNetwork.attachDataChannel(user, e.channel);
 			}
-						
+
 			// Answer
 			let peerConnection = user.peerConnection;
 			await peerConnection.setRemoteDescription(new RTCSessionDescription({type: "offer", sdp}));
+			user.settingRemoteDescription = false;
+			await PeerNetwork.addPendingIceCandidates(user);
 			let answer = await peerConnection.createAnswer();
 			await peerConnection.setLocalDescription(answer);
-			ServerNetwork.sendSignal(user.id, "answer", peerConnection.localDescription.sdp);
+			PeerNetwork.sendSdp(user, /*Answer*/4, peerConnection.localDescription.sdp);
 		}
 		catch(e) {
+			user.settingRemoteDescription = false;
 			core.log("#peer <"+user.id+"> onReceivedOffer failed " + e.message)
 			console.error(e)
 			core.log(e.stack);
 		}
-		
-	Buffer sendBuffer = {}
-	
-	private js int send: InternalUser user, Buffer buffer
-		if(user.dataChannels.length == 0) {
-			core.log("#data <"+user.id+"> Trying to send without dataChannels")
-		}
-		try {
-			let data = buffer.toByteArray()
-			let channel = user.dataChannels[0]
-			channel.send(data)
-			// core.log("#data <"+user.id+"> send " + data.byteLength + " bytes on channel "+ channel._id)
-			return data.byteLength
-		} 
-		catch(e) {
-			core.log("#peer <"+user.id+"> send failed " + e.message)
-			console.error(e)
-			core.log(e.stack)
-			return 0
-		}
-	
-	private onMessage: InternalUser user, Buffer buffer
-		user.lastIncomingMessageTime = PlainDate.realTime
-		NetworkMessageType type = cast buffer.readInt8
-		switch type
-			Tick	onTick user, buffer
-			Ping	onPing user, buffer
-			Pong	onPong user, buffer
-			
-	sendInputs: int inputFrame
-		let inputs = input.localUser.inputs
-		for input.internalUsers as receiver if receiver
-			let length = inputs.writePos - receiver.receivedMyInputsUpToPos
-			
-			if not receiver.local and receiver.dataChannels
-				sendBuffer.reset
-				sendBuffer.writeInt8 cast NetworkMessageType.Tick
-				sendBuffer.writeInt inputFrame                       // I send inputs up to and including this frame
-				sendBuffer.writeInt receiver.receivedMyInputsUpToPos // I send inputs starting from the last pos you received
-				sendBuffer.writeInt receiver.inputs.writePos         // I received your inputs up to this pos
-				sendBuffer.writeBuffer inputs, receiver.receivedMyInputsUpToPos, length
-				sendBuffer.writeInt core.lastChecksumFrame                           // The last certain frame with inputs from everybody
-				sendBuffer.writeFloat64 core.checksums[core.lastChecksumFrame] || 0  // The checksum of the last certain frame
-				
-				core.tickMessageSize = send ., sendBuffer
-				
-				if length > 0 then core.log "[{inputFrame}] <{receiver.id}> #send -->> The other <{receiver.id}> received up to {receiver.receivedMyInputsUpToPos} and I'm <{input.localUser.id}> sending {length} bytes, from {receiver.receivedMyInputsUpToPos} to {inputs.writePos}"
-		
-	private onTick: InternalUser sender, Buffer buffer
-		let inputFrame = buffer.readInt                     // The sender sent inputs up to and including this frame
-		
-		if inputFrame >= sender.inputFrame
-			let prevInputFrame = sender.inputFrame         
-			let incomingInputsWritePos = buffer.readInt     // The sender sent inputs starting from the last pos I received
-			sender.receivedMyInputsUpToPos = buffer.readInt // The sender received my inputs up to this pos
-			
-			sender.inputFrame = inputFrame
-			let length = buffer.readBuffer sender.inputs, incomingInputsWritePos
-			
-			if length > 0 then core.log "[{inputFrame}] <{sender.id}> #receive <<-- I <{input.localUser.id}> received {length} bytes, up to {sender.inputs.writePos} from {sender.id}"
-			
-			// Checksum
-			int checksumFor = buffer.readInt
-			float checksum = buffer.readFloat64
-			
-			let myChecksum = core.checksums[checksumFor]
-			if !myChecksum                           core.checksums[checksumFor] = checksum; else
-			if !myChecksum.isApproximately(checksum) core.onWrongChecksum checksumFor, mine: myChecksum theirs:checksum
-				
-			// Store incoming inputs
-			if length then core.storeInputsToDB sender
-		
+
 	js void onReceivedAnswer: InternalUser user, string sdp
 		core.log("#peer <"+user.id+"> Received Answer");
 		try {
+			if(!user.peerConnection || !user.offerByMe) {
+				core.log("#peer <"+user.id+"> Ignoring answer: no outstanding offer");
+				return;
+			}
+			// Candidates queued before this answer belong to a previous connection generation -> discard them
+			user.pendingIceCandidates.length = 0;
+			user.settingRemoteDescription = true;
 			await user.peerConnection.setRemoteDescription(new RTCSessionDescription({type: "answer", sdp}));
+			user.settingRemoteDescription = false;
 			user.receivedAnswer = true
+			await PeerNetwork.addPendingIceCandidates(user);
 		}
 		catch(e) {
+			user.settingRemoteDescription = false;
 			core.log("#peer <"+user.id+"> onReceivedAnswer failed " + e.message)
 			core.log(e.stack);
-		}	
-			
+		}
+
 	js void onIce: InternalUser user, string candidate
-		core.log("#peer <"+user.id+"> Received Ice Candidate");
 		try {
+			// Candidates routinely arrive before the peer connection exists or before setRemoteDescription
+			// has completed; adding them now would fail (or feed a connection that is being replaced),
+			// so queue them until the remote description is set
+			if(!user.peerConnection || !user.peerConnection.remoteDescription || user.settingRemoteDescription) {
+				user.pendingIceCandidates.push(JSON.parse(candidate));
+				core.log("#peer <"+user.id+"> Queued Early Ice Candidate ("+user.pendingIceCandidates.length+" pending)");
+				return;
+			}
 			await user.peerConnection.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)));
 		}
 		catch(e) {
 			core.log("#peer <"+user.id+"> onIce failed " + e.message)
 			core.log(e.stack);
 		}
-		
+
+	// Add the ICE candidates that arrived before the remote description was set
+	private js void addPendingIceCandidates: InternalUser user
+		let pendingIceCandidates = user.pendingIceCandidates;
+		if(pendingIceCandidates.length == 0) return;
+		user.pendingIceCandidates = [];
+		for(let candidate of pendingIceCandidates) {
+			try {
+				core.log("#peer <"+user.id+"> Adding Queued Ice Candidate");
+				await user.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+			}
+			catch(e) {
+				core.log("#peer <"+user.id+"> addPendingIceCandidates failed " + e.message)
+			}
+		}
+
 	private js void logConnectionType: InternalUser user
-		setTimeout(async () => {
-			let stats = await user.peerConnection.getStats()
-			let candidatePairs = [...stats.values()].filter(s => s.type == "candidate-pair" && s.state == "succeeded")
-			let candidatePair = candidatePairs.find(a => a.selected) || candidatePairs[0]
-			if(candidatePair) {
-				let candidate = stats.get(candidatePair.localCandidateId);
-				let ip = candidate.ip || candidate.address
-				user.connectionType = candidate.candidateType + " " + ip
-				core.log("#connection <"+user.id+"> connection "+user.connectionType)
-			} else {
-				core.log("#connection <"+user.id+"> connection: no candidate pair for "+user.id)
-				window.stats = [...stats.values()]
-				console.log(window.stats)
-				try  { core.log(JSON.stringify(window.stats)) }
-				catch{ }
+		// One pending timer per user: a re-initiate within the 10s window would otherwise report
+		// stats for a connection that no longer exists; also cancelled in setupPeerConnection
+		clearTimeout(user.logConnectionTypeTimer);
+		let peerConnection = user.peerConnection;
+		user.logConnectionTypeTimer = setTimeout(async () => {
+			try {
+				if(user.peerConnection != peerConnection) return; // The connection was replaced in the meantime
+				let stats = await peerConnection.getStats()
+				let candidatePairs = [...stats.values()].filter(s => s.type == "candidate-pair" && s.state == "succeeded")
+				let candidatePair = candidatePairs.find(a => a.selected) || candidatePairs[0]
+				if(candidatePair) {
+					let candidate = stats.get(candidatePair.localCandidateId);
+					let ip = candidate.ip || candidate.address
+					user.connectionType = candidate.candidateType + " " + ip
+					core.log("#connection <"+user.id+"> connection "+user.connectionType)
+				} else {
+					core.log("#connection <"+user.id+"> connection: no succeeded candidate pair");
+				}
+			} catch(e) {
+				core.log("#connection <"+user.id+"> logConnectionType failed: " + e.message)
 			}
 		}, 10000)
-		
-	// --------------------------------------------- Ping/Pong ---------------------------------------------
-	
-	ping
+
+	private js void cancelLogConnectionType: InternalUser user
+		clearTimeout(user.logConnectionTypeTimer)
+
+	js void setBitrate: InternalUser user, float scaleResolutionDownBy = 1, float maxBitrate
+		try {
+			let senderList = user.peerConnection.getSenders();
+			for(let sender of senderList) {
+				const params = sender.getParameters();
+				if (!params.encodings) {
+					params.encodings = [{ }];
+				}
+				params.encodings[0].scaleResolutionDownBy = scaleResolutionDownBy;
+				params.encodings[0].maxBitrate = maxBitrate;
+				await sender.setParameters(params);
+			}
+		}
+		catch(e) {
+			core.log("#peer <"+user.id+"> setBitrate failed " + e.message)
+		}
+
+	// --------------------------------------------- Transport ---------------------------------------------
+
+	private js bool hasOpenChannel: InternalUser user
+		return user.dataChannels.length > 0 && user.dataChannels[0].readyState == "open"
+
+	private js int channelBufferedAmount: InternalUser user
+		return user.dataChannels.length > 0 ? (user.dataChannels[0].bufferedAmount || 0) : 0
+
+	// Send a peer message: over the data channel when it is open, otherwise wrapped in a server
+	// Relay. Every peer message works on both transports, so signaling outages and P2P outages
+	// mask each other - only when both are down at the same time is the peer unreachable
+	private int send: InternalUser user, Buffer buffer
+		if hasOpenChannel user
+			int sentBytes = sendOnChannel user, buffer
+			// An "open" channel can be silently dead (a dying router or NAT eats the packets but
+			// the SCTP association never notices). While the channel is suspect, mirror every
+			// message over the server relay too - inputs and repair offers keep flowing seconds
+			// into an outage instead of stalling until a reconnect happens to close the channel
+			if channelSuspect user and ServerNetwork.connected and ServerNetwork.bufferedAmount < 1048576
+				ServerNetwork.relay user.id, buffer
+			return sentBytes
+		ServerNetwork.relay user.id, buffer
+		return buffer.writePos
+
+	// True when the open channel cannot be trusted: it delivered nothing for a while (their
+	// direction is dead), or the peer stopped acking our outstanding bytes (our direction is
+	// dead - visible without any wire change because acks ride on the peer's Ticks, which
+	// still arrive when only our direction died)
+	private bool channelSuspect: InternalUser user
+		let now = core.currentTime
+		return now > user.lastChannelMessageTime + channelSuspectMillis or now > user.lastAckProgressTime + channelSuspectMillis
+
+	private js int sendOnChannel: InternalUser user, Buffer buffer
+		try {
+			let data = buffer.toByteArray()
+			let channel = user.dataChannels[0]
+			channel.send(data)
+			return data.byteLength
+		}
+		catch(e) {
+			core.log("#peer <"+user.id+"> send failed " + e.message)
+			return 0
+		}
+
+	// A crashing handler must never take down the message pump, and the exception must reach the
+	// saved logs (uncaught exceptions in data channel callbacks only reach the browser console)
+	internal onPeerMessage: InternalUser user, Buffer buffer, bool viaServer
+		try
+			handlePeerMessage user, buffer, viaServer
+		catch
+			core.log "#error <{user.id}> Failed to handle peer message via {viaServer ? "server relay" : "data channel"} ({buffer.writePos} bytes): {error.stack}"
+
+	private handlePeerMessage: InternalUser user, Buffer buffer, bool viaServer
+		user.lastIncomingMessageTime = core.currentTime
+		// Only a data channel message proves the P2P link. A relayed message must not reset the
+		// channel-silence counter: the answerer takeover (see tick) exists exactly for a peer that
+		// is alive via server relay but never manages to establish its offered connection
+		if not viaServer then user.silentPeriods = 0
+		user.leaving = false // Any message proves the user is still there (e.g. restored from the back/forward cache)
+		user.presentOnServer = true // The JoinResponse presence snapshot goes stale; any message proves liveness
+		// A user that proves it is alive before its RemoveUser event was written cancels the removal
+		// gossip: otherwise the 1s stream-fetch loop would keep requesting its stream forever, and a
+		// LATER outage would inherit this stale start time and remove the user with zero gossip time
+		// (removalEventWritten stays: once the event is in the stream, the removal is deterministic)
+		if user.removalGossipStart != 0 and not user.removalEventWritten
+			user.removalGossipStart = 0
+			user.gossipAnswered.clear
+			core.log "#removal <{user.id}> Back before removal -> gossip cancelled"
+		// Any message from a removed user proves it is back: its id is retired, tell it so it
+		// wipes and rejoins as a fresh player (rate-limited). The arbitration in onRemovedMessage
+		// keeps the healthy majority side of a healed split-brain from complying
+		if user.removed then sendRemovedNotice user
+		if user.reconnectNotified
+			user.reconnectNotified = false
+			core.log "#peer <{user.id}> Reachable again via {viaServer ? "server relay" : "data channel"}"
+		int typeValue = buffer.readInt8
+		if typeValue < 0 or typeValue > cast PeerMessageType.Removed
+			core.log "#error <{user.id}> Unknown peer message type {typeValue} via {viaServer ? "server relay" : "data channel"} - version mismatch between clients?"
+			return
+		PeerMessageType type = cast typeValue
+		switch type
+			Tick	onTick user, buffer
+			Ping	onPing user, buffer
+			Pong	onPong user, buffer
+			Offer	onReceivedOffer user, buffer.readString
+			Answer	onReceivedAnswer user, buffer.readString
+			IceCandidate	onIce user, buffer.readString
+			StreamRequest	onStreamRequest user, buffer
+			StreamData	onStreamData user, buffer
+			Status	onStatus user, buffer
+			Leaving	onLeaving user, buffer
+			Removed	onRemovedMessage user, buffer
+
+	// --------------------------------------------- Input Ticks ---------------------------------------------
+
+	// A single Tick must stay well below the smallest cross-browser SCTP message size limit:
+	// a peer that is gone for minutes (or a fresh peer acking from 0 after a long game) would
+	// otherwise make the cumulative delta exceed it, channel.send would throw on every frame and
+	// the transfer would never succeed - both sides stall. Larger backlogs are sent as one
+	// chunk per Tick; the ack-driven cumulative resend delivers the rest over the following
+	// frames (~16 KB at 30 Hz = 480 KB/s)
+	const int maxTickBytes = 16384
+
+	sendInputs: int inputFrame
+		let inputs = input.localUser.inputs
+		recordClaimSample inputs.writePos, inputFrame
+		for input.internalUsers as receiver if receiver
+			if receiver.local or receiver.removed then continue
+
+			bool viaChannel = hasOpenChannel receiver
+			if not viaChannel and not ServerNetwork.connected then continue
+			// Don't pile onto a congested transport - the cumulative resend covers these bytes later
+			if viaChannel and channelBufferedAmount(receiver) > 1048576 then continue
+			if not viaChannel and ServerNetwork.bufferedAmount > 1048576 then continue
+
+			// A transport change is a connectivity event worth one log line: it shows exactly
+			// when the P2P path went down (Ticks fall back to the server or are mirrored while
+			// the channel is suspect) and when it recovered
+			int transport = viaChannel ? (channelSuspect(receiver) ? 3 : 1) : 2
+			if receiver.lastTickTransport != transport
+				if receiver.lastTickTransport != 0 or transport != 1
+					core.log "#transport <{receiver.id}> Sending inputs via {transport == 1 ? "data channel" : transport == 2 ? "server relay" : "data channel + server relay (channel suspect)"}"
+				receiver.lastTickTransport = transport
+
+			// A returning peer can ack MORE of our stream than we hold (it kept our pre-reload
+			// inputs while our own restore was cut short) - nothing to send it until the
+			// history adoption in onOwnHistory catches our writePos up to its copy
+			let startPos = math.min(receiver.receivedMyInputsUpToPos, inputs.writePos)
+			int length = inputs.writePos - startPos
+			int claim = inputFrame
+			if length > maxTickBytes
+				// The receiver is far behind: send one chunk, cut at a record boundary (a cut inside
+				// an input record would make the receiver's stream end mid-record - unparseable).
+				// The claim may only cover frames whose bytes are fully inside what the receiver
+				// will then have, so it comes from the position->frame samples too
+				int cutPos = alignedCutBelow startPos + maxTickBytes
+				if cutPos > startPos
+					length = cutPos - startPos
+					claim = claimForPos cutPos
+				else
+					// No aligned cut below the cap: restored pre-epoch history was never claim-sampled
+					// (a rejoiner serving its restored stream to a peer that acks from 0). Send a capped,
+					// NON-aligned chunk with a conservative claim: the claim only gates parsing, so the
+					// receiver's stream may briefly end mid-record and it simply keeps its old claim
+					// (-1 when nothing is sampled) until the resend cursor reaches sampled territory -
+					// the same principle onStreamData's non-aligned 16 KB cuts rely on. An uncapped send
+					// would exceed the SCTP message limit (channel.send throws, the same oversized send
+					// is retried forever) or the server's 4 MB read limit (which closes our own
+					// signaling connection - a reconnect death loop)
+					length = maxTickBytes
+					claim = claimForPos startPos + length
+
+			sendBuffer.reset
+			sendBuffer.writeInt8 cast PeerMessageType.Tick
+			sendBuffer.writeInt input.localUser.epoch            // The epoch of my stream, changes when I restart with a fresh session
+			sendBuffer.writeInt input.localUser.epochStartPos    // My bytes below this pos are history restored from before this epoch
+			sendBuffer.writeInt claim                            // I sent inputs up to and including this frame
+			sendBuffer.writeInt startPos                         // I send inputs starting from the last pos you received
+			sendBuffer.writeInt receiver.inputs.writePos         // I received your inputs up to this pos
+			sendBuffer.writeBuffer inputs, startPos, length
+			sendBuffer.writeInt core.lastChecksumFrame                      // The last frame with a computed state checksum
+			sendBuffer.writeFloat64 core.getChecksum core.lastChecksumFrame // The checksum of that frame
+			sendBuffer.writeInt core.getChecksumRoster core.lastChecksumFrame // The roster that state was computed from - checksums of diverged rosters are incomparable
+
+			core.tickMessageSize = send receiver, sendBuffer
+
+			// These stream bytes are now on the wire and must never be mutated in place
+			// (see the TouchMove patch guard in input.handleTouchEvent)
+			if input.localUser.sentInputsUpToPos < startPos + length then input.localUser.sentInputsUpToPos = startPos + length
+
+			if core.verbose and length > 0 then core.log "[{claim}] <{receiver.id}> #send -->> sending {length} bytes, from {startPos} to {startPos + length} of {inputs.writePos}{viaChannel ? "" : " via server"}"
+
+	private onTick: InternalUser sender, Buffer buffer
+		let epoch = buffer.readInt                          // The epoch of the sender's stream, changes when the sender restarts with a fresh session
+		let epochStartPos = buffer.readInt                  // The sender's bytes below this pos are history restored from before this epoch
+		let claim = buffer.readInt                          // The sender sent inputs up to and including this frame
+
+		// A removed user's stream is closed forever - their bytes must not enter our timeline
+		// (handlePeerMessage already answered the message with a Removed notice)
+		if sender.removed then return
+
+		// An accepted Tick proves the sender still counts us as a live player - the arbitration
+		// of a Removed notice refuses to wipe while others are actively playing with us
+		sender.lastTickReceivedTime = core.currentTime
+
+		bool epochConflict = epoch != sender.epoch
+
+		let incomingStartPos = buffer.readInt           // The sender sent inputs starting from this pos
+		let ackPos = buffer.readInt                     // The sender received my inputs up to this pos
+
+		// Peek the length to validate the write before it happens (readBuffer reads the length itself)
+		let savedReadPos = buffer.readPos
+		let length = buffer.readInt
+		buffer.readPos = savedReadPos
+
+		// Ack progress: the receiver is consuming our chunked catch-up (see sendInputs).
+		// Acks only move forward - a late message must not regress the resend cursor.
+		// Exception: an epoch other than the one we recorded means the sender restarted and now
+		// holds only what its IndexedDB restore gave back of our stream (possibly nothing), so
+		// that message's ack is the truth even when it regresses. Normally the sender's restore
+		// request resets the cursor to 0 anyway - but if that request was lost (the sender rejoined
+		// while we were unreachable), this is the only signal left: without it we would resend from
+		// the stale cursor forever and the sender would drop every Tick as a gap. Processed even
+		// when we refuse the epoch below, otherwise the deadlock is mutual: we don't take their
+		// bytes AND they never receive ours
+		if epochConflict and ackPos < sender.receivedMyInputsUpToPos
+			core.log "[{claim}] <{sender.id}> #epoch Epoch {epoch} acks only {ackPos} of our {input.localUser.inputs.writePos} bytes (cursor was {sender.receivedMyInputsUpToPos}) -> resend from {ackPos}"
+		if epochConflict or ackPos > sender.receivedMyInputsUpToPos
+			sender.receivedMyInputsUpToPos = ackPos
+			sender.lastAckProgressTime = core.currentTime
+
+		// A new epoch means the sender restarted and lost its in-memory stream (page refresh with
+		// the same userId). Its stream only continues the one we stored if it restored at least
+		// everything we hold - otherwise its writes would retroactively change history that our
+		// snapshots and read positions reference, so we offer it its own history back instead
+		// (the rejoiner discards its fork and reloads when it sees the offer, see onOwnHistory)
+		if epochConflict
+			if sender.epoch != 0 and epochStartPos < sender.inputs.writePos
+				sendStreamChunk sender, sender.id, epochStartPos // Rate-limited, gives the rejoiner its own history back
+				return
+			// First contact after OUR reload (epoch 0 = we only hold what IndexedDB restored).
+			// When the live epoch continues BELOW our copy, our tail beyond epochStartPos is only
+			// the sender's real stream if it was persisted under this very epoch. A different
+			// stored epoch means the sender restarted since and re-recorded from epochStartPos -
+			// our tail is a dead lineage nobody else plays (a reload storm can strand the only
+			// copy of it in our IndexedDB: the sender's own restore found no live peer holding
+			// its bytes and continued from less, lifecycle seed 426625824). The live sender is
+			// authoritative for its own stream: cut our copy back and let the cumulative resend
+			// refill the truth (our regressed ack is accepted under the epoch-conflict exception)
+			// Only bytes that came from OUR IndexedDB restore are lineage-suspect: bytes served
+			// by the live mesh (StreamData fetches for an away user) are already the group's truth
+			if sender.epoch == 0 and epochStartPos < sender.restoredFromDBUpTo and epoch != sender.storedEpoch
+				if sender.inputs.readPos > epochStartPos
+					// The dead tail is already parsed into our replayed state and the pin may sit
+					// above those frames - no local rewind can unbake them, rebuild from the mesh
+					core.log "[{claim}] <{sender.id}> #epoch Restored copy beyond {epochStartPos} is a dead lineage (stored epoch {sender.storedEpoch}, live epoch {epoch}) and already parsed -> rebuilding from the mesh"
+					core.rebuildPending = forkRecoveryReload "user {sender.id}'s restored stream is a dead lineage beyond {epochStartPos}"
+					if core.rebuildPending then return
+				else
+					core.log "[{claim}] <{sender.id}> #epoch Cutting our restored copy of their stream from {sender.inputs.writePos} back to {epochStartPos}: persisted under epoch {sender.storedEpoch}, their live epoch {epoch} re-recorded from there"
+					sender.inputs.writePos = epochStartPos
+					sender.inputFrame = -1
+					core.truncateStoredStream sender, epochStartPos
+					core.markRemoteChange 0
+			core.log "[{claim}] <{sender.id}> #epoch Accepting new stream epoch {epoch} (was {sender.epoch}), continued from {epochStartPos}, we stored {sender.inputs.writePos}"
+			sender.epoch = epoch
+
+		// Only contiguous appends are allowed: the stream is append-only within an epoch and snapshots
+		// reference positions in it, so a write must neither leave a gap nor shrink what we already have
+		// (dropped bytes are repaired by the cumulative resend of the next Tick).
+		// Gap drops are the packet-loss signal: counted always, logged at most every 2 seconds
+		// (the cumulative count also appears in the periodic #status summary)
+		if incomingStartPos > sender.inputs.writePos
+			sender.droppedTickCount++
+			let now = core.currentTime
+			if now > sender.lastDropLogTime + 2000
+				sender.lastDropLogTime = now
+				core.log "[{claim}] <{sender.id}> #receive Dropped Tick (gap): bytes start at {incomingStartPos}, we have {sender.inputs.writePos} ({sender.droppedTickCount} drops so far)"
+			return
+		if incomingStartPos + length < sender.inputs.writePos
+			// A late or duplicated message on the unreliable channel - routine, only counted
+			sender.droppedTickCount++
+			return
+
+		buffer.readBuffer sender.inputs, incomingStartPos
+
+		// Claims only move forward, and only when the claimed bytes are actually here.
+		// A claim advance is what makes new records parseable: tell the rollback machinery the
+		// first frame whose parse can differ (records are never stamped at or below their
+		// sender's previous claim), so the next pass rewinds no further than necessary
+		if claim > sender.inputFrame
+			core.markRemoteChange sender.inputFrame + 1
+			sender.inputFrame = claim
+
+		if core.verbose and length > 0 then core.log "[{claim}] <{sender.id}> #receive <<-- received {length} bytes, up to {sender.inputs.writePos}"
+
+		// Checksum
+		int checksumFor = buffer.readInt
+		float checksum = buffer.readFloat64
+		int checksumRoster = buffer.readInt
+		core.onRemoteChecksum checksumFor, checksum, checksumRoster
+
+		// Store incoming inputs of remote users is not needed - only our own inputs are persisted
+
+	// --------------------------------------------- Claims for chunked Ticks ---------------------------------------------
+
+	// Samples of "bytes [0, claimSamplePositions[i]) of my stream contain all my inputs up to and
+	// including frame claimSampleFrames[i]" - exactly what a claim promises, and true at every send
+	// because the claim core.onFrame passes in only covers bytes already written. Every sample
+	// position is also a record boundary (samples are taken between frames), so chunked Ticks are
+	// cut here and a receiver's stream never ends in the middle of an input record.
+	// Sampled once per frame. Never pruned: it grows orders of magnitude slower than the input
+	// stream itself, which is append-only
+	private int[] claimSamplePositions
+	private int[] claimSampleFrames
+
+	private recordClaimSample: int writePos, int inputFrame
+		let count = claimSamplePositions.length
+		if count > 0 and claimSamplePositions[count-1] == writePos
+			// Same bytes, newer claim: keep the newest claim for this position
+			claimSampleFrames[count-1] = inputFrame
+		else
+			claimSamplePositions.add writePos
+			claimSampleFrames.add inputFrame
+
+	// The index of the newest sample whose position lies at or below pos; -1 when no sample qualifies
+	// (start of a session, or restored history from before this session - restored bytes were never sampled)
+	private int sampleIndexForPos: int pos
+		int low = 0
+		int high = claimSamplePositions.length - 1
+		int result = -1
+		while low <= high
+			int mid = math.floor((low + high) / 2)
+			if claimSamplePositions[mid] <= pos
+				result = mid
+				low = mid + 1
+			else
+				high = mid - 1
+		return result
+
+	// The newest sampled claim whose bytes lie fully below pos; -1 when no sample qualifies.
+	// Receivers start at inputFrame -1 and claims only move forward, so -1 is always safe
+	private int claimForPos: int pos
+		int index = sampleIndexForPos pos
+		return index == -1 ? -1 : claimSampleFrames[index]
+
+	// The largest record-aligned position at or below pos (0 when no sample qualifies)
+	private int alignedCutBelow: int pos
+		int index = sampleIndexForPos pos
+		return index == -1 ? 0 : claimSamplePositions[index]
+
+	// --------------------------------------------- Stream transfer ---------------------------------------------
+
+	// Any user's input stream can be fetched from any peer. Used for:
+	// - restoring our own stream after a page refresh (peers still hold it)
+	// - fetching a removed user's remaining inputs (another client received more than we did)
+	// - the pre-removal gossip of the host (merge everything the mesh knows before removing)
+	private requestStreamFromAllPeers: int streamUserId
+		let streamUser = input.internalUsers[streamUserId]
+		if not streamUser then return
+		for input.internalUsers as peer
+			if . and not .local and .id != streamUserId and not .removed
+				if hasOpenChannel(.) or ServerNetwork.connected
+					sendBuffer.reset
+					sendBuffer.writeInt8 cast PeerMessageType.StreamRequest
+					sendBuffer.writeInt streamUserId
+					sendBuffer.writeInt streamUser.inputs.writePos
+					send ., sendBuffer
+
+	// A peer asks for a user's input stream as we stored it, starting at fromPos.
+	// The answer always reports the total length and the claim, even when there are no new bytes,
+	// so the requester learns how much exists. Rate-limited per requesting peer
+	private onStreamRequest: InternalUser requester, Buffer buffer
+		int streamUserId = buffer.readInt
+		int fromPos = buffer.readInt
+
+		// A rejoiner asking for its own history also has none of our inputs any more
+		// -> resend our own stream from position 0 (the explicit positions make this idempotent)
+		if streamUserId == requester.id and requester.receivedMyInputsUpToPos > 0
+			core.log "#stream <{requester.id}> Rejoiner asks for its own history -> resend our inputs from 0"
+			requester.receivedMyInputsUpToPos = 0
+
+		sendStreamChunk requester, streamUserId, fromPos
+
+	private sendStreamChunk: InternalUser requester, int streamUserId, int fromPos
+		let now = core.currentTime
+		if now < requester.lastStreamSentTimeByUserId[streamUserId] + 200 then return
+		requester.lastStreamSentTimeByUserId[streamUserId] = now
+
+		let streamUser = input.internalUsers[streamUserId]
+
+		// Even a peer that doesn't know the stream's user answers (totalLength 0): the removal
+		// gossip needs a confirmation from EVERY living peer before it may conclude, and a fresh
+		// joiner that never saw the leaving user would otherwise stall the gossip until its
+		// hard timeout
+		int totalLength = streamUser ? streamUser.inputs.writePos : 0
+		int length = math.min(totalLength - fromPos, maxTickBytes)
+		if length < 0 then length = 0
+		int claim = not streamUser ? -1 : streamUser.local ? input.localUser.inputFrame - 1 : streamUser.inputFrame
+		bool removed = streamUser and streamUser.removed
+		int removedAfterFrame = removed ? streamUser.removedAfterFrame : int.maxValue
+
+		core.log "#stream <{requester.id}> Sending {length} bytes of user {streamUserId}'s stream at {fromPos} of {totalLength}, claim {claim}, removedAfterFrame:{removedAfterFrame}"
+		sendBuffer.reset
+		sendBuffer.writeInt8 cast PeerMessageType.StreamData
+		sendBuffer.writeInt streamUserId
+		sendBuffer.writeInt totalLength
+		sendBuffer.writeInt claim
+		sendBuffer.writeBool removed
+		if removed then sendBuffer.writeInt removedAfterFrame
+		sendBuffer.writeInt fromPos
+		// The payload is length-prefixed even when empty (an unknown stream answers with 0 bytes)
+		if streamUser
+			sendBuffer.writeBuffer streamUser.inputs, fromPos, length
+		else
+			sendBuffer.writeInt 0
+		send requester, sendBuffer
+
+		// Our own stream bytes sent here are on the wire and must never be mutated in place
+		// (see the TouchMove patch guard in input.handleTouchEvent)
+		if streamUser and streamUser.local and streamUser.sentInputsUpToPos < fromPos + length
+			streamUser.sentInputsUpToPos = fromPos + length
+
+	private onStreamData: InternalUser peer, Buffer buffer
+		int streamUserId = buffer.readInt
+		int totalLength = buffer.readInt
+		int claim = buffer.readInt
+		bool removed = buffer.readBool
+		int removedAfterFrame = removed ? buffer.readInt : int.maxValue
+		int startPos = buffer.readInt // The pos where these bytes start
+
+		// Our own stream: handled by the restore rules (append-only prefix)
+		if streamUserId == input.localUser.id
+			onOwnHistory peer, buffer, totalLength, claim, startPos
+			return
+
+		let streamUser = input.internalUsers[streamUserId]
+		if not streamUser or streamUser.local then return
+
+		// Removal state is part of the stream's authoritative metadata, just like its claim.
+		// Persisted cuts can outlive the host stream that originally carried the RemoveUser event;
+		// apply a peer's lower cut through the same idempotent/fork-safe path as a parsed event.
+		if removedAfterFrame < streamUser.removedAfterFrame
+			core.log "#stream <{peer.id}> User {streamUserId}'s stream carries a removal cut at frame {removedAfterFrame}"
+			input.removeUserDeterministically streamUserId, removedAfterFrame, core.frame
+
+		let savedReadPos = buffer.readPos
+		int length = buffer.readInt
+		buffer.readPos = savedReadPos
+
+		// Contiguous appends only, like onTick
+		if startPos > streamUser.inputs.writePos then return
+		if length > 0 and startPos + length > streamUser.inputs.writePos
+			buffer.readBuffer streamUser.inputs, startPos
+			core.log "#stream <{peer.id}> Received {length} bytes of user {streamUserId}'s stream, now {streamUser.inputs.writePos} of {totalLength}"
+
+		// The claim becomes valid once we hold the full stream the peer reported. Bytes between our
+		// old claim and this one may end mid-record (the 16 KB cuts here are not record-aligned),
+		// so the claim - which gates parsing - only moves when the transfer is complete
+		if streamUser.inputs.writePos >= totalLength and claim > streamUser.inputFrame
+			core.markRemoteChange streamUser.inputFrame + 1
+			streamUser.inputFrame = claim
+
+		// A removal gossip answer: the peer reported how much of the user's stream it holds. Once
+		// we hold everything it reported, its copy is merged - the host concludes the gossip when
+		// every living peer answered (removalGossipComplete). The same confirmations feed the
+		// never-seen placeholder removal (tick): it too needs an explicit "holds nothing more than
+		// you" from EVERY living peer before it may conclude the user never contributed anything
+		bool unresolvedPlaceholder = not streamUser.removed and not streamUser.presentOnServer and streamUser.inputFrame == -1
+		if (streamUser.removalGossipStart != 0 and not streamUser.removalEventWritten) or unresolvedPlaceholder
+			if streamUser.inputs.writePos >= totalLength
+				if not streamUser.gossipAnswered.includes peer.id then streamUser.gossipAnswered.add peer.id
+
+	// --------------------------------------------- Restoring our stream after a rejoin ---------------------------------------------
+
+	// When we rejoin a room with the same userId after a page refresh, our in-memory input stream
+	// is gone, but IndexedDB and every peer still hold a copy of it. We restore the longest copy
+	// we can get, so our outgoing Ticks continue the old stream instead of overwriting it from
+	// position 0 on every peer (which would corrupt their snapshots)
+
+	// A random non-zero id for this session's input stream, assigned in core.join (0 means unknown)
+	js int generateEpoch
+		return Math.floor(Math.random() * 0x3fffffff) + 1
+
+	bool restoring
+	private float restoreDeadline
+	private float restoreStartTime
+	private float lastRestoreWaitLogTime
+	private float nextRestoreRequestTime
+
+	// The restore ended without every live peer confirming how much of our previous stream it
+	// holds (they were unreachable during the restore window). A returning peer may still hold
+	// MORE of our old stream than we restored, so until every live peer confirmed - or was
+	// removed from the game (a removed user that returns wipes its storage and rejoins fresh,
+	// so its copy of our old stream dies with it) - we must not append new input records and
+	// must not raise our claims: new bytes would fork the longer copy (a peer holding less
+	// accepts the fork, the peer holding more refuses it, and their copies of our stream can
+	// never match again), and a claim covering frames whose old records may still surface would
+	// make receivers apply those records at the wrong frames (their rewind snapshots are only
+	// pinned down to claim+1). Enforced in core.inputRecordingPaused (input recording),
+	// core.onFrame (the claim counter stays at the floor adopted from confirmed peers) and
+	// core.startConnected (Join deferral); resolved in tickHoldingConfirmations
+	bool holdingConfirmationPending
+
+	// Called from ServerNetwork.onJoinResponse when we joined with a preassigned userId and other
+	// users exist in the room. While restoring is set, ServerNetwork.onPong delays startConnected,
+	// so we neither append new inputs to our stream nor send Ticks until the restore settled
+	startRestore
+		restoring = true
+		restoreStartTime = core.currentTime
+		restoreDeadline = core.currentTime + 5000
+		nextRestoreRequestTime = 0
+		core.log "#restore Joined with a preassigned userId -> requesting our previous session's input stream from all peers (we hold {input.localUser.inputs.writePos} bytes from IndexedDB)"
+
+	private tickRestore: float now
+		// Request our history from every peer that hasn't answered yet (repeated every second:
+		// the data channel is unreliable and the channels open at different times)
+		if now >= nextRestoreRequestTime
+			nextRestoreRequestTime = now + 1000
+			for input.internalUsers as user
+				if . and not .local and .historyTotalLength < input.localUser.inputs.writePos and (hasOpenChannel(.) or ServerNetwork.connected)
+					core.log "#restore <{.id}> Requesting our input history from {input.localUser.inputs.writePos}"
+					sendBuffer.reset
+					sendBuffer.writeInt8 cast PeerMessageType.StreamRequest
+					sendBuffer.writeInt input.localUser.id
+					sendBuffer.writeInt input.localUser.inputs.writePos
+					send ., sendBuffer
+
+		// Finished when every peer told us the total it holds and we received all of it,
+		// or when the deadline passed (a peer is unreachable -> its copy is lost to us; our
+		// new epoch keeps peers that still hold more of our old stream from being corrupted)
+		bool allAnswered = true
+		bool presentUnanswered = false
 		for input.internalUsers as user
-			if user and user.dataChannels
+			if . and not .local and not .removed
+				if .historyTotalLength == -1 or .historyTotalLength > input.localUser.inputs.writePos
+					allAnswered = false
+					if .historyTotalLength == -1 and .presentOnServer then presentUnanswered = true
+
+		if allAnswered
+			finishRestore "all peers answered"
+		else
+		if now > restoreDeadline
+			// Don't give up while a server-listed peer simply hasn't answered yet: starting without
+			// its copy risks appending a fork that only a discard-reload can repair, and right after
+			// a reload the connections can take several seconds to re-establish. Waiting also means
+			// the peers' streams arrive before we start stepping, so the catch-up replay parses them
+			// at their true frames. Capped: a listed-but-dead peer must not block us forever
+			if presentUnanswered and now < restoreStartTime + 30000
+				restoreDeadline = now + 1000
+				if now > lastRestoreWaitLogTime + 5000
+					lastRestoreWaitLogTime = now
+					core.log "#restore Waiting for present peers to answer ({math.round(now - restoreStartTime)} ms)"
+			else
+				finishRestore "timeout"
+
+	private finishRestore: string reason
+		restoring = false
+		input.localUser.epochStartPos = input.localUser.inputs.writePos
+		core.log "#restore Restore finished ({reason}): our own new inputs continue at {input.localUser.epochStartPos}"
+
+		// Peers that never answered may still hold more of our previous stream than we restored
+		// -> hold back new inputs and claims until every live peer confirmed its holdings, so
+		// the doomed fork bytes never exist (see holdingConfirmationPending)
+		string unconfirmedIds = ""
+		for input.internalUsers as user
+			if . and not .local and not .removed and (.historyTotalLength == -1 or .historyTotalLength > input.localUser.inputs.writePos)
+				unconfirmedIds += " {.id}"
+		if unconfirmedIds
+			holdingConfirmationPending = true
+			core.log "#restore Peers{unconfirmedIds} did not confirm their holdings of our stream -> not appending new inputs until every live peer confirmed"
+
+	// While holdingConfirmationPending: request our history from every peer that has not
+	// confirmed yet (the restore's request loop, continued past the restore timeout), and open
+	// the gate once every live peer confirmed. A peer that never returns stops blocking when
+	// the removal protocol removes it from the game
+	private tickHoldingConfirmations: float now
+		bool allConfirmed = true
+		for input.internalUsers as user
+			if . and not .local and not .removed and (.historyTotalLength == -1 or .historyTotalLength > input.localUser.inputs.writePos)
+				allConfirmed = false
+				if now >= nextRestoreRequestTime and (hasOpenChannel(.) or ServerNetwork.connected)
+					core.log "#restore <{.id}> Requesting our input history from {input.localUser.inputs.writePos} (holding confirmation pending)"
+					sendBuffer.reset
+					sendBuffer.writeInt8 cast PeerMessageType.StreamRequest
+					sendBuffer.writeInt input.localUser.id
+					sendBuffer.writeInt input.localUser.inputs.writePos
+					send ., sendBuffer
+		if now >= nextRestoreRequestTime then nextRestoreRequestTime = now + 1000
+		if allConfirmed then finishHoldingConfirmations
+
+	// Every live peer confirmed its holdings: we hold the longest copy of our previous stream
+	// (onOwnHistory adopted the reported bytes and raised epochStartPos and the claim floor),
+	// so our new appends continue the group timeline instead of forking it
+	private finishHoldingConfirmations
+		let localUser = input.localUser
+		// The gate can open from a network callback between animation frames. Advance the stamp
+		// BEFORE recording resumes: the next onFrame may first rewind a large integration pass,
+		// and an input arriving in that window would otherwise be stamped at the old restore floor
+		// (hundreds of frames below the live frame), retroactively changing certified history.
+		localUser.startInputFrame math.max(core.frame+1, localUser.inputFrame)
+		holdingConfirmationPending = false
+		// The gate held our claim (and with it the snapshot pin) down; restored records may have
+		// arrived below existing ring snapshots - force the next pass back to the pinned snapshot
+		core.markRemoteChange 0
+		core.log "#restore Every live peer confirmed its holdings of our stream -> new inputs continue at {localUser.inputs.writePos}, stamps from {localUser.inputFrame}"
+		// A rejoiner that could restore nothing at all (fresh IndexedDB and no live peer held
+		// our old stream) deferred its Join event until now (see core.startConnected)
+		if core.mode == Connected and localUser.inputs.writePos == 0 and localUser.epochStartPos == 0
+			core.log "handleJoin (deferred)", core.frame
+			localUser.startInputFrame 0
+			input.handleJoin core.frame, core.account
+
+	// Our own previous-session input stream as a peer stored it.
+	// Bytes are append-only: we may only adopt a longer history while our stream is still exactly
+	// the restored prefix - once we appended our own new inputs, nothing below writePos may change
+	// any more (our snapshots and the other peers already reference it)
+	private onOwnHistory: InternalUser peer, Buffer buffer, int totalLength, int claim, int startPos
+		let savedReadPos = buffer.readPos
+		let length = buffer.readInt
+		buffer.readPos = savedReadPos
+
+		if totalLength > peer.historyTotalLength then peer.historyTotalLength = totalLength
+		let localUser = input.localUser
+		core.log "#restore <{peer.id}> Received {length} bytes of our own history at {startPos} of {totalLength} (claimed up to frame {claim}), we have {localUser.inputs.writePos}"
+
+		if not restoring and localUser.inputs.writePos != localUser.epochStartPos
+			// Irreconcilable fork: a peer holds parts of our previous stream that our new appends
+			// overwrote (our restore requests were lost, or IndexedDB lagged behind what we had
+			// sent before the reload). Our appends can never join the group timeline - the peers
+			// refuse them, correctly.
+			// A fork is only proven when the peer holds MORE of our stream than we ever produced
+			// (previous-session bytes we lost) or when its bytes DIFFER from ours at the same
+			// positions. The peer's total merely exceeding epochStartPos is normal once the game
+			// runs - peers hold our current-session appends too, and on a high-latency link late
+			// duplicate restore answers routinely arrive after we started appending; treating those
+			// as forks caused spurious reload loops.
+			// The resilient exit: discard our forked inputs and reload. The restore then rebuilds
+			// our stream purely from the peers' copies (this peer provably holds it and is alive -
+			// it just sent it to us) and we resume as the same player. Only our few forked inputs
+			// are lost, which nobody else ever saw
+			if totalLength > localUser.inputs.writePos or not buffer.chunkMatches(localUser.inputs, startPos)
+				core.log "#restore <{peer.id}> Peer stored {totalLength} bytes of our previous stream (we hold {localUser.inputs.writePos}, continued from {localUser.epochStartPos}), which forks our appended inputs -> discarding our forked inputs"
+				discardForkedInputsAndReload
+				return
+
+		// The peer's claim for our stream is the floor for the stamps of our new records: peers
+		// have parsed our old records up to it and their snapshots are only pinned down to claim+1,
+		// so a new record stamped at or below it would be applied at different frames on live peers
+		// vs replaying peers - a permanent desync. Only adopted once we hold the full stream the
+		// claim covers, so the claims we send stay truthful (like the remote rule in onStreamData)
+		adoptOwnClaimFloor totalLength, claim
+
+		if startPos > localUser.inputs.writePos then return           // Would leave a gap
+		if startPos + length <= localUser.inputs.writePos then return // Nothing new
+
+		buffer.readBuffer localUser.inputs, startPos
+		// Restored history records carry old stamps - predictions above the pin are invalid
+		core.markRemoteChange 0
+		if not restoring then localUser.epochStartPos = localUser.inputs.writePos
+		adoptOwnClaimFloor totalLength, claim
+		// More of our history may exist beyond this chunk - the 1s request loop keeps fetching.
+		// Extend the deadline while we are making progress
+		if restoring then restoreDeadline = math.max(restoreDeadline, core.currentTime + 2000)
+		nextRestoreRequestTime = 0
+		core.log "#restore <{peer.id}> Restored our input stream to {localUser.inputs.writePos} bytes"
+
+	// Raise the stamp floor for our new input records to one above the claim a peer reported for
+	// our own (pre-reload) stream. core.onFrame keeps localUser.inputFrame monotonic from there
+	private adoptOwnClaimFloor: int totalLength, int claim
+		let localUser = input.localUser
+		if localUser.inputs.writePos >= totalLength and claim + 1 > localUser.inputFrame
+			core.log "#restore Our previous session already claimed inputs up to frame {claim} -> new records start at frame {claim + 1}"
+			localUser.inputFrame = claim + 1
+
+	// --------------------------------------------- Ping/Pong ---------------------------------------------
+
+	private pingPeers
+		for input.internalUsers as user
+			if user and not user.local and not user.removed and hasOpenChannel user
 				sendBuffer.reset
-				sendBuffer.writeInt8 cast NetworkMessageType.Ping
+				sendBuffer.writeInt8 cast PeerMessageType.Ping
 				sendBuffer.writeFloat64 core.currentTime
 				send ., sendBuffer
-				
+
 	private onPing: InternalUser user, Buffer buffer
 		float pingTime = buffer.readFloat64
 		sendBuffer.reset
-		sendBuffer.writeInt8 cast NetworkMessageType.Pong
+		sendBuffer.writeInt8 cast PeerMessageType.Pong
 		sendBuffer.writeFloat64 pingTime
 		send user, sendBuffer
-		
+
 	private onPong: InternalUser user, Buffer buffer
 		float now = core.currentTime
 		float pingTime = buffer.readFloat64
 		float pingPongTime = now - pingTime
 		let player = input.players.find.id == user.id
 			statistics.add "pingPongTime" userIndex:player.playerIndex, color:player.playerColor, value:pingPongTime, set:3, isPerFrame:false
-				
-	// --------------------------------------------- Checksum ---------------------------------------------
-	
-	sendChecksum: int checksumFor, float checksum
-		sendBuffer.reset
-		sendBuffer.writeInt8 cast NetworkMessageType.Checksum
-		sendBuffer.writeInt checksumFor
-		sendBuffer.writeFloat64 checksum
-		
+
+	// --------------------------------------------- Background tab ---------------------------------------------
+
+	// While the tab is hidden, requestAnimationFrame stops and timers are throttled (Chrome fires
+	// them once per minute after 5 minutes in background; iOS Safari suspends JS entirely), so the
+	// main loop falls silent and peers would start reconnect churn - ICE restarts, re-initiates,
+	// video teardown - even though the hidden player is fine. Three measures:
+	// - peers are told when our tab hides (Status), so they show us as away and raise our silence
+	//   tolerance instead of reconnecting (see tick)
+	// - a Web Worker timer (throttled far less than main-thread timers) wakes the main thread so
+	//   heartbeats, acks and the signaling connection stay alive while hidden (onHeartbeat)
+	// - pagehide sends a best-effort Leaving so peers stop reconnect attempts immediately instead
+	//   of discovering the silence 10 seconds later
+	private object heartbeatWorker
+
+	js void setupBackgroundBehaviour
+		try {
+			if(PeerNetwork.heartbeatWorker) return;
+			let workerUrl = URL.createObjectURL(new Blob(["setInterval(() => postMessage(0), 5000)"], {type: "application/javascript"}));
+			PeerNetwork.heartbeatWorker = new Worker(workerUrl);
+			PeerNetwork.heartbeatWorker.onmessage = () => PeerNetwork.onHeartbeat();
+
+			document.addEventListener("visibilitychange", () => {
+				core.log("#background Visibility changed to " + document.visibilityState);
+				// A hidden tab can be killed without any further event (mobile background reclaim),
+				// so the input tail is flushed here as well as on pagehide
+				if(document.hidden && IndexedDB.db) core.storeInputsToDB(true);
+				PeerNetwork.sendStatus(document.hidden);
+			});
+			// pagehide is the last reliable event before the tab closes, navigates away or enters
+			// the back/forward cache; pageshow with persisted is the return from that cache
+			window.addEventListener("pagehide", () => {
+				// Flush the input tail before the page goes away: inputs younger than the periodic
+				// persist interval exist only in memory, and a simultaneous reload of every holder
+				// (both players hit refresh) would lose them everywhere (best-effort - the puts
+				// race the teardown, but a same-tab reload normally lets them commit)
+				if(IndexedDB.db) core.storeInputsToDB(true);
+				PeerNetwork.sendLeaving();
+			});
+			window.addEventListener("pageshow", e => { if(e.persisted) PeerNetwork.sendStatus(document.hidden); });
+		} catch(e) {
+			core.log("#background Setup failed: " + e.message);
+		}
+
+	private inline js bool isPageHidden => document.hidden
+
+	// Called by the worker timer; only does work while the tab is hidden - in the foreground
+	// core.onFrame already does all of this on every animation frame
+	private onHeartbeat
+		if not isPageHidden or core.mode != Connected then return
+		// Keep the signaling connection alive (reconnect + ping), keep our peers' silence timers
+		// fresh, and keep acking the inputs that still arrive while we are hidden (the data
+		// channel's onmessage is event-driven and not throttled)
+		ServerNetwork.tick
+		pingPeers
+		sendInputs math.max(input.localUser.inputFrame-1, -1)
+
+	// Tell every peer whether our tab is hidden, so they can show us as away and relax our
+	// silence tolerance instead of reconnecting
+	private sendStatus: bool hidden
+		core.log "#background Sending status hidden:{hidden}"
 		for input.internalUsers as user
-			if user and user.dataChannels
+			if . and not .local and not .removed
+				sendBuffer.reset
+				sendBuffer.writeInt8 cast PeerMessageType.Status
+				sendBuffer.writeBool hidden
 				send ., sendBuffer
 
-	onChecksum: InternalUser user, Buffer buffer
-		int checksumFor = buffer.readInt
-		float checksum = buffer.readFloat64
-		if core.verbose then core.log "<{user.id}> #{checksumFor} {checksum}"
-		
-		let myChecksum = core.checksums[checksumFor]
-		if !myChecksum
-			core.checksums[checksumFor] = checksum
-		else
-		if !myChecksum.isApproximately(checksum)
-			core.onWrongChecksum checksumFor, mine:myChecksum theirs:checksum
-				
+	// Best-effort goodbye when our page is closing, navigating away or entering the back/forward cache
+	private sendLeaving
+		core.log "#background Sending leaving"
+		for input.internalUsers as user
+			if . and not .local and not .removed
+				sendBuffer.reset
+				sendBuffer.writeInt8 cast PeerMessageType.Leaving
+				send ., sendBuffer
+
+	private onStatus: InternalUser user, Buffer buffer
+		user.hidden = buffer.readBool
+		core.log "#background <{user.id}> is now {user.hidden ? "hidden" : "visible"}"
+
+	private onLeaving: InternalUser user, Buffer buffer
+		user.leaving = true
+		core.log "#background <{user.id}> is leaving"
+
 	// --------------------------------------------- Media Setup ---------------------------------------------
-	
+
 	MediaDevices devices = {}
-	string videoInputId, audioInputId, audioOutputId	
-	
+	string videoInputId, audioInputId, audioOutputId
+
+	// Set up the local camera and microphone
+	// This never throws: a player without a working camera or microphone must still be able to join,
+	// the join continues with degraded media and PeerNetwork.error tells the player what is missing
 	js async void setupLocalMedia: bool enableVideo, bool enableAudio
 		core.log("setupLocalMedia: start")
 		PeerNetwork.enableVideo = enableVideo
 		PeerNetwork.enableAudio = enableAudio
 		if(!enableVideo && !enableAudio) return
-			
+		PeerNetwork.mediaSetupPromise = PeerNetwork.requestLocalMedia()
+		await PeerNetwork.mediaSetupPromise
+
+	// Peer connections are only created after the media setup settled, so the local tracks
+	// can be added when the connection is created (the media setup never rejects).
+	// getUserMedia can hang forever (camera still held by a closing window, a pending OS permission
+	// prompt) and must not block the peer connections with it: after 5s the connections are created
+	// without local tracks (setupRemoteMedia negotiates receive-only transceivers instead) and
+	// reconnectPeersWhenLateMediaSettles renegotiates the tracks in once the media arrives
+	private js async void whenLocalMediaSettled
+		if(!PeerNetwork.mediaSetupPromise || PeerNetwork.mediaSetupTimedOut) return;
+		let timedOut = await Promise.race([
+			PeerNetwork.mediaSetupPromise.then(() => false),
+			new Promise(resolve => setTimeout(() => resolve(true), 5000)),
+		]);
+		if(timedOut && !PeerNetwork.mediaSetupTimedOut) {
+			PeerNetwork.mediaSetupTimedOut = true;
+			core.log("#camera Local media setup still pending after 5000 ms -> creating peer connections without local tracks");
+			PeerNetwork.reconnectPeersWhenLateMediaSettles();
+		}
+
+	// The media setup outlived the timeout above: when it finally settles with a media stream,
+	// recreate the existing peer connections so the new tracks reach them (sending a new track
+	// kind needs a renegotiation that only the offer side starts - the same path as retryMediaSetup)
+	private js async void reconnectPeersWhenLateMediaSettles
+		let promise = PeerNetwork.mediaSetupPromise;
+		let gotMedia = await promise;
+		PeerNetwork.mediaSetupTimedOut = false;
+		// A media retry replaced the promise meanwhile - retryMediaSetup renegotiates on its own
+		if(PeerNetwork.mediaSetupPromise != promise) return;
+		if(!gotMedia) return; // Settled without media - the receive-only transceivers already cover this
+		core.log("#camera Local media settled late -> reconnecting peers to attach the local tracks");
+		for(let user of input.internalUsers) {
+			if(user && !user.local && !user.removed && user.peerConnection) {
+				PeerNetwork.initiate(user);
+			}
+		}
+
+	// Request the local camera and microphone with a fallback ladder:
+	// video+audio -> video only -> audio only -> no media at all
+	// Each degradation sets PeerNetwork.error so the lobby can show the player what is missing
+	// Returns true when a local media stream was created
+	private js async bool requestLocalMedia
+		let requestVideo = PeerNetwork.enableVideo;
+		let requestAudio = PeerNetwork.enableAudio;
+		let videoConstraints = {width: 500, height: 375};
+
+		let attempts = [];
+		if(requestVideo && requestAudio) attempts.push({video: videoConstraints, audio: true});
+		if(requestVideo)                 attempts.push({video: videoConstraints, audio: false});
+		if(requestAudio)                 attempts.push({video: false, audio: true});
+		if(attempts.length == 0) return false;
+
+		// Try each step of the fallback ladder until one succeeds
+		let mediaStream = null;
+		let lastError = null;
+		for(let constraints of attempts) {
+			try {
+				mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+				break;
+			} catch(error) {
+				lastError = error;
+				core.log("#camera getUserMedia failed (video:"+!!constraints.video+" audio:"+!!constraints.audio+"): "+error.name+" "+error.message);
+			}
+		}
+
+		if(!mediaStream) {
+			// No media at all -> the player still joins, just without camera and microphone
+			if(lastError && lastError.name == "NotAllowedError") {
+				PeerNetwork.error = "To play with friends over a video call, you need to allow access to your webcam. Joining without video - allow access and press Retry.";
+			} else {
+				PeerNetwork.error = "Can't access your camera or microphone - joining without video. Make sure it's not used by another application and press Retry.";
+			}
+			core.log("#camera Local media setup finished without media, joining without camera and microphone");
+			return false;
+		}
+
+		let gotVideo = mediaStream.getVideoTracks().length > 0;
+		let gotAudio = mediaStream.getAudioTracks().length > 0;
+		if(requestVideo && !gotVideo) {
+			PeerNetwork.error = "Can't access your camera - joining without video. Make sure it's not used by another application and press Retry.";
+		} else if(requestAudio && !gotAudio) {
+			PeerNetwork.error = "Can't access your microphone - joining without sound. Press Retry to try again.";
+		} else {
+			PeerNetwork.error = "";
+		}
+
+		// Stop the previous local tracks (after a retry) before replacing the stream
+		if(input.localUser.mediaStream) {
+			for(let track of input.localUser.mediaStream.getTracks()) track.stop();
+		}
+		input.localUser.mediaStream = mediaStream;
+
+		// Attach the stream to the local video elements (they already exist when the media setup finished late)
+		for(let videoElement of input.localUser.videoElements) {
+			videoElement.srcObject = mediaStream;
+		}
+
+		// Enummerate local devices
+		// This must never reject: peer connections wait for this promise and must always be created
 		try {
-			// Create local media stream
-			input.localUser.mediaStream = await navigator.mediaDevices.getUserMedia({
-				video: {width: 500, height: 375},
-				audio: enableAudio
-			});
-			core.log("setupLocalMedia: getUserMedia done")
-			
-			// Enummerate local devices
 			let devices = await navigator.mediaDevices.enumerateDevices();
-			core.log("setupLocalMedia: enumerateDevices done")
-			
+			core.log("setupLocalMedia: enumerateDevices done");
+
+			PeerNetwork.devices.videoInput.length = 0;
+			PeerNetwork.devices.audioInput.length = 0;
+			PeerNetwork.devices.audioOutput.length = 0;
 			for(let device of devices) {
 				switch(device.kind) {
 					case "videoinput":  PeerNetwork.devices.videoInput.push(device); break;
@@ -513,34 +2377,55 @@ internal transient skipInit unit PeerNetwork
 					case "audiooutput": PeerNetwork.devices.audioOutput.push(device); break;
 				}
 			}
-			PeerNetwork.videoInputId = input.localUser.mediaStream.getVideoTracks()[0]?.getSettings().deviceId || PeerNetwork.devices.videoInput[0]?.deviceId
-			PeerNetwork.audioInputId = input.localUser.mediaStream.getAudioTracks()[0]?.getSettings().deviceId || PeerNetwork.devices.audioInput[0]?.deviceId
+			PeerNetwork.videoInputId = mediaStream.getVideoTracks()[0]?.getSettings().deviceId || PeerNetwork.devices.videoInput[0]?.deviceId
+			PeerNetwork.audioInputId = mediaStream.getAudioTracks()[0]?.getSettings().deviceId || PeerNetwork.devices.audioInput[0]?.deviceId
 			PeerNetwork.audioOutputId = PeerNetwork.devices.audioOutput[0]?.deviceId
-			statistics.cameraTime = performance.now() - statistics.startTime
-			core.log("#camera Setup Local Camera and Microphone after "+statistics.cameraTime+" ms")
-			
 		} catch(error) {
-			core.log(error.message)
-			if(error.name == "NotAllowedError") {
-				PeerNetwork.error = "To play with friends over a video call, you need to allow access to your webcam."
-			} else {
-				PeerNetwork.error = "Can't access webcam. Please make sure it's not used by another application."
-			}
-			core.errorMessage = error.message
-			throw error
+			core.log("#camera enumerateDevices failed: "+error.name+" "+error.message);
 		}
-	
+		statistics.cameraTime = performance.now() - statistics.startTime
+		core.log("#camera Set up local camera and microphone after "+statistics.cameraTime+" ms, video:"+gotVideo+" audio:"+gotAudio)
+		return true;
+
+	// Retry the media setup after it failed or was degraded (Retry button in the lobby)
+	// On success the new tracks must reach the existing peer connections: sending a new track kind
+	// needs renegotiation, which only the offer side starts -> initiate recreates the connection with us
+	// as the offerer and adds the new tracks when the connection is created (the same path as a reconnect)
+	js async void retryMediaSetup
+		if(PeerNetwork.retryingMedia) return;
+		PeerNetwork.retryingMedia = true;
+		try {
+			core.log("#camera Media setup retry started");
+			let promise = PeerNetwork.requestLocalMedia();
+			PeerNetwork.mediaSetupPromise = promise;
+			let gotMedia = await promise;
+			if(!gotMedia) {
+				core.log("#camera Media setup retry failed, still no local media");
+				return;
+			}
+
+			// Recreate the existing peer connections so the new tracks are added to each of them
+			for(let user of input.internalUsers) {
+				if(user && !user.local && !user.removed && user.peerConnection) {
+					core.log("#camera <"+user.id+"> Reconnected peer to attach the new local tracks");
+					PeerNetwork.initiate(user);
+				}
+			}
+		} finally {
+			PeerNetwork.retryingMedia = false;
+		}
+
 	js void setVideoInput: string videoInputId
 		                   Player player
 		if(system.fastForward || input.localUser.id != player.id ||  PeerNetwork.videoInputId == videoInputId || !videoInputId) return;
 		PeerNetwork.videoInputId = videoInputId;
-		
+
 		// Create local media stream
 		input.localUser.mediaStream = await navigator.mediaDevices.getUserMedia({
 			audio: {deviceId: PeerNetwork.audioInputId},
 			video: {deviceId: PeerNetwork.videoInputId},
 		});
-		
+
 		// Update video elements and tracks
 		for(let el of input.localUser.videoElements) {
 			el.srcObject = input.localUser.mediaStream;
@@ -548,36 +2433,36 @@ internal transient skipInit unit PeerNetwork
 		const [videoTrack] = input.localUser.mediaStream.getVideoTracks();
 		for(let user of input.internalUsers) {
 			if(user?.peerConnection) {
-				const sender = user.peerConnection.getSenders().find((s) => s.track.kind === videoTrack.kind);
-				sender.replaceTrack(videoTrack);
+				const sender = user.peerConnection.getSenders().find((s) => s.track && s.track.kind === videoTrack.kind);
+				if(sender) sender.replaceTrack(videoTrack);
 			}
 		}
-			
+
 	js void setAudioInput: string audioInputId
 		                   Player player
 		if(system.fastForward || input.localUser.id != player.id || PeerNetwork.audioInputId == audioInputId || !audioInputId) return;
 		PeerNetwork.audioInputId = audioInputId;
-		
+
 		// Create local media stream
 		input.localUser.mediaStream = await navigator.mediaDevices.getUserMedia({
 			audio: {deviceId: PeerNetwork.audioInputId},
 			video: {deviceId: PeerNetwork.videoInputId},
 		});
-		
+
 		// Update tracks
 		const [audioTrack] = input.localUser.mediaStream.getAudioTracks();
 		for(let user of input.internalUsers) {
 			if(user?.peerConnection) {
-				const sender = user.peerConnection.getSenders().find((s) => s.track.kind === audioTrack.kind);
-				sender.replaceTrack(audioTrack);
+				const sender = user.peerConnection.getSenders().find((s) => s.track && s.track.kind === audioTrack.kind);
+				if(sender) sender.replaceTrack(audioTrack);
 			}
 		}
-			
+
 	js void setAudioOutput: string audioOutputId
 		                    Player player
 		if(system.fastForward || input.localUser.id != player.id || PeerNetwork.audioOutputId == audioOutputId || !audioOutputId) return;
 		PeerNetwork.audioOutputId = audioOutputId;
-		
+
 		// Update audio elements
 		for(let user of input.internalUsers) {
 			if(user) {
@@ -591,23 +2476,34 @@ internal transient skipInit unit PeerNetwork
 				}
 			}
 		}
-		audio.reload();
-		
+		sounds.reload();
+
 	private js void setupRemoteMedia: InternalUser user
 		// Remove old video elements
 		for(let videoElement of user.videoElements)
 			videoElement.remove()
 		user.videoElements.length = 0
-		
+
 		if(!PeerNetwork.enableVideo && !PeerNetwork.enableAudio) return
-			
+
 		// Add local tracks to peer connection
-		for(let track of input.localUser.mediaStream.getTracks())
-			user.peerConnection.addTrack(track, input.localUser.mediaStream);
-		
+		// When a track is not available (no, denied or broken camera/microphone), add a receive-only
+		// transceiver instead, so the connection still negotiates and the remote tracks still arrive
+		let mediaStream = input.localUser.mediaStream;
+		if(PeerNetwork.enableVideo) {
+			let videoTrack = mediaStream?.getVideoTracks()[0];
+			if(videoTrack) user.peerConnection.addTrack(videoTrack, mediaStream);
+			else           user.peerConnection.addTransceiver("video", {direction: "recvonly"});
+		}
+		if(PeerNetwork.enableAudio) {
+			let audioTrack = mediaStream?.getAudioTracks()[0];
+			if(audioTrack) user.peerConnection.addTrack(audioTrack, mediaStream);
+			else           user.peerConnection.addTransceiver("audio", {direction: "recvonly"});
+		}
+
 		// Create media stream for remote player
 		user.mediaStream = new MediaStream();
-		
+
 		// Add incoming tracks to media stream for remote player
 		user.peerConnection.ontrack = event => {
 			core.log("#peer <"+user.id+"> Add track");
@@ -620,7 +2516,7 @@ internal transient skipInit unit PeerNetwork
 		}
 
 	// --------------------------------------------- Media elements ---------------------------------------------
-	
+
 	js object createVideoElement: object stream, bool local
 		let el = document.createElement("video")
 		el.style = "border-radius: 500px; object-fit: cover; position:absolute; top:0px; left:0px; z-index:10000; visibility:hidden; pointer-events: none; user-select: none; "+(local ? "transform: scaleX(-1)" : "")
@@ -631,10 +2527,10 @@ internal transient skipInit unit PeerNetwork
 		el.srcObject = stream
 		document.body.appendChild(el)
 		return el
-		
+
 	js void removeVideoElement: object videoElement
 		videoElement.remove()
-						
+
 	js void updateVideoElement: object videoElement, float x, float y, float sizeX, float sizeY, float radius
 		videoElement.style.left = (x-sizeX/2)+"px"
 		videoElement.style.top = (y-sizeY/2)+"px"
@@ -642,6 +2538,6 @@ internal transient skipInit unit PeerNetwork
 		videoElement.style.height = sizeY+"px"
 		videoElement.style.visibility = "visible"
 		videoElement.style.borderRadius = radius+"px"
-		
+
 	js void setAudioMuted: object audioElement, bool muted
 		if(audioElement) audioElement.muted = muted

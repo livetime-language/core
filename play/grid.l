@@ -1,6 +1,14 @@
 	
 class Grid<T>
-	Vector2 size
+	// IntVector2, NOT Vector2: the declared type drives the generated deserializer's
+	// fresh-object fallback (new IntVector2), while serialization dispatches on the actual
+	// object - and every Grid construction produces an IntVector2 size. With Vector2 declared
+	// here, a rewind that had to fresh-create a Grid (its live object was replaced since the
+	// pinned snapshot was serialized, e.g. by a replayed restart's unit init) read the size as
+	// 2 float64s where 2 int32s were written - the 8-byte misalignment turned the neighboring
+	// fields into NaN/null garbage that was then serialized into checksummed snapshots
+	// (lifecycle seed 285888347). The 3D engine's Grid always declared IntVector2
+	IntVector2 size
 	T[] items
 	transient void(T item, Vector2 pos)[string] itemForCharacter = null
 	
@@ -50,7 +58,7 @@ class Grid<T>
 		                     Vector2 pos,
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
-		for(let i=0, _subject=this.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new IntVector2(i%this.size.x, Math.floor(i/this.size.x)), i)}
+		for(let _i=0, _subject=this.items, _len=_subject.length; _i<_len; ++_i) { let it = _subject[_i]; if(it) do(it, new IntVector2(_i%this.size.x, Math.floor(_i/this.size.x)), _i)}
 			
 	inline js void each: includeEmpty = false // Include items that are null
 		                 inline -> void(
@@ -58,7 +66,7 @@ class Grid<T>
 		                     Vector2 pos,
 		                     int i      // The index of the current item of the list we are iterating over with the for-loop
 		                 ) do           // Do this for each item in a list
-		for(let _size=this.size, y=0, _items=this.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new Vector2(x,y), i)}
+		for(let _size=this.size, _y=0, _items=this.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) do(_items[_y*_size.x + _x], new Vector2(_x,_y), _y*_size.x + _x)
 
 	// The amount of items in the grid	
 	importance:4 inline int length() this.items.length
@@ -133,7 +141,7 @@ global transient skipInit unit system
 		                           Vector2 pos,
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let i=0, _subject=subject.items, _len=_subject.length; i<_len; ++i) { let it = _subject[i]; if(it) do(it, new Vector2(i%subject.size.x, Math.floor(i/subject.size.x)), i)}
+		for(let _i=0, _subject=subject.items, _len=_subject.length; _i<_len; ++_i) { let it = _subject[_i]; if(it) do(it, new Vector2(_i%subject.size.x, Math.floor(_i/subject.size.x)), _i)}
 			
 	global inline js void for: Grid<T> subject      // The grid to iterate over
 		                       includeEmpty = false // Include items that are null
@@ -142,7 +150,7 @@ global transient skipInit unit system
 		                           Vector2 pos,
 		                           int i      // The index of the current item of the list we are iterating over with the for-loop
 		                       ) do           // Do this for each item in a list
-		for(let _size=subject.size, y=0, _items=subject.items; y<_size.y; ++y) for(let x=0; x<_size.x; ++x) do(_items[y*_size.x + x], new IntVector2(x,y), i)
+		for(let _size=subject.size, _y=0, _items=subject.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) do(_items[_y*_size.x + _x], new IntVector2(_x,_y), _y*_size.x + _x)
 		
 struct Vector2
 	serialize: Buffer buffer

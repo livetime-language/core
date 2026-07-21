@@ -1,5 +1,6 @@
 // Full LiveTime API. IMPORTANT: Only use the following functions and features!
-// Write code in src/app.l. Create beautiful sprites in src/sprites.l. Write simple, short, efficient code. Compile with "livetime compile".
+// Write code in src/app.l. Create beautiful sprites in src/sprites.l. Write simple, short, efficient code.
+// Check your code with "livetime check", build with "livetime build".
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
 class Player	// Classes have capitalized names. Their members are public by default
 	int        index	// Integers are 0 by default
@@ -52,7 +53,7 @@ app	// Static classes have lowercase names. Access its members with app.players,
 		drawSprite sprites.blueCircle, pos:{x, y}	// Draw sprite
 		drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
 		drawRect pos:{x,y}, size:{8,8}, fillColor:Red, outlineColor:Green	// Draw rectangle, leave out fillColor for no fill, leave out outlineColor for no outline
-		drawCircle pos:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle, radius can also be a Vector2 for an ellipse
+		drawCircle center:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle around center, radius can also be a Vector2 for an ellipse
 		clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
 		replaceColor Black with:White	// All drawing functions will replace color a with color b until stopReplacingColors is called
 		if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
@@ -61,27 +62,34 @@ app	// Static classes have lowercase names. Access its members with app.players,
 		if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 		if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 		if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
-sprites	// src/sprites.l contains all available sprites. Add additional sprites as needed.
-	blueCircle = Sprite [	// Each letter represets a color:
-		"  bbbb  "	//   Black
-		" b    b "	// d DarkGrey
-		"b      b"	// l LightGrey
-		"b      b"	// w White
-		"b      b"	// b Blue
-		"b      b"	// r Red
-		" b    b "	// g Green
+		playSound sounds.explosion, channel:2, startIndex:0, length:64	// Play sound with optional channel (0-3), startIndex (0-31) and length (0-31)
+		stopSound channel:3	// Stop sound with optional channel (all if left out)
+		playMusic music.intro, startPattern:0, fadeInDuration:1000	// Play music with optional startPattern (0-63) and fadeInDuration (in milliseconds)
+		stopMusic fadeOutDuration:500	// Stop the music with optional fade out (in milliseconds)
+		setVolume 0.5	// Set the master volume (0 to 1)
+	js void navigateTo: string url	// js keyword indicates that function body is in JavaScript. Return type is required.
+		location.href = url;	// JavaScript code. Do not use nested functions.
+sprites	// src/sprites.l contains available sprites. Add sprites as needed.
+	redSquare = Sprite(frames:3, [	// Sprites can have multiple animation frames next to each other	
+		"rrrrrrrr                "	// The sprite "redSquare" has 3 frames, each 8x8 pixels
+		"r      r rrrrrr         "	// Sprites can have a string with comma separated tags
+		"r      r r    r   rrrr  "	// Each letter represets a color:
+		"r      r r    r   r  r  "	//   Black
+		"r      r r    r   rrrr  "	// d DarkGray
+		"r      r r    r         "	// l LightGray
+		"r      r rrrrrr         "	// w White
+		"rrrrrrrr                "	// b Blue
+	])	// r Red
+	blueCircle = Sprite(tags:"blocking,hazard", [	// g Green
 		"  bbbb  "	// y Yellow
-	]	// e Earth
-	redSquare = Sprite [	// s Sand
-		"rrrrrrrr"	// p Pink
-		"r      r"	// v Violet
-		"r      r"	// B DarkBlue
-		"r      r"	// R DarkRed
-		"r      r"	// G DarkGreen
-		"r      r"	// o Orange
-		"r      r"
-		"rrrrrrrr"
-	]
+		" b    b "	// e Earth
+		"b      b"	// s Sand
+		"b      b"	// p Pink
+		"b      b"	// v Violet
+		"b      b"	// B DarkBlue
+		" b    b "	// R DarkRed
+		"  bbbb  "	// G DarkGreen
+	])	// o Orange
 // This is the full APT. Do not use any other functions!
 
 // The following is a complete example game: the board game "Go"

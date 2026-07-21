@@ -7,7 +7,7 @@ skipInit immutable Sound
 	transient dynamic audioElement
 	
 	Sound
-		audio.sounds.add this
+		sounds.sounds.add this
 	
 	js void open
 		return new Promise((resolve, reject) => {
@@ -22,22 +22,26 @@ skipInit immutable Sound
 		
 	js void volume: float value
 		this.fadeVolume = value
-		if(this.audioElement) this.audioElement.volume = this.fadeVolume * audio.volume
-		
+		if(this.audioElement) this.audioElement.volume = this.fadeVolume * sounds.volume
+
 	js void updateVolume
-		if(this.audioElement) this.audioElement.volume = this.fadeVolume * audio.volume
+		if(this.audioElement) this.audioElement.volume = this.fadeVolume * sounds.volume
 		
 	js void stop
 		if(this.audioElement) this.audioElement.pause()
 		
 	play: needsToBeCertain = false
 		if needsToBeCertain and not input.isCertain then return
-			
+
 		// We can play sounds immediately to ensure there is no lag
-		// If a sound turns out to be wrong after receiving new inputs, we stop it
-		let playingSound = audio.playingSounds.find(.sound == this and .frame == Time.ticks)
+		// If a sound turns out to be wrong after receiving new inputs, we stop it.
+		// The dedup identity is core.frame, NOT Time.ticks: the frame counter is unique per
+		// engine step, while a Time.ticks value (the rewind playhead) recurs after a shared
+		// rewind - a lingering entry from the rewound-away run would falsely suppress the
+		// same sound in the replayed run
+		let playingSound = sounds.playingSounds.find(.sound == this and .frame == core.frame)
 		if !playingSound
-			audio.playingSounds.add playingSound = {this, frame:Time.ticks, isConfirmed:true}
+			sounds.playingSounds.add playingSound = {this, frame:core.frame, isConfirmed:true}
 			if core.isPremiere then doPlay playingSound
 		else
 			playingSound.isConfirmed = true
@@ -52,8 +56,8 @@ skipInit immutable Sound
 		// Play audio
 		this.fadeVolume = 1;
 		this.audioElement = this.nextAudioElement;
-		this.audioElement.volume = audio.volume;
-		this.audioElement.onended = () => audio.playingSounds.remove(ps);
+		this.audioElement.volume = sounds.volume;
+		this.audioElement.onended = () => sounds.playingSounds.remove(ps);
 		this.audioElement.play();
 		this.preloadForNextPlayback()
 		
@@ -64,7 +68,7 @@ skipInit immutable Sound
 		this.nextAudioElement.src = _basePath+this.file;
 		
 	isPlaying
-		return audio.playingSounds.any.sound == this and .frame < Time.ticks
+		return sounds.playingSounds.any.sound == this and .frame < core.frame
 
 internal transient PlayingSound
 	immutable Sound sound
@@ -72,7 +76,7 @@ internal transient PlayingSound
 	bool isConfirmed
 	
 // A collection of functions for playing audio
-transient global skipInit unit audio
+transient global skipInit unit sounds
 	const float[] volumeLevels = [0, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, .01, .02, .04, .08, .16, .32, .64, 1]
 	int volumeLevel = 10
 	float volume = volumeLevels[volumeLevel]
@@ -86,7 +90,7 @@ transient global skipInit unit audio
 	internal finishFrame
 		// Stop sounds that turned out to be wrong after receiving new inputs
 		playingSounds.each
-			if .frame == Time.ticks and !.isConfirmed
+			if .frame == core.frame and !.isConfirmed
 				.sound.stop
 		
 	internal reload
