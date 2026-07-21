@@ -12,6 +12,9 @@ Write simple, fast, efficient code.
 # Descriptive names, no abbreviations
 Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
 
+# Compile
+Check your code with "livetime check", build with "livetime build".
+
 # Basics of the LiveTime programming language
 enum State
 	InProgress

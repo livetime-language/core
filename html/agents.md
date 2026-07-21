@@ -36,7 +36,7 @@ lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyConten
 lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
 
 # Compile
-Run "npm run compile" to compile.
+Check your code with "livetime check", build with "livetime build".
 
 # Basics of the LiveTime programming language
 enum State

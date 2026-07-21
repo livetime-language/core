@@ -1,5 +1,6 @@
 // Full LiveTime API. IMPORTANT: Only use the following functions and features!
-// Write code in src/app.l. Create beautiful sprites in src/sprites.l. Write simple, short, efficient code. Compile with "livetime compile".
+// Write code in src/app.l. Create beautiful sprites in src/sprites.l. Write simple, short, efficient code.
+// Check your code with "livetime check", build with "livetime build".
 enum PlayerRole: Knight, Archer	// Enums and their values have capitalized names
 class Player	// Classes have capitalized names. Their members are public by default
 	int        index	// Integers are 0 by default
