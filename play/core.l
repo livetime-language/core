@@ -218,7 +218,7 @@ internal transient skipInit unit core
 		watchIndex = 0
 		startInLobby = false
 		errorMessage = ""
-		audio.stop
+		sounds.stop
 		isPremiere = true
 		startTime = serverStartTime = currentTime
 		reset
@@ -283,7 +283,7 @@ internal transient skipInit unit core
 		maxChecksumFrame = -1
 		lastChecksumFrame = -1
 		catchingUp = false
-		audio.stop
+		sounds.stop
 		graphics.clearDebugInfo
 		initAll
 		
@@ -759,7 +759,7 @@ internal transient skipInit unit core
 		// Start frame
 		system.isDrawing = draw
 		if frame > 0 then graphics.startFrame
-		audio.startFrame
+		sounds.startFrame
 
 		// Debug info
 		if system.showDebugInfo
@@ -790,7 +790,7 @@ internal transient skipInit unit core
 				drawTimes.add drawTime = PlainDate.measure
 					graphics.finishFrame
 				if system.playMode != Manipulator then input.updateCursor
-			audio.finishFrame
+			sounds.finishFrame
 
 			// Cleanup
 			for input.internalUsers as user

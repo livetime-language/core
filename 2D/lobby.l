@@ -54,7 +54,7 @@ unit lobby
 		showNameIndex = 1
 		editNames = false
 		input.players.each.isReadyInLobby = false
-		audio.stop
+		sounds.stop
 		
 	int counter
 	

@@ -195,7 +195,7 @@ Sound
 		fx.add FadeSoundAnimation startTime:Time.now+delay, duration, sound:this, startValue:1, delta:-1
 		return this
 
-transient global skipInit unit audio
+transient global skipInit unit sounds
 	global importance:4 playSound: Sound sound
 		              float delay = 0 // The delay before the sound starts in milliseconds
 		              bool needsToBeCertain = false

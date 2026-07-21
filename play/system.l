@@ -63,7 +63,7 @@ global transient skipInit unit system
 	private inline js void initMedia
 		_constCache = [null]
 		Colors.init();
-		audio.init();
+		sounds.init();
 		media.init();
 		_global.fonts?.init();
 		
@@ -285,7 +285,7 @@ global transient skipInit unit system
 		gizmo.clear
 		updatePageIconAndTitle
 		core.sendOutputToEditor frame:core.frame-1
-		audio.stop
+		sounds.stop
 
 	internal record
 		core.adjustStartTimeIfNeeded

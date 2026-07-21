@@ -2476,7 +2476,7 @@ internal transient skipInit unit PeerNetwork
 				}
 			}
 		}
-		audio.reload();
+		sounds.reload();
 
 	private js void setupRemoteMedia: InternalUser user
 		// Remove old video elements
