@@ -61,6 +61,11 @@ app	// Static classes have lowercase names. Access its members with app.players,
 		if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 		if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 		if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
+		audio.playSound sounds.explosion	// Play an audio track on a free channel
+		audio.stopSound	// Stop all playing audio tracks (pass a track to stop only that one)
+		audio.playMusic music.intro, fadeDuration:300	// Play music, fading in over 300 milliseconds
+		audio.stopMusic fadeDuration:500	// Stop the music, fading out
+		audio.setVolume 0.5	// Set the master volume (0 to 1)
 sprites	// src/sprites.l contains all available sprites. Add additional sprites as needed.
 	blueCircle = Sprite [	// Each letter represets a color:
 		"  bbbb  "	//   Black
