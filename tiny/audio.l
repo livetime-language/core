@@ -81,23 +81,27 @@ class Music
 // accurate open source reimplementation of the Pico-8 sound chip.
 transient global skipInit audio
 	// Play an audio track (like Pico-8 sfx()). channel -1 picks a free channel automatically.
-	js void playSound: AudioTrack audioTrack, int channel = -1, int startIndex = 0, int length = 0
+	global js void playSound: AudioTrack audioTrack, int channel = -1, int startIndex = 0, int length = 0
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		audio.sendMessage({type: "sound", id: audio.defineTrack(audioTrack), channel: channel, offset: startIndex, length: length});
 
 	// Stop a playing audio track, or all of them (like Pico-8 sfx(-1))
-	js void stopSound: AudioTrack audioTrack = null, int channel = -1
+	global js void stopSound: AudioTrack audioTrack = null, int channel = -1
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		audio.sendMessage({type: "stopSound", id: audioTrack ? audioTrack.trackId : -1, channel: channel});
 
 	// Let a looping audio track run to its end (like Pico-8 sfx(-2))
-	js void releaseLoop: int channel = -1
+	global js void releaseLoop: int channel = -1
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		audio.sendMessage({type: "releaseLoop", channel: channel});
 
 	// Play music, optionally fading in over fadeDuration milliseconds (like Pico-8 music()).
 	// reservedChannels is a bitmask of channels only music may use (like the Pico-8 channel mask).
-	js void playMusic: Music music, float fadeDuration = 0, int startPattern = 0, int reservedChannels = 0
+	global js void playMusic: Music music, float fadeDuration = 0, int startPattern = 0, int reservedChannels = 0
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		const patterns = [];
 		for(let i = 0; i < music.patterns.length; i++) {
@@ -109,17 +113,20 @@ transient global skipInit audio
 		audio.sendMessage({type: "music", patterns: patterns, start: startPattern, fade: fadeDuration, mask: reservedChannels});
 
 	// Stop the music, optionally fading out over fadeDuration milliseconds (like Pico-8 music(-1))
-	js void stopMusic: float fadeDuration = 0
+	global js void stopMusic: float fadeDuration = 0
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		audio.sendMessage({type: "stopMusic", fade: fadeDuration});
 
 	// Set the master volume (0 to 1)
-	js void setVolume: float volume
+	global js void setVolume: float volume
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		audio.sendMessage({type: "volume", value: volume});
 
 	// Set the tracks that notes with waveform Custom1 - Custom8 play as instruments
-	js void setInstruments: AudioTrack[] audioTracks
+	global js void setInstruments: AudioTrack[] audioTracks
+		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
 		const ids = [];
 		for(let i = 0; i < 8; i++) ids.push(i < audioTracks.length && audioTracks[i] ? audio.defineTrack(audioTracks[i]) : -1);
