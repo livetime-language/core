@@ -895,7 +895,7 @@ class Tilemap
 			for line.length as i
 				int keyIndex = i*2
 				let key = line[keyIndex to keyIndex+2]
-				tiles[index + i] = key == "  " ? null : tilemaps.stringToSprite[key] or null
+				tiles[index + i] = key == "  " ? null : tilemaps??.stringToSprite[key] or null
 			index += maxWidth
 
 	toStrings
