@@ -98,9 +98,9 @@ transient global skipInit audio
 		audio.setup();
 		audio.sendMessage({type: "releaseLoop", channel: channel});
 
-	// Play music, optionally fading in over fadeDuration milliseconds (like Pico-8 music()).
+	// Play music, optionally fading in over fadeInDuration milliseconds (like Pico-8 music()).
 	// reservedChannels is a bitmask of channels only music may use (like the Pico-8 channel mask).
-	global js void playMusic: Music music, float fadeDuration = 0, int startPattern = 0, int reservedChannels = 0
+	global js void playMusic: Music music, int startPattern = 0, float fadeInDuration = 0, int reservedChannels = 0
 		if((_global.core && !_global.core.isPremiere) || !music) return;
 		audio.setup();
 		const patterns = [];
@@ -110,13 +110,13 @@ transient global skipInit audio
 			for(let c = 0; c < 4; c++) trackIds.push(p.tracks && c < p.tracks.length && p.tracks[c] ? audio.defineTrack(p.tracks[c]) : -1);
 			patterns.push({tracks: trackIds, begin: !!p.startLoop, end: !!p.endLoop, stop: !!p.stopAtEndOfPattern});
 		}
-		audio.sendMessage({type: "music", patterns: patterns, start: startPattern, fade: fadeDuration, mask: reservedChannels});
+		audio.sendMessage({type: "music", patterns: patterns, start: startPattern, fade: fadeInDuration, mask: reservedChannels});
 
-	// Stop the music, optionally fading out over fadeDuration milliseconds (like Pico-8 music(-1))
-	global js void stopMusic: float fadeDuration = 0
+	// Stop the music, optionally fading out over fadeOutDuration milliseconds (like Pico-8 music(-1))
+	global js void stopMusic: float fadeOutDuration = 0
 		if(_global.core && !_global.core.isPremiere) return;
 		audio.setup();
-		audio.sendMessage({type: "stopMusic", fade: fadeDuration});
+		audio.sendMessage({type: "stopMusic", fade: fadeOutDuration});
 
 	// Set the master volume (0 to 1)
 	global js void setVolume: float volume

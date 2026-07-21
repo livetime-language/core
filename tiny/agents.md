@@ -68,49 +68,35 @@ tick	// app.tick is called every frame (30 times per second by default)
 	if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 	if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
 	if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
-	audio.playSound sounds.explosion	// Play an audio track from "classes/sounds.l" on a free channel
-	audio.playSound sounds.explosion, channel:2	// Play on a specific channel (0-3), interrupting it
-	audio.stopSound	// Stop all playing audio tracks (pass a track to stop only that one)
-	audio.playMusic music.intro	// Play music from "classes/music.l" (4 tracks per pattern, startLoop/endLoop control looping)
-	audio.playMusic music.intro, fadeDuration:300	// Fade the music in over 300 milliseconds
-	audio.stopMusic fadeDuration:500	// Stop the music, fading out over 500 milliseconds
-	audio.setVolume 0.5	// Set the master volume (0 to 1)
+	playSound sounds.explosion, channel:2, startIndex:0, length:64	// Play sound with optional channel (0-3), startIndex (0-31) and length (0-31)
+	stopSound channel:3	// Stop sound with optional channel (all if left out)
+	playMusic music.intro, startPattern:0, fadeInDuration:1000	// Play music with optional startPattern (0-63) and fadeInDuration (in milliseconds)
+	stopMusic fadeOutDuration:500	// Stop the music with optional fade out (in milliseconds)
+	setVolume 0.5	// Set the master volume (0 to 1)
 js void navigateTo: string url	// js keyword indicates that function body is in JavaScript. Return type is required.
 	location.href = url;	// JavaScript code. Do not use nested functions.
 // File: classes/sprites.l	// Contains available sprites. Add sprites as needed.
-blueCircle = Sprite([	// Each letter represets a color:
-	"  bbbb  "	//   Black
-	" b    b "	// d DarkGray
-	"b      b"	// l LightGray
-	"b      b"	// w White
-	"b      b"	// b Blue
-	"b      b"	// r Red
-	" b    b "	// g Green
+redSquare = Sprite(frames:3, [	// Sprites can have multiple animation frames next to each other	
+	"rrrrrrrr                "	// The sprite "redSquare" has 3 frames, each 8x8 pixels
+	"r      r rrrrrr         "	// Sprites can have a string with comma separated tags
+	"r      r r    r   rrrr  "	// Each letter represets a color:
+	"r      r r    r   r  r  "	//   Black
+	"r      r r    r   rrrr  "	// d DarkGray
+	"r      r r    r         "	// l LightGray
+	"r      r rrrrrr         "	// w White
+	"rrrrrrrr                "	// b Blue
+])	// r Red
+blueCircle = Sprite(tags:"blocking,hazard", [	// g Green
 	"  bbbb  "	// y Yellow
-])	// e Earth
-redSquare = Sprite(tags:"blocking,hazard", [	// s Sand
-	"rrrrrrrr"	// p Pink
-	"r      r"	// v Violet
-	"r      r"	// B DarkBlue
-	"r      r"	// R DarkRed
-	"r      r"	// G DarkGreen
-	"r      r"	// o Orange
-	"r      r"
-	"rrrrrrrr"
-])
-// File: classes/sounds.l	// Contains audio tracks. Each note is "<note><octave>.<waveform><volume><effect>":
-jump = AudioTrack(noteDuration:2, notesAsStrings:[	// noteDuration: length of each note in ticks of 1/120 second
-	"c-1.352"	// note c, octave 1, waveform 3 (0 triangle, 1 tilted saw, 2 saw, 3 square, 4 pulse, 5 organ, 6 noise, 7 phaser)
-	"e-1.35."	// volume 5 (1-7), effect "." = none (1 slide, 2 vibrato, 3 drop, 4 fade in, 5 fade out, 6/7 arpeggio)
-	"g#1.34."	// "......." is a silent note
-])	// Optional: loopStartIndex/loopEndIndex loop a note range, reverb:1/2, dampen:1/2, detune:1/2, noiz/buzz:true color the sound
-// File: classes/music.l	// Contains music as patterns of up to 4 tracks playing at once
-Music intro = {[
-	{[sounds.bass, sounds.melody, null, null], startLoop:true}	// startLoop marks where endLoop jumps back to
-	{[sounds.bass, sounds.melody, sounds.drums, null], endLoop:true}	// endLoop loops, stopAtEndOfPattern stops
-]}
+	" b    b "	// e Earth
+	"b      b"	// s Sand
+	"b      b"	// p Pink
+	"b      b"	// v Violet
+	"b      b"	// B DarkBlue
+	" b    b "	// R DarkRed
+	"  bbbb  "	// G DarkGreen
+])	// o Orange
 // This is the full APT. Do not use any other functions!
-
 // The following is a complete example game: the board game "Go"
 // File: classes/sprites.l
 Sprite emptyCell = Sprite([
