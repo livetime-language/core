@@ -1,4 +1,4 @@
-fonts
+skipInit fonts
 	monogram = Font(name: "monogram", charSize:{6,10}, charSizeWithoutPadding:{5,9}, pixelsAsStrings:[
 		"        w    w w          w   w   w  ww     w      w   w                                      w "
 		"        w    w w   w w   wwww w   w w  w    w     w     w     w     w                         w "

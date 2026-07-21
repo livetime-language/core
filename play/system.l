@@ -65,6 +65,7 @@ global transient skipInit unit system
 		Colors.init();
 		audio.init();
 		media.init();
+		_global.fonts?.init();
 		
 	private js void initPlatform: bool isHeadless = false, bool isEmbedded = false
 		Object.prototype.toString = function() { return JSON.stringify(this) }
