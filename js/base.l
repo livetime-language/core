@@ -1624,7 +1624,7 @@ class List<T>
 		return resultValue != threshold ? resultItem : null
 		
 	withMin: int(T it) selector
-		     int threshold = int.maxValue
+		     float threshold = float.maxValue
 		     label bool(T it) filter
 		int resultValue = threshold
 		T resultItem
@@ -1650,7 +1650,7 @@ class List<T>
 		return resultValue != threshold ? resultItem : null
 				
 	withMax: int(T it) selector
-		     int threshold = int.minValue
+		     float threshold = float.minValue
 		int resultValue = threshold
 		T resultItem
 		for this
