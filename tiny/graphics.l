@@ -845,7 +845,7 @@ class Sprite
 	Vector2 srcPos = Vector2.none
 	int set = -1
 
-	Sprite: string[] pixelsAsStrings = null
+	Sprite: string[] pixelsAsStrings
 		if not pixelsAsStrings then return
 		let maxWidth = pixelsAsStrings.max.length
 		pixels = []
@@ -858,6 +858,10 @@ class Sprite
 			for line.length as i
 				pixels[index + i] = graphics.colorByLetter[line[i]]
 			index += maxWidth
+
+	Sprite
+		if size.x and size.y and not pixels
+			for size pixels[x + y*size.x] = 0xff000000
 
 	toStrings
 		string[] result
