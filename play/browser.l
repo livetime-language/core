@@ -77,10 +77,19 @@ global transient skipInit unit system
 
 	inline js void vibrate: int duration = 100
 		if(navigator.vibrate) navigator.vibrate(duration)
+
+	debounce: float time // The delay in milliseconds
+		      void() then
+		state int debounceId = 0
+		clearDelay(debounceId)
+		debounceId = delay(time, then)
 		
-	inline js void delay: float time // The delay in milliseconds
+	inline js int delay: float time // The delay in milliseconds
 		                  void() then
 		setTimeout(then, time)
+
+	inline js void clearDelay: int id
+		clearTimeout(id)
 		
 	inline js void copyToClipboard(string text)
 		if(core.isPremiere && input.isCertain) {
