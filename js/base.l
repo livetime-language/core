@@ -2354,6 +2354,8 @@ global transient priority unit system
 	global inline js void debugger() debugger
 	global inline js void throw(Error error) throw error
 
+	inline js void traceFrameStart(int frame) _global._traces?.push(frame)
+
 	global inline js dynamic Capacitor => window.Capacitor
 		
 global transient skipInit priority low unit system

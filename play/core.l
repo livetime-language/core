@@ -772,6 +772,7 @@ internal transient skipInit unit core
 
 		try
 			resetStateIndex()
+			system.traceFrameStart(Time.ticks)
 			Framework??.tick
 			tickTimes.add tickTime = PlainDate.measure
 				if lobby.inLobby then	lobby.tick
