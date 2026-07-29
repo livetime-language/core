@@ -925,7 +925,7 @@ skipInit global unit input
 		print "Removing player {userId}, their inputs count up to frame {lastFrame}", type:Action
 		
 	// Returns a "GamepadList" (which doesn't have the functions of a LiveTime list)
-	private inline js dynamic getGamepads() navigator.getGamepads()
+	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
 	
 	internal updateGamepads
 		// Gamepad state is only recorded during a live Record step. Replay steps (the rollback
@@ -940,8 +940,8 @@ skipInit global unit input
 		// pending, like the DOM input handlers
 		if PeerNetwork.holdingConfirmationPending then return
 		let gamepads = getGamepads
-		InternalGamepad gp = gamepads != null ? gamepads[0] : null
-		if !gp or gp.axes.length < 2
+		InternalGamepad gp = gamepads?.find . != null
+		if not gp
 			checkReleaseRewindKeyWithoutGamepad
 			return
 			
