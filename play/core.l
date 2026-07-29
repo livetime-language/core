@@ -317,6 +317,7 @@ internal transient skipInit unit core
 		graphics.startFrame
 		if !startInLobby and not testLobby
 			lobby.inLobby = false
+			system.trace(-1)
 			app??.start()
 		if simulateRollback then checkSaveState
 		
@@ -772,7 +773,7 @@ internal transient skipInit unit core
 
 		try
 			resetStateIndex()
-			system.traceFrameStart(Time.ticks)
+			system.trace(Time.ticks)
 			Framework??.tick
 			tickTimes.add tickTime = PlainDate.measure
 				if lobby.inLobby then	lobby.tick
