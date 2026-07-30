@@ -270,7 +270,7 @@ transient skipInit global unit graphics
 	private const alignmentFactor = [0, .5, 1]
 	
 	public Vector2 referenceSize = {1920, 1080}
-	public importance:4 DrawingOrder drawingOrder = FirstDrawnWillBeInFront
+	public importance:4 DrawingOrder drawingOrder = LastDrawnWillBeInFront
 	public ScaleMode scaleMode = Auto, effectiveScaleMode
 	public AnchorMode anchor = Center
 	
@@ -2263,7 +2263,7 @@ internal skipInit transient unit gizmo
 			// Send manipulation to editor
 			let now = PlainDate.realTime
 			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and now > lastSendTime + 100
-				now = lastSendTime
+				lastSendTime = now
 				if not isManipulating and movedSinceTouchDown
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
