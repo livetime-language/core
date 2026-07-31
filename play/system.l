@@ -388,6 +388,13 @@ global transient skipInit unit system
 			document.head.appendChild(link);
 		}
 		link.href = iconUrl;
+		
+	js void execute: string code
+		try {
+			window.eval(code);
+		} catch(e) {
+			_sendErrorToEditor(e);
+		}
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
