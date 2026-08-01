@@ -1408,14 +1408,10 @@ skipInit global unit input
 
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = true
 		Key key = Key.keys[keyIndex]
+		if not key or (character and key.character != character)
+			key = {type:Keyboard, code:key ? key.code : "", character}
 		internalUser.pressedAtFrame[keyIndex] = core.frame
-		// A Key constant carries the unshifted US character of its physical key. When the event
-		// produced a different one - Shift is held, or the layout is not US - report a transient
-		// Key with the character that was actually typed
-		if character and key?.character != character
-			internalUser.allJustPressed.add {type:Keyboard, code:key ? key.code : "", character}
-		else
-			internalUser.allJustPressed.add key
+		internalUser.allJustPressed.add key
 		let parent = key?.parent
 			internalUser.pressedAtFrame[parent.index] = core.frame
 			internalUser.allJustPressed.add parent
