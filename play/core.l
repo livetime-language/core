@@ -208,6 +208,7 @@ internal transient skipInit unit core
 		output.clear
 		outputIndex = 0
 		outputSentUpTo = 0
+		sentTraceCount = 0	// The editor clears its trace list on stop
 		for input.internalUsers if .
 			.inputs.reset
 			.startInputFrame 0
@@ -372,6 +373,7 @@ internal transient skipInit unit core
 				if codeChanged
 					frameWithNewWatches = 0
 					outputSentUpTo = 0
+					sentTraceCount = 0	// The editor clears its trace list before a code-change replay
 					output.clear
 					reset
 				else
@@ -446,9 +448,16 @@ internal transient skipInit unit core
 	int interrruptAtOutputIndex = -1
 	int targetFrame = -1
 	int outputSentUpTo = 0
+	int sentTraceCount	// Traces sent to the editor since it last cleared its trace list
+
+	// The continuous index of the next trace: traces already sent to the editor plus the ones
+	// collected in the current step. The editor appends every sent batch to one list, so this
+	// stamp is the position in that list - the per-step _traceIndex alone resets every send
+	js int globalTraceIndex
+		return core.sentTraceCount + (typeof _traceIndex === "undefined" ? 0 : _traceIndex);
 
 	addOutput: string value
-		value += "|{outputIndex}|{frame}"
+		value += "|{outputIndex}|{frame}|{globalTraceIndex}"
 		output[outputIndex] = value
 
 		// Throw an exception when we reach interrruptAtOutputIndex
@@ -476,6 +485,7 @@ internal transient skipInit unit core
 		let traces = null;
 		if(typeof _traceIndex != "undefined" && _traceIndex > 0) {
 			traces = _traces.slice(0, _traceIndex);
+			core.sentTraceCount += _traceIndex;
 			_traceIndex = 0;
 		}
 		_sendToEditor({type:"frame", pixels, traces, output, frame, frames:core.frames, playMode:system.playMode});
