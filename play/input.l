@@ -608,13 +608,9 @@ skipInit global unit input
 			return false;
 		}
 		window.onkeydown = e => {
-			console.log("onkeydown", e.key, e.code, e.keyCode, e.ctrlKey, e.altKey, e.metaKey)
 			let keyCode = e.keyCode
 			let key = e.key
 			let ctrlOrCmd = e.ctrlKey || e.metaKey
-			if(window.require && key == "t" && e.metaKey && e.shiftKey)
-				system.openDevTools();
-			else
 			if(ctrlOrCmd && key == "s") {
 				// Save event steam
 				core.saveEventStream();
@@ -623,8 +619,8 @@ skipInit global unit input
 			else
 			if(ctrlOrCmd && key == "o") {
 				// Open event stream or state
-				if(system.isDebug) core.openEventStream();
-				else                 core.openState();
+				if(system.isDebug)	core.openEventStream();
+				else	core.openState();
 				e.preventDefault();
 			}
 			else
@@ -634,40 +630,45 @@ skipInit global unit input
 				core.saveLogs();
 				e.preventDefault();
 			}
-			else
+			// else
 			if((key == "F1" || key == "F2" || key == "F3" || key == "F4") && !ctrlOrCmd && system.isDebug) {
+				// Switch players
 				let index = key[1] - "1"
 				core.switchToPlayer(input.players[index]);
 				e.preventDefault();
-			}
-			else
-			if((key >= "1" && key <= "0") && (e.altKey || e.ctrlKey)) {
-				let index = key - "0"
-				if(e.altKey)  { core.save(index); e.preventDefault(); } else
-				if(e.ctrlKey) { core.restore(index); e.preventDefault(); }
-			}
-			else
-			if(key == "F5" && system.isDebug) {
-				system.stop();
+			} else if(ctrlOrCmd && key == "F9") {
+				// Toggle debug info
+				system.toggleDebugInfo();
 				e.preventDefault();
-			} else if(key == "F7" && system.isDebug) {
-				system.togglePlay();
-				e.preventDefault();
-			} else if(key == "F9") {
-				if(e.shiftKey) { core.saveLogs(); }
-				else           { system.toggleDebugInfo(); }
-				e.preventDefault();
-			} else if(key == "F10") { 
+			} else if(ctrlOrCmd && key == "F10") { 
+				// Toggle small screen
 				system.toggleSmallScreen();
-			} else if(key == "F11") { 
-				graphics.copyScreenshotToClipboard();
 			} else if(key == "F12") {
-				if(typeof require != "undefined") {
-					require('@electron/remote').getCurrentWindow().toggleDevTools()
-				}
-			} else if(key == "Alt" && input.enableClickingWithAltKey) {
-				clickWithAltKeyX = pointerX; clickWithAltKeyY = pointerY;
-				input.handleTouchEvent(1, clickWithAltKeyX, clickWithAltKeyY, "touch", /*pointerId*/127, /*button*/0, /*shift*/false, /*alt*/false, /*ctrl*/false);
+				// Toggle dev tools
+				if(typeof require != "undefined") require('@electron/remote').getCurrentWindow().toggleDevTools()
+
+								
+			// Disable saving and restoring states, stop, play, screenshot
+			// because they would control TinyTime instead of the embedded app
+			// } else
+			// if((key >= "1" && key <= "0") && (e.altKey || e.ctrlKey)) {
+			// 	let index = key - "0"
+			// 	if(e.altKey)  { core.save(index); e.preventDefault(); } else
+			// 	if(e.ctrlKey) { core.restore(index); e.preventDefault(); }
+			// }
+			// else
+			// if(key == "F5" && system.isDebug) {
+			// 	system.stop();
+			// 	e.preventDefault();
+			// } else if(key == "F7" && system.isDebug) {
+			// 	system.togglePlay();
+			// 	e.preventDefault();
+			// } else if(key == "F11") { 
+			// 	graphics.copyScreenshotToClipboard();
+			// } else if(key == "Alt" && input.enableClickingWithAltKey) {
+			// 	clickWithAltKeyX = pointerX; clickWithAltKeyY = pointerY;
+			// 	input.handleTouchEvent(1, clickWithAltKeyX, clickWithAltKeyY, "touch", /*pointerId*/127, /*button*/0, /*shift*/false, /*alt*/false, /*ctrl*/false);
+			
 			} else {
 				input.handleKeyEvent(5, e.code, e.key, e.ctrlKey, e.altKey, e.metaKey)
 				if(keyCode == 9) e.preventDefault();
