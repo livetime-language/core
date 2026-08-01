@@ -458,15 +458,27 @@ internal transient skipInit unit core
 		if outputIndex++ == interrruptAtOutputIndex and interrruptAtOutputIndex != -1
 			throw {"interrrupt"}
 
-	sendOutputToEditor: int frame = core.frame
-		string result
-		for outputSentUpTo to output.length
-			if(result) result += "\n"
-			result += "{output[.].replaceAll("\n", "\\n")}"
-		if result then result += "\n"
-		result += "#{frame}|{frames}|{(int)system.playMode}"
-		outputSentUpTo = output.length
-		system.sendStringToEditor result
+	// Send everything that happened this frame to the editor in a single message: the pixels (only
+	// when a frame was drawn), the traces collected by the generated tracing code (cleared after
+	// sending), the new output lines since the last send (output itself is kept - it is indexed by
+	// the absolute outputIndex for goToFrame interrupts), and the frame/playMode state.
+	// The traces are sliced to the used portion: the receiving side can transfer the fresh copy,
+	// and cloning a subarray view would serialize the whole preallocated buffer
+	js void sendOutputToEditor: int frame = core.frame
+		                        dynamic pixels = null
+		if(!system.isDebug) return;
+		let output = null;
+		if(core.outputSentUpTo > core.output.length) core.outputSentUpTo = 0; // output was cleared (code change replay, test start)
+		if(core.outputSentUpTo < core.output.length) {
+			output = core.output.slice(core.outputSentUpTo);
+			core.outputSentUpTo = core.output.length;
+		}
+		let traces = null;
+		if(typeof _traceIndex != "undefined" && _traceIndex > 0) {
+			traces = _traces.slice(0, _traceIndex);
+			_traceIndex = 0;
+		}
+		_sendToEditor({type:"frame", pixels, traces, output, frame, frames:core.frames, playMode:system.playMode});
 
 	// Smooth out animations by only executing code when we received inputs from everybody	
 	smooth: Player player
@@ -709,9 +721,6 @@ internal transient skipInit unit core
 		certainFrame = input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.inputFrame, .smoothFrame)) filter: . != null
 		input.isCertain = frame <= certainFrame
 		
-		// Send current frame to editor	
-		if system.isDebug and (system.playMode == Play or system.playMode == Record) then sendOutputToEditor
-		
 		// Save a snapshot when we are about to start the frame after the last certain frame filter we got all inputs
 		checkSaveState
 
@@ -793,6 +802,10 @@ internal transient skipInit unit core
 					graphics.finishFrame
 				if system.playMode != Manipulator then input.updateCursor
 			sounds.finishFrame
+
+			// One message per step with pixels, traces, output and frame state. The pixels are the
+			// live framebuffer (only included when this step drew): the editor bridge copies them
+			sendOutputToEditor pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen.pixels : null)
 
 			// Cleanup
 			for input.internalUsers as user
