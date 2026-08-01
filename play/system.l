@@ -104,8 +104,10 @@ global transient skipInit unit system
 	private async inline js void initBackend
 		if(typeof(backend) != "undefined") await backend.connect2()
 
-	// This is called when the application starts for the first time	
-	private start: bool isDebug = false, bool isEmbedded = false
+	// This is called when the application starts for the first time
+	// 
+	private start: bool isDebug = false	// The application is edited and run by an IDE (in vscode or a web browser)
+	               bool isEmbedded = false	// The application is embedded in a web worker of the web based IDE
 		try
 			system.log "system.start"
 			let now = PlainDate.preciseTime
@@ -151,15 +153,16 @@ global transient skipInit unit system
 				try
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
-					startInterval
+					if not isEmbedded then startInterval
 					// A localhost page with an explicit room in the URL is online multiplayer too:
 					// the Go signaling server serves the page locally for development and testing
 					isOnlineMultiplayer = not (isDebug or isLocal or roomId == "local" or url.startsWith("file") or ((hostname == "localhost" or hostname == "127.0.0.1") and not roomId))
 					if isOnlineMultiplayer	core.join gameId, roomId, userId
 					else	core.startLocal
 					
-					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
-					if !isDebug or isEmbedded then record
+					// If we are debugging, the app should show the first frame but not run yet
+					// Only in release mode the app should start running and record the input event stream
+					if !isDebug then record
 					
 					// Tell the editor that we can call "replay" when the code changes
 					// If we didn't reach this point, we call "start" again when the code changes
@@ -253,9 +256,6 @@ global transient skipInit unit system
 			window.tick();
 		}
 
-	public embeddedTick
-		core.step fastForward:false draw:true
-		return graphics??.screen.pixels
 	
 	// This is called every animation frame
 	private tick
@@ -388,6 +388,8 @@ global transient skipInit unit system
 			document.head.appendChild(link);
 		}
 		link.href = iconUrl;
+		
+
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
