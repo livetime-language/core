@@ -1,8 +1,6 @@
----
-description: LiveTime Programming Language
-globs: *.l
-applyTo: '**/*.l'
----
+# Memory
+Use "doc/MEMORY.md" to read and write important information about the project.
+
 # We use the LiveTime Programming Language and HTML Framework with a PocketBase backend
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
 

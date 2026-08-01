@@ -1,6 +1,6 @@
-// Full LiveTime API. IMPORTANT: Only use the following functions and features!
-// Write simple, short, efficient code. Create beautiful sprites in "classes/sprites.l".
+// Full LiveTime API. Only use the following functions and features.
 // Check your code with "livetime check", build with "livetime build".
+// Use "doc/MEMORY.md" to read and write important information about the project.
 // File: classes/Player.l	// Create file "classes/Player.l" to declare class Player. Members are public by default
 enum PlayerRole: Knight, Archer	// Enums are global and can be accessed from anywhere
 int        index	// Member variable of class Player. Integers are 0 by default
