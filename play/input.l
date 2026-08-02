@@ -831,22 +831,56 @@ skipInit global unit input
 		run??.runningApp?.input.handleWheelEvent(x, y, deltaX, deltaY, isPinch)
 
 	// The per-frame input bundle forwarded by the web IDE while the app runs embedded in its
-	// webworker (see TinyTime's engineInterface.forwardInputs). One compact Int32Array per frame:
+	// webworker (see TinyTime's engineInterface.forwardInputs). One compact Int32Array per frame,
+	// starting with a legacy single-user section holding the IDE user's own inputs - all an
+	// older lib/core can read:
 	// [flags, pointerX, pointerY, scrollX, scrollY, pressedCount, ...pressed Input indices,
 	//  releasedCount, ...released Input indices], flags: 1 = the pointer moved, 2 = scrolled.
-	// The pointer position arrives already transformed into app screen pixels (the IDE divides
+	// A current IDE appends a magic marker and one section per user of the IDE session:
+	// [magic, userCount, then per user: userIndex, flags, pointerX, pointerY, scrollX, scrollY,
+	//  pressedCount, ..., releasedCount, ...]. Each section is written into THAT user's own
+	// input stream, so the embedded app sees the same inputs from the same users on every
+	// connected client. The sections are built from the IDE's synced deterministic input state
+	// and are identical on every client - the legacy section is not (it holds only the local
+	// user's inputs), so it is ignored whenever the marker is present.
+	// The pointer positions arrive already transformed into app screen pixels (the IDE divides
 	// out the offset and scale it blits the framebuffer with). Pointer buttons become
 	// TouchDown/TouchUp records at that position, everything else (keyboard and gamepad button
 	// indices) becomes KeyDown/KeyUp records - byte-identical to what the DOM handlers above
 	// write, so parseInputs treats forwarded inputs exactly like native ones. The caller
 	// (the worker's onmessage) calls system.tick right after, which parses the records
+	const int forwardedInputsMagic = 1280593237
 	internal handleForwardedInputs: int[] data
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
-		let inputs = localUser.inputs
-		let frame = localUser.inputFrame
-		int flags = data[0]
-		int pointerX = data[1]
-		int pointerY = data[2]
+
+		// End of the legacy section = where a current IDE writes the magic marker
+		int legacyEnd = 6 + data[5]
+		legacyEnd += 1 + data[legacyEnd]
+
+		if data.length > legacyEnd + 1 and data[legacyEnd] == forwardedInputsMagic
+			// Multi-user format: one section per IDE user, indexed by their player index
+			int readPos = legacyEnd + 2
+			for data[legacyEnd + 1]
+				readPos = writeForwardedInputs internalUsers[data[readPos]], data, readPos + 1
+		else
+			writeForwardedInputs localUser, data, 0
+
+	// Write one forwarded input section into the given user's input stream and return the read
+	// position after the section. user can be null (the IDE session has more users than the
+	// embedded app's system.userCount): the section is skipped but still measured
+	private int writeForwardedInputs: InternalUser user, int[] data, int start
+		int pressedCount = data[start + 5]
+		int readPos = start + 6 + pressedCount
+		int releasedCount = data[readPos]
+		readPos++
+		if not user
+			return readPos + releasedCount
+
+		let inputs = user.inputs
+		let frame = user.inputFrame
+		int flags = data[start]
+		int pointerX = data[start + 1]
+		int pointerY = data[start + 2]
 		int firstPointerButton = cast InputButton.LeftMouseButton
 		int lastPointerButton = cast InputButton.RightMouseButton
 
@@ -859,10 +893,8 @@ skipInit global unit input
 			inputs.writeInt16 pointerY
 
 		// Just pressed inputs
-		int count = data[5]
-		int readPos = 6
-		for count as i
-			int index = data[readPos + i]
+		for pressedCount as i
+			int index = data[start + 6 + i]
 			inputs.writeInt32 frame
 			if firstPointerButton <= index <= lastPointerButton
 				inputs.writeUnsignedInt16 cast(InputEventType.TouchDown) + ((index - firstPointerButton) shiftLeft 5)
@@ -873,12 +905,9 @@ skipInit global unit input
 				inputs.writeInt32 index
 				let item = Input.items[index]
 				inputs.writeString item and item.character.length == 1 ? item.character : ""
-		readPos += count
 
 		// Just released inputs
-		count = data[readPos]
-		readPos++
-		for count as i
+		for releasedCount as i
 			int index = data[readPos + i]
 			inputs.writeInt32 frame
 			if firstPointerButton <= index <= lastPointerButton
@@ -888,6 +917,7 @@ skipInit global unit input
 			else
 				inputs.writeUnsignedInt16 cast InputEventType.KeyUp
 				inputs.writeInt32 index
+		readPos += releasedCount
 
 		// Scroll delta of this frame
 		if (flags bitwiseAnd 2) != 0
@@ -895,8 +925,10 @@ skipInit global unit input
 			inputs.writeUnsignedInt16 cast InputEventType.Scroll
 			inputs.writeInt16 pointerX
 			inputs.writeInt16 pointerY
-			inputs.writeInt16 data[3]
-			inputs.writeInt16 data[4]
+			inputs.writeInt16 data[start + 3]
+			inputs.writeInt16 data[start + 4]
+
+		return readPos
 
 	internal handleSetState: Buffer buffer
 		let inputs = localUser.inputs
@@ -1217,10 +1249,18 @@ skipInit global unit input
 					// Modern input
 					int bit = 1
 					for 16
+						// Users created mid-session (connected mode) start with sparse arrays:
+						// an unset releasedAtFrame reads undefined, every comparison against it
+						// is false, and the release transition could NEVER fire - the button
+						// stayed pressed forever (and stuck buttons were forwarded into the
+						// embedded app). Backfill the defaults of InternalUser.reset first
+						// (>= -2 is false for undefined, true for every initialized value)
+						if not (internalUser.pressedAtFrame[i] >= -2) then internalUser.pressedAtFrame[i] = -2
+						if not (internalUser.releasedAtFrame[i] >= -2) then internalUser.releasedAtFrame[i] = -1
 						if internalUser.pressedAtFrame[i] >= internalUser.releasedAtFrame[i]
-							if buttons bitwiseAnd bit == 0 then internalUser.releasedAtFrame[i] = core.frame
+							if (buttons bitwiseAnd bit) == 0 then internalUser.releasedAtFrame[i] = core.frame
 						else
-							if buttons bitwiseAnd bit != 0 then internalUser.pressedAtFrame[i] = core.frame
+							if (buttons bitwiseAnd bit) != 0 then internalUser.pressedAtFrame[i] = core.frame
 						bit = bit shiftLeft 1
 				else
 				if inputType == String
@@ -2473,12 +2513,14 @@ input
 		keyRepeatAfter = after
 		keyRepeatEvery = every
 
-	// Returns true if the player has just pressed the given button this frame
+	// Returns true if the player has just pressed the given button this frame.
+	// player is honored for EVERY input type: in a multi-user session each user has their own
+	// keyboard and pointer, and their events land in their own stream (the old behavior forced
+	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
 	global bool justPressed: Input item, int player = 0
-		if item.type != Gamepad then player = 0
-		
 		// Pressed this frame?
 		let user = internalUsers[player]
+		if not user then return false
 		int pressedAtFrame = user.pressedAtFrame[item.index]
 		int framesSincePress = core.frame - pressedAtFrame
 		if framesSincePress == 0 then return true
@@ -2498,14 +2540,15 @@ input
 
 	// Returns true if the player is currently pressing the given button
 	global bool isPressed: Input item, int player = 0
-		if item.type != Gamepad then player = 0
 		let user = internalUsers[player]
+		if not user then return false
 		return user.pressedAtFrame[item.index] >= user.releasedAtFrame[item.index]
-	
+
 	// Returns true if the player has just released the given button this frame
 	global bool justReleased: Input item, int player = 0
-		if item.type != Gamepad then player = 0
-		return internalUsers[player].releasedAtFrame[item.index] == core.frame
+		let user = internalUsers[player]
+		if not user then return false
+		return user.releasedAtFrame[item.index] == core.frame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
@@ -2521,13 +2564,17 @@ input
 			return internalUsers[requestedPlayer.id].scrollDelta
 		return {0,0}
 
-	global allJustPressed: int player = 0
-		player = 0
-		return internalUsers[player].allJustPressed
-		
-	global allJustReleased: int player = 0
-		player = 0
-		return internalUsers[player].allJustReleased
+	global Input[] allJustPressed: int player = 0
+		let user = internalUsers[player]
+		if user then return user.allJustPressed
+		Input[] empty
+		return empty
+
+	global Input[] allJustReleased: int player = 0
+		let user = internalUsers[player]
+		if user then return user.allJustReleased
+		Input[] empty
+		return empty
 
 	global string getFocus: int player = 0
 		player = 0
