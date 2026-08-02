@@ -78,7 +78,7 @@ skipInit unit gizmo
 	init
 	internal tick
 	clear
-	internal onTouch: InputType InputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
+	internal onTouch: InputEventType InputEventType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false	
 
 unit Framework
 	float checksum

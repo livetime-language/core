@@ -235,7 +235,7 @@ enum VerticalAlignment: Top, Middle, Bottom
 internal skipInit transient unit gizmo
 	init
 	clear
-	internal onTouch: InputType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false
+	internal onTouch: InputEventType inputType, int id, Vector2 pixelPos, Vector2 referencePos, shift = false, alt = false, cmdOrCtrl = false
 
 media
 	init

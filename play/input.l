@@ -47,11 +47,11 @@ internal transient class InternalUser
 	visible string[] navigations
 
 	// Modern Input
-	// For each key, we store the frame when it was pressed and the frame when it was released
-	// If the user presses and releases a key in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
+	// For each input, we store the frame when it was pressed and the frame when it was released
+	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
 	visible int[] pressedAtFrame, releasedAtFrame
 	Vector2 pointerPosition, scrollDelta
-	Key[] allJustPressed, allJustReleased
+	Input[] allJustPressed, allJustReleased
 	string focus, prevFocus
 
 	// Video + Audio
@@ -103,7 +103,7 @@ internal transient class InternalUser
 	reset
 		// Modern Input
 		clearEvent
-		for Key.keys.length
+		for Input.items.length
 			pressedAtFrame[i] = -2
 			releasedAtFrame[i] = -1
 	
@@ -183,7 +183,7 @@ priority class Player
 	
 	internal bool isReadyInLobby
 
-	// This player is holding system.rewindKey (see core.checkRewindMechanic). Updated by the
+	// This player is holding system.rewindInput (see core.checkRewindMechanic). Updated by the
 	// exact same parsed input events that drive InternalUser.isPressed - gamepad records
 	// (absolute, per frame), KeyDown/KeyUp and TouchDown/TouchUp - but stored on the
 	// SERIALIZED player: the transient isPressed arrays are not part of snapshots, so inside
@@ -223,7 +223,7 @@ internal UserAccount
 	string name
 	string colorPreferences
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object, RemoveUser
+enum InputEventType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object, RemoveUser
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -719,7 +719,7 @@ skipInit global unit input
 			i += 2
 		return 0
 		
-	private handleTextInput: InputType type, string text
+	private handleTextInput: InputEventType type, string text
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		
@@ -727,14 +727,14 @@ skipInit global unit input
 		inputs.writeUnsignedInt16 cast type
 		inputs.writeString text
 			
-	internal handleKeyEvent: InputType inputType, string code, string key, bool ctrl, bool alt, bool meta
+	internal handleKeyEvent: InputEventType inputType, string code, string key, bool ctrl, bool alt, bool meta
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		int composite = cast inputType // inputType:   0 - 31 (5 bit)
 					
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 composite
-		int keyIndex = Key.keys.indexWhere.code == code
+		int keyIndex = Input.items.indexWhere.code == code
 		inputs.writeInt32 keyIndex
 		if inputType == KeyDown then inputs.writeString key.length == 1 and not ctrl and not meta ? key : ""
 
@@ -744,7 +744,7 @@ skipInit global unit input
 		// Pass event to embedded system
 		run??.runningApp?.input.handleKeyEvent(inputType, code, key, ctrl, alt, meta)
 		
-	internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
+	internal handleTouchEvent: InputEventType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 		int touchType, id
 		switch pointerType
 			"mouse"	touchType = button.clamp(0 to 2)
@@ -791,7 +791,7 @@ skipInit global unit input
 		// Pass event to embedded system
 		run??.runningApp?.input.handleTouchEvent(inputType, x, y, pointerType, pointerId, button, shift, alt, cmdOrCtrl)
 
-	internal handleSynteticTouchEvent: int playerIndex, InputType inputType, float x, float y, TouchType touchType, int id
+	internal handleSynteticTouchEvent: int playerIndex, InputEventType inputType, float x, float y, TouchType touchType, int id
 		let inputs = internalUsers[playerIndex]?.inputs
 		if !inputs then return
 		int composite = cast(inputType)	// inputType: 0 -  31 (5 bit)
@@ -804,7 +804,7 @@ skipInit global unit input
 	
 	internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 		let inputs = localUser.inputs
-		int composite = cast(InputType.TouchMove)	// inputType: 0 -  31 (5 bit)
+		int composite = cast(InputEventType.TouchMove)	// inputType: 0 -  31 (5 bit)
 		              + (cast TouchType.LeftMouseButton shiftLeft 5)	// touchType: 0 -   7 (3 bit)
 		              + ((math.floor(math.abs(id)) mod 128) shiftLeft 8)	// id:        0 - 127 (7 bit)
 		inputs.writeInt32 localUser.inputFrame
@@ -816,7 +816,7 @@ skipInit global unit input
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		
-		int composite = cast(InputType.Scroll)	// inputType: 0 -  31 (5 bit)
+		int composite = cast(InputEventType.Scroll)	// inputType: 0 -  31 (5 bit)
 		              + ((isPinch ? 1:0) shiftLeft 5)	// isPinch:   0 -   1 (1 bit)
 		
 		Vector2 referencePos = graphics.getPixelPos(x, y)
@@ -833,13 +833,13 @@ skipInit global unit input
 	internal handleSetState: Buffer buffer
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeUnsignedInt16 cast InputType.SetState
+		inputs.writeUnsignedInt16 cast InputEventType.SetState
 		inputs.writeBuffer buffer
 		
 	internal handleJoin: int frame, UserAccount account
 		let inputs = localUser.inputs
 		inputs.writeInt32 frame
-		inputs.writeInt16 cast InputType.Join
+		inputs.writeInt16 cast InputEventType.Join
 		inputs.writeString account._id
 		inputs.writeInt8 cast account.language
 		inputs.writeString account.name
@@ -851,14 +851,14 @@ skipInit global unit input
 		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.Navigate
+		inputs.writeInt16 cast InputEventType.Navigate
 		inputs.writeString url
 		
 	internal handleString: int id, string data
 		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.String
+		inputs.writeInt16 cast InputEventType.String
 		inputs.writeInt id
 		inputs.writeString data
 		
@@ -866,7 +866,7 @@ skipInit global unit input
 		if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.Json
+		inputs.writeInt16 cast InputEventType.Json
 		inputs.writeInt id
 		inputs.writeString data
 		
@@ -886,7 +886,7 @@ skipInit global unit input
 	private writeObjectRecord: int id, string data
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.Object
+		inputs.writeInt16 cast InputEventType.Object
 		inputs.writeInt id
 		inputs.writeString data
 
@@ -921,7 +921,7 @@ skipInit global unit input
 		if core.mode == None || !localUser || !localUser.collectInputs then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.RemoveUser
+		inputs.writeInt16 cast InputEventType.RemoveUser
 		inputs.writeInt userId
 		inputs.writeInt lastFrame
 		print "Removing player {userId}, their inputs count up to frame {lastFrame}", type:Action
@@ -981,7 +981,7 @@ skipInit global unit input
 		// Write to event stream
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.Gamepad
+		inputs.writeInt16 cast InputEventType.Gamepad
 		inputs.writeFloat32 math.abs(leftStickX) > Gamepad.deadZone ? leftStickX : 0
 		inputs.writeFloat32 math.abs(leftStickY) > Gamepad.deadZone ? leftStickY : 0
 		inputs.writeUnsignedInt16 buttons
@@ -996,7 +996,7 @@ skipInit global unit input
 		if core.rewindKeyBit == 0 or not localPlayer or not localPlayer.holdingRewindKey then return
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputType.Gamepad
+		inputs.writeInt16 cast InputEventType.Gamepad
 		inputs.writeFloat32 0
 		inputs.writeFloat32 0
 		inputs.writeUnsignedInt16 0
@@ -1004,10 +1004,10 @@ skipInit global unit input
 	internal parseInputs: int frame
 		// The rewind key, resolved for this parse pass (see Player.holdingRewindKey):
 		// rewindKeyBit is its button bit in Gamepad records (0 = not a gamepad key),
-		// rewindKeyIndex its Key.keys index for the KeyDown/KeyUp and TouchDown/TouchUp
+		// rewindKeyIndex its Input.items index for the KeyDown/KeyUp and TouchDown/TouchUp
 		// events (-1 = rewind disabled). Together they cover every key isPressed supports
-		core.rewindKeyBit = system.enableRewind and system.rewindKey and system.rewindKey.type == Gamepad and system.rewindKey.index < 16 ? 1 shiftLeft system.rewindKey.index : 0
-		core.rewindKeyIndex = system.enableRewind and system.rewindKey ? system.rewindKey.index : -1
+		core.rewindKeyBit = system.enableRewind and system.rewindInput and system.rewindInput.type == Gamepad and system.rewindInput.index < 16 ? 1 shiftLeft system.rewindInput.index : 0
+		core.rewindKeyIndex = system.enableRewind and system.rewindInput ? system.rewindInput.index : -1
 		for internalUsers as internalUser if internalUser
 			// Events are normally cleared at the end of core.tick, but when an exception aborts
 			// the step after parsing, stale events survive in these transient lists. Clear them
@@ -1049,7 +1049,7 @@ skipInit global unit input
 					updatePlayers
 				
 				let value = inputs.readUnsignedInt16
-				InputType inputType = cast(value mod 32)
+				InputEventType inputType = cast(value mod 32)
 				
 				if inputType >= TouchDown && inputType <= Scroll
 					if !player then core.log " ERROR: userId {userId} not in playersById"
@@ -1408,7 +1408,7 @@ skipInit global unit input
 		// 	internalUser.typedCharacters += "\b"
 
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = true
-		Key key = Key.keys[keyIndex]
+		Input key = Input.items[keyIndex]
 		if not key or (character and key.character != character)
 			key = {type:Keyboard, code:key ? key.code : "", character}
 		internalUser.pressedAtFrame[keyIndex] = core.frame
@@ -1420,8 +1420,8 @@ skipInit global unit input
 			// CmdOrCtrl
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
-				internalUser.allJustPressed.add Key.CmdOrCtrl
-				internalUser.pressedAtFrame[Key.CmdOrCtrl.index] = core.frame
+				internalUser.allJustPressed.add Input.CmdOrCtrl
+				internalUser.pressedAtFrame[Input.CmdOrCtrl.index] = core.frame
 			
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -1440,7 +1440,7 @@ skipInit global unit input
 			
 		// Modern Input
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = false
-		Key key = Key.keys[keyIndex]
+		Input key = Input.items[keyIndex]
 		internalUser.releasedAtFrame[keyIndex] = core.frame
 		internalUser.allJustReleased.add key
 		let parent = key?.parent
@@ -1450,8 +1450,8 @@ skipInit global unit input
 			// CmdOrCtrl
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
-				internalUser.releasedAtFrame[Key.CmdOrCtrl.index] = core.frame
-				internalUser.allJustReleased.add Key.CmdOrCtrl
+				internalUser.releasedAtFrame[Input.CmdOrCtrl.index] = core.frame
+				internalUser.allJustReleased.add Input.CmdOrCtrl
 			
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -2182,17 +2182,17 @@ enum InputButton
 	MiddleMouseButton
 	RightMouseButton
 
-enum KeyType: Keyboard, Pointer, Gamepad
+enum InputType: Keyboard, Pointer, Gamepad
 
-class Key
-	KeyType type
+class Input
+	InputType type
 	string code
 	string character
 	string name
-	Key parent
+	Input parent
 	int index
 	
-	Key
+	Input
 		if not name then name = code.toLowerCase
 
 	inline string toString() this.character
@@ -2346,19 +2346,19 @@ class Key
 	const Numpad0	= {type:Keyboard,	code:"Numpad0",	character:"0"}
 	const NumpadDecimal	= {type:Keyboard,	code:"NumpadDecimal",	character:"."}
 
-	static Key[] keys
-	inline js static dynamic keysObject => Key
+	static Input[] items
+	inline js static dynamic keysObject => Input
 	init
 		int i
 		forDynamic keysObject
-			keys.add .
+			items.add .
 			.index = i++
 
-		// system.rewindKey's declaration default (LeftTrigger) cannot bind in system.init:
-		// the transient system unit initializes before Key.init has created the Key constants.
-		// Wire the default here - an app that sets its own rewindKey in app.init runs after
+		// system.rewindInput's declaration default (LeftTrigger) cannot bind in system.init:
+		// the transient system unit initializes before Input.init has created the Input constants.
+		// Wire the default here - an app that sets its own rewindInput in app.init runs after
 		// this and wins
-		if not system.rewindKey then system.rewindKey = LeftTrigger
+		if not system.rewindInput then system.rewindInput = LeftTrigger
 
 input
 	int keyRepeatAfter = 0
@@ -2369,38 +2369,38 @@ input
 		keyRepeatEvery = every
 
 	// Returns true if the player has just pressed the given button this frame
-	global bool justPressed: Key key, int player = 0
-		if key.type != Gamepad then player = 0
+	global bool justPressed: Input item, int player = 0
+		if item.type != Gamepad then player = 0
 		
 		// Pressed this frame?
 		let user = internalUsers[player]
-		int pressedAtFrame = user.pressedAtFrame[key.index]
+		int pressedAtFrame = user.pressedAtFrame[item.index]
 		int framesSincePress = core.frame - pressedAtFrame
 		if framesSincePress == 0 then return true
 
 		// Repeating?
 		if keyRepeatEvery == 0 then return false
-		int releasedAtFrame = user.releasedAtFrame[key.index]
+		int releasedAtFrame = user.releasedAtFrame[item.index]
 		return pressedAtFrame >= releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
 	global bool justPressed: string keyCombination, int player = 0
 		let keyStrings = keyCombination.toLowerCase.split("+")
 		for keyStrings
 			let keyString = .trim
-			let key = Key.keys.find(.name == keyString)
-			if not key or input.justPressed(key, player) then return false
+			let item = Input.items.find(.name == keyString)
+			if not item or input.justPressed(item, player) then return false
 		return true
 
 	// Returns true if the player is currently pressing the given button
-	global bool isPressed: Key key, int player = 0
-		if key.type != Gamepad then player = 0
+	global bool isPressed: Input item, int player = 0
+		if item.type != Gamepad then player = 0
 		let user = internalUsers[player]
-		return user.pressedAtFrame[key.index] >= user.releasedAtFrame[key.index]
+		return user.pressedAtFrame[item.index] >= user.releasedAtFrame[item.index]
 	
 	// Returns true if the player has just released the given button this frame
-	global bool justReleased: Key key, int player = 0
-		if key.type != Gamepad then player = 0
-		return internalUsers[player].releasedAtFrame[key.index] == core.frame
+	global bool justReleased: Input item, int player = 0
+		if item.type != Gamepad then player = 0
+		return internalUsers[player].releasedAtFrame[item.index] == core.frame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote

@@ -55,7 +55,7 @@ class CoreUser
 			if (.phase == Up and .type >= Touch) or (hasToch and .type != Touch)
 				touches.remove .
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Wheel, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
+enum InputEventType: None, TouchDown, TouchMove, TouchUp, Wheel, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -260,18 +260,18 @@ skipInit unit Input
 		
 	cs void collectMouseEvents
 		var mousePosition = UnityEngine.Input.mousePosition;
-		if(UnityEngine.Input.GetMouseButtonDown(0)) handleTouchEvent(InputType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
-		if(mousePosition != prevMousePosition)      handleTouchEvent(InputType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
-		if(UnityEngine.Input.GetMouseButtonUp(0))   handleTouchEvent(InputType.TouchUp,   TouchType.LeftMouseButton, 0, mousePosition);
+		if(UnityEngine.Input.GetMouseButtonDown(0)) handleTouchEvent(InputEventType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
+		if(mousePosition != prevMousePosition)      handleTouchEvent(InputEventType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
+		if(UnityEngine.Input.GetMouseButtonUp(0))   handleTouchEvent(InputEventType.TouchUp,   TouchType.LeftMouseButton, 0, mousePosition);
 		prevMousePosition = mousePosition;
 		
 	cs void collectTiltFiveEvents
 		var mousePosition = TiltFive.Wand.GetPosition(controllerPosition: TiltFive.ControllerPosition.Aim, playerIndex: 0);
-		if(TiltFive.Input.GetButtonDown(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
-		handleTouchEvent(InputType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
-		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputType.TouchUp, TouchType.LeftMouseButton, 0, mousePosition);
+		if(TiltFive.Input.GetButtonDown(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputEventType.TouchDown, TouchType.LeftMouseButton, 0, mousePosition);
+		handleTouchEvent(InputEventType.TouchMove, TouchType.LeftMouseButton, 0, mousePosition);
+		if(TiltFive.Input.GetButtonUp(TiltFive.Input.WandButton.One, playerIndex: 0)) handleTouchEvent(InputEventType.TouchUp, TouchType.LeftMouseButton, 0, mousePosition);
 			
-	private handleKeyEvent: InputType type, int keyCode, string key
+	private handleKeyEvent: InputEventType type, int keyCode, string key
 		// if Core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		let inputs = localUser.inputs
 		
@@ -280,7 +280,7 @@ skipInit unit Input
 		inputs.writeInt32 keyCode
 		if type == KeyDown: inputs.writeString key
 		
-	internal handleTouchEvent: InputType inputType, TouchType touchType, int id, Vector2 screenPosition
+	internal handleTouchEvent: InputEventType inputType, TouchType touchType, int id, Vector2 screenPosition
 		// if Core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		let worldPosition = graphics.toGroundPlane screenPosition
 		let inputs = localUser.inputs
@@ -322,7 +322,7 @@ skipInit unit Input
 				
 				let value = inputs.readUnsignedInt16
 				// if Core.logging: Core.parseLog += " "+value
-				InputType inputType = cast(value % 32)
+				InputEventType inputType = cast(value % 32)
 				
 				if inputType >= TouchDown && inputType <= Wheel
 					// if !user: Core.log " ERROR: userId {userId} not in usersById"

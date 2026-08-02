@@ -305,7 +305,7 @@ enum string PointerEvents
 	none // On its own, it doesn't trigger pointer event, but its subtree could by setting pointerEvents 
 	auto // The element behaves as it would if the pointerEvents property were not specified
 	
-enum string InputType
+enum string InputEventType
 	text // The default value. A single-line text field. Line-breaks are automatically removed from the input value.	
 	email // A field for editing an email address. Looks like a text input, but has validation parameters and relevant keyboard in supporting browsers and devices with dynamic keyboards.	
 	password // A single-line text field whose value is obscured. Will alert user if site is not secure.	

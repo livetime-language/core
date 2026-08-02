@@ -745,7 +745,7 @@ internal transient skipInit unit core
 		// Parse inputs
 		input.parseInputs(frame)
 
-		// Shared rewind: while any player holds system.rewindKey, restore the world state
+		// Shared rewind: while any player holds system.rewindInput, restore the world state
 		// further back in its own history instead of simulating it forward
 		bool rewound = checkRewindMechanic
 
@@ -839,8 +839,8 @@ internal transient skipInit unit core
 	
 	private Buffer[] milestones
 
-	// --- Shared rewind (system.rewindKey) ---------------------------------------------------
-	// While any player holds system.rewindKey, every client steps the world state BACKWARD
+	// --- Shared rewind (system.rewindInput) ---------------------------------------------------
+	// While any player holds system.rewindInput, every client steps the world state BACKWARD
 	// through its own history instead of simulating forward - a synced "rewind time" mechanic.
 	// On release the game continues forward from the rewound state with the live inputs
 	// (records consumed before a pop are never re-read - the mechanic never touches readPos).
@@ -888,8 +888,8 @@ internal transient skipInit unit core
 	//   rewind can never cross a restart (which also shields entries from initAll's
 	//   _constCache rebuild).
 	visible bool isRewinding         // The world state was rewound this frame (for overlays/tests)
-	internal int rewindKeyBit        // system.rewindKey's button bit in Gamepad records (0 = disabled or not a gamepad key), set by input.parseInputs
-	internal int rewindKeyIndex      // system.rewindKey's Key.keys index for KeyDown/KeyUp and TouchDown/TouchUp events (-1 = disabled), set by input.parseInputs
+	internal int rewindKeyBit        // system.rewindInput's button bit in Gamepad records (0 = disabled or not a gamepad key), set by input.parseInputs
+	internal int rewindKeyIndex      // system.rewindInput's Input.keys index for KeyDown/KeyUp and TouchDown/TouchUp events (-1 = disabled), set by input.parseInputs
 	private RewindEntry[int] rewindHistory // World snapshots keyed by playhead position (multiples of rewindStepFrames)
 	private RewindEntry[int] rewindShadow  // Certified entries displaced by a speculative capture, restored when a rollback discards the displacer
 	private int[] speculativeRewindPositions // Positions captured beyond certainty since the last rollback (see cleanupSpeculativeRewindEntries)
