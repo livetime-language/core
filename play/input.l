@@ -829,7 +829,75 @@ skipInit global unit input
 		
 		// Pass event to embedded system
 		run??.runningApp?.input.handleWheelEvent(x, y, deltaX, deltaY, isPinch)
-		
+
+	// The per-frame input bundle forwarded by the web IDE while the app runs embedded in its
+	// webworker (see TinyTime's engineInterface.forwardInputs). One compact Int32Array per frame:
+	// [flags, pointerX, pointerY, scrollX, scrollY, pressedCount, ...pressed Input indices,
+	//  releasedCount, ...released Input indices], flags: 1 = the pointer moved, 2 = scrolled.
+	// The pointer position arrives already transformed into app screen pixels (the IDE divides
+	// out the offset and scale it blits the framebuffer with). Pointer buttons become
+	// TouchDown/TouchUp records at that position, everything else (keyboard and gamepad button
+	// indices) becomes KeyDown/KeyUp records - byte-identical to what the DOM handlers above
+	// write, so parseInputs treats forwarded inputs exactly like native ones. The caller
+	// (the worker's onmessage) calls system.tick right after, which parses the records
+	internal handleForwardedInputs: int[] data
+		if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
+		let inputs = localUser.inputs
+		let frame = localUser.inputFrame
+		int flags = data[0]
+		int pointerX = data[1]
+		int pointerY = data[2]
+		int firstPointerButton = cast InputButton.LeftMouseButton
+		int lastPointerButton = cast InputButton.RightMouseButton
+
+		// The pointer moved: write one TouchMove record. At most one move arrives per input
+		// frame, so the in-place coalescing of handleTouchEvent isn't needed
+		if (flags bitwiseAnd 1) != 0
+			inputs.writeInt32 frame
+			inputs.writeUnsignedInt16 cast InputEventType.TouchMove
+			inputs.writeInt16 pointerX
+			inputs.writeInt16 pointerY
+
+		// Just pressed inputs
+		int count = data[5]
+		int readPos = 6
+		for count as i
+			int index = data[readPos + i]
+			inputs.writeInt32 frame
+			if firstPointerButton <= index <= lastPointerButton
+				inputs.writeUnsignedInt16 cast(InputEventType.TouchDown) + ((index - firstPointerButton) shiftLeft 5)
+				inputs.writeInt16 pointerX
+				inputs.writeInt16 pointerY
+			else
+				inputs.writeUnsignedInt16 cast InputEventType.KeyDown
+				inputs.writeInt32 index
+				let item = Input.items[index]
+				inputs.writeString item and item.character.length == 1 ? item.character : ""
+		readPos += count
+
+		// Just released inputs
+		count = data[readPos]
+		readPos++
+		for count as i
+			int index = data[readPos + i]
+			inputs.writeInt32 frame
+			if firstPointerButton <= index <= lastPointerButton
+				inputs.writeUnsignedInt16 cast(InputEventType.TouchUp) + ((index - firstPointerButton) shiftLeft 5)
+				inputs.writeInt16 pointerX
+				inputs.writeInt16 pointerY
+			else
+				inputs.writeUnsignedInt16 cast InputEventType.KeyUp
+				inputs.writeInt32 index
+
+		// Scroll delta of this frame
+		if (flags bitwiseAnd 2) != 0
+			inputs.writeInt32 frame
+			inputs.writeUnsignedInt16 cast InputEventType.Scroll
+			inputs.writeInt16 pointerX
+			inputs.writeInt16 pointerY
+			inputs.writeInt16 data[3]
+			inputs.writeInt16 data[4]
+
 	internal handleSetState: Buffer buffer
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
