@@ -815,7 +815,7 @@ internal transient skipInit unit core
 
 			// One message per step with pixels, traces, output and frame state. The pixels are the
 			// live framebuffer (only included when this step drew): the editor bridge copies them
-			sendOutputToEditor pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen.pixels : null)
+			sendOutputToEditor pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen??.pixels : null)
 
 			// Cleanup
 			for input.internalUsers as user
