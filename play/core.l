@@ -10,7 +10,10 @@ internal transient immutable RoomInfo
 	int userId
 	string seed
 	float serverStartTime
-	int maxUserId
+	// -1 = no user known. The default must NOT be 0: sendJoinMessage falls back to a fresh
+	// RoomInfo on a first-ever join, and advertising maxKnownUserId 0 makes the server mint an
+	// away phantom user 0 that pins everyone's certainFrame at -1 (a frozen room in lockstep)
+	int maxUserId = -1
 	string token
 
 enum SendInputsMode: None, Peer, Server
