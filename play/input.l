@@ -51,7 +51,7 @@ internal transient class InternalUser
 	// If the user presses and releases a key in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
 	visible int[] pressedAtFrame, releasedAtFrame
 	Vector2 pointerPosition, scrollDelta
-	Key[] allJustPressed
+	Key[] allJustPressed, allJustReleased
 	string focus, prevFocus
 
 	// Video + Audio
@@ -125,6 +125,7 @@ internal transient class InternalUser
 
 		// Modern Input
 		allJustPressed.clear
+		allJustReleased.clear
 		scrollDelta = {0,0}
 		prevFocus = focus
 		
@@ -1441,13 +1442,16 @@ skipInit global unit input
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 		Key key = Key.keys[keyIndex]
 		internalUser.releasedAtFrame[keyIndex] = core.frame
+		internalUser.allJustReleased.add key
 		let parent = key?.parent
 			internalUser.releasedAtFrame[parent.index] = core.frame
+			internalUser.allJustReleased.add parent
 			
 			// CmdOrCtrl
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				internalUser.releasedAtFrame[Key.CmdOrCtrl.index] = core.frame
+				internalUser.allJustReleased.add Key.CmdOrCtrl
 			
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -2415,6 +2419,10 @@ input
 	global allJustPressed: int player = 0
 		player = 0
 		return internalUsers[player].allJustPressed
+		
+	global allJustReleased: int player = 0
+		player = 0
+		return internalUsers[player].allJustReleased
 
 	global string getFocus: int player = 0
 		player = 0
