@@ -175,17 +175,17 @@ Screen
 	
 	js void setup: Vector2 size
 		this.size = size
-		if(system.isEmbedded) {
+		// Embedded (webworker) and headless (node test runner) builds have no canvas: draw
+		// into a plain buffer instead
+		this.canvas = system.isEmbedded || typeof document === "undefined" ? null : document.createElement("canvas")
+		this.context = this.canvas && this.canvas.getContext ? (this.canvas.width = this.size.x, this.canvas.height = this.size.y, this.canvas.getContext("2d")) : null
+		if(this.context) {
+			this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
+			this.pixels = new Int32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
+		} else {
 			// Int32Array, not Uint32Array: element reads must yield the canonical signed int32
 			// so pixel values equal Color.value and folded int literals like 0xff000000
 			this.pixels = new Int32Array(size.x * size.y);
-		} else {
-			this.canvas = document.createElement("canvas")
-			this.canvas.width = this.size.x
-			this.canvas.height = this.size.y
-			this.context = this.canvas.getContext("2d")
-			this.pixelData = this.context.getImageData(0, 0, this.size.x, this.size.y, {pixelFormat: "rgba-unorm8" })
-			this.pixels = new Int32Array(this.pixelData.data.buffer, this.pixelData.data.byteOffset, this.pixelData.data.byteLength / 4)
 		}
 		this.clear();
 
@@ -215,7 +215,8 @@ Screen
 		for len target[.] = 0xff000000
 			
 	finishFrame
-		if system.fastForward or system.isEmbedded then return
+		// Embedded (webworker) and headless (node test runner) builds have no canvas to draw to
+		if system.fastForward or system.isEmbedded or not context then return
 		context.putImageData(pixelData, 0, 0)
 		graphics.context.imageSmoothingEnabled = smoothing;
 		graphics.context.drawImage(canvas, activeOffset.x, activeOffset.y, activeSize.x, activeSize.y)

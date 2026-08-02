@@ -197,10 +197,18 @@ internal transient skipInit unit core
 		const counter = Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
 		return (timestamp + machineIdentifier + processIdentifier + counter).toLowerCase();
 		
+	// The web IDE forwards the IDE session's synced seed and clock base as raw globals set
+	// between the injected application code and system.start (see TinyTime's
+	// engineInterface.provideStartCode): every connected client's embedded app must draw the
+	// same random numbers and see the same clock. Raw globals, not system fields - initPlatform
+	// re-initializes the transient system unit, which would wipe fields set before start
+	private inline js string forwardedRandomSeed => (typeof globalThis._forwardedRandomSeed == "string" ? globalThis._forwardedRandomSeed : "")
+	private inline js int forwardedStartTime => (typeof globalThis._forwardedStartTime == "number" ? globalThis._forwardedStartTime : 0)
+
 	startLocal
 		mode = Local
 		input.internalUsers.clear
-		math.setRandomSeed math.generateRandomSeed 
+		math.setRandomSeed forwardedRandomSeed or math.generateRandomSeed
 		stop
 		
 	// Clear all inputs and reset the application to the first frame
@@ -221,7 +229,10 @@ internal transient skipInit unit core
 		errorMessage = ""
 		sounds.stop
 		isPremiere = true
-		startTime = serverStartTime = currentTime
+		startTime = currentTime
+		// The web IDE forwards the IDE session's synced clock base: Time.now must be identical
+		// in every connected client's embedded app
+		serverStartTime = forwardedStartTime != 0 ? forwardedStartTime : currentTime
 		reset
 		onFrame
 
@@ -516,6 +527,10 @@ internal transient skipInit unit core
 		if mode == None or mode == Ping then return
 			
 		let targetFrame = math.floor((now - startTime)/frameTime)+1
+		// Embedded in the web IDE's worker: the IDE sends one tick message per IDE frame, and
+		// every connected client's worker must step the same number of frames per message -
+		// step exactly one frame per tick instead of following this worker's wall clock
+		if system.isEmbedded then targetFrame = frame + 1
 		if verbose then core.log "----- #{frame} -> #{targetFrame} -----"
 		
 		if mode == Local && targetFrame > frame + ticksPerSecond*2
