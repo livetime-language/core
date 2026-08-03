@@ -113,7 +113,7 @@ enum KeyCode
 	CloseBraket  = 221
 	SingleQuote  = 222
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object
+enum InputEventType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object
 
 internal transient InternalGamepadButton
 	bool pressed, touched
@@ -201,7 +201,7 @@ global transient input
 	private handleWheelEvent: float x, float y, float deltaX, float deltaY, bool isPinch
 		internalUsers[0].scrollDelta = {deltaX, deltaY}
 
-	internal handleKeyEvent: InputType inputType, KeyCode keyCode, string key
+	internal handleKeyEvent: InputEventType inputType, KeyCode keyCode, string key
 
 	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
 	internal updateGamepads

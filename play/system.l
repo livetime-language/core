@@ -19,9 +19,9 @@ global transient skipInit unit system
 	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
 
-	// Rewind: while any player holds rewindKey, all clients step the world state BACKWARD by
+	// Rewind: while any player holds rewindInput, all clients step the world state BACKWARD by
 	// rewindFrames frames per tick instead of simulating forward, and on release the game
-	// continues forward from the rewound moment (see core.checkRewindMechanic). rewindKey
+	// continues forward from the rewound moment (see core.checkRewindMechanic). rewindInput
 	// supports every key input.isPressed supports - gamepad buttons (LeftTrigger, A, ...),
 	// keyboard keys (ShiftLeft, Space, ...) and mouse buttons/touches (LeftMouseButton, ...) -
 	// and the hold rides the input records those keys already produce, so the mechanic adds
@@ -30,9 +30,21 @@ global transient skipInit unit system
 	// All four values are compile-time configuration: they feed the deterministic simulation,
 	// so every client of a room must run the same values (changing them mid-session desyncs)
 	public bool enableRewind = true
-	public Key rewindKey = LeftTrigger
+	public Input rewindInput = LeftTrigger
 	public int rewindFrames = 4
 	public int rewindHistoryFrames = 900
+	
+	// Rollback netcode (default): frames are predicted with the inputs at hand, serialized
+	// snapshots pin the last certain state, and late inputs rewind+replay the world. Set to
+	// false when the game holds state in external (non-LiveTime) libraries that the serializer
+	// cannot snapshot: the engine then runs delay-based LOCKSTEP instead - it only ever steps
+	// frames whose inputs are final from every user (core.lockstepCertainInputFrame), so the
+	// applied timeline never needs a correction and nothing is ever serialized. Claims advance
+	// on the wall clock (see core.onFrame), new records are stamped targetFrame+1, so local
+	// input takes effect after ~one-way latency and the world freezes while a peer's claims
+	// are missing. Compile-time configuration like the rewind values: every client of a room
+	// must run the same value (set it in app.init)
+	public bool enableRollback = true
 	
 	// Info
 	public inline js string appName	=> _appName
@@ -104,8 +116,10 @@ global transient skipInit unit system
 	private async inline js void initBackend
 		if(typeof(backend) != "undefined") await backend.connect2()
 
-	// This is called when the application starts for the first time	
-	private start: bool isDebug = false, bool isEmbedded = false
+	// This is called when the application starts for the first time
+	// 
+	private start: bool isDebug = false	// The application is edited and run by an IDE (in vscode or a web browser)
+	               bool isEmbedded = false	// The application is embedded in a web worker of the web based IDE
 		try
 			system.log "system.start"
 			let now = PlainDate.preciseTime
@@ -151,15 +165,16 @@ global transient skipInit unit system
 				try
 					this.engineStarted = true
 					statistics.loadTime = PlainDate.preciseTime - statistics.startTime
-					startInterval
+					if not isEmbedded then startInterval
 					// A localhost page with an explicit room in the URL is online multiplayer too:
 					// the Go signaling server serves the page locally for development and testing
 					isOnlineMultiplayer = not (isDebug or isLocal or roomId == "local" or url.startsWith("file") or ((hostname == "localhost" or hostname == "127.0.0.1") and not roomId))
 					if isOnlineMultiplayer	core.join gameId, roomId, userId
 					else	core.startLocal
 					
-					// When the texture is loaded, we start the app in record mode. This starts processing inputs and ticks.
-					if !isDebug or isEmbedded then record
+					// If we are debugging, the app should show the first frame but not run yet
+					// Only in release mode the app should start running and record the input event stream
+					if !isDebug then record
 					
 					// Tell the editor that we can call "replay" when the code changes
 					// If we didn't reach this point, we call "start" again when the code changes
@@ -253,9 +268,6 @@ global transient skipInit unit system
 			window.tick();
 		}
 
-	public embeddedTick
-		core.step fastForward:false draw:true
-		return graphics??.screen.pixels
 	
 	// This is called every animation frame
 	private tick
@@ -388,6 +400,8 @@ global transient skipInit unit system
 			document.head.appendChild(link);
 		}
 		link.href = iconUrl;
+		
+
 
 // In LiveTime, the term "time" always means the number of milliseconds since 1 January 1970
 skipInit static class Time
@@ -396,7 +410,7 @@ skipInit static class Time
 	
 	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second).
 	// Counted along the SURVIVING timeline (the rewind playhead), like Time.now: without rewinds this
-	// equals the frame counter, and after a shared rewind (system.rewindKey) it continues from the
+	// equals the frame counter, and after a shared rewind (system.rewindInput) it continues from the
 	// rewound moment - so a run that was rewound away and replayed behaves identically to the first
 	// one. Engine code that needs a per-step identity must use core.frame instead (a playhead value
 	// recurs after a rewind, a frame number never does)

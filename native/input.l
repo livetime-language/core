@@ -105,7 +105,7 @@ priority class Player
 	// 		if (.phase == Up and .type >= Touch) or (hasTouch and .type != Touch)
 	// 			touches.remove .
 	
-enum InputType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
+enum InputEventType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, Lost, StillConnected, SetState, Navigate, Gamepad, String, Json, Object
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -671,7 +671,7 @@ skipInit global unit input
 	// 		i += 2
 	// 	return 0
 		
-	// private handleTextInput: InputType type, string text
+	// private handleTextInput: InputEventType type, string text
 	// 	if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 		
@@ -679,7 +679,7 @@ skipInit global unit input
 	// 	inputs.writeUnsignedInt16 cast type
 	// 	inputs.writeString text
 			
-	internal handleKeyEvent: InputType inputType, int scanCode, KeyCode keyCode
+	internal handleKeyEvent: InputEventType inputType, int scanCode, KeyCode keyCode
 		// if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 		// let inputs = localUser.inputs
 		// int composite = cast inputType                                  // inputType:   0 - 31 (5 bit)
@@ -697,7 +697,7 @@ skipInit global unit input
 		// inputs.writeInt32 cast keyCode
 		// if inputType == KeyDown: inputs.writeString key
 		
-	// internal handleTouchEvent: InputType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
+	// internal handleTouchEvent: InputEventType inputType, float x, float y, string pointerType, int pointerId, int button, shift = false, alt = false, cmdOrCtrl = false
 	// 	int touchType, id
 	// 	if pointerType == "mouse": touchType = button.clamp(0..2); else
 	// 	if pointerType == "touch": touchType = 3; id = pointerId; else
@@ -733,7 +733,7 @@ skipInit global unit input
 	
 	// internal handleUpdateTouchAfterSwitchingUser: int id, Vector2 referencePos
 	// 	let inputs = localUser.inputs
-	// 	int composite = cast(InputType.TouchMove)                       // inputType: 0 -  31 (5 bit)
+	// 	int composite = cast(InputEventType.TouchMove)                       // inputType: 0 -  31 (5 bit)
 	// 	              + math.shiftLeft(cast TouchType.LeftMouseButton, 5)          // touchType: 0 -   7 (3 bit)
 	// 	              + math.shiftLeft(math.floor(math.abs(id))%128, 8) // id:        0 - 127 (7 bit)
 	// 	inputs.writeInt32 localUser.inputFrame
@@ -747,7 +747,7 @@ skipInit global unit input
 		
 	// 	Vector2 referencePos = {x*graphics.pixelRatio, y*graphics.pixelRatio}.getRelativeTo(graphics.baseMatrix)
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeUnsignedInt16 cast InputType.Scroll
+	// 	inputs.writeUnsignedInt16 cast InputEventType.Scroll
 	// 	inputs.writeInt16 math.round(referencePos.x)
 	// 	inputs.writeInt16 math.round(referencePos.y)
 	// 	inputs.writeInt16 math.round(deltaX)
@@ -757,20 +757,20 @@ skipInit global unit input
 	// internal handleSetState: Buffer buffer
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeUnsignedInt16 cast InputType.SetState
+	// 	inputs.writeUnsignedInt16 cast InputEventType.SetState
 	// 	inputs.writeBuffer buffer
 		
 	// internal handleJoin: int frame
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 frame
-	// 	inputs.writeInt16 cast InputType.Join
+	// 	inputs.writeInt16 cast InputEventType.Join
 				
 	// // Handles navigating back or forward in the browser	
 	// internal handleNavigate: string url
 	// 	if core.mode == None || system.playMode != Record || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.Navigate
+	// 	inputs.writeInt16 cast InputEventType.Navigate
 	// 	inputs.writeString url
 		
 	// // Post lost messages and remove players if nobody disagrees
@@ -793,7 +793,7 @@ skipInit global unit input
 	// 				core.log "Sending lost message for player {player.id} at frame {core.frame}", internalUser.inputFrame
 	// 				let inputs = localUser.inputs
 	// 				inputs.writeInt32 localUser.inputFrame
-	// 				inputs.writeInt16 cast InputType.Lost
+	// 				inputs.writeInt16 cast InputEventType.Lost
 	// 				inputs.writeInt16 player.id
 	// 				internalUser.nextLostMessageAtFrame = core.frame + core.ticksPerSecond * 12
 					
@@ -803,14 +803,14 @@ skipInit global unit input
 	// private handleStillConnected: int userId
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.StillConnected
+	// 	inputs.writeInt16 cast InputEventType.StillConnected
 	// 	inputs.writeInt16 userId
 				
 	// internal handleString: int id, string data
 	// 	if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.String
+	// 	inputs.writeInt16 cast InputEventType.String
 	// 	inputs.writeInt id
 	// 	inputs.writeString data
 		
@@ -818,7 +818,7 @@ skipInit global unit input
 	// 	if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.Json
+	// 	inputs.writeInt16 cast InputEventType.Json
 	// 	inputs.writeInt id
 	// 	inputs.writeString data
 		
@@ -826,7 +826,7 @@ skipInit global unit input
 	// 	if !data || core.mode == None || core.frames > core.frame || !localUser || !localUser.collectInputs: return
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.Object
+	// 	inputs.writeInt16 cast InputEventType.Object
 	// 	inputs.writeInt id
 	// 	inputs.writeString data
 		
@@ -869,7 +869,7 @@ skipInit global unit input
 	// 	// Write to event stream
 	// 	let inputs = localUser.inputs
 	// 	inputs.writeInt32 localUser.inputFrame
-	// 	inputs.writeInt16 cast InputType.Gamepad
+	// 	inputs.writeInt16 cast InputEventType.Gamepad
 	// 	inputs.writeFloat32 math.abs(leftStickX) > Gamepad.deadZone ? leftStickX : 0
 	// 	inputs.writeFloat32 math.abs(leftStickY) > Gamepad.deadZone ? leftStickY : 0
 	// 	inputs.writeUnsignedInt16 buttons
@@ -906,7 +906,7 @@ skipInit global unit input
 	// 				updatePlayers
 				
 	// 			let value = inputs.readUnsignedInt16
-	// 			InputType inputType = cast(value % 32)
+	// 			InputEventType inputType = cast(value % 32)
 				
 	// 			if inputType >= TouchDown && inputType <= Scroll
 	// 				if !player: core.log " ERROR: userId {userId} not in playersById"

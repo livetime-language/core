@@ -167,7 +167,7 @@ unit algorithms
 		                  int(IntVector2 a, IntVector2 b) heuristic
 		
 		AStarNode[,] grid = {size}
-		for size grid[.] = {pos}
+		for size grid[.] = {.}
 				
 		let diagonal = false
 		let start = grid[startPos]

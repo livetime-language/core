@@ -15,8 +15,8 @@ interface object
 		let result = ""
 
 		// Get all field names and types
-		for objects
-			forDynamic . as value, key
+		for obj in objects
+			forDynamic obj as value, key
 				if typeof(value) == "function" then continue
 				if(!fieldNames.includes(key)) {
 					fieldNames.add(key)
@@ -62,7 +62,7 @@ interface object
 		if(lines.length < 2) return []
 		let names = lines[0].split("\t")
 		dynamic[] result
-		for 1 to lines.length
+		for i = 1 to lines.length
 			let line = lines[i]
 				let values = line.split("\t")
 				dynamic obj = {}
@@ -77,7 +77,7 @@ interface object
 		let names = lines[0].split("\t")
 		let types = lines[1].split("\t")
 		dynamic[] result
-		for 2 to lines.length
+		for i = 2 to lines.length
 			let line = lines[i]
 				let values = line.split("\t")
 				dynamic obj = {}

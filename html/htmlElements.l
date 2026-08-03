@@ -451,7 +451,7 @@ global static class html
 	importance:4
 	global inline void field: string model = ""                 // The variable that holds the value. This will be updated when the user changed the text
 		                      string placeholder = ""           // The placeholder text to display in the field
-		                      InputType type = text            // The type of the input field
+		                      InputEventType type = text            // The type of the input field
 		                      bool focused = false              // Whether the cursor should be placed in the field
 		                      expand Attributes attributes = {} // The attributes of the HTML element
 		                      expand Style style = null         // The css style of the HTML element

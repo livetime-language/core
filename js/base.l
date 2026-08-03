@@ -1341,7 +1341,7 @@ class List<T>
 	private static T findStartingAtIndex: T[] list            // The list to search
 		                                  bool(T it) condition // The condition to check
 		                                  int startIndex = 0  // Start searching at this index
-		for startIndex to list.length
+		for i = startIndex to list.length
 			let it = list[.]
 			if condition(it)
 				return it
@@ -1402,7 +1402,7 @@ class List<T>
 	importance:3 int indexWhere: bool(T it) condition	// The condition to check
 		                         int startIndex = 0 	// Start searching at this index
 								 int ifNotFound = -1	// The value to return if no item is found
-		for startIndex to length
+		for i = startIndex to length
 			if condition(this[.])
 				return i
 		return ifNotFound
@@ -1467,7 +1467,7 @@ class List<T>
 		return result
 		
 	importance:5 shuffle
-		for 1 to length backwards
+		for i = 1 to length backwards
 			var j = math.floor(math.randomFloat * (i + 1))
 			var temp = this.get(i)
 			this.set(i, this.get(j))
@@ -1582,7 +1582,7 @@ class List<T>
 		      float threshold = float.maxValue
 		float resultValue = threshold
 		int index = -1
-		for startIndex to length
+		for i = startIndex to length
 			let value = selector(this[.])
 			if value < resultValue
 				resultValue = value
@@ -1594,7 +1594,7 @@ class List<T>
 		      float threshold = float.minValue
 		float resultValue = threshold
 		int index = -1
-		for startIndex to length
+		for i = startIndex to length
 			let value = selector(this[.])
 			if value > resultValue
 				resultValue = value
@@ -2356,7 +2356,7 @@ global transient priority unit system
 	
 	global inline js dynamic Capacitor => window.Capacitor
 	
-	internal inline js void trace(int frame) _global._traces?.push(frame)
+	internal inline js void trace(int frame) _global._traces && _(frame)
 		
 global transient skipInit priority low unit system
 	global inline js void for: string subject // Iterate over every character of this string

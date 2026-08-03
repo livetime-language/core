@@ -34,12 +34,12 @@ unit maze
 		
 		MazeWall[] potentialWalls
 		// Vertical
-		for 1 to size.x as x
+		for x = 1 to size.x
 			for size.y as y
 				potentialWalls.add {x,y,dir:Vertical}
 		// Horizontal
 		for size.x as x
-			for 1 to size.y as y
+			for y = 1 to size.y
 				potentialWalls.add {x,y,dir:Horizontal}
 				
 		// Create perfect maze
@@ -127,8 +127,8 @@ unit maze
 
 	placeDoor: int doorId, bool[,] area = null
 		potentialWalls.clear
-		for 1 to horizontalWalls.size.x-1 as x
-			for 1 to horizontalWalls.size.y-1 as y
+		for x = 1 to horizontalWalls.size.x-1
+			for y = 1 to horizontalWalls.size.y-1
 				if not horizontalWalls[x, y]
 				and (area == null or (area[x, y] and area[x, y-1]))
 					MazeWall newWall = {x, y, dir:Horizontal, doorId}
@@ -139,8 +139,8 @@ unit maze
 					horizontalWalls[x,y] = null
 					potentialWalls.add newWall
 
-		for 1 to verticalWalls.size.x-1 as x
-			for 1 to verticalWalls.size.y-1 as y
+		for x = 1 to verticalWalls.size.x-1
+			for y = 1 to verticalWalls.size.y-1
 				if not verticalWalls[x, y]
 				and (area == null or (area[x, y] and area[x-1, y]))
 					MazeWall newWall = {x, y, dir:Vertical, doorId}
@@ -158,16 +158,16 @@ unit maze
 
 	createOpening: int minStepsToOtherSide = 5, bool[,] area = null
 		potentialWalls.clear
-		for 1 to horizontalWalls.size.x-1 as x
-			for 1 to horizontalWalls.size.y-1 as y
+		for x = 1 to horizontalWalls.size.x-1
+			for y = 1 to horizontalWalls.size.y-1
 				let wall = horizontalWalls[x, y]
 				if wall and (area == null or (area[x, y] and area[x, y-1]))
 					let result = algorithms.findPath startPos:{x, y-1}, endPos:{x, y}, size, getNeighbors(grid, x, y), heuristic: a manhattanDistanceTo b
 					wall.stepsToOtherSide = result.length
 					potentialWalls.add wall
 
-		for 1 to verticalWalls.size.x-1 as x
-			for 1 to verticalWalls.size.y-1 as y
+		for x = 1 to verticalWalls.size.x-1
+			for y = 1 to verticalWalls.size.y-1
 				let wall = verticalWalls[x, y]
 				if wall and (area == null or (area[x, y] and area[x-1, y]))
 					let result = algorithms.findPath startPos:{x-1, y}, endPos:{x, y}, size, getNeighbors(grid, x, y), heuristic: a manhattanDistanceTo b

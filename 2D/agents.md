@@ -1,8 +1,6 @@
----
-description: LiveTime Programming Language Examples and Standard Library
-alwaysApply: true
-applyTo: '**'
----
+# Memory
+Use "doc/MEMORY.md" to read and write important information about the project.
+
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 

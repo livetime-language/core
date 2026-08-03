@@ -17,7 +17,7 @@ dynamic HTMLElement
 	string value
 	int rows
 	string placeholder
-	InputType type
+	InputEventType type
 	bool readOnly
 	string src
 	dynamic srcObject
