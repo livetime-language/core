@@ -1248,19 +1248,19 @@ skipInit global unit input
 
 					// Modern input
 					int bit = 1
-					for 16
+					for inputIndex to 16
 						// Users created mid-session (connected mode) start with sparse arrays:
 						// an unset releasedAtFrame reads undefined, every comparison against it
 						// is false, and the release transition could NEVER fire - the button
 						// stayed pressed forever (and stuck buttons were forwarded into the
 						// embedded app). Backfill the defaults of InternalUser.reset first
 						// (>= -2 is false for undefined, true for every initialized value)
-						if not (internalUser.pressedAtFrame[i] >= -2) then internalUser.pressedAtFrame[i] = -2
-						if not (internalUser.releasedAtFrame[i] >= -2) then internalUser.releasedAtFrame[i] = -1
-						if internalUser.pressedAtFrame[i] >= internalUser.releasedAtFrame[i]
-							if (buttons bitwiseAnd bit) == 0 then internalUser.releasedAtFrame[i] = core.frame
+						if not (internalUser.pressedAtFrame[inputIndex] >= -2) then internalUser.pressedAtFrame[inputIndex] = -2
+						if not (internalUser.releasedAtFrame[inputIndex] >= -2) then internalUser.releasedAtFrame[inputIndex] = -1
+						if internalUser.pressedAtFrame[inputIndex] >= internalUser.releasedAtFrame[inputIndex]
+							if (buttons bitwiseAnd bit) == 0 then internalUser.releasedAtFrame[inputIndex] = core.frame
 						else
-							if (buttons bitwiseAnd bit) != 0 then internalUser.pressedAtFrame[i] = core.frame
+							if (buttons bitwiseAnd bit) != 0 then internalUser.pressedAtFrame[inputIndex] = core.frame
 						bit = bit shiftLeft 1
 				else
 				if inputType == String
@@ -1293,16 +1293,16 @@ skipInit global unit input
 					// Match users
 					playersById.clear
 					let availableUsers = clone input.internalUsers
-					for players as player
-						let user = availableUsers.popWhere.name == player.playerName
-						if not user then user = availableUsers.popWhere.index == player.playerIndex
+					for p in players
+						let user = availableUsers.popWhere.name == p.playerName
+						if not user then user = availableUsers.popWhere.index == p.playerIndex
 						if not user then availableUsers.pop
-						player.id = user.id
+						p.id = user.id
 						
-						user._id = player._id
-						user.index = player.playerIndex
-						user.name = player.playerName
-						playersById[player.id] = player
+						user._id = p._id
+						user.index = p.playerIndex
+						user.name = p.playerName
+						playersById[p.id] = p
 					refreshLocalPlayer
 
 				else
@@ -2204,8 +2204,8 @@ skipInit global unit input
 	onTextInput: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		         void(string textInput) do           // Do this for each key that is pressed
 		for getTargetedPlayers(by)
-			for internalUsers[.id].textInputs as textInput
-				do textInput
+			for internalUsers[.id].textInputs
+				do .
 				
 	// ---------------------------------------------- Keys ----------------------------------------------
 	

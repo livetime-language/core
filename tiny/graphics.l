@@ -157,8 +157,8 @@ immutable Font
 		int[] pixels
 		int index
 		for pixelsAsStrings as line
-			for line.length as i
-				pixels[index + i] = line[i] != " " ? 1 : 0
+			for lineIndex to line.length
+				pixels[index + lineIndex] = line[lineIndex] != " " ? 1 : 0
 			index += maxWidth
 		this.pixels = pixels
 
@@ -390,8 +390,8 @@ transient global skipInit graphics
 		int offsetToTarget = startY * targetStride + startX - start
 		int[] target = screen.pixels
 
-		for startY to endY as y
-			for start to end as i
+		for y = startY to endY
+			for i = start to end
 				let sourceValue = source[i]
 				if sourceValue != 0xff000000 then target[i + offsetToTarget] = sourceValue
 			start += tilesStride
@@ -461,9 +461,9 @@ transient global skipInit graphics
 			int[] source = sprite.pixels, target = screen.pixels
 			int transparentValue = transparentColor ? transparentColor.value : 0
 			if with == null or replaceColor == with
-				for startY to endY as y
+				for y = startY to endY
 					int s = sourceStart, t = targetStart
-					for startX to endX as x
+					for x = startX to endX
 						let sourceValue = source[s]
 						if sourceValue != transparentValue then target[t] = sourceValue
 						s += sourceStepX
@@ -474,9 +474,9 @@ transient global skipInit graphics
 			if replaceColor
 				int fromColor = replaceColor.value
 				int toColor = with.value
-				for startY to endY as y
+				for y = startY to endY
 					int s = sourceStart, t = targetStart
-					for startX to endX as x
+					for x = startX to endX
 						let sourceValue = source[s]
 						if sourceValue == fromColor then sourceValue = toColor
 						if sourceValue != transparentValue then target[t] = sourceValue
@@ -486,9 +486,9 @@ transient global skipInit graphics
 					targetStart += targetStride
 			else
 				int singleColor = with.value
-				for startY to endY as y
+				for y = startY to endY
 					int s = sourceStart, t = targetStart
-					for startX to endX as x
+					for x = startX to endX
 						let sourceValue = source[s]
 						if sourceValue != transparentValue then target[t] = singleColor
 						s += sourceStepX
@@ -528,8 +528,8 @@ transient global skipInit graphics
 			if startX < endX and startY < endY
 				int screenOffset = (glyphY + startY) * stride + glyphX
 				int tileRow = tileOffset + startY * fontStride
-				for startY to endY as y
-					for startX to endX as x
+				for y = startY to endY
+					for x = startX to endX
 						if font.pixels[tileRow + x] then target[screenOffset + x] = colorValue
 					screenOffset += stride
 					tileRow += fontStride
@@ -563,8 +563,8 @@ transient global skipInit graphics
 				int fillValue = fillColor.value
 				int start = startY * stride + startX
 				int end = start + endX - startX
-				for startY to endY as yy
-					for start to end as i
+				for yy = startY to endY
+					for i = start to end
 						target[i] = fillValue
 					start += stride
 					end += stride
@@ -585,7 +585,7 @@ transient global skipInit graphics
 		int stride = floor(screen.size.x)
 		int[] target = screen.pixels
 		int rowStart = y * stride
-		for rowStart + x0 to rowStart + x1 + 1 as i
+		for i = rowStart + x0 to rowStart + x1 + 1
 			target[i] = colorValue
 
 	global void drawCircle: Vector2 center = {0,0}
@@ -646,10 +646,10 @@ transient global skipInit graphics
 						int right = x1 atMost maxX
 						if left <= right
 							if y0Visible
-								for rowY0 + left to rowY0 + right + 1 as i
+								for i = rowY0 + left to rowY0 + right + 1
 									target[i] = fillValue
 							if y1Visible
-								for rowY1 + left to rowY1 + right + 1 as i
+								for i = rowY1 + left to rowY1 + right + 1
 									target[i] = fillValue
 					if hasOutline
 						bool x0Visible = clipX1 <= x0 < clipX2
@@ -686,13 +686,13 @@ transient global skipInit graphics
 					while y0 - y1 < b
 						if clipY1 <= y0 < clipY2
 							if fillSpan
-								for rowY0 + left to rowY0 + right + 1 as i
+								for i = rowY0 + left to rowY0 + right + 1
 									target[i] = fillValue
 							if tipLeftVisible then target[rowY0 + tipLeft] = outlineValue
 							if tipRightVisible then target[rowY0 + tipRight] = outlineValue
 						if clipY1 <= y1 < clipY2
 							if fillSpan
-								for rowY1 + left to rowY1 + right + 1 as i
+								for i = rowY1 + left to rowY1 + right + 1
 									target[i] = fillValue
 							if tipLeftVisible then target[rowY1 + tipLeft] = outlineValue
 							if tipRightVisible then target[rowY1 + tipRight] = outlineValue
@@ -782,10 +782,10 @@ transient global skipInit graphics
 		int transparentValue = Colors.Black.value
 		bool filterTags = tags != null
 
-		for firstRow to lastRow as r
+		for r = firstRow to lastRow
 			int rowBase = r * mapWidth
 			int rowScreenY = originY + r * tileH
-			for firstCol to lastCol as c
+			for c = firstCol to lastCol
 				Sprite tile = tiles[rowBase + c]
 				if tile == null then continue
 				if filterTags and (tile.tags == null or not tile.tags.includes(tags)) then continue
@@ -803,9 +803,9 @@ transient global skipInit graphics
 				int[] source = tile.pixels
 				int sourceStart = (startY - rowScreenY) * spriteStride + (startX - positionX)
 				int targetStart = startY * targetStride + startX
-				for startY to endY as y
+				for y = startY to endY
 					int s = sourceStart, t = targetStart
-					for startX to endX as x
+					for x = startX to endX
 						let sourceValue = source[s]
 						if sourceValue != transparentValue then target[t] = sourceValue
 						s += 1
@@ -856,13 +856,13 @@ class Sprite
 		stride = maxWidth
 		int index
 		for pixelsAsStrings as line
-			for line.length as i
-				pixels[index + i] = graphics.colorByLetter[line[i]]
+			for lineIndex to line.length
+				pixels[index + lineIndex] = graphics.colorByLetter[line[lineIndex]]
 			index += maxWidth
 
 	Sprite
 		if size.x and size.y and not pixels
-			for size pixels[x + y*size.x] = 0xff000000
+			for x,y in size pixels[x + y*size.x] = 0xff000000
 
 	toStrings
 		string[] result
@@ -897,10 +897,10 @@ class Tilemap
 		tiles = []
 		int index
 		for tilesAsStrings as line
-			for line.length as i
-				int keyIndex = i*2
+			for lineIndex to line.length
+				int keyIndex = lineIndex*2
 				let key = line[keyIndex to keyIndex+2]
-				tiles[index + i] = key == "  " ? null : tilemaps??.stringToSprite.get(key) or null
+				tiles[index + lineIndex] = key == "  " ? null : tilemaps??.stringToSprite.get(key) or null
 			index += maxWidth
 
 	toStrings

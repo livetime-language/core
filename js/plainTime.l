@@ -179,7 +179,7 @@ immutable skipInit class PlainDate
 		
 		// Calculate the number of days since the epoch for full years
 		int days = 0;
-		for 1970 to year
+		for i = 1970 to year
 		    days += (.remainder(4) == 0 && .remainder(100) != 0) || (.remainder(400) == 0) ? 366 : 365;
 		
 		// Add days for the months of the current year

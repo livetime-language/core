@@ -115,9 +115,9 @@ internal transient skipInit unit core
 			for checksumFrames.length as i
 				if checksumFrames[i] >= firstChangedFrame then checksumFrames[i] = -1
 		else
-			for firstChangedFrame to maxChecksumFrame+1 as frame
-				int index = frame mod checksumWindow
-				if checksumFrames[index] == frame then checksumFrames[index] = -1
+			for i = firstChangedFrame to maxChecksumFrame+1
+				int index = i mod checksumWindow
+				if checksumFrames[index] == i then checksumFrames[index] = -1
 		maxChecksumFrame = firstChangedFrame - 1
 		if lastChecksumFrame >= firstChangedFrame then lastChecksumFrame = firstChangedFrame - 1
 
@@ -581,7 +581,7 @@ internal transient skipInit unit core
 		if frame < targetFrame
 			// Create artificial inputs to test the smoothness
 			if simulateInputsForTesting and input.localUser and input.localUser.collectInputs
-				for frame to targetFrame
+				for i = frame to targetFrame
 					input.handleKeyEvent KeyDown, cast KeyCode.F24, "", ctrl:false, alt:false, meta:false
 				
 			frameAtBeginningOfOnFrame = frame
