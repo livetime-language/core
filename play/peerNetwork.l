@@ -764,8 +764,15 @@ internal transient skipInit unit PeerNetwork
 					bool missingRemovedBytes = user.removed and user.inputFrame < user.removedAfterFrame
 					bool gossiping = user.removalGossipStart != 0 and not user.removalEventWritten
 					bool unknownAwayPlaceholder = not user.removed and not user.presentOnServer and user.inputFrame == -1
-					if missingRemovedBytes or gossiping or unknownAwayPlaceholder
-						string reason = missingRemovedBytes ? "removed but incomplete" : gossiping ? "removal gossip" : "server-away placeholder"
+					// Lockstep: a silent user whose claim binds the sim freezes the whole room -
+					// fetch their stream from every peer. Third parties answer with fresher
+					// bytes+claims (indirect claim gossip around a broken link), and once the
+					// host decides a removal, the answers' removed/cut metadata is what
+					// releases certainty: the RemoveUser event itself sits at a frame the
+					// frozen sim cannot reach
+					bool lockstepStall = not system.enableRollback and core.mode == Connected and not user.removed and user.inputFrame != -1 and user.inputFrame < core.frame and now > user.lastIncomingMessageTime + reconnectNotifyMillis
+					if missingRemovedBytes or gossiping or unknownAwayPlaceholder or lockstepStall
+						string reason = missingRemovedBytes ? "removed but incomplete" : gossiping ? "removal gossip" : unknownAwayPlaceholder ? "server-away placeholder" : "lockstep certainty stall"
 						core.log "#stream Requesting user {user.id}'s stream from all peers ({reason}): we hold {user.inputs.writePos} bytes, claims up to {user.inputFrame}, removedAfterFrame:{user.removedAfterFrame}"
 						requestStreamFromAllPeers user.id
 						requestedStreamCount++
@@ -2220,6 +2227,13 @@ internal transient skipInit unit PeerNetwork
 		// channel's onmessage is event-driven and not throttled)
 		ServerNetwork.tick
 		pingPeers
+		// Lockstep: claims ride the wall clock (see core.onFrame), but the frame loop is
+		// throttled while hidden - frozen claims would freeze every OTHER player's sim until
+		// we return. Advance the stamp here too (a hidden tab produces no input records, so
+		// the promise stays truthful); the visible players then step in throttle-sized bursts
+		// instead of not at all
+		if not system.enableRollback and system.playMode == Record and input.localUser and input.localUser.collectInputs and not holdingConfirmationPending
+			input.localUser.startInputFrame math.max(math.floor((core.currentTime - core.startTime)/core.frameTime)+2, input.localUser.inputFrame)
 		sendInputs math.max(input.localUser.inputFrame-1, -1)
 
 	// Tell every peer whether our tab is hidden, so they can show us as away and relax our

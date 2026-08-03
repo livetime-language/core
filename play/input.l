@@ -1025,6 +1025,12 @@ skipInit global unit input
 		inputs.writeInt userId
 		inputs.writeInt lastFrame
 		print "Removing player {userId}, their inputs count up to frame {lastFrame}", type:Action
+		// Lockstep: the event above sits at a frame the frozen sim cannot reach - the removed
+		// user's stale claim binds certainty, and only removing them releases it. Apply the
+		// removal out-of-band now (the safe-rule in removeUserDeterministically decides, the
+		// later parse re-applies idempotently); everyone else receives the same metadata
+		// through the stall stream-fetch answers (see PeerNetwork.tick / onStreamData)
+		if not system.enableRollback then removeUserDeterministically userId, lastFrame, core.frame
 		
 	// Returns a "GamepadList" (which doesn't have the functions of a LiveTime list)
 	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
@@ -1156,7 +1162,11 @@ skipInit global unit input
 					TouchType type = cast((value shiftRight 5) mod 8)
 					int id = (value shiftRight 8) mod 128
 					Vector2 referencePos = {inputs.readInt16, inputs.readInt16}
-					bool isSmoothPosition = !core.smoothTouchPosition or internalUser.local or frame <= internalUser.smoothFrame
+					// Lockstep parses each record exactly once, at certainty: the position IS
+					// final, and smoothFrame is a client-local estimate - gating on it would
+					// diverge the serialized touch.smoothPosition across clients with no
+					// replay to converge them
+					bool isSmoothPosition = !core.smoothTouchPosition or internalUser.local or not system.enableRollback or frame <= internalUser.smoothFrame
 					
 					if inputType == TouchDown
 						touchDown internalUser:internalUser, player:player, id:id, type:type, referencePos:referencePos, isSmoothPosition:isSmoothPosition
@@ -1238,19 +1248,19 @@ skipInit global unit input
 
 					// Modern input
 					int bit = 1
-					for 16
+					for inputIndex to 16
 						// Users created mid-session (connected mode) start with sparse arrays:
 						// an unset releasedAtFrame reads undefined, every comparison against it
 						// is false, and the release transition could NEVER fire - the button
 						// stayed pressed forever (and stuck buttons were forwarded into the
 						// embedded app). Backfill the defaults of InternalUser.reset first
 						// (>= -2 is false for undefined, true for every initialized value)
-						if not (internalUser.pressedAtFrame[i] >= -2) then internalUser.pressedAtFrame[i] = -2
-						if not (internalUser.releasedAtFrame[i] >= -2) then internalUser.releasedAtFrame[i] = -1
-						if internalUser.pressedAtFrame[i] >= internalUser.releasedAtFrame[i]
-							if (buttons bitwiseAnd bit) == 0 then internalUser.releasedAtFrame[i] = core.frame
+						if not (internalUser.pressedAtFrame[inputIndex] >= -2) then internalUser.pressedAtFrame[inputIndex] = -2
+						if not (internalUser.releasedAtFrame[inputIndex] >= -2) then internalUser.releasedAtFrame[inputIndex] = -1
+						if internalUser.pressedAtFrame[inputIndex] >= internalUser.releasedAtFrame[inputIndex]
+							if (buttons bitwiseAnd bit) == 0 then internalUser.releasedAtFrame[inputIndex] = core.frame
 						else
-							if (buttons bitwiseAnd bit) != 0 then internalUser.pressedAtFrame[i] = core.frame
+							if (buttons bitwiseAnd bit) != 0 then internalUser.pressedAtFrame[inputIndex] = core.frame
 						bit = bit shiftLeft 1
 				else
 				if inputType == String
@@ -1283,16 +1293,16 @@ skipInit global unit input
 					// Match users
 					playersById.clear
 					let availableUsers = clone input.internalUsers
-					for players as player
-						let user = availableUsers.popWhere.name == player.playerName
-						if not user then user = availableUsers.popWhere.index == player.playerIndex
+					for p in players
+						let user = availableUsers.popWhere.name == p.playerName
+						if not user then user = availableUsers.popWhere.index == p.playerIndex
 						if not user then availableUsers.pop
-						player.id = user.id
+						p.id = user.id
 						
-						user._id = player._id
-						user.index = player.playerIndex
-						user.name = player.playerName
-						playersById[player.id] = player
+						user._id = p._id
+						user.index = p.playerIndex
+						user.name = p.playerName
+						playersById[p.id] = p
 					refreshLocalPlayer
 
 				else
@@ -1309,7 +1319,7 @@ skipInit global unit input
 				if inputType == RemoveUser
 					int removeUserId = inputs.readInt
 					int lastFrame = inputs.readInt
-					removeUserDeterministically removeUserId, lastFrame, frame
+					removeUserDeterministically removeUserId, lastFrame, frame, fromParse:true
 	
 		// for players
 		// 	let internalUser = internalUsers[.id]
@@ -1652,10 +1662,32 @@ skipInit global unit input
 
 	// Applies a parsed RemoveUser event. Runs during live play and again during replays after a
 	// rewind, so everything here must be idempotent. The InternalUser and its input bytes are kept
-	// (snapshots and replays reference them), only the Player leaves the game
-	internal removeUserDeterministically: int removeUserId, int lastFrame, int atFrame
+	// (snapshots and replays reference them), only the Player leaves the game.
+	// Also called OUT-OF-BAND (fromParse false) from stream metadata (PeerNetwork.onStreamData)
+	// and from the event writer (handleRemoveUser in lockstep) - rollback replays make any
+	// application time safe, lockstep guards it with the safe-rule below
+	internal removeUserDeterministically: int removeUserId, int lastFrame, int atFrame, bool fromParse = false
 		let user = internalUsers[removeUserId]
 		if not user then return
+		// Lockstep (no rollback): an out-of-band cut below records we already APPLIED cannot
+		// be healed by a replay. Two legitimate ways to get here:
+		// - the user is alive and the metadata merely raced ahead of our parse (an app-driven
+		//   removal of a live player): defer - the event in the writer's stream applies it at
+		//   the same frame on every client, and a live user's claims keep that frame reachable
+		// - the user is silent and we hold a timeline the group discarded (we applied their
+		//   tail while partitioned, or restored a stale copy): no parse can ever fix us -
+		//   rebuild from the mesh like every unhealable fork
+		// The safe case (cut at or above everything we applied: min of their claim and the
+		// last stepped frame) falls through and applies immediately - that is what releases a
+		// frozen room, the whole point of the out-of-band path
+		if not system.enableRollback and not fromParse and core.mode == Connected
+			int appliedBound = math.min(user.inputFrame, core.frame - 1)
+			if lastFrame < appliedBound and lastFrame < user.removedAfterFrame
+				if core.currentTime < user.lastIncomingMessageTime + PeerNetwork.reconnectNotifyMillis
+					return
+				core.log "#fork <{removeUserId}> Out-of-band removal cut {lastFrame} lies below our applied inputs (claim {user.inputFrame}, frame {core.frame}): our timeline includes discarded records -> rebuilding from the mesh"
+				core.rebuildPending = PeerNetwork.forkRecoveryReload "user {removeUserId}'s removal cut {lastFrame} is below our applied inputs at frame {core.frame}"
+				return
 		if not user.removed
 			user.removed = true
 			user.removedAfterFrame = lastFrame
@@ -1699,6 +1731,11 @@ skipInit global unit input
 	// persisted cut applied up front (core.applyStoredStream), landing us on the group timeline
 	// with our identity and inputs intact
 	private checkRemovalCutBelowPin: InternalUser user, int lastFrame
+		// Lockstep has no pin: the equivalent fork check (a cut below inputs we already
+		// APPLIED) lives in removeUserDeterministically's out-of-band rule - cuts applied at
+		// parse are uniform across clients by construction (everyone parsed the same records
+		// up to the event's frame)
+		if not system.enableRollback then return
 		if user.inputFrame <= lastFrame then return                            // We hold nothing past the cut
 		if core.snapshotFrame == -1 or core.snapshotFrame <= lastFrame + 1 then return // The rewind reaches the cut - the replay heals us
 		core.log "#fork <{user.id}> Removal cut {lastFrame} lies below their applied claim {user.inputFrame} and the snapshot pin {core.snapshotFrame}: our timeline may include discarded inputs -> rebuilding from the mesh"
@@ -2167,8 +2204,8 @@ skipInit global unit input
 	onTextInput: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		         void(string textInput) do           // Do this for each key that is pressed
 		for getTargetedPlayers(by)
-			for internalUsers[.id].textInputs as textInput
-				do textInput
+			for internalUsers[.id].textInputs
+				do .
 				
 	// ---------------------------------------------- Keys ----------------------------------------------
 	

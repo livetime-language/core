@@ -10,7 +10,10 @@ internal transient immutable RoomInfo
 	int userId
 	string seed
 	float serverStartTime
-	int maxUserId
+	// -1 = no user known. The default must NOT be 0: sendJoinMessage falls back to a fresh
+	// RoomInfo on a first-ever join, and advertising maxKnownUserId 0 makes the server mint an
+	// away phantom user 0 that pins everyone's certainFrame at -1 (a frozen room in lockstep)
+	int maxUserId = -1
 	string token
 
 enum SendInputsMode: None, Peer, Server
@@ -112,9 +115,9 @@ internal transient skipInit unit core
 			for checksumFrames.length as i
 				if checksumFrames[i] >= firstChangedFrame then checksumFrames[i] = -1
 		else
-			for firstChangedFrame to maxChecksumFrame+1 as frame
-				int index = frame mod checksumWindow
-				if checksumFrames[index] == frame then checksumFrames[index] = -1
+			for i = firstChangedFrame to maxChecksumFrame+1
+				int index = i mod checksumWindow
+				if checksumFrames[index] == i then checksumFrames[index] = -1
 		maxChecksumFrame = firstChangedFrame - 1
 		if lastChecksumFrame >= firstChangedFrame then lastChecksumFrame = firstChangedFrame - 1
 
@@ -145,12 +148,35 @@ internal transient skipInit unit core
 	private int catchUpFromFrame
 	const maxCatchUpMillisPerFrame = 100
 
+	// Lockstep (system.enableRollback = false): the step loop is waiting for another user's
+	// claims - the world is deliberately frozen (there is no prediction to bridge the gap).
+	// Exposed so apps can draw a "waiting for player" hint and tests can assert the stall
+	visible bool waitingForCertainInputs
+	// Lockstep: the stamp of the last wall-clock gamepad sample (see onFrame)
+	private int lastGamepadSampleFrame
+
+	// Lockstep: the last frame whose inputs are final from every user, judged by CLAIMS alone.
+	// Frames at or below this bound parse identically on every client, so stepping never past
+	// it means the applied timeline can never need a correction. For the local user, new
+	// records can still be stamped AT inputFrame, so the last final local frame is
+	// inputFrame-1 - during normal play that is targetFrame (never binds), while a rejoin's
+	// holding gate freezes it at the restored claim floor, exactly like the snapshot pin in
+	// rollback mode: records of our previous session that surface late then land at or above
+	// the frozen frame and replay forward instead of forking the past. smoothFrame is
+	// deliberately NOT part of this: it is a client-local estimate, fine for rollback (a
+	// misprediction replays), fatal here (no replay)
+	internal int lockstepCertainInputFrame
+		return input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : (.local ? .inputFrame - 1 : .inputFrame)) filter: . != null
+
 	// New input records must not be appended while we replay a catch-up (the stamps would lag
 	// the claims we already sent) or while a rejoin's holding confirmations are pending (the
 	// bytes would fork the longer copy of our previous stream a returning peer may still hold,
-	// see PeerNetwork.holdingConfirmationPending). Checked by every input record handler
+	// see PeerNetwork.holdingConfirmationPending). Checked by every input record handler.
+	// Lockstep keeps recording during a catch-up: its stamps ride the wall clock
+	// (targetFrame+1, see onFrame), so they can never lag an already-sent claim - the reason
+	// rollback has to pause does not exist there
 	bool inputRecordingPaused
-		return catchingUp or PeerNetwork.holdingConfirmationPending
+		return (catchingUp and system.enableRollback) or PeerNetwork.holdingConfirmationPending
 	
 	IndexedDBStore inputStore = {"input", indices:[{"roomId"}]}
 	
@@ -180,7 +206,12 @@ internal transient skipInit unit core
 				log "handleJoin deferred until every live peer confirmed its holdings"
 			else
 				log "handleJoin", frame
-				input.localUser.startInputFrame 0
+				// Lockstep: the room may already have certified every frame below the join
+				// frame without us - a record stamped below it could never be applied at its
+				// true frame (no rollback), so the stamp floor starts AT the join frame (the
+				// Join itself is stamped there too) and onFrame keeps it at targetFrame+1.
+				// Rollback keeps the historical behavior: stamps rise with the catch-up steps
+				input.localUser.startInputFrame system.enableRollback ? 0 : frame
 				input.handleJoin frame, account
 
 		mode = Connected
@@ -501,11 +532,14 @@ internal transient skipInit unit core
 		}
 		_sendToEditor({type:"frame", pixels, traces, output, frame, frames:core.frames, playMode:system.playMode});
 
-	// Smooth out animations by only executing code when we received inputs from everybody	
+	// Smooth out animations by only executing code when we received inputs from everybody
 	smooth: Player player
 		    void() do
 		let user = input.internalUsers[player.id]
-		if user and (user.local or frame <= user.smoothFrame) then do
+		// Lockstep (no rollback): every stepped frame is certain, and smoothFrame is a
+		// client-local ESTIMATE - skipping on it would run the code on some clients and not
+		// on others, with no replay to converge them
+		if user and (user.local or not system.enableRollback or frame <= user.smoothFrame) then do
 			
 	float lastPingTime
 
@@ -547,17 +581,43 @@ internal transient skipInit unit core
 		if frame < targetFrame
 			// Create artificial inputs to test the smoothness
 			if simulateInputsForTesting and input.localUser and input.localUser.collectInputs
-				for frame to targetFrame
+				for i = frame to targetFrame
 					input.handleKeyEvent KeyDown, cast KeyCode.F24, "", ctrl:false, alt:false, meta:false
 				
 			frameAtBeginningOfOnFrame = frame
+
+			// Lockstep (system.enableRollback = false): claims must advance with the WALL CLOCK,
+			// not with stepping. Stepping waits for everyone's claims (the gate in the loop
+			// below), so claims driven by stepping would deadlock the whole room at frame 0.
+			// New records are stamped targetFrame+1 - above every claim we have ever sent - and
+			// apply when certainty reaches their frame: the inherent lockstep input delay
+			// (~one-way latency). The holding gate freezes the stamp exactly like in the step
+			// loop: records of our previous session may still surface below a raised claim
+			if not system.enableRollback and mode == Connected and system.playMode == Record
+				if input.localUser and input.localUser.collectInputs and not PeerNetwork.holdingConfirmationPending
+					// Only when the stamp actually advances: startInputFrame also resets the
+					// TouchMove coalescing window, and onFrame runs faster than the frame rate
+					if targetFrame+1 > input.localUser.inputFrame then input.localUser.startInputFrame targetFrame+1
+					// Gamepad state is absolute and per-frame: in lockstep it is sampled once per
+					// wall-clock stamp HERE instead of once per stepped frame (per-step sampling
+					// would leave neutral gaps while the sim waits for claims and duplicate
+					// records while it catches up - stamps here stay one per frame, contiguous)
+					if input.localUser.inputFrame > lastGamepadSampleFrame
+						lastGamepadSampleFrame = input.localUser.inputFrame
+						input.updateGamepads
+
+			// Lockstep: only frames whose inputs are final from every user may be stepped -
+			// there is no rollback to correct a mis-prediction, so prediction is not allowed
+			int lockstepBound = system.enableRollback or mode != Connected ? int.maxValue : lockstepCertainInputFrame
 
 			// A long pause (background tab, sleep, late join) leaves us many frames behind.
 			// Stepping them all in one synchronous loop would freeze the tab for seconds and
 			// silence our Ticks (peers would start reconnect churn), so the loop below is
 			// budgeted and the catch-up is spread over several animation frames, with Ticks,
-			// acks and pings still going out in between (F5)
-			if mode == Connected and not catchingUp and targetFrame - frame > ticksPerSecond*2
+			// acks and pings still going out in between (F5).
+			// In lockstep only CERTAIN frames can be burned: a certainty stall is a freeze,
+			// not a catch-up (without the bound this re-entered and logged every frame)
+			if mode == Connected and not catchingUp and math.min(targetFrame, lockstepBound+1) - frame > ticksPerSecond*2
 				catchingUp = true
 				catchUpFromFrame = frame
 				log "#catchup {targetFrame - frame} frames behind -> catching up in budgeted chunks"
@@ -578,6 +638,18 @@ internal transient skipInit unit core
 					// wrong frames and broadcast checksums of that corrupted state - stay quiet
 					// until the reload lands
 					if rebuildPending then break
+					// Lockstep: the next frame's inputs are not final yet - wait. The world
+					// freezes until the missing claims arrive; claims ride the wall clock (and
+					// the stall stream-fetch in PeerNetwork.tick pulls a silent user's bytes,
+					// claims and removal cut through third parties), so this resolves as soon
+					// as the network delivers
+					if frame > lockstepBound
+						waitingForCertainInputs = true
+						// A certainty stall inside a catch-up is not "catching up" any more -
+						// without this the catch-up overlay would linger over the frozen world
+						catchingUp = false
+						break
+					waitingForCertainInputs = false
 					if system.playMode == Record
 						for input.internalUsers as user
 							// Never regress the stamp for new records: during a catch-up replay frame
@@ -599,7 +671,10 @@ internal transient skipInit unit core
 					// While catching up or integrating, stop stepping when the budget is used up.
 					// A catch-up chunk draws its last frame so the player sees progress instead
 					// of a frozen canvas; an integration keeps the last live frame on the canvas
-					bool lastStepOfChunk = frame == targetFrame-1 or ((catchingUp or integrating) and currentTime >= catchUpDeadline)
+					// frame == lockstepBound: the newest steppable frame of a lockstep pass must
+					// draw - the wall-clock head (targetFrame-1) stays permanently out of reach
+					// while the sim trails the claims by the network latency
+					bool lastStepOfChunk = frame == targetFrame-1 or frame == lockstepBound or ((catchingUp or integrating) and currentTime >= catchUpDeadline)
 					bool drawThisStep = lastStepOfChunk and not integrating
 					step fastForward:integrating, draw:drawThisStep
 					if not system.isDebug and not integrating then collectStatistics
@@ -712,13 +787,24 @@ internal transient skipInit unit core
 		return result
 
 	private int lastSendFrame
-	
+	private float lastSendTime
+
 	private sendInputs: int inputFrame
 		if mode != Connected then return
-		
-		if frame >= lastSendFrame + sendInterval
-			PeerNetwork.sendInputs inputFrame
-			lastSendFrame = frame
+
+		if system.enableRollback
+			if frame >= lastSendFrame + sendInterval
+				PeerNetwork.sendInputs inputFrame
+				lastSendFrame = frame
+		else
+			// Lockstep: the sim FREEZES while another user's claims are missing - a send gate
+			// keyed on stepped frames would then silence our own claims and acks too, and the
+			// whole room deadlocks with everyone waiting for everyone (seen at frame 0 on the
+			// very first join). Throttle by wall-clock time instead: claims ride the wall
+			// clock, and Ticks must keep flowing whether the sim steps or not
+			if currentTime >= lastSendTime + sendInterval * frameTime
+				PeerNetwork.sendInputs inputFrame
+				lastSendTime = currentTime
 	
 	internal switchToPlayer: Player player
 		if not player then return
@@ -743,7 +829,13 @@ internal transient skipInit unit core
 		// A removed user stops blocking certainty once we hold their complete final stream
 		// (their claims reached the removal frame) - before that, their missing bytes are part
 		// of the timeline and must arrive (fetched from peers) before frames become certain
-		certainFrame = input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.inputFrame, .smoothFrame)) filter: . != null
+		if system.enableRollback or mode != Connected
+			certainFrame = input.internalUsers.min (.removed and .inputFrame >= .removedAfterFrame ? int.maxValue : math.min(.inputFrame, .smoothFrame)) filter: . != null
+		else
+			// Lockstep: claims alone decide certainty (see lockstepCertainInputFrame) - and
+			// since onFrame only steps frames at or below that bound, every stepped frame is
+			// certain and input.isCertain is always true here
+			certainFrame = lockstepCertainInputFrame
 		input.isCertain = frame <= certainFrame
 		
 		// Save a snapshot when we are about to start the frame after the last certain frame filter we got all inputs
@@ -754,8 +846,10 @@ internal transient skipInit unit core
 		// captured yet (the very first position, and self-healing after unusual paths)
 		checkFillRewindHistory
 
-		// Update game controllers
-		input.updateGamepads
+		// Update game controllers. Lockstep samples them on the wall clock in onFrame instead:
+		// per-step sampling would leave neutral gaps while the sim waits for claims and
+		// duplicate stamps while it catches up
+		if system.enableRollback or mode != Connected then input.updateGamepads
 
 		// Parse inputs
 		input.parseInputs(frame)
@@ -830,7 +924,7 @@ internal transient skipInit unit core
 
 			// One message per step with pixels, traces, output and frame state. The pixels are the
 			// live framebuffer (only included when this step drew): the editor bridge copies them
-			sendOutputToEditor pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen.pixels : null)
+			sendOutputToEditor pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen??.pixels : null)
 
 			// Cleanup
 			for input.internalUsers as user
@@ -914,9 +1008,12 @@ internal transient skipInit unit core
 	private bool[] rewindScratchHolds
 
 	// Local sessions rewind too - they share the whole deterministic step machinery, only
-	// without the network layer on top
+	// without the network layer on top. The history entries are serialized world state, so
+	// without the serializer (lockstep, system.enableRollback = false) the mechanic cannot
+	// exist - in Local mode too: the serializer is broken by the app's external state, not
+	// by the network mode
 	private bool rewindMechanicEnabled
-		return system.enableRewind and (mode == Connected or mode == Local)
+		return system.enableRewind and system.enableRollback and (mode == Connected or mode == Local)
 
 	private int rewindStepFrames
 		return math.max(system.rewindFrames, 1)
@@ -1159,19 +1256,31 @@ internal transient skipInit unit core
 	// fork recovery gets a chance to inspect the newly arrived history.
 	private bool checkForForkBelowSnapshot
 		if rebuildPending then return true
-		if snapshotFrame == -1 then return false
+		// Lockstep has no snapshot, but the same invariant with a tighter pin: nothing below
+		// the current frame is ever re-stepped, so a parseable record stamped below it can
+		// only be a hidden-join fork (a known user's unparsed records are always stamped above
+		// their claim, and the current frame never passes any claim)
+		int pin = system.enableRollback ? snapshotFrame : frame
+		if pin == -1 then return false
 		for input.internalUsers as user
 			if user and not user.local and user.inputs.canRead
 				int firstUnparsedFrame = user.inputs.peekInt32
 				bool willParse = firstUnparsedFrame <= user.inputFrame and (not user.removed or firstUnparsedFrame <= user.removedAfterFrame)
-				if willParse and firstUnparsedFrame < snapshotFrame
-					log "#fork <{user.id}> Unparsed record stamped {firstUnparsedFrame} below the snapshot pin {snapshotFrame}: we certified these frames without user {user.id} -> rebuilding from the mesh"
-					rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s record at frame {firstUnparsedFrame} is below the snapshot pin {snapshotFrame}"
+				if willParse and firstUnparsedFrame < pin
+					log "#fork <{user.id}> Unparsed record stamped {firstUnparsedFrame} below the snapshot pin {pin}: we certified these frames without user {user.id} -> rebuilding from the mesh"
+					rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s record at frame {firstUnparsedFrame} is below the snapshot pin {pin}"
 					if rebuildPending then return true
 		return false
 	
 	// This is called at the begining of onFrame before we start stepping.
 	private checkRewindAndReplayState
+		// Lockstep (no rollback): there is nothing to rewind or replay - stepping is gated on
+		// certainty in onFrame instead, so the applied state never needs a correction. Only
+		// the fork detection remains: an unparsed record below the current frame can only come
+		// from a user whose join a partition hid from us (see checkForForkBelowSnapshot)
+		if not system.enableRollback
+			if mode == Connected then checkForForkBelowSnapshot
+			return
 		if (mode != Connected and !simulateRollback) or input.internalUsers.length == 1 then return
 		if rebuildPending then return
 
@@ -1328,6 +1437,11 @@ internal transient skipInit unit core
 			
 	// This is called at the beginning of each step
 	private checkSaveState
+		// Lockstep (no rollback): snapshots, milestones and state checksums all run through the
+		// serializer, which is exactly what does not work when the app holds state in external
+		// (non-LiveTime) libraries - the reason lockstep mode exists. Sync needs none of them:
+		// only frames whose inputs are final are ever stepped
+		if not system.enableRollback then return
 		if enabledMilestones and input.isCertain and frame > 0 and frame mod milestoneInterval == 0
 			Buffer buffer = {}
 			saveState buffer
@@ -1438,9 +1552,11 @@ internal transient skipInit unit core
 	saveEventStream
 		Buffer buffer = {}
 		buffer.writeInt eventStreamVersion
-		
+
 		eventStreamSnapshotBuffer.reset
-		Snapshot.serialize eventStreamSnapshotBuffer
+		// Lockstep: the serializer does not work (external libraries) - save an empty
+		// snapshot; openEventStream reads and discards it anyway
+		if system.enableRollback then Snapshot.serialize eventStreamSnapshotBuffer
 		buffer.writeBuffer eventStreamSnapshotBuffer
 		
 		buffer.writeInt frame-1
@@ -1619,6 +1735,11 @@ internal transient skipInit unit core
 		core.log("#db Restored "+inputs.writePos+" bytes of user "+user.id+"'s stream from IndexedDB ("+chunks.length+" chunks stored for room "+core.roomId+", claim "+claim+")");
 	
 	openState
+		// Lockstep: a SetState record is applied through the serializer on every client -
+		// impossible without it (and the record would poison the shared timeline)
+		if not system.enableRollback
+			log "openState is not available in lockstep mode (system.enableRollback = false)"
+			return
 		file.openBinary
 			int version = buffer.readInt
 			Buffer finalSnapshot = {}

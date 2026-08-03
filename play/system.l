@@ -34,6 +34,18 @@ global transient skipInit unit system
 	public int rewindFrames = 4
 	public int rewindHistoryFrames = 900
 	
+	// Rollback netcode (default): frames are predicted with the inputs at hand, serialized
+	// snapshots pin the last certain state, and late inputs rewind+replay the world. Set to
+	// false when the game holds state in external (non-LiveTime) libraries that the serializer
+	// cannot snapshot: the engine then runs delay-based LOCKSTEP instead - it only ever steps
+	// frames whose inputs are final from every user (core.lockstepCertainInputFrame), so the
+	// applied timeline never needs a correction and nothing is ever serialized. Claims advance
+	// on the wall clock (see core.onFrame), new records are stamped targetFrame+1, so local
+	// input takes effect after ~one-way latency and the world freezes while a peer's claims
+	// are missing. Compile-time configuration like the rewind values: every client of a room
+	// must run the same value (set it in app.init)
+	public bool enableRollback = true
+	
 	// Info
 	public inline js string appName	=> _appName
 	public inline js int buildVersion	=> _buildVersion
