@@ -67,7 +67,7 @@ global unit fx
 	internal tick
 		if runningAnimations.length == 0 then return
 		let now = Time.now
-		for runningAnimations <-
+		for runningAnimations backwards
 			if now >= .startTime
 				float time = now - .startTime
 				float progress = .duration ? time/.duration : 1

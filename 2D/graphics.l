@@ -378,8 +378,8 @@ transient skipInit global unit graphics
 		finishDrawingItems items
 		drawMargins
 		for input.internalUsers as user if user
-			for user.videoElementIndex to user.videoElements.length
-				PeerNetwork.removeVideoElement user.videoElements[.]
+			for j = user.videoElementIndex to user.videoElements.length
+				PeerNetwork.removeVideoElement user.videoElements[j]
 			user.videoElements.setLength user.videoElementIndex
 			PeerNetwork.setAudioMuted user.audioElement, muted:core.muteInvisibleUsers and user.videoElementIndex == 0
 
@@ -838,20 +838,20 @@ transient skipInit global unit graphics
 			lines = []
 			float totalWidth
 			string line
-			for words as word
-				float wordWidth = getTextWidth(word, {x:fontSize}, effectiveFont, style)
+			for w in words
+				float wordWidth = getTextWidth(w, {x:fontSize}, effectiveFont, style)
 				if totalWidth + wordWidth > maxWidth
 					if overflow == Ellipsis then line += "..."
 						
 					if line
 						// Finish the line and start a new line with the current word
 						lines.add line
-						line = word + " "
+						line = w + " "
 						totalWidth = wordWidth + spaceWidth
 					else
 						// A single word is already too wide for the line
 						// Create a line with this word start a new empty line
-						lines.add word
+						lines.add w
 						line = ""
 						totalWidth = 0
 
@@ -859,10 +859,10 @@ transient skipInit global unit graphics
 						line = ""
 						break
 				else
-					line += word + " "
+					line += w + " "
 					totalWidth += wordWidth + spaceWidth
 					
-				if word[word.length-1] == "\n"
+				if w[w.length-1] == "\n"
 					lines.add line
 					line = ""
 					totalWidth = 0
@@ -1009,7 +1009,7 @@ transient skipInit global unit graphics
 		TextSegment[] segments = [ segment ]
 		TextHighlight highlight
 		
-		for words as word
+		for w in words
 			string suffix, prefix
 			float suffixWidth, prefixWidth
 			TextHighlight startHighlight, endHighlight
@@ -1019,32 +1019,32 @@ transient skipInit global unit graphics
 			if not highlight
 				// Find highlight start character
 				for highlights
-					startIndex = word.indexOf .from
+					startIndex = w.indexOf .from
 					if startIndex != -1
 						startHighlight = .
 						if startIndex > 0
-							prefix = word[..startIndex]
+							prefix = w[..startIndex]
 							prefixWidth = getTextWidth(prefix size:fontSize, effectiveFont, style)
 							expectedSegmentWidth += prefixWidth
-						word = word[startIndex+1..]
+						w = w[startIndex+1..]
 						expectedSegmentWidth += .margin.x + .padding.x*2
 						break
 						
 			if highlight or startHighlight
 				// Find highlight end character
 				for highlights
-					int endIndex = word.indexOf .to, startIndex+1
+					int endIndex = w.indexOf .to, startIndex+1
 					if endIndex != -1
 						endHighlight = .
-						if endIndex < word.length-1
-							suffix = word[endIndex+1..]
+						if endIndex < w.length-1
+							suffix = w[endIndex+1..]
 							suffixWidth = getTextWidth(suffix size:fontSize, effectiveFont, style)
 							expectedSegmentWidth += suffixWidth
-						word = word[..endIndex]
+						w = w[..endIndex]
 						break
 		
 			// Measure current word
-			float wordWidth = getTextWidth(word, size:fontSize, effectiveFont, style)
+			float wordWidth = getTextWidth(w, size:fontSize, effectiveFont, style)
 			
 			// Is there something in the current line?
 			if segment.text or segment.position.x > 0
@@ -1072,7 +1072,7 @@ transient skipInit global unit graphics
 				segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y}, highlight, size:highlight.padding*2 }
 				
 			// Add word
-			segment.text += word
+			segment.text += w
 			segment.size.x += wordWidth
 				
 			// End highlight
@@ -1093,8 +1093,8 @@ transient skipInit global unit graphics
 		for segments.length + 1 as index
 			let s = segments[index]
 			if not s or s.position.x == 0
-				for lineStartIndex to index
-					segments[.].position.x -= lineWidth * factor
+				for i = lineStartIndex to index
+					segments[i].position.x -= lineWidth * factor
 				lineStartIndex = index
 				lineWidth = 0
 			if index < segments.length
