@@ -22,7 +22,7 @@ skipInit transient unit statistics
 			graphIndex++
 				
 		// Draw infos
-		for infos <-
+		for infos backwards
 			let x = (core.frame - .frame)/framesPerValue
 			if x > size.x then break
 			drawText cast .value, {position.x + size.x - x, position.y + 10*.index}, size:8, valign:Top

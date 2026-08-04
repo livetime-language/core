@@ -8,7 +8,7 @@ unit Framework
 	Object[] toBeRemoved
 	
 	clear: bool includingLockedObjects = false
-		for objects <-
+		for objects backwards
 			if not .locked or includingLockedObjects then objects.removeAt i
 				
 	clearAtEndOfFrame
@@ -389,7 +389,7 @@ Object ParticleSystem
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
 				nextBurst = ++burst < bursts ? Time.now + burstInterval : float.maxValue
 
-		for particles <-
+		for particles backwards
 			drawImage image, position:.pos, angle:.angle, frame:.frame, visibleFor, layer: layer
 			.pos += .speed
 			.speed.y += gravity
