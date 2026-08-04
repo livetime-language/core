@@ -359,7 +359,9 @@ global transient skipInit unit system
 	js void navigate: string url
 		window.location.href = url
 
-	inline js bool isConnectedToEditor => _isConnectedToEditor
+	// Defined by the dev server page (live value) and the web IDE's worker shims (true); other
+	// editor hosts like the vscode webview don't define it but are connected by construction
+	inline js bool isConnectedToEditor => (typeof globalThis._isConnectedToEditor == "undefined" ? true : globalThis._isConnectedToEditor)
 
 
 	const string[PlayMode] iconForPlayMode = {
