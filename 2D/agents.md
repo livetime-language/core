@@ -96,7 +96,7 @@ app
 		IntVector gridPos = {5,4}
 		grid[gridPos] = {cellType:Blocker}
 		IntVector2 gridSize = grid.size
-		for grid as cell, gridPos
+		for gridPos, cell in grid
 			print "At {gridPos} is a cell with type {cell.cellType}"
 
 		// Dictionary (hashtable that maps keys to values)
@@ -104,9 +104,9 @@ app
 		documentsById["2f"] = {id:"2f"}
 		documentsById.remove "2f"
 		documentsById.clear
-		for documents as doc
+		for doc in documents
 			documentsById[doc.id] = doc
-		for documentsById as doc, id
+		for id, doc in documentsById
 			print "id:{id} created:{doc.created.toDayMonthYearString}"
 
 		// Find
@@ -128,20 +128,20 @@ app
 			print "Did not find player with name Mike"
 
 		// Iterate over a List
-		for documents as doc
+		for doc in documents
 			print doc.id
 
-		// Iterate over an integer range
-		// Prints "01234", the upper bound is exclusive 
-		for 0 to 5 as i
+		// Iterate from lower bound to exclusive upper bound
+		// Prints "01234"
+		for i = 0 to 5
 			print i
 
-		// If you leave out the lower bound, it defaults to 0
-		// If you leave out the declaration of the index variable, it defaults to i
+		// Lower bound defaults to 0 if left out
+		// Index variable defaults to i if left out
 		for 5
 			print i
 
-		// You can use "." to refer to the current item while iterating
+		// Use "." to refer to the current item
 		for documents
 			print .
 
@@ -149,17 +149,17 @@ app
 		for 5
 			print .
 			
-		// Use the "backwards" keyword to iterate backwards
+		// Use "step -1" for reverse order
 		// Prints "43210"
-		for 5 backwards as i
+		for i = 0 to 5 step -1
 			print i
 
 		// Iterate over a List by index
-		for documents.length as i
+		for i = 0 to documents.length
 			print documents[i].state
 
 		// Iterate over a Dictionary
-		for documentsById as value, key
+		for key, value in documentsById
 			print "{key}: {value}"
 
 		// If you divide an integer by an integer in LiveTime, you always get a float
@@ -220,7 +220,7 @@ app
 	Item[]	items
 
 	onTouchHover: Touch touch
-		for items as item
+		for item in items
 			// Important: If isOnlineMultiplayer it true, the touch must be by the owner of the item
 			if isOnlineMultiplayer and touch.by != item.owner then continue
 			item.hoverTouch = touch.position insideRectangle item.position, item.size ? touch : null
@@ -362,7 +362,7 @@ app
 		Menu()
 		
 		// Create empty grid of cells
-		for grid.size as gridPos
+		for gridPos to grid.size
 			grid[gridPos] = Cell(gridPos)
 		
 		// In LiveTime, the global variable players always contains a list of players
@@ -457,7 +457,7 @@ class Player
 			app.startTurn
 				
 	captureSurroundedPieces: IntVector2 originPos
-		for IntVector2.primaryDirections as dir
+		for dir to IntVector2.primaryDirections
 			IntVector2 neighborPos = originPos + dir
 			Cell neighborCell = app.grid[neighborPos]
 				Player opponent = neighborCell.player			
@@ -469,7 +469,7 @@ class Player
 						// Animate the captured pieces to the player's video feed
 						animate duration:500 milliseconds
 							// Called on every tick of the animation, passing in the progress ranging from 0 to 1
-							for surroundedCells as cell
+							for cell in surroundedCells
 								let pos = cell.gridPos.toScreenPos interpolateTo videoPos, progress
 								drawCircle pos, size:60, color:opponent.playerColor
 						then
@@ -490,7 +490,7 @@ class Player
 			IntVector2 pos = queue.pop
 			Cell cell = app.grid[pos]
 			
-			for IntVector2.primaryDirections as dir
+			for dir to IntVector2.primaryDirections
 				IntVector2 neighborPos = pos + dir
 				Cell neighborCell = app.grid[neighborPos]
 				if neighborCell and not neighborCell.visited

@@ -23,14 +23,14 @@ start	// app.start is called once when the app starts
 	players.clear	// Remove all items from list
 	if not (x < 0 or x >= 10) then print "between 0 and 10"	// Use "then" in single-line if statements, leave out "then" in multi-line statements
 	if 0 <= x < 10 then print "between 0 and 10"	// Chained comparison
-	for 0 to 5 as i	// Iterate over range with inclusive start 0 and exclusive end 5
+	for i = 0 to 5	// Iterate over range with inclusive start 0 and exclusive end 5
 		print i	// Prints 0 1 2 3 4
 	for players.length	// Start index is 0 if left out, iteration variable is . if left out
 		let player = players[.]	// Get item by index
-	for players.length backwards as i	// Iterate backwards
+	for i to players.length step -1	// Reverse order
 		print i	// Prints 4 3 2 1 0
 		players.removeAt i 	// Remove item at index
-	for players as p	// Iterate over list
+	for p in players	// Iterate over list
 		print "The score of {p.name} is {p.score}"	// String interpolation
 	let max = x > y ? x : y	// Ternary operator
 	int dot = filename.indexOf(".")	// Get index of character in string
@@ -142,8 +142,8 @@ Player currentPlayer
 Phase phase = PlacePiece
 
 start
-	for boardSize.x as x
-		for boardSize.y as y
+	for x to boardSize.x
+		for y to boardSize.y
 			cells[y*boardSize.x + x] = new Cell(gridPos:{x,y}, player:null)
 	
 	players = [{index:0}, {index:1}]
@@ -193,7 +193,7 @@ placePiece: Vector2 gridPos
 const Vector2[] directions = [{0, -1}, {1, 0}, {0, 1}, {-1, 0}]
 
 captureSurroundedPieces: Vector2 originPos
-	for directions as dir
+	for dir in directions
 		Vector2 neighborPos = originPos + dir
 		Cell neighborCell = app.cells[neighborPos.y * app.boardSize.x + neighborPos.x]
 		
@@ -207,7 +207,7 @@ Cell[] collectSurroundesCells: Vector2 originPos, Player attacker
 	Vector2[] queue = [ originPos ]
 	Cell[] surroundedCells = [ app.cells[originPos.y * app.boardSize.x + originPos.x] ]
 	
-	for app.cells as cell
+	for cell in app.cells
 		cell.visited = false
 	
 	while queue
@@ -216,7 +216,7 @@ Cell[] collectSurroundesCells: Vector2 originPos, Player attacker
 		surroundedCells.add cell
 		cell.visited = true
 		
-		for directions as dir
+		for dir in directions
 			Vector2 neighborPos = pos + dir
 			Cell neighborCell = app.cells[neighborPos.y * app.boardSize.x + neighborPos.x]
 			if neighborCell and not neighborCell.visited
