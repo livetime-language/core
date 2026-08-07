@@ -4,18 +4,8 @@ Use "doc/MEMORY.md" to read and write important information about the project.
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
-# Simple code
-Always write the shortest, simplest possible code that meet the specifications.
-Prefer a few medium to large functions over lots of small functions.
-Only create functions if you need to reuse code in several places.
-Keep the flow simple and easy to understand.
-Check your code for opportunities to simplify the code or implement the same functionality with less code.
-
 # Fast and efficient code
-Write the fastest, most efficient code possible.
-
-# Descriptive names, no abbreviations
-Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
+Write fast, efficient, simple code that is easy to read and understand.
 
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:

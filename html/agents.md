@@ -1,28 +1,17 @@
 # Memory
 Use "doc/MEMORY.md" to read and write important information about the project.
 
-# We use the LiveTime Programming Language and HTML Framework with a PocketBase backend
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
+# Use LiveTime Programming Language and HTML Framework with PocketBase backend
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). LiveTime uses inline styles for all html elements. 
 
-LiveTime uses inline styles for all html elements. 
+# Refresh to re-render
 Very important: To re-render the html after changing data, you need to call refresh.
 
-# Simple code
-Always write the shortest, simplest possible code that meet the specifications.
-Prefer a few medium to large functions over lots of small functions.
-Only create functions if you need to reuse code in several places.
-Keep the flow simple and easy to understand.
-Check your code for opportunities to simplify the code or implement the same functionality with less code.
-
 # Fast and efficient code
-Write the fastest, most efficient code possible.
-
-# Descriptive names, no abbreviations
-Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
+Write fast, efficient, simple code that is easy to read and understand.
 
 # Group related code in the same function
 Elements that are grouped together visually should be in the same function.
-Aim for about 1 to 5 draw functions per page.
 
 # Library Source Code
 When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/html/" and "lib/core/pocketbase/"
@@ -347,19 +336,4 @@ If you place "Example.png" in this folder, you can use "Example" in the img comp
 app
 	draw
 		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
-
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
-
-2. Double check you are calling refresh after changing data.
-
-3. Make sure you fixed all diagnostics and linter errors.
-
-4. Your code should contain print statements that output all relevant information to verify that everything works as specified.
-
-5. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
-
-6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
-
-7. Fix all problems and repeat until you verified everything works as specified.
 

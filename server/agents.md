@@ -1,16 +1,8 @@
----
-description: LiveTime Programming Language Examples and Standard Library
-alwaysApply: true
-applyTo: '**'
----
 # Use the LiveTime programming language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
 
-# Write simple, fast code
-Write simple, fast, efficient code.
-
-# Descriptive names, no abbreviations
-Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
+# Fast and efficient code
+Write fast, efficient, simple code that is easy to read and understand.
 
 # Compile
 Check your code with "livetime check", build with "livetime build".
