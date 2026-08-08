@@ -14,16 +14,17 @@ Write fast, efficient, simple code that is easy to read and understand.
 Elements that are grouped together visually should be in the same function.
 
 # PocketBase Server
-The server is in the "server" folder. It's written in Go. To start a local server:
+The server source is in "server/", its data is in "dist/". It's written in Go.
+Usually, a local server is already running at localhost:8090. If not, start one with:
 cd dist
 go run ../server serve
 
 # Database Schema
-"src/model.l" defines the database schema and it the source of truth.
+"src/model.l" defines the database schema and it is the source of truth.
 To change the schema, edit model.l and run "livetime schema update".
 
 # Library Source Code
-lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
+lib/core/js/base.l	Standard Library (int, float, string, List, Grid, Dictionary, etc).
 lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
 lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
@@ -343,4 +344,3 @@ If you place "Example.png" in this folder, you can use "Example" in the img comp
 app
 	draw
 		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
-
