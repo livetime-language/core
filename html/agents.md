@@ -1,5 +1,5 @@
-# Memory
-Use "doc/MEMORY.md" to read and write important information about the project.
+# Memory must be in the repo
+Use "memory/" to read and write important information about the project. Use "memory/MEMORY.md" for an overview. Keep all memory documents up to date.
 
 # Use LiveTime Programming Language and HTML Framework with PocketBase backend
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). LiveTime uses inline styles for all html elements. 
