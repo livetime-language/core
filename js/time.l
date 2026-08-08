@@ -279,7 +279,7 @@ string TimeString
 js(Date) internal transient class Date
 	inline js Date(float time) new Date(time)
 	inline js Date(TimeString timeString) new Date(timeString)
-	inline js Date(int year, int month, int day, int hour, int minute, int second, int milliseconds) new Date(year, month-1, day, hour, minute, second, milliseconds)
+	inline js Date(int year=1970, int month=0, int day=1, int hour=0, int minute=0, int second=0, int milliseconds=0) new Date(year, month-1, day, hour, minute, second, milliseconds)
 	
 	static inline js Date fromTime(float time) new Date(time)
 	static inline js Date fromString(string timeString) new Date(timeString)
