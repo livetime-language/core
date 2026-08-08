@@ -331,9 +331,9 @@ static class app
 		refresh
 
 # Images
-Place images in the folder "assets/pb_public/media". 
+Place images in the folder "dist/pb_public/media". 
 If you place "Example.png" in this folder, you can use "Example" in the img component:
 app
 	draw
-		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
+		img Example, width:64px // Renders the image "dist/pb_public/media/Example.png"
 
