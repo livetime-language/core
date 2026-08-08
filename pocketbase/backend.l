@@ -169,7 +169,7 @@ DatabaseTable<T>
 		dynamicItem.id = newRecord.id
 		dynamicItem.created = newRecord.created
 		dynamicItem.updated = newRecord.updated
-		items.add item
+		items.ensure item
 
 	// If the item has a valid id member variable, update the item, otherwise add it to the database table
 	importance:3
