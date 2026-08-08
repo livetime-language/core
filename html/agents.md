@@ -13,9 +13,16 @@ Write fast, efficient, simple code that is easy to read and understand.
 # Group related code in the same function
 Elements that are grouped together visually should be in the same function.
 
-# Library Source Code
-When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/html/" and "lib/core/pocketbase/"
+# PocketBase Server
+The server is in the "server" folder. It's written in Go. To start a local server:
+cd dist
+go run ../server serve
 
+# Database Schema
+"src/model.l" defines the database schema and it the source of truth.
+To change the schema, edit model.l and run "livetime schema update".
+
+# Library Source Code
 lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
 lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
