@@ -469,6 +469,7 @@ global static class html
 	// The model variable you pass in will be updated automatically after every keystroke.
 	importance:4
 	global inline void field: string model = ""                 // The variable that holds the value. This will be updated when the user changed the text
+		                      string placeholder = ""           // The placeholder text to display in the field
 		                      bool focused = false              // Whether the cursor should be placed in the field
 		                      inline void() onEnter = null      // Called when the user presses the enter key
 		                      expand Attributes attributes = {} // The attributes of the HTML element
@@ -477,6 +478,7 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"input", attributes, style, location
 		element.value = model
+		element.placeholder = placeholder
 		element.oninput = model = element.value; changeHandler
 		element.onkeydown = if(ev.keyCode == Enter) onEnter()
 		if focused or focusTabIndex == attributes.tabIndex then element.focus
@@ -485,6 +487,7 @@ global static class html
 	// If you specify a onChange handler, the model won't be updated automatically.
 	importance:4
 	global inline void field: string text = ""                     // The variable that holds the value. This will be updated when the user changed the text
+		                      string placeholder = ""           // The placeholder text to display in the field
 		                      bool focused = false                 // Whether the cursor should be placed in the field
 		                      inline void(string value) onChange   // If you specify a onChange handler, the model won't be updated automatically
 		                      expand Attributes attributes = {}    // The attributes of the HTML element
@@ -494,6 +497,7 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div tag:"input", attributes, style, location
 		element.value = text or ""
+		element.placeholder = placeholder
 		if updateWithEveryKeystroke then element.oninput = onChange(element.value); changeHandler
 		else         element.onchange = onChange(element.value); changeHandler
 		if focused or focusTabIndex == attributes.tabIndex then element.focus
