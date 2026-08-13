@@ -84,12 +84,15 @@ global transient skipInit unit system
 		clearDelay(debounceId)
 		debounceId = delay(time, then)
 		
-	inline js int delay: float time // The delay in milliseconds
-		                  void() then
-		setTimeout(then, time)
-
-	inline js void clearDelay: int id
-		clearTimeout(id)
+	global inline js int delay: float time // The delay in milliseconds
+		                        void() do
+		setTimeout(do, time)
+		
+	global inline js async void delay: float time // The delay in milliseconds
+		new Promise(resolve => setTimeout(resolve, time))
+		
+	global inline js int clearDelay: int handle
+		clearTimeout(handle)
 		
 	inline js void copyToClipboard(string text)
 		if(core.isPremiere && input.isCertain) {
