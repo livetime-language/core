@@ -60,7 +60,8 @@ transient skipInit static class backend
 				let result = await pb.collection("users").authRefresh();
 				return result.record
 		catch as error
-			logout
+			print error
+			if not system.isDebug then logout
 		return null
 
 	// Log in a user with an email and password and return the authenticated user
