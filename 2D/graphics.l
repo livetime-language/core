@@ -285,7 +285,7 @@ transient skipInit global unit graphics
 	bool isDrawingDebugInfo
 	
 	async setup
-		if system.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
+		// if system.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
