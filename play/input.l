@@ -2366,7 +2366,7 @@ class Input
 	global const RightMouseButton	= {type:Pointer,	code:"RightMouseButton"}
 
 	// Function row
-	global const Esc	= {type:Keyboard,	code:"Escape"}
+	global const Escape	= {type:Keyboard,	code:"Escape"}
 	global const F1	= {type:Keyboard,	code:"F1"}
 	global const F2	= {type:Keyboard,	code:"F2"}
 	global const F3	= {type:Keyboard,	code:"F3"}
