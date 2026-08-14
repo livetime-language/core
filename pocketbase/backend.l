@@ -254,12 +254,17 @@ DatabaseTable<T>
 		return items
 		
 	// Fetch and return a single item from the database table
-	importance:5 async inline js
+	importance:5 async js
 	T fetchOne: string filter          // The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
 		        string sort = null     // The PocketBase sort string, e.g. "-created"
 		        string fields = null   // A comma separated list of fields to fetch, e.g. "name,active,created"
 		        string expand = null
-		backend.pb.collection(this.name).getFirstListItem(filter, {@fields:fields, @sort:sort, @expand:expand, skipTotal:true})
+		try {
+			return await backend.pb.collection(this.name).getFirstListItem(filter, {fields:fields, sort:sort, expand:expand, skipTotal:true})
+		} catch(e) {
+			console.error(e)
+			return null
+		}
 		
 	// Fetch and return a single item from the database by id
 	importance:5 async inline js
