@@ -44,6 +44,13 @@ transient speech
 			{"Google", minSpeed:0.7}
 		]}
 	}
+	string[string] voiceForLanguage
+	float userSpeedPreference = 0.7
+	
+	setVoice: string language, string voiceName
+		voiceForLanguage[language] = voiceName
+		let pref = preferences[language] or preferences["English"]
+			pref.voice = null
 	
 	inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
 		
@@ -70,11 +77,20 @@ transient speech
 			let allVoices = getVoices
 			voices = allVoices.filter.lang.startsWith(pref.lang)
 			// for voices: print "{.lang} {.name}"
+			
+			// User preference
+			let userPref = voiceForLanguage[language]
+				let voice = allVoices.find.name.includes(userPref)
+					pref.voice = voice
+					pref.minSpeed = userSpeedPreference
+					return pref
+					
+			// System preferences
 			for pref.voices as voicePreference
 				let voice = voices.find.name.includes(voicePreference.name)
 					pref.voice = voice
 					pref.minSpeed = voicePreference.minSpeed
-					break
+					return pref
 		return pref
 		
 	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
