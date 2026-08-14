@@ -104,6 +104,11 @@ interface object
 			if(Array.isArray(v)) {
 				for(let i = 0, n = v.length; i < n; ++i)
 					refWalk(v[i], counts, path)
+			} else if(v instanceof Map) {
+				for(let e of v) {
+					refWalk(e[0], counts, path)
+					refWalk(e[1], counts, path)
+				}
 			} else {
 				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
 				for(let k in v)
@@ -150,6 +155,19 @@ interface object
 				for(let i = 0; i < n; ++i)
 					p.push(ser(v[i], counts, anchors, nextId))
 				body = "[" + p.join(", ") + "]"
+			} else if(v instanceof Map) {
+				let p = []
+				if(v.size === 0 || typeof v.keys().next().value === "string") {
+					for(let e of v) {
+						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(e[0]) ? e[0] : escStr(e[0])
+						p.push(kk + ": " + ser(e[1], counts, anchors, nextId))
+					}
+					body = "{" + p.join(", ") + "}"
+				} else {
+					for(let e of v)
+						p.push("[" + ser(e[0], counts, anchors, nextId) + ", " + ser(e[1], counts, anchors, nextId) + "]")
+					body = "[" + p.join(", ") + "]"
+				}
 			} else {
 				let tset = v.constructor ? window["_transients_of_" + v.constructor.name] : null
 				let p = []
@@ -296,7 +314,9 @@ interface object
 				ctx.i = skipWs(s, ctx.i)
 				if(s.charCodeAt(ctx.i) !== 58) throw new Error("fromYaml: expected :")
 				++ctx.i
-				obj[key] = parseValue(s, ctx)
+				let value = parseValue(s, ctx)
+				if(obj instanceof Map) obj.set(key, value)
+				else obj[key] = value
 				ctx.i = skipWs(s, ctx.i)
 				let c = s.charCodeAt(ctx.i)
 				if(c === 125) { ++ctx.i; break }
@@ -310,6 +330,21 @@ interface object
 			ctx.i = skipWs(s, ni)
 			if(!tag) throw new Error("fromYaml: missing tag")
 			let c = s.charCodeAt(ctx.i)
+			if(tag === "Map") {
+				let map = new Map()
+				if(anchor) ctx.anchors.set(anchor, map)
+				if(c === 91) {
+					++ctx.i
+					let pairs = []
+					parseFlowArrayInto(pairs, s, ctx)
+					for(let p of pairs)
+						map.set(p[0], p[1])
+				} else if(c === 123) {
+					++ctx.i
+					parseFlowMapInto(map, s, ctx)
+				} else throw new Error("fromYaml: expected [ or { after Map tag")
+				return map
+			}
 			let inst = construct(tag)
 			if(c === 91 && typeof inst.push !== "function") inst = []
 			if(anchor) ctx.anchors.set(anchor, inst)
