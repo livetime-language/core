@@ -1,5 +1,8 @@
+# Memory must be in the repo
+Use "memory/" to read and write important information about the project. Use "memory/MEMORY.md" for an overview. Keep all memory documents up to date.
+
 # Use the LiveTime programming language
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
 
 # Fast and efficient code
 Write fast, efficient, simple code that is easy to read and understand.
