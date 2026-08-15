@@ -612,6 +612,7 @@ skipInit global unit input
 			return false;
 		}
 		window.onkeydown = e => {
+			if(e.repeat) return
 			let keyCode = e.keyCode
 			let key = e.key
 			let ctrlOrCmd = e.ctrlKey || e.metaKey
@@ -1524,28 +1525,29 @@ skipInit global unit input
 		// app.onKeyDown??(key, character)
 		// player.onKeyDown??(key, character)
 
-		// Modern Input
-		// if character
-		// 	internalUser.typedCharacters += character
-		// else
-		// if key == Backspace
-		// 	internalUser.typedCharacters += "\b"
-
+		// --- Modern Input ---
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = true
 		Input key = Input.items[keyIndex]
 		if not key or (character and key.character != character)
 			key = {type:Keyboard, code:key ? key.code : "", character}
-		internalUser.pressedAtFrame[keyIndex] = core.frame
-		internalUser.allJustPressed.add key
-		let parent = key?.parent
-			internalUser.pressedAtFrame[parent.index] = core.frame
-			internalUser.allJustPressed.add parent
 			
-			// CmdOrCtrl
+		// Save when key was pressed if it's not already pressed (to cancel out OS key repeat and support custom repeat)
+		if internalUser.releasedAtFrame[keyIndex] >= internalUser.pressedAtFrame[keyIndex]
+			internalUser.pressedAtFrame[keyIndex] = core.frame
+			internalUser.allJustPressed.add key
+			
+		// Save when the parent key was pressed if it's not already pressed (e.g. "Shift" is the parent of "ShiftLeft")
+		let parent = key?.parent
+			if internalUser.releasedAtFrame[parent.index] >= internalUser.pressedAtFrame[parent.index]
+				internalUser.pressedAtFrame[parent.index] = core.frame
+				internalUser.allJustPressed.add parent
+			
+			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
-				internalUser.allJustPressed.add Input.CmdOrCtrl
-				internalUser.pressedAtFrame[Input.CmdOrCtrl.index] = core.frame
+				if internalUser.releasedAtFrame[Input.CmdOrCtrl.index] >= internalUser.pressedAtFrame[Input.CmdOrCtrl.index]
+					internalUser.allJustPressed.add Input.CmdOrCtrl
+					internalUser.pressedAtFrame[Input.CmdOrCtrl.index] = core.frame
 			
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -1562,16 +1564,20 @@ skipInit global unit input
 		// // app.onKeyUp??(key)
 		// // player.onKeyUp??(key)
 			
-		// Modern Input
+		// --- Modern Input ---
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 		Input key = Input.items[keyIndex]
+		
+		// Save when key was released
 		internalUser.releasedAtFrame[keyIndex] = core.frame
 		internalUser.allJustReleased.add key
+		
+		// Save when the parent key was released (e.g. "Shift" is the parent of "ShiftLeft")
 		let parent = key?.parent
 			internalUser.releasedAtFrame[parent.index] = core.frame
 			internalUser.allJustReleased.add parent
 			
-			// CmdOrCtrl
+			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				internalUser.releasedAtFrame[Input.CmdOrCtrl.index] = core.frame
@@ -2344,12 +2350,12 @@ class Input
 	InputType type
 	string code
 	string character
-	string name
+	string name, alternativeName
 	Input parent
 	int index
 	
 	Input
-		if not name then name = code.toLowerCase
+		if not name then name = character or code.toLowerCase
 
 	inline string toString() this.character
 
@@ -2378,7 +2384,7 @@ class Input
 	global const RightMouseButton	= {type:Pointer,	code:"RightMouseButton"}
 
 	// Function row
-	global const Escape	= {type:Keyboard,	code:"Escape"}
+	global const Escape	= {type:Keyboard,	code:"Escape", name:"esc", alternativeName:"escape"}
 	global const F1	= {type:Keyboard,	code:"F1"}
 	global const F2	= {type:Keyboard,	code:"F2"}
 	global const F3	= {type:Keyboard,	code:"F3"}
@@ -2396,81 +2402,81 @@ class Input
 	const Pause	= {type:Keyboard,	code:"Pause"}
 
 	// Number row
-	const Backquote	= {type:Keyboard,	code:"Backquote",	character:"`"}
-	const Digit1	= {type:Keyboard,	code:"Digit1",	character:"1",	name:"1"}
-	const Digit2	= {type:Keyboard,	code:"Digit2",	character:"2",	name:"2"}
-	const Digit3	= {type:Keyboard,	code:"Digit3",	character:"3",	name:"3"}
-	const Digit4	= {type:Keyboard,	code:"Digit4",	character:"4",	name:"4"}
-	const Digit5	= {type:Keyboard,	code:"Digit5",	character:"5",	name:"5"}
-	const Digit6	= {type:Keyboard,	code:"Digit6",	character:"6",	name:"6"}
-	const Digit7	= {type:Keyboard,	code:"Digit7",	character:"7",	name:"7"}
-	const Digit8	= {type:Keyboard,	code:"Digit8",	character:"8",	name:"8"}
-	const Digit9	= {type:Keyboard,	code:"Digit9",	character:"9",	name:"9"}
-	const Digit0	= {type:Keyboard,	code:"Digit0",	character:"0",	name:"0"}
-	const Minus	= {type:Keyboard,	code:"Minus",	character:"-"}
-	const Equal	= {type:Keyboard,	code:"Equal",	character:"="}
+	const Backquote	= {type:Keyboard,	code:"Backquote",	character:"`", alternativeName:"backquote"}
+	const Digit1	= {type:Keyboard,	code:"Digit1",	character:"1"}
+	const Digit2	= {type:Keyboard,	code:"Digit2",	character:"2"}
+	const Digit3	= {type:Keyboard,	code:"Digit3",	character:"3"}
+	const Digit4	= {type:Keyboard,	code:"Digit4",	character:"4"}
+	const Digit5	= {type:Keyboard,	code:"Digit5",	character:"5"}
+	const Digit6	= {type:Keyboard,	code:"Digit6",	character:"6"}
+	const Digit7	= {type:Keyboard,	code:"Digit7",	character:"7"}
+	const Digit8	= {type:Keyboard,	code:"Digit8",	character:"8"}
+	const Digit9	= {type:Keyboard,	code:"Digit9",	character:"9"}
+	const Digit0	= {type:Keyboard,	code:"Digit0",	character:"0"}
+	const Minus	= {type:Keyboard,	code:"Minus",	character:"-", alternativeName:"minus"}
+	const Equal	= {type:Keyboard,	code:"Equal",	character:"=", alternativeName:"equal"}
 	global const Backspace	= {type:Keyboard,	code:"Backspace"}
 
 	// Top letter row
-	global const Tab	= {type:Keyboard,	code:"Tab",	character:"\t"}
-	const KeyQ	= {type:Keyboard,	code:"KeyQ",	character:"q",	name:"q"}
-	const KeyW	= {type:Keyboard,	code:"KeyW",	character:"w",	name:"w"}
-	const KeyE	= {type:Keyboard,	code:"KeyE",	character:"e",	name:"e"}
-	const KeyR	= {type:Keyboard,	code:"KeyR",	character:"r",	name:"r"}
-	const KeyT	= {type:Keyboard,	code:"KeyT",	character:"t",	name:"t"}
-	const KeyY	= {type:Keyboard,	code:"KeyY",	character:"y",	name:"y"}
-	const KeyU	= {type:Keyboard,	code:"KeyU",	character:"u",	name:"u"}
-	const KeyI	= {type:Keyboard,	code:"KeyI",	character:"i",	name:"i"}
-	const KeyO	= {type:Keyboard,	code:"KeyO",	character:"o",	name:"o"}
-	const KeyP	= {type:Keyboard,	code:"KeyP",	character:"p",	name:"p"}
-	const BracketLeft	= {type:Keyboard,	code:"BracketLeft",	character:"["}
-	const BracketRight	= {type:Keyboard,	code:"BracketRight",	character:"]"}
-	const Backslash	= {type:Keyboard,	code:"Backslash",	character:"\\"}
+	global const Tab	= {type:Keyboard,	code:"Tab",	character:"\t", name:"tab", alternativeName:"tabulator"}
+	const KeyQ	= {type:Keyboard,	code:"KeyQ",	character:"q"}
+	const KeyW	= {type:Keyboard,	code:"KeyW",	character:"w"}
+	const KeyE	= {type:Keyboard,	code:"KeyE",	character:"e"}
+	const KeyR	= {type:Keyboard,	code:"KeyR",	character:"r"}
+	const KeyT	= {type:Keyboard,	code:"KeyT",	character:"t"}
+	const KeyY	= {type:Keyboard,	code:"KeyY",	character:"y"}
+	const KeyU	= {type:Keyboard,	code:"KeyU",	character:"u"}
+	const KeyI	= {type:Keyboard,	code:"KeyI",	character:"i"}
+	const KeyO	= {type:Keyboard,	code:"KeyO",	character:"o"}
+	const KeyP	= {type:Keyboard,	code:"KeyP",	character:"p"}
+	const BracketLeft	= {type:Keyboard,	code:"BracketLeft",	character:"[",	alternativeName:"bracketleft"}
+	const BracketRight	= {type:Keyboard,	code:"BracketRight",	character:"]",	alternativeName:"bracketright"}
+	const Backslash	= {type:Keyboard,	code:"Backslash",	character:"\\",	alternativeName:"backslash"}
 
 	// Home row
 	global const CapsLock	= {type:Keyboard,	code:"CapsLock"}
-	const KeyA	= {type:Keyboard,	code:"KeyA",	character:"a",	name:"a"}
-	const KeyS	= {type:Keyboard,	code:"KeyS",	character:"s",	name:"s"}
-	const KeyD	= {type:Keyboard,	code:"KeyD",	character:"d",	name:"d"}
-	const KeyF	= {type:Keyboard,	code:"KeyF",	character:"f",	name:"f"}
-	const KeyG	= {type:Keyboard,	code:"KeyG",	character:"g",	name:"g"}
-	const KeyH	= {type:Keyboard,	code:"KeyH",	character:"h",	name:"h"}
-	const KeyJ	= {type:Keyboard,	code:"KeyJ",	character:"j",	name:"j"}
-	const KeyK	= {type:Keyboard,	code:"KeyK",	character:"k",	name:"k"}
-	const KeyL	= {type:Keyboard,	code:"KeyL",	character:"l",	name:"l"}
-	const Semicolon	= {type:Keyboard,	code:"Semicolon",	character:";"}
-	const Quote	= {type:Keyboard,	code:"Quote",	character:"'"}
-	global const Enter	= {type:Keyboard,	code:"Enter",	character:"\n"}
+	const KeyA	= {type:Keyboard,	code:"KeyA",	character:"a"}
+	const KeyS	= {type:Keyboard,	code:"KeyS",	character:"s"}
+	const KeyD	= {type:Keyboard,	code:"KeyD",	character:"d"}
+	const KeyF	= {type:Keyboard,	code:"KeyF",	character:"f"}
+	const KeyG	= {type:Keyboard,	code:"KeyG",	character:"g"}
+	const KeyH	= {type:Keyboard,	code:"KeyH",	character:"h"}
+	const KeyJ	= {type:Keyboard,	code:"KeyJ",	character:"j"}
+	const KeyK	= {type:Keyboard,	code:"KeyK",	character:"k"}
+	const KeyL	= {type:Keyboard,	code:"KeyL",	character:"l"}
+	const Semicolon	= {type:Keyboard,	code:"Semicolon",	character:";",	alternativeName:"semicolon"}
+	const Quote	= {type:Keyboard,	code:"Quote",	character:"'",	alternativeName:"quote"}
+	global const Enter	= {type:Keyboard,	code:"Enter",	character:"\n", name:"enter", alternativeName:"return"}
 
 	// Bottom letter row
 	global const Shift	= {type:Keyboard}
 	const ShiftLeft	= {type:Keyboard,	code:"ShiftLeft",	parent:Shift}
 	const IntlBackslash	= {type:Keyboard,	code:"IntlBackslash"} // The extra key European (ISO) keyboards have between the left Shift and Z
-	const KeyZ	= {type:Keyboard,	code:"KeyZ",	character:"z",	name:"z"}
-	const KeyX	= {type:Keyboard,	code:"KeyX",	character:"x",	name:"x"}
-	const KeyC	= {type:Keyboard,	code:"KeyC",	character:"c",	name:"c"}
-	const KeyV	= {type:Keyboard,	code:"KeyV",	character:"v",	name:"v"}
-	const KeyB	= {type:Keyboard,	code:"KeyB",	character:"b",	name:"b"}
-	const KeyN	= {type:Keyboard,	code:"KeyN",	character:"n",	name:"n"}
-	const KeyM	= {type:Keyboard,	code:"KeyM",	character:"m",	name:"m"}
-	const Comma	= {type:Keyboard,	code:"Comma",	character:","}
-	const Period	= {type:Keyboard,	code:"Period",	character:"."}
-	const Slash	= {type:Keyboard,	code:"Slash",	character:"/"}
+	const KeyZ	= {type:Keyboard,	code:"KeyZ",	character:"z"}
+	const KeyX	= {type:Keyboard,	code:"KeyX",	character:"x"}
+	const KeyC	= {type:Keyboard,	code:"KeyC",	character:"c"}
+	const KeyV	= {type:Keyboard,	code:"KeyV",	character:"v"}
+	const KeyB	= {type:Keyboard,	code:"KeyB",	character:"b"}
+	const KeyN	= {type:Keyboard,	code:"KeyN",	character:"n"}
+	const KeyM	= {type:Keyboard,	code:"KeyM",	character:"m"}
+	const Comma	= {type:Keyboard,	code:"Comma",	character:",",	alternativeName:"comma"}
+	const Period	= {type:Keyboard,	code:"Period",	character:".",	alternativeName:"period"}
+	const Slash	= {type:Keyboard,	code:"Slash",	character:"/",	alternativeName:"slash"}
 	const ShiftRight	= {type:Keyboard,	code:"ShiftRight",	parent:Shift}
 
 	// Bottom row
-	global const CmdOrCtrl	= {type:Keyboard}
-	global const Ctrl	= {type:Keyboard}
-	global const Meta	= {type:Keyboard}
-	global const Alt	= {type:Keyboard}
-	const CtrlLeft	= {type:Keyboard,	code:"CtrlLeft",	parent:Ctrl}
-	const MetaLeft	= {type:Keyboard,	code:"MetaLeft",	parent:Meta}
-	const AltLeft	= {type:Keyboard,	code:"AltLeft",	parent:Alt}
-	global const Space	= {type:Keyboard,	code:"Space",	character:" "}
-	const AltRight	= {type:Keyboard,	code:"AltRight",	parent:Alt}
-	const MetaRight	= {type:Keyboard,	code:"MetaRight",	parent:Meta}
+	global const CmdOrCtrl	= {type:Keyboard,	name:"cmdorctrl",	alternativeName:"commandorcontrol"}
+	global const Ctrl	= {type:Keyboard,	name:"ctrl",	alternativeName:"control"}
+	global const Meta	= {type:Keyboard,	name:"meta",	alternativeName:"super"}
+	global const Alt	= {type:Keyboard,	name:"alt",	alternativeName:"option"}
+	const CtrlLeft	= {type:Keyboard,	code:"CtrlLeft",	alternativeName:"controlleft",	parent:Ctrl}
+	const MetaLeft	= {type:Keyboard,	code:"MetaLeft",	alternativeName:"metaleft",	parent:Meta}
+	const AltLeft	= {type:Keyboard,	code:"AltLeft",	alternativeName:"altleft",	parent:Alt}
+	global const Space	= {type:Keyboard,	code:"Space",	character:" ", name:"space"}
+	const AltRight	= {type:Keyboard,	code:"AltRight",	alternativeName:"altright",	parent:Alt}
+	const MetaRight	= {type:Keyboard,	code:"MetaRight",	alternativeName:"metaright",	parent:Meta}
 	const ContextMenu	= {type:Keyboard,	code:"ContextMenu"}
-	const CtrlRight	= {type:Keyboard,	code:"CtrlRight",	parent:Ctrl}
+	const CtrlRight	= {type:Keyboard,	code:"CtrlRight",	alternativeName:"controlright",	parent:Ctrl}
 
 	// Navigation
 	const Insert	= {type:Keyboard,	code:"Insert"}
@@ -2479,29 +2485,29 @@ class Input
 	const Delete	= {type:Keyboard,	code:"Delete"}
 	const End	= {type:Keyboard,	code:"End"}
 	const PageDown	= {type:Keyboard,	code:"PageDown"}
-	global const ArrowUp	= {type:Keyboard,	code:"ArrowUp"}
-	global const ArrowLeft	= {type:Keyboard,	code:"ArrowLeft"}
-	global const ArrowDown	= {type:Keyboard,	code:"ArrowDown"}
-	global const ArrowRight	= {type:Keyboard,	code:"ArrowRight"}
+	global const ArrowUp	= {type:Keyboard,	code:"ArrowUp",	name:"up",	alternativeName:"arrowup"}
+	global const ArrowLeft	= {type:Keyboard,	code:"ArrowLeft",	name:"left",	alternativeName:"arrowleft"}
+	global const ArrowDown	= {type:Keyboard,	code:"ArrowDown",	name:"down",	alternativeName:"arrowdown"}
+	global const ArrowRight	= {type:Keyboard,	code:"ArrowRight",	name:"right",	alternativeName:"arrowright"}
 
 	// Numpad
 	const NumLock	= {type:Keyboard,	code:"NumLock"}
-	const NumpadDivide	= {type:Keyboard,	code:"NumpadDivide",	character:"/"}
-	const NumpadMultiply	= {type:Keyboard,	code:"NumpadMultiply",	character:"*"}
-	const NumpadSubtract	= {type:Keyboard,	code:"NumpadSubtract",	character:"-"}
-	const Numpad7	= {type:Keyboard,	code:"Numpad7",	character:"7"}
-	const Numpad8	= {type:Keyboard,	code:"Numpad8",	character:"8"}
-	const Numpad9	= {type:Keyboard,	code:"Numpad9",	character:"9"}
-	const NumpadAdd	= {type:Keyboard,	code:"NumpadAdd",	character:"+"}
-	const Numpad4	= {type:Keyboard,	code:"Numpad4",	character:"4"}
-	const Numpad5	= {type:Keyboard,	code:"Numpad5",	character:"5"}
-	const Numpad6	= {type:Keyboard,	code:"Numpad6",	character:"6"}
-	const Numpad1	= {type:Keyboard,	code:"Numpad1",	character:"1"}
-	const Numpad2	= {type:Keyboard,	code:"Numpad2",	character:"2"}
-	const Numpad3	= {type:Keyboard,	code:"Numpad3",	character:"3"}
-	const NumpadEnter	= {type:Keyboard,	code:"NumpadEnter",	character:"\n"}
-	const Numpad0	= {type:Keyboard,	code:"Numpad0",	character:"0"}
-	const NumpadDecimal	= {type:Keyboard,	code:"NumpadDecimal",	character:"."}
+	const NumpadDivide	= {type:Keyboard,	code:"NumpadDivide",	character:"/", name:"numpaddivide",	alternativeName:"numpadslash"}
+	const NumpadMultiply	= {type:Keyboard,	code:"NumpadMultiply",	character:"*", name:"numpadmultiply",	alternativeName:"numpadasterisk"}
+	const NumpadSubtract	= {type:Keyboard,	code:"NumpadSubtract",	character:"-", name:"numpadsubtract",	alternativeName:"numpadminus"}
+	const Numpad7	= {type:Keyboard,	code:"Numpad7",	character:"7", name:"numpad7"}
+	const Numpad8	= {type:Keyboard,	code:"Numpad8",	character:"8", name:"numpad8"}
+	const Numpad9	= {type:Keyboard,	code:"Numpad9",	character:"9", name:"numpad9"}
+	const NumpadAdd	= {type:Keyboard,	code:"NumpadAdd",	character:"+", name:"numpadadd",	alternativeName:"numpadplus"}
+	const Numpad4	= {type:Keyboard,	code:"Numpad4",	character:"4", name:"numpad4"}
+	const Numpad5	= {type:Keyboard,	code:"Numpad5",	character:"5", name:"numpad5"}
+	const Numpad6	= {type:Keyboard,	code:"Numpad6",	character:"6", name:"numpad6"}
+	const Numpad1	= {type:Keyboard,	code:"Numpad1",	character:"1", name:"numpad1"}
+	const Numpad2	= {type:Keyboard,	code:"Numpad2",	character:"2", name:"numpad2"}
+	const Numpad3	= {type:Keyboard,	code:"Numpad3",	character:"3", name:"numpad3"}
+	const NumpadEnter	= {type:Keyboard,	code:"NumpadEnter",	character:"\n", name:"numpadenter",	alternativeName:"numpadreturn"}
+	const Numpad0	= {type:Keyboard,	code:"Numpad0",	character:"0", name:"numpad0"}
+	const NumpadDecimal	= {type:Keyboard,	code:"NumpadDecimal",	character:".", name:"numpaddecimal",	alternativeName:"numpadperiod"}
 
 	static Input[] items
 	inline js static dynamic keysObject => Input
@@ -2543,12 +2549,24 @@ input
 		return pressedAtFrame >= releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
 	global bool justPressed: string keyCombination, int player = 0
+		let user = internalUserBySyncedIndex[player]
+		if not user then return false
 		let keyStrings = keyCombination.toLowerCase.split("+")
+		bool anyPressedThisFrame = false
 		for keyStrings
-			let keyString = .trim
-			let item = Input.items.find.name == keyString
-			if not item or input.justPressed(item, player) then return false
-		return true
+			let name = .trim
+			if not name then return false
+				
+			let item = Input.items.find.name == name or .alternativeName == name
+			if not item then return false
+			
+			let pressedAtFrame = user.pressedAtFrame[item.index]
+			let releasedAtFrame = user.releasedAtFrame[item.index]
+			if pressedAtFrame < releasedAtFrame then return false
+				
+			if pressedAtFrame == core.frame then anyPressedThisFrame = true
+			
+		return anyPressedThisFrame
 
 	// Returns true if the player is currently pressing the given button
 	global bool isPressed: Input item, int player = 0
