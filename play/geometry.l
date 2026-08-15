@@ -559,6 +559,8 @@ struct Matrix2D
 		m3 = 1.0
 		m4 = 0.0
 		m5 = 0.0
+		
+	isIdentity => (m0 == 1 and m1 == 0 and m2 == 0 and m3 == 1 and m4 == 0 and m5 == 0)
 	
 	// Set the matrix to the given values
 	set: float m0, float m1, float m2, float m3, float m4, float m5
