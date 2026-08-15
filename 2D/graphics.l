@@ -266,6 +266,7 @@ transient skipInit global unit graphics
 	private dynamic canvas
 	internal dynamic context
 	internal Matrix2D baseMatrix, totalMatrix, localMatrix
+	bool isTransforming
 	internal DisplayItem[] items		
 	private const alignmentFactor = [0, .5, 1]
 	
@@ -355,6 +356,7 @@ transient skipInit global unit graphics
 	internal reset
 		totalMatrix = baseMatrix
 		localMatrix.clear
+		isTransforming = false
 		currentlyVisibleFor = null
 		isDrawingDebugInfo = false
 		items.clear
@@ -1699,13 +1701,23 @@ transient skipInit global unit graphics
 	// Image: graphicsMove.png
 	move: Vector2 distance // The distance to move
 		  void() code      // All drawing operations within this block will be moved
+		if distance.x == 0 and distance.y == 0 then code; return
+		
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Move matrix
 		localMatrix.move distance
 		totalMatrix.move distance
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 							
 	// Rotate all drawing operations in a block of code by a given angle
 	//			
@@ -1719,13 +1731,22 @@ transient skipInit global unit graphics
 	rotate: float angle  // The angle in radians (one full rotation is 2*pi)
 		    void() code  // All drawing operations within this block of code will be rotated
 		if angle == 0 then code; return
+			
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Rotate matrix
 		localMatrix.rotate angle
 		totalMatrix.rotate angle
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 	
 	// Scale all drawing operations in a block of code by a given factor.
 	//
@@ -1739,13 +1760,22 @@ transient skipInit global unit graphics
 	scale: float factor // The factor to scale by
 		   void() code  // All drawing operations within this block of code will be scaled
 		if factor == 1 then code; return
+			
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Scale matrix
 		localMatrix.scale {factor, factor}
 		totalMatrix.scale {factor, factor}
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 	
 	// Move, rotate and scale all drawing operations in a block of code.
 	//
@@ -1760,8 +1790,14 @@ transient skipInit global unit graphics
 		       rotate = 0.0                 // The angle in radians (one full rotation is 2*pi)
 		       scale = 1.0                  // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
+		
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Move, rotate and scale matrix
 		if move
 			localMatrix.move move
 			totalMatrix.move move
@@ -1772,8 +1808,11 @@ transient skipInit global unit graphics
 			localMatrix.rotate rotate
 			totalMatrix.rotate rotate
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 	
 	// Apply a matrix to all drawing operations in a block of code.
 	//
@@ -1786,13 +1825,22 @@ transient skipInit global unit graphics
 	// Image: graphicsApplyMatrix.png
 	applyMatrix: Matrix2D matrix // The matrix to apply
 		         void() code     // The matrix will be applied to all drawing operation within this block of code
+		
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Apply matrix
 		this.localMatrix.multiplyLeft matrix
 		this.totalMatrix.multiplyLeft matrix
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5
+		isTransforming = prevIsTransforming
 	
 	// ------------------------------------------------------- Clip -------------------------------------------------------
 	

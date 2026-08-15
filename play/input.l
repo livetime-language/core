@@ -2566,9 +2566,10 @@ input
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
 	// players' pointers are available and deterministic
 	global Vector2 getPointer: int player = 0
-		let requestedPlayer = players[player]
-			return requestedPlayer.pointerPosition
-		return {0,0}
+		let user = internalUserBySyncedIndex[player]
+		if not user then return {0,0}
+		if graphics.isTransforming then	return user.pointerPosition.getRelativeTo graphics.localMatrix
+		else	return user.pointerPosition
 
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
