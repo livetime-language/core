@@ -902,7 +902,7 @@ internal transient skipInit unit core
 		try
 			resetStateIndex()
 			system.trace(Time.ticks)
-			Framework??.tick
+			Framework??.tick()
 			tickTimes.add tickTime = PlainDate.measure
 				if lobby.inLobby then	lobby.tick
 				else	app??.tick()
