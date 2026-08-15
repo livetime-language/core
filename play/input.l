@@ -1,11 +1,11 @@
-// The internal state of a user that isn't serialized and shoudn't be accessed by the app
+// The internal state of a user that isn't synced and shouldn't be accessed by the app
 internal transient class InternalUser
-	int id              // This id stays the same when a user reconnects
-	bool local          // Is this the local user?
-	int connectionId    // The connectionId increases with every connection, even if the same user reconnects
-	int index
-	string _id          // User account id
-	string name         // User account name
+	int id	// connection id:	might be different on each client.	Assigned when a user connects, stays the same when reconnecting.
+	int syncedIndex	// player.playerIndex:	the same on all clients.	Assigned deterministically in updatePlayers.
+	bool local	// Is this the local user?
+	int connectionId	// The connectionId increases with every connection, even if the same user reconnects
+	string _id	// User account id (in the server database)
+	string name	// User account name
 	
 	// Event Stream
 	bool collectInputs          // When we are done pinging, we add a join event and start collecting inputs
@@ -45,14 +45,6 @@ internal transient class InternalUser
 	visible KeyCode[] downKeys, upKeys
 	visible string[] pressedKeys, textInputs, textCompositions
 	visible string[] navigations
-
-	// Modern Input
-	// For each input, we store the frame when it was pressed and the frame when it was released
-	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
-	visible int[] pressedAtFrame, releasedAtFrame
-	Vector2 pointerPosition, scrollDelta
-	Input[] allJustPressed, allJustReleased
-	string focus, prevFocus
 
 	// Video + Audio
 	object mediaStream
@@ -99,6 +91,15 @@ internal transient class InternalUser
 	
 	int certainFrame
 	int prevCertainFrame
+	
+	// Modern Input
+	// These values are synced (guaranteed to be the same on all clients)
+	// For each input, we store the frame when it was pressed and the frame when it was released
+	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
+	visible int[] pressedAtFrame, releasedAtFrame
+	Vector2 pointerPosition, scrollDelta
+	Input[] allJustPressed, allJustReleased
+	string focus, prevFocus
 
 	reset
 		// Modern Input
@@ -149,6 +150,7 @@ internal transient class InternalUser
 		bufferFrames = 5
 		smoothFrame = frame - bufferFrames		
 		
+// The syned player state that is guaranteed to be the same on all clients
 priority class Player
 	int	playerIndex	// The index of the player in the players list
 	Color	playerColor	// Use this color to draw an outline around the current player (blue, red, green, yellow by default)
@@ -508,7 +510,8 @@ internal transient PendingObjectRecord
 
 // Collect user input
 skipInit global unit input
-	transient visible InternalUser[] internalUsers
+	transient visible InternalUser[] internalUsers	// Internal user by id, which might be different on each client
+	transient visible InternalUser[] internalUserBySyncedIndex	// Internal user by synced index, which is the same on all clients
 	transient InternalUser localUser
 	transient internal Player localPlayer
 	transient bool isCertain
@@ -1151,6 +1154,7 @@ skipInit global unit input
 					
 					players.add player = {id:userId, playerIndex:players.length}
 					playersById[userId] = player
+					internalUserBySyncedIndex[player.playerIndex] = internalUser
 					if internalUser.local then localPlayer = player
 					updatePlayers
 				
@@ -1292,17 +1296,19 @@ skipInit global unit input
 					
 					// Match users
 					playersById.clear
+					internalUserBySyncedIndex.clear
 					let availableUsers = clone input.internalUsers
 					for p in players
 						let user = availableUsers.popWhere.name == p.playerName
-						if not user then user = availableUsers.popWhere.index == p.playerIndex
+						if not user then user = availableUsers.popWhere.syncedIndex == p.playerIndex
 						if not user then availableUsers.pop
 						p.id = user.id
 						
 						user._id = p._id
-						user.index = p.playerIndex
+						user.syncedIndex = p.playerIndex
 						user.name = p.playerName
 						playersById[p.id] = p
+						internalUserBySyncedIndex[user.syncedIndex] = user
 					refreshLocalPlayer
 
 				else
@@ -1586,7 +1592,10 @@ skipInit global unit input
 			// transiently resurrects their player, so the count can exceed the palette)
 			.playerColor = graphics.defaultColors[i mod graphics.defaultColors.length]
 			.playerDarkColor = graphics.darkDefaultColors[i mod graphics.darkDefaultColors.length]
-			internalUsers[.id].index = i
+			
+			let internalUser = internalUsers[.id]
+			internalUser.syncedIndex = i
+			internalUserBySyncedIndex[.playerIndex] = internalUser
 			
 		if core.mode == Local and not core.simulateConnection
 			if players.length >= 1
@@ -1749,6 +1758,7 @@ skipInit global unit input
 		if not player then return
 		players.remove player
 		playersById[removeUserId] = null
+		internalUserBySyncedIndex[player.playerIndex] = null
 		updatePlayers
 		print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
 
@@ -1774,6 +1784,7 @@ skipInit global unit input
 			player.playerName = user.name
 			players.add player
 			playersById[user.id] = player
+			internalUserBySyncedIndex[player.playerIndex] = user
 			if user.local then localPlayer = player
 			updatePlayers
 
@@ -2361,7 +2372,8 @@ class Input
 	global const Right	= {type:Gamepad,	code:"Right",	name:"gamepadright"}
 	
 	// Pointer
-	global const LeftMouseButton	= {type:Pointer,	code:"LeftMouseButton"}
+	global const Input Pointer	= {type:Pointer}
+	global const LeftMouseButton	= {type:Pointer,	code:"LeftMouseButton", parent:Pointer}
 	global const MiddleMouseButton	= {type:Pointer,	code:"MiddleMouseButton"}
 	global const RightMouseButton	= {type:Pointer,	code:"RightMouseButton"}
 
@@ -2519,7 +2531,7 @@ input
 	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
 	global bool justPressed: Input item, int player = 0
 		// Pressed this frame?
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		if not user then return false
 		int pressedAtFrame = user.pressedAtFrame[item.index]
 		int framesSincePress = core.frame - pressedAtFrame
@@ -2534,19 +2546,19 @@ input
 		let keyStrings = keyCombination.toLowerCase.split("+")
 		for keyStrings
 			let keyString = .trim
-			let item = Input.items.find(.name == keyString)
+			let item = Input.items.find.name == keyString
 			if not item or input.justPressed(item, player) then return false
 		return true
 
 	// Returns true if the player is currently pressing the given button
 	global bool isPressed: Input item, int player = 0
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		if not user then return false
 		return user.pressedAtFrame[item.index] >= user.releasedAtFrame[item.index]
 
 	// Returns true if the player has just released the given button this frame
 	global bool justReleased: Input item, int player = 0
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		if not user then return false
 		return user.releasedAtFrame[item.index] == core.frame
 
@@ -2560,35 +2572,33 @@ input
 
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
-		let requestedPlayer = players[player]
-			return internalUsers[requestedPlayer.id].scrollDelta
-		return {0,0}
+		let user = internalUserBySyncedIndex[player]
+		if not user then return {0,0}
+		return user.scrollDelta
 
 	global Input[] allJustPressed: int player = 0
-		let user = internalUsers[player]
-		if user then return user.allJustPressed
-		Input[] empty
-		return empty
+		let user = internalUserBySyncedIndex[player]
+		if not user then return []
+		return user.allJustPressed
 
 	global Input[] allJustReleased: int player = 0
-		let user = internalUsers[player]
-		if user then return user.allJustReleased
-		Input[] empty
-		return empty
+		let user = internalUserBySyncedIndex[player]
+		if not user then return []
+		return user.allJustReleased
 
 	global string getFocus: int player = 0
 		player = 0
-		return internalUsers[player].focus
+		return internalUserBySyncedIndex[player].focus
 
 	global void setFocus: string value, int player = 0
 		player = 0
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		// if value != user.prevFocus then user.lostFocus = user.prevFocus
 		user.focus = value
 
 	global string getLostFocus: int player = 0
 		player = 0
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		return user.focus != user.prevFocus ? user.prevFocus : ""
 		// let lostFocus = user.lostFocus
 		// user.lostFocus = ""

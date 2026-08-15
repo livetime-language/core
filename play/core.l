@@ -2219,7 +2219,7 @@ skipInit transient unit statistics
 			gameId: core.gameId
 			roomId: core.roomId
 			userId
-			userIndex: input.localUser.index
+			userIndex: input.localUser.syncedIndex
 			userEmail: user.email
 			version: system.buildVersion
 			staging: system.isStaging
