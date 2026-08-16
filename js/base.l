@@ -78,24 +78,24 @@ immutable struct int
 	// The smallest possible integer value
 	const importance:5 int minValue = -2147483648
 	
-	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
-	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
-	// In other words: A negative value mod a positive value will always be positive. 
-	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
+	// The true modulo operator (like in math), useful for wrapping around values: list[index mod list.length]
+	// Use "mod" for remainder after floored division (negative mod positive is positive)
+	// Use "remainder" for remainder after truncated division (negative remainder positive is negative)
 	// Example:
-	//     int a = 107 mod 100	// a = 7
-	//     int b =  -1 mod 100	// b = 99
-	//     int c =  -1 remainder 100	// c = -1
+	//     17 mod 10       ==  7
+	//     -1 mod 10       ==  9
+	//     -1 remainder 10 == -1
 	importance:5 inline js 
 	int mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
 		(((this % divisor) + divisor) % divisor)
-		
-	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
-	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
+	
+	// Remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// Use "remainder" for remainder after truncated division (negative remainder positive is negative)
+	// Use "mod" for remainder after floored division (negative mod positive is positive)
 	// Example:
-	//     int a = 107 remainder 100	// a =  7
-	//     int b =  -1 remainder 100	// b = -1
-	//     int c =  -1 mod 100	// c = 99
+	//     17 remainder 10 ==  7
+	//     -1 remainder 10 == -1
+	//     -1 mod 10       ==  9
 	importance:5 inline js 
 	int remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)
@@ -384,24 +384,24 @@ immutable struct float
 	inline js float ** (float a, float b) 
 		Math.pow(a,b)
 		
-	// The true modulo operator, like it's used in mathematics or Python, useful for wrapping around values. 
-	// It returns the remainder after a floored division, the result always has the same sign as the divisor.
-	// In other words: A negative value mod a positive value will always be positive. 
-	// If you want the behaviour of the % operator of C, C++, C#, Java or JavaScript, use the remainder function instead.
+	// The true modulo operator (like in math), useful for wrapping around values: list[index mod list.length]
+	// Use "mod" for remainder after floored division (negative mod positive is positive)
+	// Use "remainder" for remainder after truncated division (negative remainder positive is negative)
 	// Example:
-	//     float a = 107 mod 100	// a = 7
-	//     float b =  -1 mod 100	// b = 99
-	//     float c =  -1 remainder 100	// c = -1
+	//     17 mod 10       ==  7
+	//     -1 mod 10       ==  9
+	//     -1 remainder 10 == -1
 	importance:5 inline js 
 	float mod: ensureSingleExecution float divisor // Returns the remainder of a floored division by this value
 		(((this % divisor) + divisor) % divisor)
-		
-	// Returns the remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
-	// If you want the behaviour of the modulo operator of mathematics or Python, use the mod function instead.
+	
+	// Remainder after a truncated division, like the % operator in C, C++, C#, Java or JavaScript.
+	// Use "remainder" for remainder after truncated division (negative remainder positive is negative)
+	// Use "mod" for remainder after floored division (negative mod positive is positive)
 	// Example:
-	//     float a = 107 remainder 100	// a =  7
-	//     float b =  -1 remainder 100	// b = -1
-	//     float c =  -1 mod 100	// c = 99
+	//     17 remainder 10 ==  7
+	//     -1 remainder 10 == -1
+	//     -1 mod 10       ==  9
 	importance:5 inline js 
 	float remainder: float divisor // Returns the remainder of a truncated division by this value
 		(this % divisor)

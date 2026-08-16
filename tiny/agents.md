@@ -35,7 +35,7 @@ start	// app.start is called once when the app starts
 	let max = x > y ? x : y	// Ternary operator
 	int dot = filename.indexOf(".")	// Get index of character in string
 	string name = filename.substring(0 to dot)	// Get substring
-	Player p = players[index mod players.length]	// Modulo operator
+	Player p = players[index mod players.length]	// negative mod positive is positive (-1 mod 10 == 9)
 	randomInteger(0 to 10), randomFloat(0 to 1)	// Random values
 	abs(-5)	// Absolute value
 	floor(3.1), ceil(3.9), round(3.5)	// Use floor, ceil or round to convert floats to integers
