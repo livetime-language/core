@@ -241,28 +241,33 @@ DatabaseTable<T>
 	//             for items as item
 	//                 div item.name
 	importance:5 
-	async T[] fetch: string filter = null // The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
-		             string sort = null   // The PocketBase sort string, e.g. "-created"
-					 string fields = null // A comma separated list of fields to fetch, e.g. "name,active,created"
+	async T[] fetch: string filter = null	// The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
+		             string sort = null	// The PocketBase sort string, e.g. "-created"
+					 string fields = null	// A comma separated list of fields to fetch, e.g. "name,active,created"
 		             string expand = null
 		             int page = 1
 		             int perPage = 1000
 					 bool skipTotal = true
-		let result = await backend.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
-		items = cast result.items
-		totalItemsOfLastFetch = result.totalItems
+		try
+			let result = await backend.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
+			items = cast result.items
+			totalItemsOfLastFetch = result.totalItems
+		catch
+			print error.message
+			items = []
+			totalItemsOfLastFetch = 0
 		return items
 		
 	// Fetch and return a single item from the database table
 	importance:5 async js
-	T fetchOne: string filter          // The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
-		        string sort = null     // The PocketBase sort string, e.g. "-created"
-		        string fields = null   // A comma separated list of fields to fetch, e.g. "name,active,created"
+	T fetchOne: string filter	// The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
+		        string sort = null	// The PocketBase sort string, e.g. "-created"
+		        string fields = null	// A comma separated list of fields to fetch, e.g. "name,active,created"
 		        string expand = null
 		try {
 			return await backend.pb.collection(this.name).getFirstListItem(filter, {fields:fields, sort:sort, expand:expand, skipTotal:true})
 		} catch(e) {
-			console.error(e)
+			console.log(e)
 			return null
 		}
 		

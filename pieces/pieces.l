@@ -142,8 +142,8 @@ Object Piece
 				
 	draw
 		if image
-			if side == Front || !backImage: drawImage image, position, size, frame:frame%image.frames.length, angle, location
-			else                            drawImage backImage, position, size, frame:frame%backImage.frames.length, angle, location
+			if side == Front || !backImage: drawImage image, position, size, frame:frame mod image.frames.length, angle, location
+			else                            drawImage backImage, position, size, frame:frame mod backImage.frames.length, angle, location
 		
 	private checkBoardsWhileMoving: Touch touch
 		Vector2 pos = position
@@ -205,7 +205,7 @@ Piece Stack
 		for math.clamp(objects.length-shownObjectCount, min:0) to objects.length <- i
 			let obj = objects[i]
 			let image = obj.backImage || obj.image
-			drawImage image, obj.position, frame:obj.frame%image.frames.length, size:obj.size
+			drawImage image, obj.position, frame:obj.frame mod image.frames.length, size:obj.size
 			
 		// We pop after drawing, because the newly created card won't be drawn until the next frame
 		// and we don't want to draw the new, smaller stack without drawing the popped card as well
@@ -360,7 +360,7 @@ Spot SpotHexGrid
 	getClosestPoint: Vector2 touchPos, Vector2 boardPos
 		let cellX = ((touchPos.x-boardPos.x)/cellSize.x).round
 		let x = cellX * cellSize.x + boardPos.x
-		let a = cellX%2 == 0 ? cellSize.y/2 : 0
+		let a = cellX mod 2 == 0 ? cellSize.y/2 : 0
 		let cellY = ((touchPos.y-boardPos.y-a)/cellSize.y).round
 		let y = cellY * cellSize.y + boardPos.y+a
 		return Vector2(x, y)

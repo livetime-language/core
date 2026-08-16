@@ -58,8 +58,8 @@ struct Vector2
 			location
 		}	
 				
-	Vector2 % Vector2 other:   return {(x mod other.x), (y mod other.y), location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
-	Vector2 % float other:     return {(x mod other),   (y mod other),   location}
+	Vector2 mod Vector2 other:   return {(x mod other.x), (y mod other.y), location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
+	Vector2 mod float other:     return {(x mod other),   (y mod other),   location}
 		
 	Vector2 += Vector2 other: x += other.x; y += other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
 	Vector2 -= Vector2 other: x -= other.x; y -= other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
@@ -440,8 +440,8 @@ struct IntVector2
 	Vector2 / IntVector2 other:      return {x / other.x, y / other.y, location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
 	Vector2 / float other:           return {x / other,   y / other, location}
 
-	IntVector2 % IntVector2 other:   return {(x mod other.x), (y mod other.y), location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
-	IntVector2 % int other:          return {(x mod other),   (y mod other), location}
+	IntVector2 mod IntVector2 other:   return {(x mod other.x), (y mod other.y), location || other.location ? new SourceCodeLocation(null, 0, 0, location, other.location) : null}
+	IntVector2 mod int other:          return {(x mod other),   (y mod other), location}
 		
 	IntVector2 += IntVector2 other: x += other.x; y += other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
 	IntVector2 -= IntVector2 other: x -= other.x; y -= other.y; if(location || other.location) {location = new SourceCodeLocation(null, 0, 0, location, other.location)} return this
@@ -936,7 +936,7 @@ Line
 		// Return a object with the x and y coordinates of the intersection
 		return new Vector2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1))
 		
-	toString => "\{{start.x.format(maxFractionDigits:2)}, {start.y.format(maxFractionDigits:2)\} -> \{{end.x.format(maxFractionDigits:2)}, {end.y.format(maxFractionDigits:2)}\}"
+	toString => "\{{start.x.format(maxFractionDigits:2)}, {start.y.format(maxFractionDigits:2)}\} -> \{{end.x.format(maxFractionDigits:2)}, {end.y.format(maxFractionDigits:2)}\}"
 
 immutable Rect
 	importance:4 Vector2 pos, size
