@@ -1,11 +1,18 @@
-# Memory must be in the repo
-Use "memory/" to read and write important information about the project. Use "memory/MEMORY.md" for an overview. Keep all memory documents up to date.
+# Keep up to date information
+Keep all information above, memory and code comments up to date. Use "memory/" to read and write important information about project. All memories must be in this folder.
 
-# Use the LiveTime programming language
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). Place all the code in the file "src/app.l".
+# Fast and efficient
+Write fast, efficient, elegant code. Keep it simple. Avoid too many small functions.
 
-# Fast and efficient code
-Write fast, efficient, simple code that is easy to read and understand.
+# LiveTime Programming Language
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
+
+# Compile and test
+Check your code with "livetime check", build with "livetime build".
+Open "dist/index.html" in a browser and check no text or images overlap unintentionally.
+
+Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
+Use "livetime test" to run all unit tests.
 
 # Show the player's video
 LiveTime games are online multiplayer games. You must draw the video feed of each player. For example:
@@ -22,12 +29,6 @@ The y-coordinate ranges from -540 to 540.
 So the top-left corner is {-960,-540}, the bottom-right corner is {960,540}.
 The background is black by default. 
 
-# Compile and test
-Check your code with "livetime check", build with "livetime build".
-Open "assets/index.html" in a browser and check no text or images overlap unintentionally.
-
-Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
-Use "livetime test" to run all unit tests.
 
 # Library Source Code
 When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"
@@ -40,236 +41,18 @@ lib/core/2D/animation.l	animate, delay, whenAnimationsFinished, ...
 lib/core/play/sound.l	playSound, setVolume, ...
 lib/core/play/tests.l	click, drag, moveLeftStickTo, wait, waitForAnimationsToFinish, expect, ...
 
-# Basics of the LiveTime programming language
-enum State
-	InProgress
-	Done
+{prefix.md}
 
-// Defines the class Document
-// Classes have capitalized names. All members are public by default.
-// A contructor is created automatically
-class Document
-	string	id
-	float	created
-	State	state
+# JavaScript interop
+js keyword indicates that function body is in JavaScript. Return type is required. Use only when absolutely necessary. Do not use nested functions.
 
-// Defines the static class app, the main class of every application.
-// Static classes have lowercase names. Their members are public and static by default.
-// You can access their members from anywhere like this: app.primaryColor, app.start, app.tick, ...
-app
-	const Color	primaryColor = #0000ff
-	Document[]	documents
-	Player	currentPlayer
+js void navigateTo: string url
+	location.href = url;
 
-	// Defines the member function start of the class app. 
-	// All functions, variables and constants need to be part of a class. There are no top-level functions, variables or constants in LiveTime.
-	// app.start is the entry point of the application.
-	start
-		// Create an object of type Document
-		// Calls the conctructor of the Document class and passes id, created and state
-		Document doc = {id:"2f", created:Time.now, state:Done}
+# Unit Tests
+Write unit tests for all features in the "tests" static class in the "tests" folder. Mark each test with the "test" keyword.
+Use "livetime test" to run tests.
 
-		// List (array that grows in size as needed)
-		Document[] documents = [
-			{created:Time.now, state:InProgress}
-		]
-		documents.add doc
-		documents.remove doc
-		documents.orderBy.created
-		documents.clear
-		let itemsFromIndex3To7 = documents[3 to 7]
-
-		// Grid (2-dimensional array with a fixed size)
-		Cell[8,8] grid
-		Cell cell = {cellType:Empty}
-		grid[6,7] = cell
-		IntVector gridPos = {5,4}
-		grid[gridPos] = {cellType:Blocker}
-		IntVector2 gridSize = grid.size
-		for gridPos, cell in grid
-			print "At {gridPos} is a cell with type {cell.cellType}"
-
-		// Dictionary (hashtable that maps keys to values)
-		Document[string] documentsById
-		documentsById["2f"] = {id:"2f"}
-		documentsById.remove "2f"
-		documentsById.clear
-		for doc in documents
-			documentsById[doc.id] = doc
-		for id, doc in documentsById
-			print "id:{id} created:{doc.created.toDayMonthYearString}"
-
-		// Find
-		let doc = documents.find.id == "2f"
-
-		// Conditions with if
-		if documents.length > 0
-			print "There are {documents.length} documents."
-		else
-			print "There are no documents."
-
-		// Conditions with if in one line
-		if not currentPlayer then return
-
-		// Conditions with let
-		let mike = players.find.name == "Mike"
-			print "Found player with name Mike, his score is {mike.score}"
-		else
-			print "Did not find player with name Mike"
-
-		// Iterate over a List
-		for doc in documents
-			print doc.id
-
-		// Iterate from lower bound to exclusive upper bound
-		// Prints "01234"
-		for i = 0 to 5
-			print i
-
-		// Lower bound defaults to 0 if left out
-		// Index variable defaults to i if left out
-		for 5
-			print i
-
-		// Use "." to refer to the current item
-		for documents
-			print .
-
-		// Prints "01234"
-		for 5
-			print .
-			
-		// Use "step -1" for reverse order
-		// Prints "43210"
-		for i = 0 to 5 step -1
-			print i
-
-		// Iterate over a List by index
-		for i = 0 to documents.length
-			print documents[i].state
-
-		// Iterate over a Dictionary
-		for key, value in documentsById
-			print "{key}: {value}"
-
-		// If you divide an integer by an integer in LiveTime, you always get a float
-		float fraction = 1 / 2	// fraction = 0.5
-
-		// Use math.floor after a division if you need an integer
-		int flooredInteger = math.floor(1 / 2)
-
-		// Query
-		Player[] healthyPlayers	= players.where.health > 0
-		Player[] top10Players	= (players.orderByDescending.score).take 10
-		Player[] seniors	= (users.where.age > 65).orderBy.age
-		Player[] highscoreList	= (player.where.isAlive).orderByDescending.score
-
-		// Cast
-		string jsonString	= "\{value:7\}"
-		dynamic config	= json.parse(jsonString)
-		int value	= (int)config.value
-
-		// Use "mod" for remainder after floored division (negative mod positive is positive)
-		// Use "remainder" for remainder after truncated division (negative remainder positive is negative)
-		17 mod 10       ==  7
-		-1 mod 10       ==  9
-		-1 remainder 10 == -1
-
-		// Print: Use type:Action for actions performed by a player
-		print "Placed piece at {cell.gridPos} by {currentPlayer}", type:Action
-
-		// Print: Use type:Reaction for reactions or consequences of an action. For example, when a piece is captured as  a result of a player's move.
-		print "Game won with {winner.score} points by {winner}", type:Reaction
-
-		// Print: Use type:NoAction when no action was performed. For example, if isOnlineMultiplayer is true and the click is not by the current player. Or if the state or user input is invalid.
-		print "Play clicked by {touch.by}, but we are already playing", type:NoAction
-
-		// Print: Use type:Debug for temporary debug messages
-		print "Possible moves for {currentPlayer}: {possibleMoves}", type:Debug
-
-		// Print: Use type:Headline when a new turn, round or phase started. Keep the text short. Pass in the current player's color.
-		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.color
-	
-app
-	Player	currentPlayer
-	Item[]	items
-
-	start
-		items.add {}
-
-	tick
-		items.each.tick
-		players.each.tick
-
-// Handle input
-app
-	Item[]	items
-
-	onTouchHover: Touch touch
-		for item in items
-			// Important: If isOnlineMultiplayer it true, the touch must be by the owner of the item
-			if isOnlineMultiplayer and touch.by != item.owner then continue
-			item.hoverTouch = touch.position insideRectangle item.position, item.size ? touch : null
-			print item.hoverTouch
-
-	onTouchDown: Touch touch
-		let item = app.items.find.hoverTouch == touch
-			item.dragTouch = touch
-			item.dragOffset = item.position - touch.position
-			print "{item.name} clicked by {touch.by}", type:Action
-	
-	onTouchDrag: Touch touch
-		let item = app.items.find.dragTouch == touch
-			item.position = touch.position + item.dragOffset
-			print "{item.name} dragged by {touch.by}", type:Action
-	
-	onTouchUp: Touch touch
-		let item = app.items.find.dragTouch == touch
-			item.dragTouch = null
-			print "{item.name} dropped by {touch.by}", type:Action
-
-	tick
-		items.each.tick
-		players.each.tick
-
-class Player
-	const float	speed = 8
-	string	inputText
-	Vector2	pos
-
-	onKeyDown: Key key, string character
-		if character	then inputText += character
-		if key == Backspace	then inputText = inputText[..-1]
-		print "{key} ({character}) pressed by {this}", type:Action
-
-	onKeyUp: Key key
-		print "{key} released by {this}", type:Action
-
-	// Called on every frame (30 times per second) if a game controller is connected
-	onGamepad: Gamepad controller
-		pos += controller.leftStick * speed
-
-		if controller.A.wasJustPressed
-			print "Button {controller.A.name} just pressed by {this}", type:Action
-
-	tick
-		drawCircle pos, color, size:64
-		drawText inputText+"_", position:IntVector2.horizontalDirections[index] * {800,0}
-
-class Item
-	string name = "Item"
-	Vector2 size = {240,60}
-	Vector2 position
-	Touch hoverTouch, dragTouch
-	Vector2 dragOffset
-	Player owner
-	
-	tick
-		// Draw item					
-		drawRectangle position, size, color:hoverTouch ? #808080 : #404040, outlineColor:Color("#ffffff"), outlineWidth:5
-
-// Write unit tests for all features in the "tests" static class in the "tests" folder. Mark each test with the "test" keyword.
-// Use "npm run test" to run all tests.
 tests
 	pos: int x, int y
 		return IntVector2(x, y).toScreenPos
@@ -348,35 +131,20 @@ app
 		Menu()
 		
 		// Create empty grid of cells
-		for gridPos to grid.size
+		for gridPos in grid.size
 			grid[gridPos] = Cell(gridPos)
 		
 		// In LiveTime, the global variable players always contains a list of players
 		// We pick a random player as the start player
-		currentPlayer = players.random
+		currentPlayer = input.players.random
 		startTurn
 
 	startTurn
 		// Set current player to the next player
-		currentPlayer = players next currentPlayer
+		currentPlayer = input.players next currentPlayer
 
 		// Always print the start of the turn in the player's color!
 		print "# Turn of {currentPlayer}", type:Headline, color:currentPlayer.playerColor
-
-	// Called when a player touches the screen
-	onTouchDown: Touch touch
-		// Important: If isOnlineMultiplayer it true, the touch must be by the current player
-		if isOnlineMultiplayer and touch.by != currentPlayer
-			print "Click by {touch.by} ignored because it's {currentPlayer}'s turn", type:NoAction
-			return
-			
-		let cell = app.grid[touch.position.toGridPos]
-			if not cell.player
-				currentPlayer.placePiece cell
-			else
-				print "Can't place piece at {cell.gridPos} because it's occupied by {cell.player}", type:NoAction
-		else
-			print "Can't place piece because there's no valid cell at {touch.position}", type:NoAction
 				
 	// Called on every frame (30 times per second)
 	tick
@@ -384,10 +152,10 @@ app
 		grid.each.tick
 		
 		// Call tick function for each player
-		players.each.tick
+		input.players.each.tick
 						
 	finishGame
-		Player winner = players.withMax.playerScore
+		Player winner = input.players.withMax.playerScore
 		ParticleSystem(position:winner.videoPos)
 		print "Game won with {winner.playerScore} points by {winner}", type:Reaction
 
@@ -422,6 +190,15 @@ class Player
 	int	capturedPiecesCount
 		
 	tick
+		if app.currentPlayer == this and justPressed Pointer player:playerIndex
+			let cell = app.grid[getPointer(playerIndex).toGridPos]
+				if not cell.player
+					placePiece cell
+				else
+					print "Can't place piece at {cell.gridPos} because it's occupied by {cell.player}", type:NoAction
+			else
+				print "{this} clicked invalid position", type:NoAction
+	
 		// You must draw the video feed of each player.
 		float radius = 255
 		Color color = app.currentPlayer == this ? playerColor : playerDarkColor
@@ -443,7 +220,7 @@ class Player
 			app.startTurn
 				
 	captureSurroundedPieces: IntVector2 originPos
-		for dir to IntVector2.primaryDirections
+		for dir in IntVector2.primaryDirections
 			IntVector2 neighborPos = originPos + dir
 			Cell neighborCell = app.grid[neighborPos]
 				Player opponent = neighborCell.player			
@@ -476,7 +253,7 @@ class Player
 			IntVector2 pos = queue.pop
 			Cell cell = app.grid[pos]
 			
-			for dir to IntVector2.primaryDirections
+			for dir in IntVector2.primaryDirections
 				IntVector2 neighborPos = pos + dir
 				Cell neighborCell = app.grid[neighborPos]
 				if neighborCell and not neighborCell.visited

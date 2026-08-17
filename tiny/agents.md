@@ -1,102 +1,17 @@
-// Full LiveTime API. Only use the following functions and features.
-// Check your code with "livetime check", build with "livetime build".
-// Use "doc/MEMORY.md" to read and write important information about the project.
-// File: classes/Player.l	// Create file "classes/Player.l" to declare class Player. Members are public by default
-enum PlayerRole: Knight, Archer	// Enums are global and can be accessed from anywhere
-int        index	// Member variable of class Player. Integers are 0 by default
-float      score = 100.0	// Floating point numbers are 0.0 by default
-bool       isAlive = true	// Booleans are false by default
-Vector2    pos = {1.5, 2.5}	// Vectors are {0,0} by default. Its fields x and y are floats.
-string     name	// Strings are "" (the empty string) by default
-Player[]   friends	// Lists are [] (the empty list) by default
-PlayerRole role = Archer	// You can write "Archer" instead of "PlayerRole.Archer" if the type is known from context
-Player: int index	// Constructor of class Player. If you don't write a constructor, one is created automatically
-	this.index = index	// Assign member variable
-	pos = {index*8, 0}	// Call constructor of Vector2
-// File: classes/app.l	// Create file "classes/app.l" to declare static class app. Lowercase name makes it static. Access its members with app.players, app.start, etc.
-Player[] players	// List of players
-start	// app.start is called once when the app starts
-	let a = Player(pos:{x,y}, name:"Alice")	// Call constructor of Player
-	Player b = {pos:{8,0}, name:"Bob"}	// You can use object literal syntax to call constructor if the type is known from context
-	players.add a	// Add to list
-	players.remove a	// Remove from list
-	players.clear	// Remove all items from list
-	if not (x < 0 or x >= 10) then print "between 0 and 10"	// Use "then" in single-line if statements, leave out "then" in multi-line statements
-	if 0 <= x < 10 then print "between 0 and 10"	// Chained comparison
-	for i = 0 to 5	// Iterate over range with inclusive start 0 and exclusive end 5
-		print i	// Prints 0 1 2 3 4
-	for players.length	// Start index is 0 if left out, iteration variable is . if left out
-		let player = players[.]	// Get item by index
-	for i to players.length step -1	// Reverse order
-		print i	// Prints 4 3 2 1 0
-		players.removeAt i 	// Remove item at index
-	for p in players	// Iterate over list
-		print "The score of {p.name} is {p.score}"	// String interpolation
-	let max = x > y ? x : y	// Ternary operator
-	int dot = filename.indexOf(".")	// Get index of character in string
-	string name = filename.substring(0 to dot)	// Get substring
-	Player p = players[index mod players.length]	// negative mod positive is positive (-1 mod 10 == 9)
-	randomInteger(0 to 10), randomFloat(0 to 1)	// Random values
-	abs(-5)	// Absolute value
-	floor(3.1), ceil(3.9), round(3.5)	// Use floor, ceil or round to convert floats to integers
-	Vector2 pos = {cos(x*2*pi), sin(y*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
-	players.sortBy.score	// Sort list by score
-	Player winner = players.withMax(.score)	// Get player with maximum score
-	Player alice = players.find(.name == "Alice")	// Find item by condition
-	Player[] topPlayers = players.filter(.score > 10).sortBy(.score)	// Filter a list then sort it
-	Time.now	// Get current time in milliseconds since 1 January 1970
-	Time.ticks	// Get number of frames since the start of the app
-move: Player p, Vector2 delta = {0,0}	// Define a function that takes a Player and an optional Vector2 as parameters
-	p.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
-tick	// app.tick is called every frame (30 times per second by default)
-	move player, delta:{1,0}	// You don't need parenthesis when calling a function that doesn't return anything
-	setPixel {x,y}, color:LightGray	// Colors: Black, DarkGray, LightGray, White, Blue, Red, Green, Yellow, Earth, Sand, Pink, Violet, DarkBlue, DarkRed, DarkGreen, Orange
-	drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
-	drawRect pos:{x,y}, size:{8,8}, fillColor:Red, outlineColor:Green	// Draw rectangle, leave out fillColor for no fill, leave out outlineColor for no outline
-	drawCircle center:{x,y}, radius:8, fillColor:Blue, outlineColor:Yellow	// Draw circle around center, radius can also be a Vector2 for an ellipse
-	drawLine {0,0} to {8,8}, color:Orange	// Draw line
-	drawSprite sprites.blueCircle, pos:{x, y}, transparentColor:Black	// Draw sprite with optional transparent color (Black if left out)
-	drawSprite sprites.blueCircle, frame:0, flipX:true, flipY:true	// Draw sprite with optional mirroring and animation frame (0 if left out)
-	drawSprite sprites.blueCircle, replaceColor:Blue with:DarkBlue	// Draw sprite with optional color replacement (none if left out)
-	drawTilemap tilemaps.level, pos:{0,0}, sourcePos:{0,0}, size:{32,32}	// Draw tilemap with optional sourcePos (in tiles) and size (in tiles, full tilemap if left out)
-	Sprite sprite = tilemaps.level.tiles[x + y * size.x]	// Get tile of a tilemap
-	sprite.hasTag("movable")	// Check if a sprite has a tag
-	clip pos:{x,y}, size:{64,64}	// All drawing functions will be clipped to this rectangle until stopClipping is called
-	if justPressed(LeftMouseButton, player:0)	// Check if player 0 just pressed the left mouse button this frame
-		print "Player 0 clicked at {getPointer(player:0)}"	// Pointer position of player 0 (mouse, touch or pen)
-	if justPressed(A, player:1) then print "Player 1 pressed A"	// Available buttons: Up, Down, Left, Right, A, B, X, Y, Start, Select, LeftMouseButton, RightMouseButton
-	if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
-	if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
-	if isPressed(Down, player:3) then pos += {0,1}	// Check if player 3 is currently pressing the Down button on their gamepad
-	playSound sounds.explosion, channel:2, startIndex:0, length:64	// Play sound with optional channel (0-3), startIndex (0-31) and length (0-31)
-	stopSound channel:3	// Stop sound with optional channel (all if left out)
-	playMusic music.intro, startPattern:0, fadeInDuration:1000	// Play music with optional startPattern (0-63) and fadeInDuration (in milliseconds)
-	stopMusic fadeOutDuration:500	// Stop the music with optional fade out (in milliseconds)
-	setVolume 0.5	// Set the master volume (0 to 1)
-js void navigateTo: string url	// js keyword indicates that function body is in JavaScript. Return type is required.
-	location.href = url;	// JavaScript code. Do not use nested functions.
-// File: classes/sprites.l	// Contains available sprites. Add sprites as needed.
-redSquare = Sprite(frames:3, [	// Sprites can have multiple animation frames next to each other	
-	"rrrrrrrr                "	// The sprite "redSquare" has 3 frames, each 8x8 pixels
-	"r      r rrrrrr         "	// Sprites can have a string with comma separated tags
-	"r      r r    r   rrrr  "	// Each letter represets a color:
-	"r      r r    r   r  r  "	//   Black
-	"r      r r    r   rrrr  "	// d DarkGray
-	"r      r r    r         "	// l LightGray
-	"r      r rrrrrr         "	// w White
-	"rrrrrrrr                "	// b Blue
-])	// r Red
-blueCircle = Sprite(tags:"blocking,hazard", [	// g Green
-	"  bbbb  "	// y Yellow
-	" b    b "	// e Earth
-	"b      b"	// s Sand
-	"b      b"	// p Pink
-	"b      b"	// v Violet
-	"b      b"	// B DarkBlue
-	" b    b "	// R DarkRed
-	"  bbbb  "	// G DarkGreen
-])	// o Orange
-// This is the full APT. Do not use any other functions!
+# Keep up to date information
+Keep all information above, memory and code comments up to date. Use "memory/" to read and write important information about project. All memories must be in this folder.
+
+# Fast and efficient
+Write fast, efficient, elegant code. Keep it simple. Avoid too many small functions.
+
+# LiveTime Programming Language
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
+
+# Compile
+Check your code with "livetime check", build with "livetime build".
+
+{prefix.md}
+
 // The following is a complete example game: the board game "Go"
 // File: classes/sprites.l
 Sprite emptyCell = Sprite([

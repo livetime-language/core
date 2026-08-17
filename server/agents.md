@@ -1,11 +1,11 @@
-# Memory must be in the repo
-Use "memory/" to read and write important information about the project. Use "memory/MEMORY.md" for an overview. Keep all memory documents up to date.
+# Keep up to date information
+Keep all information above, memory and code comments up to date. Use "memory/" to read and write important information about project. All memories must be in this folder.
 
-# Use the LiveTime programming language
+# Fast and efficient
+Write fast, efficient, elegant code. Keep it simple. Avoid too many small functions.
+
+# LiveTime Programming Language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
-
-# Fast and efficient code
-Write fast, efficient, simple code that is easy to read and understand.
 
 # Compile
 Check your code with "livetime check", build with "livetime build".

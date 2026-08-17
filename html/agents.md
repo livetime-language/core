@@ -1,14 +1,20 @@
-# Memory must be in the repo
-Use "memory/" to read and write important information about the project. Use "memory/MEMORY.md" for an overview. Keep all memory documents up to date.
+# Keep up to date information
+Keep all information above, memory and code comments up to date. Use "memory/" to read and write important information about project. All memories must be in this folder.
 
-# Use LiveTime Programming Language and HTML Framework with PocketBase backend
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). LiveTime uses inline styles for all html elements. 
+# Fast and efficient
+Write fast, efficient, elegant code. Keep it simple. Avoid too many small functions.
+
+# LiveTime Programming Language
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
+
+# Compile
+Check your code with "livetime check", build with "livetime build".
+
+# Inline styles
+Use inline styles for all html elements.
 
 # Refresh to re-render
 Very important: To re-render the html after changing data, you need to call refresh.
-
-# Fast and efficient code
-Write fast, efficient, simple code that is easy to read and understand.
 
 # Group related code in the same function
 Elements that are grouped together visually should be in the same function.
@@ -20,8 +26,7 @@ cd dist
 go run ../server serve
 
 # Database Schema
-"src/model.l" defines the database schema and it is the source of truth.
-To change the schema, edit model.l and run "livetime schema update".
+"src/model.l" defines the database schema. To change, edit model.l and run "livetime schema update". 
 
 # Library Source Code
 lib/core/js/base.l	Standard Library (int, float, string, List, Grid, Dictionary, etc).
@@ -29,9 +34,6 @@ lib/core/js/time.l	Time Library (Time, Date, etc).
 lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
 lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
 lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
-
-# Compile
-Check your code with "livetime check", build with "livetime build".
 
 # Basics of the LiveTime programming language
 enum State
