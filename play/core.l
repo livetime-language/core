@@ -2367,7 +2367,5 @@ tests
 	
 	// Used internally. Do not call in your code.
 	internal tick
-		system.log "### tick core.frame:{core.frame} core.targetFrame:{core.targetFrame} "
-		// if core.frame <= core.targetFrame
 		system.fastForward = core.frame != core.targetFrame
 		core.tick draw:core.frame == core.targetFrame

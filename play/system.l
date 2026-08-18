@@ -223,14 +223,14 @@ global transient skipInit unit system
 			core.output = []
 			int passedTests, failedTests
 			for testFunctions as f
-				system.log "RUNNING {f.name}"
+				system.log f.name
 				core.runTest testFunction:f.func
 				if core.errorCount > 0
 					failedTests++
-					system.log "TEST FAILED with {core.errorCount} {core.errorCount == 1 ? "error" : "errors"}\n"
+					system.log "FAILED with {core.errorCount} {core.errorCount == 1 ? "error" : "errors"}\n"
 				else
 					passedTests++
-					system.log "TEST PASSED\n"
+					system.log "PASSED\n"
 
 			system.log "{passedTests} {passedTests == 1 ? "test" : "tests"} passed"
 			system.log "{failedTests} {failedTests == 1 ? "test" : "tests"} failed"
