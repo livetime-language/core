@@ -10,7 +10,7 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 # Compile
 Check your code with "livetime check", build with "livetime build".
 
-# Basics of the LiveTime programming language
+# Basics of LiveTime
 enum State
 	InProgress
 	Done

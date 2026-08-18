@@ -35,7 +35,7 @@ lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
 lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
 lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
 
-# Basics of the LiveTime programming language
+# Basics of LiveTime
 enum State
 	InProgress
 	Done

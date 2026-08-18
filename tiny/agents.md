@@ -10,6 +10,7 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 # Compile
 Check your code with "livetime check", build with "livetime build".
 
+# Basics of LiveTime
 {prefix.md}
 
 // The following is a complete example game: the board game "Go"
