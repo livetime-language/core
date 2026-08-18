@@ -1,4 +1,4 @@
-# Full LiveTime API. Do not use any other functions!
+/* LiveTime syntax and standard library. Only use the following features and functions!
 enum PlayerRole: Knight, Archer	// Enums are global and can be accessed from anywhere
 class Player	// Classes have capitalized names. Their members are public by default
 	int        index	// Member variable of class Player. Integers are 0 by default
@@ -93,3 +93,4 @@ blueCircle = Sprite(tags:"blocking,hazard", [	// g Green
 	" b    b "	// R DarkRed
 	"  bbbb  "	// G DarkGreen
 ])	// o Orange
+*/

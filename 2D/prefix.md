@@ -1,4 +1,4 @@
-# Basics of the LiveTime programming language
+/* LiveTime syntax and standard library
 enum PlayerRole: Knight, Archer	// Enums are global and can be accessed from anywhere
 class Player	// Classes have capitalized names. Their members are public by default
 	int        index	// Member variable of class Player. Integers are 0 by default
@@ -75,3 +75,4 @@ tick	// app.tick is called every frame (30 times per second by default)
 	drawVideo player[1], pos:{0,0}, size:435, shape:Circle	// Draw video feed of player 1, available shapes: Rectangle, Square, Circle
 	drawRectangle pos, size, outlineColor:Red, outlineWidth:5	// Draw rectangle centered at pos
 	drawText "Score: {score}", pos, size:12, color:#00a0a0	// Draw text centered at pos
+*/
