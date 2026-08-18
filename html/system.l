@@ -37,7 +37,7 @@ global transient skipInit unit system
 	public inline js string locationHash	=> location.hash
 	public inline js string basePath	=> _basePath
 	public inline js string referrer	=> document.referrer
-	public inline js string protocolAndHost() (location.host && !system.isDebug ? location.origin : "http://localhost")
+	public inline js string protocolAndHost() (window.location?.host && !system.isDebug ? location.origin : "http://localhost")
 	public inline js dynamic networkInformation() navigator.connection
 	public inline js void reload() location.reload(/*forceReload=*/true)
 

@@ -26,12 +26,45 @@ transient skipInit static class backend
 	void() onDataChange = null
 		
 	async js void connect: string url = ""
+		if(system.isHeadless) {
+			// In headless mode (node.js), we can't load the PocketBase library, so we use a stub
+			// that resolves all requests with empty results
+			backend.pb = backend.createHeadlessStub()
+			this.users = new DatabaseTable("users", [])
+			return
+		}
 		if(url)	backend.url = backend.libUrl = url + "/"
 		else	backend.url = window.location && window.location.host && !system.isDebug ? location.origin : "http://localhost:8090"
 		const PocketBase = (await import((backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js")).default
 		if(backend.pb) backend.pb.realtime.unsubscribe();
 		backend.pb = new PocketBase(backend.url);
 		this.users = new DatabaseTable("users", []);
+
+	// Creates a stub of the PocketBase client for headless mode (node.js) that resolves all requests with empty results
+	private js dynamic createHeadlessStub
+		const none = async () => null
+		const collection = {
+			getList: async () => ({items:[], totalItems:0}),
+			getFullList: async () => [],
+			getFirstListItem: none,
+			getOne: none,
+			create: async item => ({...item, id:item?.id || "", created:"", updated:""}),
+			update: async (id, item) => item,
+			delete: none,
+			subscribe: none,
+			unsubscribe: none,
+			authRefresh: none,
+			authWithPassword: none,
+			requestVerification: none,
+			confirmVerification: none,
+		}
+		return {
+			collection: () => collection,
+			send: none,
+			autoCancellation: () => {},
+			realtime: {unsubscribe: () => {}},
+			authStore: {token:"", clear: () => {}, onChange: () => {}},
+		}
 
 	// Call a http GET endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
 	// and automatically includes the auth token

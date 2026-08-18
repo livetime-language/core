@@ -71,6 +71,8 @@ immutable Texture
 			open
 			
 	internal js bool ensureIsAvailable()
+		// In headless mode (node.js), images can't be loaded, but display items are still recorded for printWhatIsOnScreen
+		if(system.isHeadless) return true
 		if(!this.imageOrCanvas && this.file) {
 			this.imageOrCanvas = _htmlImageCache[this.file]
 		}
@@ -309,6 +311,8 @@ transient skipInit global unit graphics
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
 	internal updateBaseMatrix
+		// In headless mode (node.js), there is no window, so we treat the reference size as the pixel size
+		if system.isHeadless then pixelSize = referenceSize; pixelRatio = 1
 		let statisticsMargin = system.showDebugInfo ? statistics.margin : {}
 		let referenceSizeWithMargin = referenceSize + statisticsMargin
 		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
@@ -2000,6 +2004,8 @@ transient skipInit global unit graphics
 		if(!text) return 0
 		let effectiveFont = font || graphics.currentFont
 		let fontSize = size.y || size.x || graphics.currentFontSize
+		// In headless mode (node.js), there is no canvas context, so we return an estimate
+		if(!graphics.context) return text.length * fontSize * (style ? 0.6 : 0.55)
 		graphics.context.font =  (style ? "bold ":"")+fontSize+"px "+effectiveFont.name;
 		let textSize = graphics.context.measureText(text)
 		return textSize.width

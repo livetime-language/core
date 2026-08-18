@@ -1,6 +1,6 @@
 global transient skipInit unit system
-	public inline js string url	=> location.href
-	public inline js string hostname	=> location.hostname
+	public inline js string url	=> (window.location?.href || "")
+	public inline js string hostname	=> (window.location?.hostname || "")
 	public protocolAndHost	=> !system.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
 	public inline js int userAgent	=> navigator.userAgent.replace(/,/g," ")
 	public inline js float usedMemory	=> (performance.memory ? performance.memory.usedJSHeapSize : 0)
@@ -9,7 +9,7 @@ global transient skipInit unit system
 		return relativeUrl.startsWith("http") || relativeUrl.startsWith("data:") ? relativeUrl : _basePath+relativeUrl
 
 	js void setTitle: string title
-		document.title = title
+		if(window.document) document.title = title
 		
 	js async void setFullscreen: value = true
 		                         Player forPlayer = null

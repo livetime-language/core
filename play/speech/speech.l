@@ -52,12 +52,13 @@ transient speech
 		let pref = preferences[language] or preferences["English"]
 			pref.voice = null
 	
-	inline js SpeechSynthesisVoice[] getVoices() speechSynthesis.getVoices()
+	inline js SpeechSynthesisVoice[] getVoices() (window.speechSynthesis?.getVoices() || [])
 		
 	nextVoice
 		voiceOverride = voices[voiceIndex incrementAndWrap voices.length]
 		
 	js void setup: string language = "Spanish", float rate = 1
+		if(system.isHeadless) return
 		var utterance = new SpeechSynthesisUtterance("");
 		// speechSynthesis.addEventListener("voiceschanged", () => speech.setupVoice(language, voicePreferences));
 		let voice = speech.getVoice();
@@ -94,6 +95,7 @@ transient speech
 		return pref
 		
 	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
+		if(system.isHeadless) return
 		if(core.isPremiere && input.isCertain) {
 			if(window.webkit) {
 				let pref = speech.preferences.get(language) || speech.preferences.get("English")
@@ -118,9 +120,9 @@ transient speech
 		if(window.webkit) {
 			window.webkit.messageHandlers.speak.postMessage({action: "pause"});
 		} else {
-			speechSynthesis.cancel()
+			window.speechSynthesis?.cancel()
 		}
 		
 	js inline bool isSpeaking
-		speechSynthesis.speaking
+		!!window.speechSynthesis?.speaking
 

@@ -80,6 +80,21 @@ global transient skipInit unit system
 		_global.fonts?.init();
 		
 	private js void initPlatform: bool isHeadless = false, bool isEmbedded = false
+		if(isHeadless) {
+			// In headless mode (node.js), there is no window object. Alias it to globalThis so that
+			// guarded accesses like window.location?.href work without throwing
+			if(typeof window == "undefined") globalThis.window = globalThis
+			// Node's built-in localStorage warns without --localstorage-file, so we use a simple in-memory storage
+			for(let name of ["localStorage", "sessionStorage"]) {
+				let map = new Map
+				Object.defineProperty(globalThis, name, {configurable:true, value:{
+					getItem: key => map.has(key) ? map.get(key) : null,
+					setItem: (key, value) => map.set(key, String(value)),
+					removeItem: key => map.delete(key),
+					clear: () => map.clear(),
+				}})
+			}
+		}
 		Object.prototype.toString = function() { return JSON.stringify(this) }
 		statistics.init();
 		IndexedDB?.init();
