@@ -331,6 +331,9 @@ js(Date) internal transient class Date
 			":" + pad(Math.abs(tzo) % 60);
 
 	inline js TimeString utcString() this.toISOString()
+	
+	// IANA timezone of the browser, e.g. "Europe/Berlin"
+	static inline js string localTimezone() Intl.DateTimeFormat().resolvedOptions().timeZone
 
 	Date + float delta 
 		return Date.fromTime(this.time + delta)
