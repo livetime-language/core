@@ -9,7 +9,7 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 
 # Compile and test
 Check your code with "livetime check", build with "livetime build".
-Open "dist/index.html" in a browser and check no text or images overlap unintentionally.
+Open the generated html file in a browser and check no text or images overlap unintentionally.
 
 Write unit tests for all features. Make sure you cover the complete specification and all edges cases.
 Use "livetime test" to run all unit tests.
