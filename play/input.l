@@ -97,6 +97,8 @@ internal transient class InternalUser
 	// For each input, we store the frame when it was pressed and the frame when it was released
 	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
 	visible int[] pressedAtFrame, releasedAtFrame
+	// The frame in which the input was marked as handled (input.markAsHandled), justPressed returns false for the rest of that frame
+	int[] handledAtFrame
 	Vector2 pointerPosition, scrollDelta
 	Input[] allJustPressed, allJustReleased
 	string focus, prevFocus
@@ -107,6 +109,7 @@ internal transient class InternalUser
 		for Input.items.length
 			pressedAtFrame[i] = -2
 			releasedAtFrame[i] = -1
+			handledAtFrame[i] = -1
 	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
@@ -885,8 +888,10 @@ skipInit global unit input
 		int flags = data[start]
 		int pointerX = data[start + 1]
 		int pointerY = data[start + 2]
-		int firstPointerButton = cast InputButton.LeftMouseButton
-		int lastPointerButton = cast InputButton.RightMouseButton
+		// Pointer buttons arrive as the Input indices that touchDown/touchUp write: LeftMouseButton to RightMouseButton in the order
+		// of TouchType. Pointer, the parent of LeftMouseButton, arrives along with it and is skipped (touchDown sets it again)
+		int firstPointerButton = Input.LeftMouseButton.index
+		int lastPointerButton = Input.RightMouseButton.index
 
 		// The pointer moved: write one TouchMove record. At most one move arrives per input
 		// frame, so the in-place coalescing of handleTouchEvent isn't needed
@@ -899,6 +904,7 @@ skipInit global unit input
 		// Just pressed inputs
 		for pressedCount as i
 			int index = data[start + 6 + i]
+			if index == Input.Pointer.index then continue
 			inputs.writeInt32 frame
 			if firstPointerButton <= index <= lastPointerButton
 				inputs.writeUnsignedInt16 cast(InputEventType.TouchDown) + ((index - firstPointerButton) shiftLeft 5)
@@ -913,6 +919,7 @@ skipInit global unit input
 		// Just released inputs
 		for releasedCount as i
 			int index = data[readPos + i]
+			if index == Input.Pointer.index then continue
 			inputs.writeInt32 frame
 			if firstPointerButton <= index <= lastPointerButton
 				inputs.writeUnsignedInt16 cast(InputEventType.TouchUp) + ((index - firstPointerButton) shiftLeft 5)
@@ -1413,10 +1420,15 @@ skipInit global unit input
 		// app.onTouchDown??(touch)
 		// player.onTouchDown??(touch)
 
-		// Modern Input
-		int buttonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
-		internalUser.pressedAtFrame[buttonIndex] = core.frame
+		// --- Modern Input ---
+		// The Input items LeftMouseButton, MiddleMouseButton and RightMouseButton follow each other like TouchType (a finger and a pen are the left mouse button)
+		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
 		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = true
+		internalUser.pressedAtFrame[buttonIndex] = core.frame
+		
+		// Save when the parent was pressed (Pointer is the parent of LeftMouseButton, like "Shift" is the parent of "ShiftLeft")
+		let parent = Input.items[buttonIndex].parent
+			internalUser.pressedAtFrame[parent.index] = core.frame
 		internalUser.pointerPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
@@ -1485,14 +1497,15 @@ skipInit global unit input
 			else
 				core.addOutput "code|drag {touch.startPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
 
-		// Modern Input
-		int buttonIndex = InputButton.LeftMouseButton + type
+		// --- Modern Input ---
+		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
+		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 		internalUser.releasedAtFrame[buttonIndex] = core.frame
+		
+		// Save when the parent was released (Pointer is the parent of LeftMouseButton)
+		let parent = Input.items[buttonIndex].parent
+			internalUser.releasedAtFrame[parent.index] = core.frame
 		internalUser.pointerPosition = referencePos
-
-		// Same clamp as touchDown: a finger/pen touch counts as the left mouse button
-		int rewindButtonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
-		if rewindButtonIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 
 	internal scroll: InternalUser internalUser
 	                 Player player
@@ -2536,9 +2549,10 @@ input
 	// keyboard and pointer, and their events land in their own stream (the old behavior forced
 	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
 	global bool justPressed: Input item, int player = 0
-		// Pressed this frame?
 		let user = internalUserBySyncedIndex[player]
-		if not user then return false
+		if not user or user.handledAtFrame[item.index] == core.frame then return false
+
+		// Pressed this frame?
 		int pressedAtFrame = user.pressedAtFrame[item.index]
 		int framesSincePress = core.frame - pressedAtFrame
 		if framesSincePress == 0 then return true
@@ -2546,7 +2560,7 @@ input
 		// Repeating?
 		if keyRepeatEvery == 0 then return false
 		int releasedAtFrame = user.releasedAtFrame[item.index]
-		return pressedAtFrame >= releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
+		return pressedAtFrame > releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
 	global bool justPressed: string keyCombination, int player = 0
 		let user = internalUserBySyncedIndex[player]
@@ -2558,7 +2572,7 @@ input
 			if not name then return false
 				
 			let item = Input.items.find.name == name or .alternativeName == name
-			if not item then return false
+			if not item or user.handledAtFrame[item.index] == core.frame then return false
 			
 			let pressedAtFrame = user.pressedAtFrame[item.index]
 			let releasedAtFrame = user.releasedAtFrame[item.index]
@@ -2569,16 +2583,17 @@ input
 		return anyPressedThisFrame
 
 	// Returns true if the player is currently pressing the given button
+	// (false if it was pressed and released in the same frame, then only justPressed and justReleased are true)
 	global bool isPressed: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
 		if not user then return false
-		return user.pressedAtFrame[item.index] >= user.releasedAtFrame[item.index]
+		return user.pressedAtFrame[item.index] > user.releasedAtFrame[item.index]
 
-	// Returns true if the player has just released the given button this frame
+	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled this frame)
 	global bool justReleased: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
 		if not user then return false
-		return user.releasedAtFrame[item.index] == core.frame
+		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] != core.frame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
@@ -2622,3 +2637,16 @@ input
 		// let lostFocus = user.lostFocus
 		// user.lostFocus = ""
 		// return lostFocus
+
+	// Marks the input and its parent (e.g. Pointer for LeftMouseButton) as handled for this frame, so justPressed and justReleased
+	// return false for them in the rest of the frame (isPressed is state, not an event, and stays unaffected). Call this when an overlay or a button consumed the press, so the elements drawn below or after it don't react to it as well
+	global markAsHandled: Input item, int player = 0
+		let user = internalUserBySyncedIndex[player]
+		if not user then return
+		user.handledAtFrame[item.index] = core.frame
+		let parent = item.parent
+			user.handledAtFrame[parent.index] = core.frame
+
+	// Returns true if the input was marked as handled this frame
+	bool isHandled: Input item, int player = 0
+		return internalUserBySyncedIndex[player]?.handledAtFrame[item.index] == core.frame
