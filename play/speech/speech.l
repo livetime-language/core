@@ -25,31 +25,35 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", [
-			{"Microsoft Sofia", minSpeed:0.7}
-			{"Microsoft Catalina", minSpeed:0.7}
-			{"Microsoft Ximena", minSpeed:0.7}
+			{"Microsoft Sofia", minSpeed:0.75}
+			{"Microsoft Catalina", minSpeed:0.75}
+			{"Microsoft Ximena", minSpeed:0.75}
 			{"Google", minSpeed:0.9}
 			{"Google español de Estados Unidos", minSpeed:1.0}
-			{"Paulina", minSpeed:0.7}
-			{"Mónica", minSpeed:0.7}
+			{"Paulina", minSpeed:0.75}
+			{"Mónica", minSpeed:0.75}
 		]}
 		German:  {"de", "de-DE", [
-			{"Microsoft", minSpeed:0.7}
-			{"Google", minSpeed:0.7}
-			{"Helena", minSpeed:0.7}
-			{"Anna", minSpeed:0.7}
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
+			{"Helena", minSpeed:0.75}
+			{"Anna", minSpeed:0.75}
 		]}
 		English: {"en", "en-US", [
-			{"Zoe (Enhanced)", minSpeed:0.7}
-			{"Microsoft", minSpeed:0.7}
-			{"Google", minSpeed:0.7}
+			{"Zoe (Enhanced)", minSpeed:0.75}
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
 		]}
 	}
 	string[string] voiceForLanguage
-	float userSpeedPreference = 0.7
+	// The speed the user picked in the settings, 0 to use the tuned minSpeed of the voice
+	float userSpeedPreference = 0
 	
-	setVoice: string language, string voiceName
-		voiceForLanguage[language] = voiceName
+	// The voice and the speed the user picked in the settings. An empty voiceName keeps the current voice (the user only changed the speed).
+	// The cached voice is dropped, so the next getVoice picks up both.
+	setVoiceAndSpeed: string language, string voiceName, float speed
+		if voiceName then voiceForLanguage[language] = voiceName
+		userSpeedPreference = speed
 		let pref = preferences[language] or preferences["English"]
 			pref.voice = null
 	
@@ -91,7 +95,7 @@ transient speech
 			for pref.voices as voicePreference
 				let voice = voices.find.name.includes(voicePreference.name)
 					pref.voice = voice
-					pref.minSpeed = voicePreference.minSpeed
+					pref.minSpeed = userSpeedPreference > 0 ? userSpeedPreference : voicePreference.minSpeed
 					return pref
 		return pref
 		
