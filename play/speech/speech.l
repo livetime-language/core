@@ -31,15 +31,16 @@ transient speech
 			{"Google", minSpeed:0.9}
 			{"Google español de Estados Unidos", minSpeed:1.0}
 			{"Paulina", minSpeed:0.7}
-			{"Mónica", minSpeed:0.7}]
-		}
+			{"Mónica", minSpeed:0.7}
+		]}
 		German:  {"de", "de-DE", [
 			{"Microsoft", minSpeed:0.7}
 			{"Google", minSpeed:0.7}
 			{"Helena", minSpeed:0.7}
-			{"Anna", minSpeed:0.7}]
-		}
+			{"Anna", minSpeed:0.7}
+		]}
 		English: {"en", "en-US", [
+			{"Zoe (Enhanced)", minSpeed:0.7}
 			{"Microsoft", minSpeed:0.7}
 			{"Google", minSpeed:0.7}
 		]}
