@@ -718,7 +718,7 @@ internal transient skipInit unit core
 	// Each line carries a millisecond timestamp and the current frame, so client logs can be
 	// correlated with each other and with the server log (which logs microseconds) after a
 	// real-world incident
-	js void log: logstring text
+	js void log: logstring text, Color color = null
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 
@@ -733,7 +733,8 @@ internal transient skipInit unit core
 			statistics.systemLogs.splice(0, 10000);
 			statistics.successfullySentSystemLogs = Math.max(0, statistics.successfullySentSystemLogs - 10000);
 		}
-		console.log(str)
+		if(color) console.log(`%c${text}`, `color: ${color.hex}`);
+		else      console.log(text);
 		core.logs += str + "\n"
 		// Bound the in-memory log: drop the oldest half once it exceeds ~2 MB (F28)
 		if(core.logs.length > 2097152) {
@@ -2090,7 +2091,7 @@ global transient skipInit unit system
 			}
 			core.addOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
-			core.log(text);
+			core.log(text, color);
 		}
 
 	global debug: void() drawDebugInfo
