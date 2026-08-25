@@ -51,10 +51,12 @@ js void navigateTo: string url
 	location.href = url;
 
 # Unit Tests
-Write unit tests for all features in the "tests" static class in the "tests" folder. Mark each test with the "test" keyword.
+Write unit tests for all features in a static test class in the "tests" folder.
+Mark test functions with "test" keyword. Use any character in their name.
+Test classes have access to all members of all classes (including private).
 Use "livetime test" to run tests.
 
-tests
+static test class tests
 	pos: int x, int y
 		return IntVector2(x, y).toScreenPos
 		
