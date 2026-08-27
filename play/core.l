@@ -876,6 +876,9 @@ internal transient skipInit unit core
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
 	internal tick: bool draw
+		// Headless tests: resume pending awaits before every frame (see system.resumePendingAwaits).
+		// The browser engine is untouched, its microtasks run between animation frames anyway
+		if system.isHeadless then system.resumePendingAwaits
 		// if targetFrame != -1 and frame > targetFrame	return
 
 		// Set time: the app clock follows the surviving timeline (the rewind playhead), not the

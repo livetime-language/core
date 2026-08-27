@@ -79,11 +79,21 @@ global transient skipInit unit system
 		media.init();
 		_global.fonts?.init();
 		
+	// Headless tests: drain node's microtask queue so pending awaits resume between simulated frames,
+	// like the browser event loop does between animation frames. process._tickCallback is internal but
+	// stable node API; if it ever disappears this becomes a no-op and awaits only resume at process end
+	internal js void resumePendingAwaits
+		if(typeof process != "undefined" && process._tickCallback) process._tickCallback()
+
 	private js void initPlatform: bool isHeadless = false, bool isEmbedded = false
 		if(isHeadless) {
 			// In headless mode (node.js), there is no window object. Alias it to globalThis so that
 			// guarded accesses like window.location?.href work without throwing
 			if(typeof window == "undefined") globalThis.window = globalThis
+			// An async error that no caller awaits would die silently as an unhandled rejection:
+			// count it as an error of the currently running test (resumePendingAwaits resumes awaits
+			// inside core.tick, so the rejection surfaces while its test is still running)
+			process.on("unhandledRejection", error => core.onError(error instanceof Error ? error : new Error(String(error))))
 			// Node's built-in localStorage warns without --localstorage-file, so we use a simple in-memory storage
 			for(let name of ["localStorage", "sessionStorage"]) {
 				let map = new Map
@@ -225,6 +235,9 @@ global transient skipInit unit system
 			for testFunctions as f
 				system.log f.name
 				core.runTest testFunction:f.func
+				// Settle the test's leftover async work (pending saves, rejections) before judging it,
+				// so nothing leaks into the next test or the end of the process
+				resumePendingAwaits
 				if core.errorCount > 0
 					failedTests++
 					system.log "FAILED with {core.errorCount} {core.errorCount == 1 ? "error" : "errors"}\n"

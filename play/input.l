@@ -2223,6 +2223,8 @@ skipInit global unit input
 		field.handleTextInput(7, value)
 		
 	js void updateCursor
+		// In headless mode (node.js) there is no document to show a cursor on
+		if(system.isHeadless) return
 		// document.body.style.cursor = (input.showPointers == 2 && system.playMode == 4 ? "none" : input.cursor)
 		document.body.style.cursor = input.cursor
 

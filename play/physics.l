@@ -12,11 +12,17 @@ transient unit Physics
 		if(window.world) window.world.Step(1/core.ticksPerSecond, 8, 3)
 			
 	js void destroy: PhysicsBody body
+		if(system.isHeadless) return
 		world.DestroyBody(body.body)
-			
+
+	// In headless mode (node.js) the physics engine is not loaded (see start): bodies keep their initial position
+	js PhysicsBody createHeadlessBody: Vector2 pos
+		return new PhysicsBody({GetPosition: () => ({x: pos.x/Physics.scale, y: pos.y/Physics.scale})})
+
 	js PhysicsBody createCircle: Vector2 pos
 		                         float radius
 		                         BodyType type = Dynamic
+		if(system.isHeadless) return Physics.createHeadlessBody(pos)
 		let bodyDef = new b2BodyDef()
 		bodyDef.type = type
 		bodyDef.position = new b2Vec2(pos.x/Physics.scale, pos.y/Physics.scale)
@@ -29,6 +35,7 @@ transient unit Physics
 	js PhysicsBody createRectangle: Vector2 pos
 		                            Vector2 size
 		                            BodyType type = Dynamic
+		if(system.isHeadless) return Physics.createHeadlessBody(pos)
 		let bodyDef = new b2BodyDef()
 		bodyDef.type = type
 		bodyDef.position = new b2Vec2(pos.x/Physics.scale, pos.y/Physics.scale)
@@ -42,6 +49,7 @@ transient unit Physics
 		                          Vector2[] vertices
 		                          bool closed = true
 		                          BodyType type = Dynamic
+		if(system.isHeadless) return Physics.createHeadlessBody(pos)
 		let bodyDef = new b2BodyDef()
 		bodyDef.type = type
 		bodyDef.position = new b2Vec2(pos.x/Physics.scale, pos.y/Physics.scale)

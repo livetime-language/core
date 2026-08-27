@@ -24,6 +24,7 @@ transient skipInit static class backend
 	dynamic pocketbase, pocketbaseOrBatch
 	DatabaseTable<User> users
 	void() onDataChange = null
+	dynamic headlessData	// Records the headless stub serves per collection, seeded by tests: backend.headlessData["cards"] = [...]
 		
 	async js void connect: string url = ""
 		if(system.isHeadless) {
@@ -60,16 +61,22 @@ transient skipInit static class backend
 		backend.pocketbase = backend.pocketbaseOrBatch = new PocketBase(backend.url);
 		this.users = new DatabaseTable("users", []);
 
-	// Creates a stub of the PocketBase client for headless mode (node.js) that resolves all requests with empty results
+	// Creates a stub of the PocketBase client for headless mode (node.js). Fetches serve the records a test
+	// seeded via backend.headlessData["cards"] = [...] (unfiltered and unsorted - filter, sort and fields are
+	// ignored), an unseeded collection returns empty results. create assigns a real id like the server would.
+	// update resolves with null like a batched update, so DatabaseTable.update keeps the locally computed
+	// values instead of overwriting modifier fields ("count+") with values from a fake response
 	private js dynamic createHeadlessStub
+		backend.headlessData = {}
 		const none = async () => null
-		const collection = {
-			getList: async () => ({items:[], totalItems:0}),
-			getFullList: async () => [],
-			getFirstListItem: none,
+		const seeded = name => backend.headlessData[name] || []
+		const collection = name => ({
+			getList: async () => ({items:[...seeded(name)], totalItems:seeded(name).length}),
+			getFullList: async () => [...seeded(name)],
+			getFirstListItem: async () => seeded(name)[0] || null,
 			getOne: none,
-			create: async item => ({...item, id:item?.id || "", created:"", updated:""}),
-			update: async (id, item) => item,
+			create: async item => ({...item, id:item?.id || backend.newId(), created:"", updated:""}),
+			update: none,
 			delete: none,
 			subscribe: none,
 			unsubscribe: none,
@@ -77,10 +84,10 @@ transient skipInit static class backend
 			authWithPassword: none,
 			requestVerification: none,
 			confirmVerification: none,
-		}
+		})
 		return {
-			collection: () => collection,
-			createBatch: () => ({collection: () => collection, requests: [], send: none}),
+			collection,
+			createBatch: () => ({collection, requests: [], send: none}),
 			send: none,
 			autoCancellation: () => {},
 			realtime: {unsubscribe: () => {}},

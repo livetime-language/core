@@ -340,7 +340,8 @@ transient skipInit global unit graphics
 		
 	internal js void startFrame
 		graphics.reset()
-		if(!system.fastForward && !system.waitingForInitialData) {
+		// In headless mode (node.js), there is no canvas context: items are recorded but nothing is painted
+		if(!system.fastForward && !system.waitingForInitialData && graphics.context) {
 			if(!graphics.backgroundColor || graphics.backgroundColor.hex == "#000000") {
 				graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			} else {
@@ -367,6 +368,8 @@ transient skipInit global unit graphics
 
 	internal finishFrame
 		if(system.fastForward) return
+		// In headless mode (node.js), there is no canvas context: items are recorded but nothing is painted
+		if not graphics.context then return
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
