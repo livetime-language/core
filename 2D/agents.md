@@ -1,5 +1,5 @@
 # Keep up to date information
-Keep all information above, memory and code comments up to date. Use "memory/" to read and write important information about project. All memories must be in this folder.
+Keep all information above, memory and code comments up to date. Use the "memory/" folder to read and write important information about project. All memories must be in the repo in this folder (do not store memories elsewhere).
 
 # Fast and efficient
 Write fast, efficient, elegant code. Keep it simple. Avoid too many small functions.
@@ -31,7 +31,7 @@ The background is black by default.
 
 
 # Library Source Code
-When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/"
+When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/2D/" and "lib/core/play/". Everything in "lib/" is a library. You can make changes, but ask me if you want to make changes that might not work in other projects.
 
 lib/core/js/base.l	int, float, string, List, Grid, Dictionary, ...
 lib/core/js/time.l	Time, Date, ...

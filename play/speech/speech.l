@@ -22,6 +22,10 @@ transient speech
 	SpeechSynthesisVoice voiceOverride, currentVoice
 	float rate = 1
 	string lastWord = ""
+	// say bookkeeping: sayCounter invalidates the watchdog retry of an older say (a newer say
+	// or stop bumps it), currentUtterance keeps the utterance alive against GC (see say)
+	int sayCounter
+	dynamic currentUtterance
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", [
@@ -100,28 +104,71 @@ transient speech
 		return pref
 		
 	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
-		if(system.isHeadless) return
-		if(core.isPremiere && input.isCertain) {
-			if(window.webkit) {
-				let pref = speech.preferences.get(language) || speech.preferences.get("English")
-				window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: position, duration: duration});
-			} else {
-				return new Promise((resolve, reject) => {
-					speech.lastWord = value;
-					speechSynthesis.cancel();
-					const utterance = new SpeechSynthesisUtterance(value);
-					let voice = speech.getVoice(language);
-					utterance.lang = voice.langAndCountry;
-					utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
-					utterance.rate = Math.max(rate, voice.minSpeed);
-					console.log("rate", utterance.rate);
-					utterance.onend = () => resolve()
-					speechSynthesis.speak(utterance);
-				});
-			}
+		if(system.isHeadless) return;
+		// Editor replays and tests (isPremiere false) and uncertain (predicted) frames don't
+		// speak - the certain replay of an uncertain frame calls say again. Logged so a skipped
+		// say is visible in the console.
+		if(!core.isPremiere || !input.isCertain) {
+			console.log(`speech: say skipped (isPremiere:${core.isPremiere} isCertain:${input.isCertain}, frame ${core.frame}): "${value.substring(0, 40)}"`);
+			return;
 		}
-		
+		speech.lastWord = value;
+		const id = ++speech.sayCounter;
+		if(window.webkit) {
+			console.log(`speech #${id} say via webkit "${value.substring(0, 60)}", language: ${language}, certain: ${input.isCertain}, frame: ${core.frame}`);
+			let pref = speech.preferences.get(language) || speech.preferences.get("English")
+			window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: position, duration: duration});
+		} else {
+			return new Promise((resolve, reject) => {
+				const synth = window.speechSynthesis;
+				synth.cancel();
+				const utterance = new SpeechSynthesisUtterance(value);
+				let voice = speech.getVoice(language);
+				utterance.lang = voice.langAndCountry;
+				utterance.voice = speech.currentVoice = speech.voiceOverride || voice.voice;
+				utterance.rate = Math.max(rate, voice.minSpeed);
+				// Keep a reference: Chrome garbage-collects the utterance mid-speech otherwise,
+				// which cuts the audio and swallows the onend/onerror events
+				speech.currentUtterance = utterance;
+				let started = false, done = false, ignoreNextError = false;
+				const state = () => `speaking:${synth.speaking} pending:${synth.pending} paused:${synth.paused}`;
+				const finish = (reason) => {
+					if(done) return;
+					done = true;
+					if(speech.currentUtterance === utterance) speech.currentUtterance = null;
+					console.log(`speech #${id} ${reason}`);
+					resolve();
+				};
+				utterance.onstart = () => { started = true; console.log(`speech #${id} started, voice: ${utterance.voice ? utterance.voice.name : "default"}, rate: ${utterance.rate}`); };
+				utterance.onend = () => finish("ended");
+				utterance.onerror = e => {
+					if(ignoreNextError && !started) { ignoreNextError = false; console.log(`speech #${id} ${e.error} from own retry cancel ignored`); return; }
+					finish(`error: ${e.error}, started: ${started}, ${state()}`);
+				};
+				console.log(`speech #${id} say "${value.length > 60 ? value.substring(0, 60) + "…" : value}", lang: ${utterance.lang}, certain: ${input.isCertain}, frame: ${core.frame}, ${state()}`);
+				synth.speak(utterance);
+				// Chrome sometimes leaves the queue stuck in paused state after cancel() - resume is a no-op otherwise
+				synth.resume();
+				// Watchdog: Chrome occasionally drops an utterance queued right after cancel() -
+				// it never starts and never errors. Retry once if this is still the latest say.
+				setTimeout(() => {
+					if(started || done || speech.sayCounter !== id) return;
+					console.warn(`speech #${id} did not start within 1s, retrying (${state()})`);
+					ignoreNextError = true;
+					synth.cancel();
+					synth.resume();
+					synth.speak(utterance);
+					setTimeout(() => {
+						if(started || done || speech.sayCounter !== id) return;
+						finish(`gave up: still not started 1s after retry (${state()})`);
+					}, 1000);
+				}, 1000);
+			});
+		}
+
 	js inline void stop
+		speech.sayCounter++; // Invalidates the watchdog retry of a say that has not started yet
+		console.log("speech: stop");
 		if(window.webkit) {
 			window.webkit.messageHandlers.speak.postMessage({action: "pause"});
 		} else {
