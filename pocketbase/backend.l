@@ -2,7 +2,7 @@ class User
 
 // Use this static class to login and logout users from the PocketBase backend. 
 // You can administer the local PocketBase instance at: http://localhost:8090/_ 
-// If you want to dive deeper into PocketBase, you can find the complete documentation at: https://pocketbase.io/docs/ 
+// PocketBase Docs: https://pocketbase.io/docs/ 
 // Example:
 //     class User
 //         string id
@@ -21,7 +21,7 @@ class User
 //             refresh
 transient skipInit static class backend
 	string url, libUrl
-	dynamic pb
+	dynamic pocketbase, pocketbaseOrBatch
 	DatabaseTable<User> users
 	void() onDataChange = null
 		
@@ -29,7 +29,7 @@ transient skipInit static class backend
 		if(system.isHeadless) {
 			// In headless mode (node.js), we can't load the PocketBase library, so we use a stub
 			// that resolves all requests with empty results
-			backend.pb = backend.createHeadlessStub()
+			backend.pocketbase = backend.pocketbaseOrBatch = backend.createHeadlessStub()
 			this.users = new DatabaseTable("users", [])
 			return
 		}
@@ -56,8 +56,8 @@ transient skipInit static class backend
 			(0,eval)(code)
 			PocketBase = window.__pocketbaseModule.default
 		}
-		if(backend.pb) backend.pb.realtime.unsubscribe();
-		backend.pb = new PocketBase(backend.url);
+		if(backend.pocketbase) backend.pocketbase.realtime.unsubscribe();
+		backend.pocketbase = backend.pocketbaseOrBatch = new PocketBase(backend.url);
 		this.users = new DatabaseTable("users", []);
 
 	// Creates a stub of the PocketBase client for headless mode (node.js) that resolves all requests with empty results
@@ -80,6 +80,7 @@ transient skipInit static class backend
 		}
 		return {
 			collection: () => collection,
+			createBatch: () => ({collection: () => collection, requests: [], send: none}),
 			send: none,
 			autoCancellation: () => {},
 			realtime: {unsubscribe: () => {}},
@@ -90,14 +91,14 @@ transient skipInit static class backend
 	// and automatically includes the auth token
 	importance:5 inline js async
 	dynamic get: string url // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
-		backend.pb.send(url, {method:"GET"})
+		backend.pocketbase.send(url, {method:"GET"})
 		
 	// Send data to a http POST endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
 	// and automatically includes the auth token
 	importance:5 inline js async 
 	dynamic post: string url   // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
 	              dynamic body // Object with data to send to the backend, e.g. {offerId: "nx7n98bscxomkl4", amount: 5000}
-		backend.pb.send(url, {method:"POST", @body:body})
+		backend.pocketbase.send(url, {method:"POST", @body:body})
 		
 	// Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
 	// Example:
@@ -110,7 +111,7 @@ transient skipInit static class backend
 	dynamic getAuthenticatedUser
 		try
 			if system.getLocalStorageString("pocketbase_auth")
-				let result = await pb.collection("users").authRefresh();
+				let result = await pocketbase.collection("users").authRefresh();
 				return result.record
 		catch as error
 			print error
@@ -129,7 +130,7 @@ transient skipInit static class backend
 	importance:5 async 
 	dynamic authWithPassword: string email
 		                      string password
-		let result = await pb.collection("users").authWithPassword(email, password)
+		let result = await pocketbase.collection("users").authWithPassword(email, password)
 		return result.record
 
 	// Create a new user and then call authWithPassword to log in the user. 
@@ -162,7 +163,7 @@ transient skipInit static class backend
 	//             user = null
 	importance:5
 	void logout
-		pb.authStore.clear();
+		pocketbase.authStore.clear();
 		system.removeLocalStorageItem('pocketbase_auth');
 
 	// Duplicated pending requests are automatically cancelled by default. Use this funtion to enable or disable this.
@@ -171,22 +172,48 @@ transient skipInit static class backend
 	//     itemsTable.fetchAll // canceled
 	//     itemsTable.fetchAll // executed
 	inline void autoCancellation: value = true
-		pb.autoCancellation(value)
+		pocketbase.autoCancellation(value)
 		
 	inline js void onAuthChanged: inline void(dynamic user) code
-		backend.pb.authStore.onChange((token, record) => code(record))
+		backend.pocketbase.authStore.onChange((token, record) => code(record))
 		
 	inline js string token
-		backend.pb.authStore.token
+		backend.pocketbase.authStore.token
 
 	async dynamic[] fetchAll: string collectionName, string sort = null
-		return await backend.pb.collection(collectionName).getFullList({sort})
+		return await backend.pocketbase.collection(collectionName).getFullList({sort})
 
 	requestVerification: string email
-		return pb.collection('users').requestVerification(email);
+		return pocketbase.collection('users').requestVerification(email);
 
 	confirmVerification: string token
-		return pb.collection('users').confirmVerification(token);
+		return pocketbase.collection('users').confirmVerification(token);
+		
+	const validCharsForId = "abcdefghijklmnopqrstuvwxyz0123456789"
+	
+	// A PocketBase record id (15 characters from [a-z0-9]) generated on the client
+	string newId
+		string id
+		for 15 id += validCharsForId[randomInteger(validCharsForId.length)]
+		return id
+		
+	// Batch several add, update, remove statements into a transaction in a single request
+	// Useful to save requests as well as ensuring several statements always all succeed or all fail
+	// The Batch Web API has to be enabled in the PocketBase UI under Settings > Application 
+	// By default, max requests in a batch is 50, max processing time is 3 seconds, can be changed in the UI
+	// Docs: https://pocketbase.io/docs/api-records/#batch-createupdateupsertdelete-records
+	// Example:
+	//     await backend.batch
+	//         for newDictionaryCards
+	//             dueCards.add .
+	batch: void() do
+		let prevPocketbaseOrBatch = pocketbaseOrBatch
+		let currentBatch = pocketbaseOrBatch = pocketbase.createBatch()
+		try 
+			do()
+		finally
+			pocketbaseOrBatch = prevPocketbaseOrBatch
+		if currentBatch.requests.length then await currentBatch.send()
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "filter" and "length" to access the local items.
@@ -219,23 +246,30 @@ DatabaseTable<T>
 	importance:5
 	async void add: T item // An item with a id member variable of type string that is not set yet
 		dynamic dynamicItem = item
-		dynamic newRecord = await backend.pb.collection(this.name).create(item)
-		dynamicItem.id = newRecord.id
-		dynamicItem.created = newRecord.created
-		dynamicItem.updated = newRecord.updated
+		if backend.pocketbaseOrBatch == backend.pocketbase
+			dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(item)
+			dynamicItem.id = newRecord.id
+			dynamicItem.created = newRecord.created
+			dynamicItem.updated = newRecord.updated
+		else
+			if not dynamicItem.id then dynamicItem.id = backend.newId
+			backend.pocketbaseOrBatch.collection(this.name).create(item)
 		items.ensure item
 
 	// If the item has a valid id member variable, update the item, otherwise add it to the database table
 	importance:3
-	async js T save: T item
-		if(!item.id) {
-			let newRecord = await backend.pb.collection(this.name).create(item);
-			item.id = newRecord.id
-			item.created = newRecord.created
-			item.updated = newRecord.updated
-		} else {
-			await backend.pb.collection(this.name).update(item.id, item)
-		}
+	async T save: T item
+		dynamic dynamicItem = item
+		if dynamicItem.id
+			await backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, dynamicItem)
+		else if backend.pocketbaseOrBatch == backend.pocketbase
+			let newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem)
+			dynamicItem.id = newRecord.id
+			dynamicItem.created = newRecord.created
+			dynamicItem.updated = newRecord.updated
+		else
+			dynamicItem.id = backend.newId
+			backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem)
 	
 	// ------------------------------------------------------- Remove -------------------------------------------------------
 
@@ -250,7 +284,7 @@ DatabaseTable<T>
 	importance:5
 	async void remove: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		await backend.pb.collection(this.name).delete(dynamicItem.id)
+		await backend.pocketbaseOrBatch.collection(this.name).delete(dynamicItem.id)
 		items.remove item
 		
 	// ------------------------------------------------------- Fetch -------------------------------------------------------
@@ -273,7 +307,7 @@ DatabaseTable<T>
 	//                 div item.name
 	importance:5 
 	async T[] fetchAll: string sort = null
-		items = cast await backend.pb.collection(this.name).getFullList({sort})
+		items = cast await backend.pocketbase.collection(this.name).getFullList({sort})
 		return items
 		
 	// Fetch a subset of items from the database table and store them locally in the member variable "items"
@@ -302,7 +336,7 @@ DatabaseTable<T>
 		             int perPage = 1000
 					 bool skipTotal = true
 		try
-			let result = await backend.pb.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
+			let result = await backend.pocketbase.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
 			items = cast result.items
 			totalItemsOfLastFetch = result.totalItems
 		catch
@@ -318,7 +352,7 @@ DatabaseTable<T>
 		        string fields = null	// A comma separated list of fields to fetch, e.g. "name,active,created"
 		        string expand = null
 		try {
-			return await backend.pb.collection(this.name).getFirstListItem(filter, {fields:fields, sort:sort, expand:expand, skipTotal:true})
+			return await backend.pocketbase.collection(this.name).getFirstListItem(filter, {fields:fields, sort:sort, expand:expand, skipTotal:true})
 		} catch(e) {
 			console.log(e)
 			return null
@@ -327,7 +361,7 @@ DatabaseTable<T>
 	// Fetch and return a single item from the database by id
 	importance:5 async inline js
 	T fetchById: string id // The id of the item to fetch (e.g "nx7n98bscxomkl4")
-		backend.pb.collection(this.name).getOne(id)
+		backend.pocketbase.collection(this.name).getOne(id)
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
@@ -342,9 +376,17 @@ DatabaseTable<T>
 	async void update: T item
 		               dynamic update
 		dynamic dynamicItem = item
+		// Keys with a PocketBase modifier ("count+", "count-", "+tags") don't hold the final value, so don't copy them locally
 		forDynamic update
-			dynamicItem[key] = .
-		await backend.pb.collection(this.name).update(dynamicItem.id, update)
+			if not (key.startsWith("+") or key.endsWith("+") or key.endsWith("-")) then dynamicItem[key] = .
+		dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, update)
+		// Copy the resolved values of modifier keys from the response (a batched update has no response, the local value stays stale until the next fetch)
+		if newRecord
+			forDynamic update
+				string field
+				if key.startsWith("+") then field = key[1..]
+				else if key.endsWith("+") or key.endsWith("-") then field = key[..key.length-1]
+				if field then dynamicItem[field] = newRecord[field]
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
@@ -356,7 +398,7 @@ DatabaseTable<T>
 	importance:3
 	async void update: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		backend.pb.collection(this.name).update(dynamicItem.id, item)
+		backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, item)
 		
 	// Update a single field of an item with a valid id member variable in the database table and the local items
 	// Example:
@@ -373,7 +415,7 @@ DatabaseTable<T>
 		if(!item.id) {
 			await this.add(item)
 		} else {
-			await backend.pb.collection(this.name).@update(item.id, {[key]:value})
+			await backend.pocketbaseOrBatch.collection(this.name).@update(item.id, {[key]:value})
 		}
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
@@ -385,7 +427,7 @@ DatabaseTable<T>
 		                     int perPage = 10000
 					         bool skipTotal = true
 							 void() onChange = null
-		backend.pb.collection(this.name).subscribe("*", e => {
+		backend.pocketbase.collection(this.name).subscribe("*", e => {
 			console.log("subscribe", e.action, e.record);
 			if(e.action == "create") {
 				this.items.push(e.record);
@@ -400,7 +442,7 @@ DatabaseTable<T>
 			onChange?.();
 			backend.onDataChange?.invoke();
 		}, {@filter:filter, @fields:fields, @expand:expand})
-		let result = await backend.pb.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
+		let result = await backend.pocketbase.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
 		this.items = result.items
 		if(this.items.length > 0) {
 			onChange?.();
@@ -413,7 +455,7 @@ DatabaseTable<T>
 		                      string expand = null
 							  void() onChange = null
 		                      void() onDelete = null
-		backend.pb.collection(this.name).subscribe(id, e => {
+		backend.pocketbase.collection(this.name).subscribe(id, e => {
 			console.log("subscribeById", e.action, e.record);
 			if(e.action == "delete") {
 				onDelete?.();
@@ -424,12 +466,12 @@ DatabaseTable<T>
 			}
 			backend.onDataChange?.invoke();
 		}, {@fields:fields, @expand:expand})
-		var model = await backend.pb.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
+		var model = await backend.pocketbase.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
 		return model;
 
 	importance:3
 	inline js async void unsubscribe: string topic = "*"
-		backend.pb.collection(this.name).unsubscribe(topic)
+		backend.pocketbase.collection(this.name).unsubscribe(topic)
 		
 	// ------------------------------------------------------- Files -------------------------------------------------------
 		
@@ -457,7 +499,7 @@ DatabaseTable<T>
 			for(let i=0; i<files.length; i++) {
 				let file = files[i]
 				try {
-					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
+					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
 					model.container[model.key] = result[model.key];
 					if(i < files.length-1) backend.onDataChange?.invoke();
 				} catch(e) {
@@ -493,7 +535,7 @@ DatabaseTable<T>
 					let url = urls[i]
 					let response = await fetch(url);
 					let imageBlob = await response.blob();
-					let result = await backend.pb.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]});
+					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]});
 					model.container[model.key] = result[model.key];
 					// if(i < urls.length-1) html.refresh();
 				} catch(e) {
@@ -514,7 +556,7 @@ DatabaseTable<T>
 		let listOfFiles = model.container[model.key];
 		listOfFiles.remove(file);
 		backend.onDataChange?.invoke();
-		await backend.pb.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
+		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
 
 	static js Promise<string> getDataUrlForFile: File file
 		return new Promise((resolve, reject) => {
