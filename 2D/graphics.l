@@ -58,7 +58,7 @@ immutable Color
 			math.floor(blue  * iprogress + target.blue  * progress)
 		}
 		
-enum TextOverflow: Visible, Wrap, Scale, WrapAndScale, CutOff, Ellipsis
+enum TextOverflow: Visible, Scale, CutOff, Ellipsis, Wrap, WrapAndScale, WrapAndCutOff, WrapAndEllipsis
 
 // A texture that can be loaded into video memory
 immutable Texture
@@ -789,30 +789,32 @@ transient skipInit global unit graphics
 	//             if winner == me
 	//                 drawText "You've won!", size:100, color:Black, font:OpenSans, visibleFor:me
 	// Image: drawText.png
-	global importance:4 drawText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
-		             Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		             implicit Vector2 size = {}           // The font size of the text
-		             Color color = null                   // The color of the text
-		             HorizontalAlignment align = Center   // The horizontal alignment of the text
-		             VerticalAlignment valign = Middle    // The vertical alignment of the text
-		             FontStyle style = Normal             // Whether the text should be bold or normal style
-		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		             Color outlineColor = null            // The color of the outline around the text
-		             outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		             implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
-		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
-		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		             implicit Player[] visibleFor = null  // Only this player or list of players will see the text
-		             implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
-		             clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
-		             showClickableArea = false            // Highlight the clickable area for debugging
-		             hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
-		             overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
-		             maxWidth = 0.0                       // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
-		             lineHeight = 0.0                     // The height of each line when overflow is set to 'Wrap'
-		             void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
+	importance:4
+	global drawText: implicit string text	// A string or anything that can be converted into a string (for example, an interger or a float)
+		             Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		             implicit Vector2 size = {}	// The font size of the text
+		             Color color = null	// The color of the text
+		             HorizontalAlignment align = Center	// The horizontal alignment of the text
+		             VerticalAlignment valign = Middle	// The vertical alignment of the text
+		             FontStyle style = Normal	// Whether the text should be bold or normal style
+		             Font font = null	// To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
+		             Color outlineColor = null	// The color of the outline around the text
+		             outlineWidth = 0.0	// The width of the outline around the text in pixels
+		             implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
+		             alpha = 1.0	// The opacity of the text (0: fully transparent, 1: fully visible)
+		             angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		             implicit Player[] visibleFor = null	// Only this player or list of players will see the text
+		             implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the text
+		             clickableMargin = Vector2(16,16)	// The margin around the text within which it is clickable
+		             showClickableArea = false	// Highlight the clickable area for debugging
+		             hotkey = KeyCode.None	// This keyboard shortcut will execute the onClick handler
+		             overflow = TextOverflow.Scale	// Should text that exceeds the max width be hidden or wrapped?
+		             maxWidth = 0.0	// The maximum width of line when overflow is set 'Scale', 'CutOff', 'Wrap', 'WrapAndScale', 'WrapAndCutOff' or 'WrapAndEllipsis'
+		             maxHeight = 0.0	// The maximum height of the text when overflow is set 'WrapAndScale', 'WrapAndCutOff' or 'WrapAndEllipsis'
+		             lineHeight = 0.0	// The height of each line when overflow is set to 'Wrap'
+		             void(Touch touch) onClick = null	// Execute this code when the user touches or clicks the text or presses the hotkey
 		             SourceCodeLocation location
-		if not text then return
+		if not text then return 0
 		bool isVisible = isVisibleFor(visibleFor)
 		Font effectiveFont = font || currentFont
 		int fontSize = math.floor(size.y || size.x || currentFontSize)
@@ -822,7 +824,7 @@ transient skipInit global unit graphics
 		float effectiveLineHeight
 		float offsetX, offsetY
 		
-		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
+		if ((overflow == Wrap or overflow == WrapAndScale or overflow == WrapAndCutOff or overflow == WrapAndEllipsis or overflow == Ellipsis) and maxWidth)
 		or text.includes("\n")
 			if maxWidth == 0	then maxWidth = float.maxValue
 			if overflow == Ellipsis	then maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
@@ -842,66 +844,96 @@ transient skipInit global unit graphics
 					word += c
 			if word then words.add word
 				
-			// Layout lines
-			let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
-			lines = []
-			float totalWidth
-			string line
-			for w in words
-				float wordWidth = getTextWidth(w, {x:fontSize}, effectiveFont, style)
-				if totalWidth + wordWidth > maxWidth
-					if overflow == Ellipsis then line += "..."
-						
-					if line
-						// Finish the line and start a new line with the current word
-						lines.add line
-						line = w + " "
-						totalWidth = wordWidth + spaceWidth
+			float factor = -alignmentFactor[align]
+			while true
+				// Layout lines
+				let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
+				lines = []
+				float totalWidth
+				string line
+				for w in words
+					float wordWidth = getTextWidth(w, {x:fontSize}, effectiveFont, style)
+					if totalWidth + wordWidth > maxWidth
+						if overflow == Ellipsis then line += "..."
+
+						if line
+							// Finish the line and start a new line with the current word
+							lines.add line
+							line = w + " "
+							totalWidth = wordWidth + spaceWidth
+						else
+							// A single word is already too wide for the line
+							// Create a line with this word start a new empty line
+							lines.add w
+							line = ""
+							totalWidth = 0
+
+						if overflow == Ellipsis or overflow == CutOff
+							line = ""
+							break
 					else
-						// A single word is already too wide for the line
-						// Create a line with this word start a new empty line
-						lines.add w
+						line += w + " "
+						totalWidth += wordWidth + spaceWidth
+
+					if w[w.length-1] == "\n"
+						lines.add line
 						line = ""
 						totalWidth = 0
 
-					if overflow == Ellipsis or overflow == CutOff
-						line = ""
-						break
-				else
-					line += w + " "
-					totalWidth += wordWidth + spaceWidth
-					
-				if w[w.length-1] == "\n"
-					lines.add line
-					line = ""
-					totalWidth = 0
-					
-			if line then lines.add line
-			
-			// Calculate offset for each line and find widest line
-			string widestLine
-			sizeX = -1
-			lineOffsets = []
-			float factor = -alignmentFactor[align]
-			for lines
-				float lineSizeX = getTextWidth(. size:fontSize)
-				lineOffsets.add lineSizeX * factor
-				if lineSizeX > sizeX
-					sizeX = lineSizeX
-					widestLine = .
-					
-			if overflow == WrapAndScale and sizeX > maxWidth
-				// Scale
-				fontSize = math.floor(fontSize * maxWidth/sizeX)
-				sizeX = getTextWidth(widestLine, {x:fontSize}, effectiveFont, style)
-				while sizeX > maxWidth
-					sizeX = getTextWidth(widestLine, {x:--fontSize}, effectiveFont, style)
-					
+				if line then lines.add line
+
+				// Calculate offset for each line and find widest line
+				string widestLine
+				sizeX = -1
+				lineOffsets = []
 				for lines
-					lineOffsets[i] = getTextWidth(. size:fontSize)*factor
-				
-			effectiveLineHeight = lineHeight || fontSize*1.3
-			sizeY = lines.length * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
+					float lineSizeX = getTextWidth(. size:fontSize)
+					lineOffsets.add lineSizeX * factor
+					if lineSizeX > sizeX
+						sizeX = lineSizeX
+						widestLine = .
+
+				if overflow == WrapAndScale and sizeX > maxWidth
+					// Scale
+					fontSize = math.floor(fontSize * maxWidth/sizeX)
+					sizeX = getTextWidth(widestLine, {x:fontSize}, effectiveFont, style)
+					while sizeX > maxWidth
+						sizeX = getTextWidth(widestLine, {x:--fontSize}, effectiveFont, style)
+
+					for lines
+						lineOffsets[i] = getTextWidth(. size:fontSize)*factor
+
+				effectiveLineHeight = lineHeight || fontSize*1.3
+				sizeY = lines.length * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
+
+				if overflow == WrapAndScale and maxHeight and sizeY > maxHeight and fontSize > 1
+					// Scale down to fit maxHeight (at least 1 less than before), then relayout the text and check again
+					int scaledFontSize = math.ceil(fontSize * maxHeight/sizeY)
+					if scaledFontSize >= fontSize then scaledFontSize = fontSize-1
+					fontSize = scaledFontSize < 1 ? 1 : scaledFontSize
+				else
+					break
+
+			if (overflow == WrapAndCutOff or overflow == WrapAndEllipsis) and maxHeight and sizeY > maxHeight
+				// Hide the lines that don't fit
+				int visibleLineCount = math.floor((maxHeight - fontSize * effectiveFont.actualHeightFactor) / effectiveLineHeight) + 1
+				if visibleLineCount < 1 then visibleLineCount = 1
+				if visibleLineCount < lines.length
+					lines.setLength visibleLineCount
+					lineOffsets.setLength visibleLineCount
+					if overflow == WrapAndEllipsis
+						// Display "..." at the end of the last visible line, dropping trailing words so it stays inside maxWidth
+						string lastLine = lines[visibleLineCount-1].trimEnd
+						float lastLineSizeX = getTextWidth(lastLine + "...", {x:fontSize}, effectiveFont, style)
+						while lastLineSizeX > maxWidth
+							let lastSpace = lastLine.lastIndexOf(" ")
+							if lastSpace < 0 then break
+							lastLine = lastLine.substring(0 to lastSpace).trimEnd
+							lastLineSizeX = getTextWidth(lastLine + "...", {x:fontSize}, effectiveFont, style)
+						lines[visibleLineCount-1] = lastLine + "..."
+						lineOffsets[visibleLineCount-1] = lastLineSizeX * factor
+						if lastLineSizeX > sizeX then sizeX = lastLineSizeX
+					sizeY = visibleLineCount * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
 							
 		else
 			if isVisible or onClick != null
@@ -954,7 +986,7 @@ transient skipInit global unit graphics
 				if hotkey
 					input.onKeyDown hotkey, by:effectiveClickableBy
 						onClick null
-						
+			
 		return sizeY
 		
 	// Draw text with segments highlighted which are surrounded by given characters.
@@ -964,29 +996,30 @@ transient skipInit global unit graphics
 	//         { "«"  to: "»"  color:White, backgroundColor:app.primaryColor, padding:{12,3}, cornerRadius:12 }
 	//         { "\"" to: "\"" color:White, backgroundColor:app.helpingColor, padding:{12,3}, cornerRadius:12 }
 	//     ]
-	global float drawTextWithHighlight: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
-		                                Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                                TextHighlight[] highlights = []      // Sepecifies which characters surround a sections and how it should be highlighted
-		                                implicit Vector2 size = {}           // The font size of the text
-		                                Color color = null                   // The color of the text
-		                                HorizontalAlignment align = Center   // The horizontal alignment of the text
-		                                VerticalAlignment valign = Middle    // The vertical alignment of the text
-		                                FontStyle style = Normal             // Whether the text should be bold or normal style
-		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		                                Color outlineColor = null            // The color of the outline around the text
-		                                outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		                                implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
-		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
-		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		                                implicit Player[] visibleFor = null  // Only this player or list of players will see the text
-		                                implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
-		                                clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
-		                                showClickableArea = false            // Highlight the clickable area for debugging
-		                                hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
-		                                overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
-		                                float maxWidth = float.maxValue        // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
-		                                float lineHeight = 0.0                // The height of each line when overflow is set to 'Wrap'
-		                                void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
+	global float drawTextWithHighlight: implicit string text	// A string or anything that can be converted into a string (for example, an interger or a float)
+		                                Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                                TextHighlight[] highlights = []	// Sepecifies which characters surround a sections and how it should be highlighted
+		                                implicit Vector2 size = {}	// The font size of the text
+		                                Color color = null	// The color of the text
+		                                HorizontalAlignment align = Center	// The horizontal alignment of the text
+		                                VerticalAlignment valign = Middle	// The vertical alignment of the text
+		                                FontStyle style = Normal	// Whether the text should be bold or normal style
+		                                Font font = null	// To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
+		                                Color outlineColor = null	// The color of the outline around the text
+		                                outlineWidth = 0.0	// The width of the outline around the text in pixels
+		                                implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
+		                                alpha = 1.0	// The opacity of the text (0: fully transparent, 1: fully visible)
+		                                angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the text
+		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the text
+		                                clickableMargin = Vector2(16,16)	// The margin around the text within which it is clickable
+		                                showClickableArea = false	// Highlight the clickable area for debugging
+		                                hotkey = KeyCode.None	// This keyboard shortcut will execute the onClick handler
+		                                overflow = TextOverflow.Scale	// Should text that exceeds the max width be hidden or wrapped?
+		                                float maxWidth = float.maxValue	// The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
+		                                float maxHeight = 0.0	// The maximum height of the text when overflow is set 'WrapAndScale', 'WrapAndCutOff' or 'WrapAndEllipsis'
+		                                float lineHeight = 0.0	// The height of each line when overflow is set to 'Wrap'
+		                                void(Touch touch) onClick = null	// Execute this code when the user touches or clicks the text or presses the hotkey
 		                                SourceCodeLocation location
 		bool isVisible = isVisibleFor(visibleFor)
 		Font effectiveFont = font || currentFont
@@ -1013,87 +1046,132 @@ transient skipInit global unit graphics
 		if word then words.add word
 			
 		// Layout lines
-		let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
-		TextSegment segment = {}
-		TextSegment[] segments = [ segment ]
+		TextSegment segment
+		TextSegment[] segments
 		TextHighlight highlight
-		
-		for w in words
-			string suffix, prefix
-			float suffixWidth, prefixWidth
-			TextHighlight startHighlight, endHighlight
-			int startIndex
-			float expectedSegmentWidth = segment.size.x
+		while true
+			effectiveLineHeight = lineHeight or fontSize*1.3
+			let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
+			segment = {}
+			segments = [ segment ]
+			highlight = null
 			
-			if not highlight
-				// Find highlight start character
-				for highlights
-					startIndex = w.indexOf .from
-					if startIndex != -1
-						startHighlight = .
-						if startIndex > 0
-							prefix = w[..startIndex]
-							prefixWidth = getTextWidth(prefix size:fontSize, effectiveFont, style)
-							expectedSegmentWidth += prefixWidth
-						w = w[startIndex+1..]
-						expectedSegmentWidth += .margin.x + .padding.x*2
-						break
+			for w in words
+				string suffix, prefix
+				float suffixWidth, prefixWidth
+				TextHighlight startHighlight, endHighlight
+				int startIndex
+				float expectedSegmentWidth = segment.size.x
+			
+				if not highlight
+					// Find highlight start character
+					for highlights
+						startIndex = w.indexOf .from
+						if startIndex != -1
+							startHighlight = .
+							if startIndex > 0
+								prefix = w[..startIndex]
+								prefixWidth = getTextWidth(prefix size:fontSize, effectiveFont, style)
+								expectedSegmentWidth += prefixWidth
+							w = w[startIndex+1..]
+							expectedSegmentWidth += .margin.x + .padding.x*2
+							break
 						
-			if highlight or startHighlight
-				// Find highlight end character
-				for highlights
-					int endIndex = w.indexOf .to, startIndex+1
-					if endIndex != -1
-						endHighlight = .
-						if endIndex < w.length-1
-							suffix = w[endIndex+1..]
-							suffixWidth = getTextWidth(suffix size:fontSize, effectiveFont, style)
-							expectedSegmentWidth += suffixWidth
-						w = w[..endIndex]
-						break
+				if highlight or startHighlight
+					// Find highlight end character
+					for highlights
+						int endIndex = w.indexOf .to, startIndex+1
+						if endIndex != -1
+							endHighlight = .
+							if endIndex < w.length-1
+								suffix = w[endIndex+1..]
+								suffixWidth = getTextWidth(suffix size:fontSize, effectiveFont, style)
+								expectedSegmentWidth += suffixWidth
+							w = w[..endIndex]
+							break
 		
-			// Measure current word
-			float wordWidth = getTextWidth(w, size:fontSize, effectiveFont, style)
+				// Measure current word
+				float wordWidth = getTextWidth(w, size:fontSize, effectiveFont, style)
 			
-			// Is there something in the current line?
-			if segment.text or segment.position.x > 0
-				expectedSegmentWidth += spaceWidth
-				if highlight then expectedSegmentWidth += highlight.margin.x
+				// Is there something in the current line?
+				if segment.text or segment.position.x > 0
+					expectedSegmentWidth += spaceWidth
+					if highlight then expectedSegmentWidth += highlight.margin.x
 				
-				// Check if the current word still fits in the line
-				if segment.position.x + expectedSegmentWidth + wordWidth > maxWidth
-					if highlight == null or highlight.wrap
-						segments.add segment = {position:{0, segment.position.y}, highlight, size:highlight ? highlight.padding*2 : {}}
-					segment.position.x = 0
-					segment.position.y += effectiveLineHeight
+					// Check if the current word still fits in the line
+					if segment.position.x + expectedSegmentWidth + wordWidth > maxWidth
+						if highlight == null or highlight.wrap
+							segments.add segment = {position:{0, segment.position.y}, highlight, size:highlight ? highlight.padding*2 : {}}
+						segment.position.x = 0
+						segment.position.y += effectiveLineHeight
 			
-			// Space between words
-			if segment.text or segment.position.x > 0
-				segment.text += " "
-				segment.size.x += spaceWidth
+				// Space between words
+				if segment.text or segment.position.x > 0
+					segment.text += " "
+					segment.size.x += spaceWidth
 		
-			// Start highlight
-			if startHighlight
-				if prefix
-					segment.text += prefix
-					segment.size.x += prefixWidth
-				highlight = startHighlight
-				segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y}, highlight, size:highlight.padding*2 }
+				// Start highlight
+				if startHighlight
+					if prefix
+						segment.text += prefix
+						segment.size.x += prefixWidth
+					highlight = startHighlight
+					segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y}, highlight, size:highlight.padding*2 }
 				
-			// Add word
-			segment.text += w
-			segment.size.x += wordWidth
+				// Add word
+				segment.text += w
+				segment.size.x += wordWidth
 				
-			// End highlight
-			if endHighlight
-				segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y} }
-				highlight = null
-				if suffix
-					segment.text += suffix
-					segment.size.x += suffixWidth
+				// End highlight
+				if endHighlight
+					segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y} }
+					highlight = null
+					if suffix
+						segment.text += suffix
+						segment.size.x += suffixWidth
 					
-			if segment.text[segment.text.length-1] == "\n"
-				segments.add segment = {position:{0, segment.position.y + effectiveLineHeight}, highlight, size:highlight ? highlight.padding*2 : {}}
+				if segment.text[segment.text.length-1] == "\n"
+					segments.add segment = {position:{0, segment.position.y + effectiveLineHeight}, highlight, size:highlight ? highlight.padding*2 : {}}
+
+			sizeY = segments ? segments.last.position.y + fontSize : 0
+
+			if overflow == WrapAndScale and maxHeight and sizeY > maxHeight and fontSize > 1
+				// Scale down to fit maxHeight (at least 1 less than before), then relayout the text and check again
+				int scaledFontSize = math.ceil(fontSize * maxHeight/sizeY)
+				if scaledFontSize >= fontSize then scaledFontSize = fontSize-1
+				fontSize = scaledFontSize < 1 ? 1 : scaledFontSize
+			else
+				break
+
+		if (overflow == WrapAndCutOff or overflow == WrapAndEllipsis) and maxHeight and sizeY > maxHeight
+			// Hide the lines that don't fit
+			int visibleLineCount = math.floor((maxHeight - fontSize) / effectiveLineHeight) + 1
+			if visibleLineCount < 1 then visibleLineCount = 1
+			float maxVisibleY = (visibleLineCount-1) * effectiveLineHeight + 0.5
+			while segments and segments.last.position.y > maxVisibleY
+				segments.removeAt segments.length-1
+			if overflow == WrapAndEllipsis
+				// Display "..." at the end, dropping trailing words so the dots stay inside maxWidth
+				float dotsWidth = getTextWidth("...", {x:fontSize}, effectiveFont, style)
+				while segments
+					let lastSegment = segments.last
+					bool isLineStart = segments.length == 1 or segments[segments.length-2].position.y != lastSegment.position.y
+					int lastSpace = lastSegment.text.trimEnd.lastIndexOf(" ")
+					if lastSegment.position.x + lastSegment.size.x + dotsWidth <= maxWidth
+					or (lastSpace < 0 and isLineStart)
+						// Append the dots (a single word at the start of the line that is too wide keeps them anyway)
+						string withDots = lastSegment.text.trimEnd + "..."
+						lastSegment.size.x += getTextWidth(withDots, {x:fontSize}, effectiveFont, style) - getTextWidth(lastSegment.text, {x:fontSize}, effectiveFont, style)
+						lastSegment.text = withDots
+						break
+					if lastSpace >= 0
+						// Drop the trailing word
+						string shortened = lastSegment.text.substring(0 to lastSpace)
+						lastSegment.size.x -= getTextWidth(lastSegment.text, {x:fontSize}, effectiveFont, style) - getTextWidth(shortened, {x:fontSize}, effectiveFont, style)
+						lastSegment.text = shortened
+					else
+						// The segment ran out of words, continue with the previous segment on the same line
+						segments.removeAt segments.length-1
 
 		// Align
 		float factor = alignmentFactor[align]
