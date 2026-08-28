@@ -206,21 +206,25 @@ transient skipInit static class backend
 		
 	// Batch several add, update, remove statements into a transaction in a single request
 	// Useful to save requests as well as ensuring several statements always all succeed or all fail
+	// Important: You need to await all add/update/remove calls (just like outside a batch) to ensure their errors are caught
+	// The closure's awaits suspend while the batch is collecting, so code that runs in between (e.g. the rest of the
+	// caller's tick) must not start unrelated saves: they would be silently queued into this batch
 	// The Batch Web API has to be enabled in the PocketBase UI under Settings > Application 
 	// By default, max requests in a batch is 50, max processing time is 3 seconds, can be changed in the UI
 	// Docs: https://pocketbase.io/docs/api-records/#batch-createupdateupsertdelete-records
 	// Example:
 	//     await backend.batch
-	//         for newDictionaryCards
-	//             dueCards.add .
-	batch: void() do
-		let prevPocketbaseOrBatch = pocketbaseOrBatch
-		let currentBatch = pocketbaseOrBatch = pocketbase.createBatch()
-		try 
-			do()
-		finally
-			pocketbaseOrBatch = prevPocketbaseOrBatch
-		if currentBatch.requests.length then await currentBatch.send()
+	//         await dueCards.add card
+	//         await app.users.update app.user, {"trainingCount+": 1}
+	js async void batch: void() do
+		let prevPocketbaseOrBatch = backend.pocketbaseOrBatch;
+		let currentBatch = backend.pocketbaseOrBatch = backend.pocketbase.createBatch();
+		try {
+			await do();
+		} finally {
+			backend.pocketbaseOrBatch = prevPocketbaseOrBatch;
+		}
+		if(currentBatch.requests.length) await currentBatch.send();
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "filter" and "length" to access the local items.
