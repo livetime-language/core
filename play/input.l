@@ -2484,14 +2484,14 @@ class Input
 	global const Ctrl	= {type:Keyboard,	name:"ctrl",	alternativeName:"control"}
 	global const Meta	= {type:Keyboard,	name:"meta",	alternativeName:"super"}
 	global const Alt	= {type:Keyboard,	name:"alt",	alternativeName:"option"}
-	const CtrlLeft	= {type:Keyboard,	code:"CtrlLeft",	alternativeName:"controlleft",	parent:Ctrl}
+	const CtrlLeft	= {type:Keyboard,	code:"ControlLeft",	alternativeName:"ctrlleft",	parent:Ctrl}
 	const MetaLeft	= {type:Keyboard,	code:"MetaLeft",	alternativeName:"metaleft",	parent:Meta}
 	const AltLeft	= {type:Keyboard,	code:"AltLeft",	alternativeName:"altleft",	parent:Alt}
 	global const Space	= {type:Keyboard,	code:"Space",	character:" ", name:"space"}
 	const AltRight	= {type:Keyboard,	code:"AltRight",	alternativeName:"altright",	parent:Alt}
 	const MetaRight	= {type:Keyboard,	code:"MetaRight",	alternativeName:"metaright",	parent:Meta}
 	const ContextMenu	= {type:Keyboard,	code:"ContextMenu"}
-	const CtrlRight	= {type:Keyboard,	code:"CtrlRight",	alternativeName:"controlright",	parent:Ctrl}
+	const CtrlRight	= {type:Keyboard,	code:"ControlRight",	alternativeName:"ctrlright",	parent:Ctrl}
 
 	// Navigation
 	const Insert	= {type:Keyboard,	code:"Insert"}
