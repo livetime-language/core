@@ -376,7 +376,7 @@ DatabaseTable<T>
 
 	// ------------------------------------------------------- Update -------------------------------------------------------
 
-	// Update an item with a valid id member variable in the database table and the local items
+	// Update an item with a valid id member variable in the server database table and the local items
 	// Example:
 	//     app
 	//         DatabaseTable<Item> items = {name:"items"}
@@ -398,6 +398,11 @@ DatabaseTable<T>
 				if key.startsWith("+") then field = key[1..]
 				else if key.endsWith("+") or key.endsWith("-") then field = key[..key.length-1]
 				if field then dynamicItem[field] = newRecord[field]
+					
+	// Update an item in the server database table (don't update the local items)
+	async void updateOnServer: string id
+		                       dynamic update	
+		await backend.pocketbaseOrBatch.collection(this.name).update(id, update)
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
