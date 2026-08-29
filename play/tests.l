@@ -55,13 +55,14 @@ tests
 	// Simulate pressing a key or typing a character by a given player
 	// Example:
 	//     pressKey Space by bluePlayer
+	//     pressKey Input.KeyA, character:"a"
 	importance:5
-	void pressKey: KeyCode key	// The key to press
+	void pressKey: Input key	// The key to press: Space, Enter, ArrowLeft, ... (a key without a global constant needs the class name, like Input.KeyA)
 	               string character = ""	// The character to type
 		           nocolon Player by = input.players[0]	// The player
 		let internalUser = input.internalUsers[by.id]
-		input.keyDown internalUser, player:by, key, character
-		input.keyUp internalUser, player:by, key
+		input.keyDown internalUser, player:by, keyIndex:key.index, character
+		input.keyUp internalUser, player:by, keyIndex:key.index
 		tick
 
 	// Simulate moving the left stick of a game controller by a given player
