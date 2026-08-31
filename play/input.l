@@ -745,9 +745,6 @@ skipInit global unit input
 		inputs.writeInt32 keyIndex
 		if inputType == KeyDown then inputs.writeString key.length == 1 and not ctrl and not meta ? key : ""
 
-		if inputType == KeyDown then print "------ DOWN ------ ", code, key, keyIndex
-		else if inputType == KeyUp then print "------ UP ------ ", code, key, keyIndex
-			
 		// Pass event to embedded system
 		run??.runningApp?.input.handleKeyEvent(inputType, code, key, ctrl, alt, meta)
 		
