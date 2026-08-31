@@ -1,8 +1,9 @@
 # Keep up to date information
 Keep all information above, memory and code comments up to date. Use the "memory/" folder to read and write important information about project. All memories must be in the repo in this folder (do not store memories elsewhere).
 
-# Fast and efficient
-Write fast, efficient, elegant code. Keep it simple. Avoid too many small functions.
+# Fast, efficient, simple code
+Write fast, efficient, elegant code. Keep code simple and easy to reason about.
+Avoid small, trivial functions. Avoid too many small functions.
 
 # LiveTime Programming Language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
