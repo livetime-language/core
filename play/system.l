@@ -18,7 +18,8 @@ global transient skipInit unit system
 	public bool isHeadless = false
 	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
-
+	public bool enableStatusLogging = true
+	
 	// Rewind: while any player holds rewindInput, all clients step the world state BACKWARD by
 	// rewindFrames frames per tick instead of simulating forward, and on release the game
 	// continues forward from the rewound moment (see core.checkRewindMechanic). rewindInput
