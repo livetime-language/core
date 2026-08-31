@@ -740,6 +740,10 @@ internal transient skipInit unit core
 		if(core.logs.length > 2097152) {
 			core.logs = core.logs.substring(core.logs.indexOf("\n", core.logs.length - 1048576) + 1);
 		}
+		
+		let localStorageLog = (localStorage.getItem("log") || "") + str + "\n"
+		if(localStorageLog.length > 32000) localStorageLog = localStorageLog.substring(localStorageLog.length-32000);
+		localStorage.setItem("log", localStorageLog);
 			
 	internal string logs
 	internal bool hasErrors
