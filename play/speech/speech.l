@@ -22,10 +22,16 @@ transient speech
 	SpeechSynthesisVoice voiceOverride, currentVoice
 	float rate = 1
 	string lastWord = ""
-	// say bookkeeping: sayCounter invalidates the watchdog retry of an older say (a newer say
-	// or stop bumps it), currentUtterance keeps the utterance alive against GC (see say)
+	// say bookkeeping: sayCounter invalidates the watchdog retry of an older say and the resolve
+	// of a superseded say (a newer say or stop bumps it), currentUtterance keeps the utterance
+	// alive against GC (see say)
 	int sayCounter
 	dynamic currentUtterance
+	// Headless tests: the simulated utterance that is "speaking", as {text, resolve} - the test ends
+	// it with speech.headlessSay.resolve(). A newer say overwrites it and stop clears it, dropping the
+	// old resolve, so a superseded awaiter never resumes - the same rule the browser path enforces
+	// with the sayCounter check in finish
+	dynamic headlessSay
 	
 	VoicePreference[string] preferences = {
 		Spanish: {"es", "es-ES", [
@@ -103,8 +109,18 @@ transient speech
 					return pref
 		return pref
 		
+	// The promise resolves when the utterance ended - but only if this say is still the latest one:
+	// a say that was superseded by a newer say or stop never resumes its awaiter (see finish),
+	// so the code after "await speech.say" (training.nextStep, reader.updateProgress) cannot run stale
 	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
-		if(system.isHeadless) return;
+		if(system.isHeadless) {
+			// Simulated utterance for headless tests: it stays "speaking" until the test ends it with
+			// speech.headlessSay.resolve(). Overwriting the previous entry drops its resolve, so a
+			// superseded awaiter never resumes (see headlessSay)
+			speech.lastWord = value;
+			console.log(`speech #${++speech.sayCounter} say headless "${value.length > 60 ? value.substring(0, 60) + "…" : value}"`);
+			return new Promise(resolve => speech.headlessSay = {text: value, resolve: resolve});
+		}
 		// Editor replays and tests (isPremiere false) and uncertain (predicted) frames don't
 		// speak - the certain replay of an uncertain frame calls say again. Logged so a skipped
 		// say is visible in the console.
@@ -136,8 +152,12 @@ transient speech
 					if(done) return;
 					done = true;
 					if(speech.currentUtterance === utterance) speech.currentUtterance = null;
-					console.log(`speech #${id} ${reason}`);
-					resolve();
+					// Resume the awaiter only if no newer say or stop superseded this one: the code after
+					// "await speech.say" (training.nextStep, reader.updateProgress) must not run for a
+					// sentence that was cancelled by a newer one - the resolve via the cancel's onerror
+					// used to fire a stale training.nextStep (double advance in the bubbles)
+					if(speech.sayCounter === id) { console.log(`speech #${id} ${reason}`); resolve(); }
+					else console.log(`speech #${id} ${reason} - superseded, awaiter not resumed`);
 				};
 				utterance.onstart = () => { started = true; console.log(`speech #${id} started, voice: ${utterance.voice ? utterance.voice.name : "default"}, rate: ${utterance.rate}`); };
 				utterance.onend = () => finish("ended");
@@ -167,9 +187,11 @@ transient speech
 		}
 
 	js inline void stop
-		speech.sayCounter++; // Invalidates the watchdog retry of a say that has not started yet
+		speech.sayCounter++; // Invalidates the watchdog retry of a say that has not started yet and supersedes the awaiter of any pending say
 		console.log("speech: stop");
-		if(window.webkit) {
+		if(system.isHeadless) {
+			speech.headlessSay = null; // Drops the pending resolve: the stopped say's awaiter never resumes
+		} else if(window.webkit) {
 			window.webkit.messageHandlers.speak.postMessage({action: "pause"});
 		} else {
 			window.speechSynthesis?.cancel()
