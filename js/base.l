@@ -684,7 +684,7 @@ immutable class string
 	importance:5 inline js
 	string replaceAll: string occurrencesOf // Search for all occurrences of this string
 		               nocolon string with  // Replace them with this string
-		(this.replaceAll ? this.replaceAll(occurrencesOf, with) : this.split(occurrencesOf).join(with))
+		this.replaceAll(occurrencesOf, with)
 		
 	inline js string padStart: int targetLength
 		                       string padString = " "

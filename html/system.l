@@ -47,6 +47,8 @@ global transient skipInit unit system
 
 	private inline js void initMedia
 		this.electron = window?.process?.versions?.electron
+		
+		// Detect the operating system
 		const ua = navigator.userAgent;
 		switch (true) {
 			case /Android/i.test(ua):             this.os = "Android"; break;
@@ -56,13 +58,20 @@ global transient skipInit unit system
 			case /Linux/i.test(ua):               this.os = "Linux";   break;
 			default:                              this.os = "Unknown";
 		}
+		
+		// Polyfill
+		if(!String.prototype.replaceAll) {
+			String.prototype.replaceAll = function(occurrencesOf, with) {
+				return this.split(occurrencesOf).join(with);
+			}
+		}
+		
 		IndexedDB.stores = []
 		audio.init();
 		media.init();
 		PlainDate.init();
 		html.init();
 		app.init?.()
-		
 
 	inline js float startTime => _startTime
 			

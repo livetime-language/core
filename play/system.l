@@ -106,6 +106,12 @@ global transient skipInit unit system
 				}})
 			}
 		}
+		// Polyfill
+		if(!String.prototype.replaceAll) {
+			String.prototype.replaceAll = function(occurrencesOf, with) {
+				return this.split(occurrencesOf).join(with);
+			}
+		}
 		Object.prototype.toString = function() { return JSON.stringify(this) }
 		statistics.init();
 		IndexedDB?.init();
