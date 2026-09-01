@@ -137,7 +137,6 @@ transient speech
 		} else {
 			return new Promise((resolve, reject) => {
 				const synth = window.speechSynthesis;
-				synth.cancel();
 				const utterance = new SpeechSynthesisUtterance(value);
 				let voice = speech.getVoice(language);
 				utterance.lang = voice.langAndCountry;
@@ -146,11 +145,22 @@ transient speech
 				// Keep a reference: Chrome garbage-collects the utterance mid-speech otherwise,
 				// which cuts the audio and swallows the onend/onerror events
 				speech.currentUtterance = utterance;
-				let started = false, done = false, ignoreNextError = false;
+				// Chrome's utterance events are unreliable: onstart/onend can be lost or arrive seconds
+				// late while the audio itself plays fine (observed: a sentence audibly speaking with
+				// speaking:true but no onstart - the old watchdog cancelled it mid-audio). So events are
+				// only a fast path here; the poller below reads synth.speaking as the ground truth.
+				let sawStart = false;      // onstart arrived
+				let heardSpeaking = false; // synth.speaking observed after our speak - audio is running (or, rarely, Chrome is wedged)
+				let done = false, ignoreNextError = false, retried = false, respoke = false;
+				let silentMs = 0, wedgedMs = 0, notSpeakingPolls = 0, poll = 0;
+				// A wedged engine keeps speaking:true without ever producing audio or events. Give a real
+				// utterance generous time (voice loading, slow rate) before declaring it wedged.
+				const wedgeLimitMs = 10000 + value.length * 150 / utterance.rate;
 				const state = () => `speaking:${synth.speaking} pending:${synth.pending} paused:${synth.paused}`;
 				const finish = (reason) => {
 					if(done) return;
 					done = true;
+					clearInterval(poll);
 					if(speech.currentUtterance === utterance) speech.currentUtterance = null;
 					// Resume the awaiter only if no newer say or stop superseded this one: the code after
 					// "await speech.say" (training.nextStep, reader.updateProgress) must not run for a
@@ -159,30 +169,56 @@ transient speech
 					if(speech.sayCounter === id) { console.log(`speech #${id} ${reason}`); resolve(); }
 					else console.log(`speech #${id} ${reason} - superseded, awaiter not resumed`);
 				};
-				utterance.onstart = () => { started = true; console.log(`speech #${id} started, voice: ${utterance.voice ? utterance.voice.name : "default"}, rate: ${utterance.rate}`); };
+				utterance.onstart = () => { sawStart = true; console.log(`speech #${id} started, voice: ${utterance.voice ? utterance.voice.name : "default"}, rate: ${utterance.rate}`); };
 				utterance.onend = () => finish("ended");
 				utterance.onerror = e => {
-					if(ignoreNextError && !started) { ignoreNextError = false; console.log(`speech #${id} ${e.error} from own retry cancel ignored`); return; }
-					finish(`error: ${e.error}, started: ${started}, ${state()}`);
+					// The retry cancel's error can arrive seconds late (Chrome delays utterance events),
+					// so the guard keys on the error type, not on the current state. A real interruption
+					// swallowed here is caught by the poller: not speaking → "ended without onend"
+					if(ignoreNextError && (e.error === "canceled" || e.error === "interrupted")) { ignoreNextError = false; console.log(`speech #${id} ${e.error} from own retry cancel ignored`); return; }
+					finish(`error: ${e.error}, started: ${sawStart || heardSpeaking}, ${state()}`);
+				};
+				const speak = () => {
+					if(done || speech.sayCounter !== id) return;
+					synth.speak(utterance);
+					// Chrome sometimes leaves the queue stuck in paused state after cancel() - resume is a no-op otherwise
+					synth.resume();
 				};
 				console.log(`speech #${id} say "${value.length > 60 ? value.substring(0, 60) + "…" : value}", lang: ${utterance.lang}, certain: ${input.isCertain}, frame: ${core.frame}, ${state()}`);
-				synth.speak(utterance);
-				// Chrome sometimes leaves the queue stuck in paused state after cancel() - resume is a no-op otherwise
-				synth.resume();
-				// Watchdog: Chrome occasionally drops an utterance queued right after cancel() -
-				// it never starts and never errors. Retry once if this is still the latest say.
-				setTimeout(() => {
-					if(started || done || speech.sayCounter !== id) return;
-					console.warn(`speech #${id} did not start within 1s, retrying (${state()})`);
-					ignoreNextError = true;
+				if(synth.speaking || synth.pending) {
+					// Only cancel a busy queue, and give Chrome a beat before the speak: cancel() with
+					// speak() in the same task is the race that drops utterances or loses their events
 					synth.cancel();
+					setTimeout(speak, 100);
+				} else speak();
+				poll = setInterval(() => {
+					if(done || speech.sayCounter !== id) { clearInterval(poll); return; }
+					// Un-sticks Chrome's paused-after-cancel queue and its silent auto-pause on long
+					// utterances; a no-op while speech runs normally
 					synth.resume();
-					synth.speak(utterance);
-					setTimeout(() => {
-						if(started || done || speech.sayCounter !== id) return;
-						finish(`gave up: still not started 1s after retry (${state()})`);
-					}, 1000);
-				}, 1000);
+					if(sawStart || heardSpeaking) {
+						if(synth.speaking) notSpeakingPolls = 0;
+						else if(++notSpeakingPolls >= 2) { finish(`ended without onend (${state()})`); return; }
+						// Never cancel running audio - only a heard-but-eventless utterance that exceeds
+						// any plausible duration is a wedged engine, not a slow sentence
+						if(!sawStart && (wedgedMs += 250) >= wedgeLimitMs) { synth.cancel(); finish(`gave up: speaking without events for ${Math.round(wedgeLimitMs)}ms - engine wedged (${state()})`); }
+					} else if(synth.speaking) {
+						heardSpeaking = true;
+						console.log(`speech #${id} speaking without onstart, voice: ${utterance.voice ? utterance.voice.name : "default"} (${state()})`);
+					} else {
+						silentMs += 250;
+						if(silentMs >= 2500) finish(`gave up: never started (${state()})`);
+						else if(retried && !respoke) { respoke = true; speak(); }
+						else if(silentMs >= 1000 && !retried) {
+							// Dropped utterance: not speaking, no events. Clear the queue now, respeak on
+							// the next poll tick - again never cancel and speak in the same task
+							retried = true;
+							ignoreNextError = true;
+							console.warn(`speech #${id} did not start within ${silentMs}ms, retrying (${state()})`);
+							synth.cancel();
+						}
+					}
+				}, 250);
 			});
 		}
 
