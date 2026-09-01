@@ -20,7 +20,7 @@ class User
 //             user = null
 //             refresh
 transient skipInit static class backend
-	string url, libUrl
+	string url
 	dynamic pocketbase, pocketbaseOrBatch
 	DatabaseTable<User> users
 	void() onDataChange = null
@@ -34,29 +34,35 @@ transient skipInit static class backend
 			this.users = new DatabaseTable("users", [])
 			return
 		}
-		if(url)	backend.url = backend.libUrl = url + "/"
+		
+		// Load PocketBase ES module dynamically using import or fetch
+		// if(url)	backend.url = backend.libUrl = url + "/"
+		// else	backend.url = window.location && window.location.host && !system.isDebug ? location.origin : "http://localhost:8090"
+		// const pbUrl = (backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js"
+		// let PocketBase
+		// try {
+		// 	PocketBase = (await import(pbUrl)).default
+		// } catch(importError) {
+		// 	// The page's CSP can block dynamic import (e.g. the bookmarklet running on youtube.com, where script-src
+		// 	// only allows Google domains but 'unsafe-eval' is allowed): fetch the module, turn its export statement
+		// 	// into a global assignment and eval it as a classic script
+		// 	let code = await (await fetch(pbUrl)).text()
+		// 	const start = code.lastIndexOf("export{"), end = code.indexOf("}", start)
+		// 	if(start == -1) throw importError
+		// 	const names = code.slice(start+7, end).split(",").map(n => {
+		// 		const p = n.trim().split(" as ")
+		// 		return (p[1] || p[0])+":"+p[0]
+		// 	})
+		// 	code = code.slice(0, start)+";window.__pocketbaseModule={"+names.join(",")+"}"+code.slice(end+1)
+		// 	// Pages that enforce require-trusted-types-for 'script' (youtube.com) only eval TrustedScript
+		// 	if(window.trustedTypes) try { code = trustedTypes.createPolicy("pocketbase-loader", {createScript: s => s}).createScript(code) } catch(e) {}
+		// 	(0,eval)(code)
+		// 	PocketBase = window.__pocketbaseModule.default
+		// }
+		
+		// Use the PocketBase client embedded in the main.js bundle
+		if(url)	backend.url = url + "/"
 		else	backend.url = window.location && window.location.host && !system.isDebug ? location.origin : "http://localhost:8090"
-		const pbUrl = (backend.libUrl || _basePath || location.origin+"/")+"lib/pocketbase.es.js"
-		let PocketBase
-		try {
-			PocketBase = (await import(pbUrl)).default
-		} catch(importError) {
-			// The page's CSP can block dynamic import (e.g. the bookmarklet running on youtube.com, where script-src
-			// only allows Google domains but 'unsafe-eval' is allowed): fetch the module, turn its export statement
-			// into a global assignment and eval it as a classic script
-			let code = await (await fetch(pbUrl)).text()
-			const start = code.lastIndexOf("export{"), end = code.indexOf("}", start)
-			if(start == -1) throw importError
-			const names = code.slice(start+7, end).split(",").map(n => {
-				const p = n.trim().split(" as ")
-				return (p[1] || p[0])+":"+p[0]
-			})
-			code = code.slice(0, start)+";window.__pocketbaseModule={"+names.join(",")+"}"+code.slice(end+1)
-			// Pages that enforce require-trusted-types-for 'script' (youtube.com) only eval TrustedScript
-			if(window.trustedTypes) try { code = trustedTypes.createPolicy("pocketbase-loader", {createScript: s => s}).createScript(code) } catch(e) {}
-			(0,eval)(code)
-			PocketBase = window.__pocketbaseModule.default
-		}
 		if(backend.pocketbase) backend.pocketbase.realtime.unsubscribe();
 		backend.pocketbase = backend.pocketbaseOrBatch = new PocketBase(backend.url);
 		this.users = new DatabaseTable("users", []);
