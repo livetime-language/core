@@ -108,9 +108,7 @@ global transient skipInit unit system
 		}
 		// Polyfill
 		if(!String.prototype.replaceAll) {
-			String.prototype.replaceAll = function(occurrencesOf, with) {
-				return this.split(occurrencesOf).join(with);
-			}
+			String.prototype.replaceAll = function(a, b) { return this.split(a).join(b); }
 		}
 		Object.prototype.toString = function() { return JSON.stringify(this) }
 		statistics.init();
