@@ -55,7 +55,8 @@ js void navigateTo: string url
 Write unit tests for all features in a static test class in the "tests" folder.
 Mark test functions with "test" keyword. Use any character in their name.
 Test classes have access to all members of all classes (including private).
-Use "livetime test" to run tests.
+Use 'livetime test' to run tests.
+Use 'livetime test --output-passing-tests --filter="Menu:"' to check the output of specific tests.
 
 static test class tests
 	pos: int x, int y
