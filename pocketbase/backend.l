@@ -79,7 +79,11 @@ transient skipInit static class backend
 		const collection = name => ({
 			getList: async () => ({items:[...seeded(name)], totalItems:seeded(name).length}),
 			getFullList: async () => [...seeded(name)],
-			getFirstListItem: async () => seeded(name)[0] || null,
+			getFirstListItem: async () => {
+				// Like the server: an empty result is a 404 (DatabaseTable.fetchOne turns it into null)
+				if(!seeded(name)[0]) throw Object.assign(new Error("The requested resource wasn't found."), {status:404})
+				return seeded(name)[0]
+			},
 			getOne: none,
 			create: async item => ({...item, id:item?.id || backend.newId(), created:"", updated:""}),
 			update: none,
@@ -327,7 +331,8 @@ DatabaseTable<T>
 		items = cast await backend.pocketbase.collection(this.name).getFullList({sort})
 		return items
 		
-	// Fetch a subset of items from the database table and store them locally in the member variable "items"
+	// Fetch a subset of items from the database table and store them locally in the member variable "items".
+	// Throws when the request fails (the local items stay as they were), so a caller can tell an empty result from a failure
 	// Example:
 	//     class Item
 	//         string id
@@ -352,17 +357,14 @@ DatabaseTable<T>
 		             int page = 1
 		             int perPage = 1000
 					 bool skipTotal = true
-		try
-			let result = await backend.pocketbase.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
-			items = cast result.items
-			totalItemsOfLastFetch = result.totalItems
-		catch
-			print error.message
-			items = []
-			totalItemsOfLastFetch = 0
+		let result = await backend.pocketbase.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
+		items = cast result.items
+		totalItemsOfLastFetch = result.totalItems
 		return items
 		
-	// Fetch and return a single item from the database table
+	// Fetch and return a single item from the database table. Returns null only when no item matches the filter
+	// (PocketBase answers 404) and throws on every other error (network, not signed in, ...): a caller that creates
+	// the item when it gets null must catch the error, or a dropped connection creates a duplicate
 	importance:5 async js
 	T fetchOne: string filter	// The PocketBase filter string, e.g. "id = 'nx7n98bscxomkl4' && active = true"
 		        string sort = null	// The PocketBase sort string, e.g. "-created"
@@ -371,8 +373,8 @@ DatabaseTable<T>
 		try {
 			return await backend.pocketbase.collection(this.name).getFirstListItem(filter, {fields:fields, sort:sort, expand:expand, skipTotal:true})
 		} catch(e) {
-			console.log(e)
-			return null
+			if(e.status == 404) return null
+			throw e
 		}
 		
 	// Fetch and return a single item from the database by id
