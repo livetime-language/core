@@ -215,6 +215,14 @@ string TimeString
 	inline js bool toBool => this
 	inline string toString() this
 
+	// Parses the string into a Date. PocketBase writes "2000-12-31 17:30:00.000Z" with a space instead of the "T" of
+	// ISO 8601, which older Safari and iOS WebKit refused (Invalid Date), so the space is replaced before parsing
+	inline js Date toDate() new Date(this.replace(" ", "T"))
+	
+	// Parses the string to milliseconds since 1 January 1970. PocketBase writes "2000-12-31 17:30:00.000Z" with a space instead of the "T" of
+	// ISO 8601, which older Safari and iOS WebKit refused (Invalid Date), so the space is replaced before parsing
+	inline js float toTime() new Date(this.replace(" ", "T")).time
+
 	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
 	inline js int localeCompare: TimeString value // The string to compare to
 		this.localeCompare(value)
