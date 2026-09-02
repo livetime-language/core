@@ -65,9 +65,11 @@ immutable Texture
 	string file
 	Vector2 size
 	transient dynamic imageOrCanvas, context
+	transient bool loadFailed	// The image could not be loaded (drawImageFromUrl draws its fallbackUrl instead)
 	
 	Texture
-		if system.engineStarted and file
+		// Headless mode has no Image: the texture counts as available (ensureIsAvailable), so display items are still recorded
+		if system.engineStarted and file and not system.isHeadless
 			open
 			
 	internal js bool ensureIsAvailable()
@@ -79,7 +81,7 @@ immutable Texture
 		return this.imageOrCanvas != null
 
 	js bool isAvailable
-		return this.imageOrCanvas != null
+		return this.imageOrCanvas != null || system.isHeadless
 	
 	internal js void open
 		if(!window._htmlImageCache) _htmlImageCache = {}
@@ -95,6 +97,7 @@ immutable Texture
 				}
 				image.onerror = e => {
 					console.log("Error loading image: ", this.file, e)
+					this.loadFailed = true
 					reject(e)
 				}
 				image.src = system.getAbsoluteUrl(this.file)
@@ -1712,6 +1715,7 @@ transient skipInit global unit graphics
 		
 	global js void drawImageFromUrl: string url                          // The texture to draw
 		                             Vector2 position = {}               // The target position to draw to
+		                             string fallbackUrl = ""             // Drawn instead when the image at url can't be loaded (a blocked favicon service, a dead link)
 		                             Vector2 size = {}                   // The size of the target area to draw to
 		                             Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                             Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
@@ -1719,6 +1723,7 @@ transient skipInit global unit graphics
 		                             implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                             Color color = White                 // Tint the texture with this color
+		                             SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			if(!graphics.imagesFromUrl) graphics.imagesFromUrl = new Map()
 			let texture = graphics.imagesFromUrl.get(url)
@@ -1726,9 +1731,18 @@ transient skipInit global unit graphics
 				texture = new Texture(url)
 				graphics.imagesFromUrl.set(url, texture)
 			}
+			if(texture.loadFailed && fallbackUrl) {
+				texture = graphics.imagesFromUrl.get(fallbackUrl)
+				if(!texture) {
+					texture = new Texture(fallbackUrl)
+					graphics.imagesFromUrl.set(fallbackUrl, texture)
+				}
+			}
 			if(texture?.isAvailable()) {
-				let sizeX = size.x || texture.size.x
-				let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
+				// In headless mode the image is never loaded, so the texture has no size: the given size (or nothing) is recorded
+				let textureSize = texture.size || size
+				let sizeX = size.x || textureSize.x
+				let sizeY = size.y || (textureSize.x ? (sizeX/textureSize.x)*textureSize.y : 0)
 				graphics.add(new DisplayImage(
 					graphics.totalMatrix,
 					position.x - sizeX/2,
@@ -1738,7 +1752,7 @@ transient skipInit global unit graphics
 					`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 					location, position.location, size.location,
 					texture.imageOrCanvas,
-					0, 0, texture.size.x, texture.size.y,
+					0, 0, textureSize.x, textureSize.y,
 					color
 				))
 			}
