@@ -31,6 +31,7 @@ transient skipInit static class backend
 			// In headless mode (node.js), we can't load the PocketBase library, so we use a stub
 			// that resolves all requests with empty results
 			backend.pocketbase = backend.pocketbaseOrBatch = backend.createHeadlessStub()
+			backend.installAuthRetry()
 			this.users = new DatabaseTable("users", [])
 			return
 		}
@@ -65,32 +66,38 @@ transient skipInit static class backend
 		else	backend.url = window.location && window.location.host && !system.isDebug ? location.origin : "http://localhost:8090"
 		if(backend.pocketbase) backend.pocketbase.realtime.unsubscribe();
 		backend.pocketbase = backend.pocketbaseOrBatch = new PocketBase(backend.url);
+		backend.installAuthRetry();
 		this.users = new DatabaseTable("users", []);
 
 	// Creates a stub of the PocketBase client for headless mode (node.js). Fetches serve the records a test
 	// seeded via backend.headlessData["cards"] = [...] (unfiltered and unsorted - filter, sort and fields are
-	// ignored), an unseeded collection returns empty results. create assigns a real id like the server would.
-	// update resolves with null like a batched update, so DatabaseTable.update keeps the locally computed
-	// values instead of overwriting modifier fields ("count+") with values from a fake response
+	// ignored), an unseeded collection returns empty results, getOne finds the seeded record by id. create assigns
+	// a real id like the server would. update resolves with null like a batched update, so DatabaseTable.update keeps
+	// the locally computed values instead of overwriting modifier fields ("count+") with values from a fake response.
+	// Every call goes through backend.pocketbase.send like in the real client (the stub's send resolves null), so the
+	// auth retry of sendWithAuthRetry applies and a test can reject requests by path: backend.rawSend = async (path, options) => ...
 	private js dynamic createHeadlessStub
 		backend.headlessData = {}
 		const none = async () => null
 		const seeded = name => backend.headlessData[name] || []
+		const records = name => "/api/collections/"+name+"/records"
+		// then instead of await: the compiler would make this function async, and connect expects the stub itself
+		const request = (method, path, result) => backend.pocketbase.send(path, {method}).then(() => result)
 		const collection = name => ({
-			getList: async () => ({items:[...seeded(name)], totalItems:seeded(name).length}),
-			getFullList: async () => [...seeded(name)],
-			getFirstListItem: async () => {
-				// Like the server: an empty result is a 404 (DatabaseTable.fetchOne turns it into null)
-				if(!seeded(name)[0]) throw Object.assign(new Error("The requested resource wasn't found."), {status:404})
-				return seeded(name)[0]
-			},
-			getOne: none,
-			create: async item => ({...item, id:item?.id || backend.newId(), created:"", updated:""}),
-			update: none,
-			delete: none,
+			getList: () => request("GET", records(name), {items:[...seeded(name)], totalItems:seeded(name).length}),
+			getFullList: () => request("GET", records(name), [...seeded(name)]),
+			// Like the server: an empty result is a 404 (DatabaseTable.fetchOne turns it into null)
+			getFirstListItem: () => request("GET", records(name), seeded(name)[0]).then(item => {
+				if(!item) throw Object.assign(new Error("The requested resource wasn't found."), {status:404})
+				return item
+			}),
+			getOne: id => request("GET", records(name)+"/"+id, seeded(name).find(r => r.id == id) || null),
+			create: item => request("POST", records(name), {...item, id:item?.id || backend.newId(), created:"", updated:""}),
+			update: id => request("PATCH", records(name)+"/"+id, null),
+			delete: id => request("DELETE", records(name)+"/"+id, null),
 			subscribe: none,
 			unsubscribe: none,
-			authRefresh: none,
+			authRefresh: () => request("POST", "/api/collections/"+name+"/auth-refresh", null),
 			authWithPassword: none,
 			requestVerification: none,
 			confirmVerification: none,
@@ -101,7 +108,8 @@ transient skipInit static class backend
 			send: none,
 			autoCancellation: () => {},
 			realtime: {unsubscribe: () => {}},
-			authStore: {token:"", clear: () => {}, onChange: () => {}},
+			// A signed in session, so the auth retry applies; clear signs out like the real store (a rejected refresh in a test)
+			authStore: {token:"headless", record:null, isValid:true, clear() { this.token = ""; this.record = null }, onChange: () => {}},
 		}
 
 	// Call a http GET endpoint on the PocketBase backend (e.g. "/api/custom-endpoint")
@@ -129,11 +137,88 @@ transient skipInit static class backend
 		try
 			if system.getLocalStorageString("pocketbase_auth")
 				let result = await pocketbase.collection("users").authRefresh();
+				isSessionRefreshed = true
 				return result.record
 		catch as error
 			print error
-			if not system.isDebug then logout
+			// Only a rejected token (expired, user deleted) signs the user out. A transient failure (offline, server restarting)
+			// keeps the session: the record stored with the token lets the app start, the next refreshAuth gets the new token
+			if isRejected(error) or not isSessionValid
+				if not system.isDebug then logout
+			else
+				return storedUser
 		return null
+
+	// ------------------------------------------------------- Session -------------------------------------------------------
+
+	// Auth tokens expire after the duration set in the auth collection (7 days by default) and the SDK never refreshes them.
+	// Every request goes through sendWithAuthRetry: a request the server rejects (400-404: an invalid or expired token makes
+	// PocketBase treat the request as a guest, so an update fails the "id = @request.auth.id" rule with 404, a create with 400)
+	// refreshes the token once and is sent again. When the refresh is rejected too (the token expired while the tab was hidden
+	// for longer than a token lives, the user was deleted), the session is gone: the store is cleared and isSessionExpired is set,
+	// so the app can send the user to the login page. The app also calls refreshAuth periodically to keep a long-lived tab signed in
+	bool isSessionExpired	// The token was rejected and can't be refreshed: the store is cleared, the app must sign the user in again
+	bool isSessionRefreshed	// The server has issued a fresh token in this session (false when the app started with the stored record after a network error)
+	dynamic rawSend	// The send of the PocketBase client without the auth retry (tests replace it to reject requests by path)
+	private dynamic authRefreshPromise	// The refresh in flight, so many rejected requests share one refresh
+
+	// A token that hasn't expired by its exp claim (a function, not an inline expression: "not isSessionValid" would inline without parentheses)
+	js bool isSessionValid
+		return !!backend.pocketbase.authStore.token && backend.pocketbase.authStore.isValid
+	private inline js dynamic storedUser => (backend.pocketbase.authStore.isValid ? backend.pocketbase.authStore.record : null)
+
+	// A request the server rejected (4xx): a retry with the same token and body fails the same way, unlike a network error or a 5xx
+	js bool isRejected: dynamic error
+		return error?.status >= 400 && error?.status < 500
+
+	private js void installAuthRetry
+		const pb = backend.pocketbase
+		backend.rawSend = pb.send.bind(pb)
+		backend.isSessionExpired = false
+		backend.authRefreshPromise = null
+		pb.send = (path, options) => backend.sendWithAuthRetry(path, options)
+
+	// The SDK builds the request from options on every send (copies them first), so a rejected request can simply be sent again:
+	// the retry picks up the refreshed token from the store. A refresh that failed with a network error is thrown instead of
+	// the rejection, so the caller retries it like any network error; a rejected refresh throws the original error (the session is gone)
+	private js async dynamic sendWithAuthRetry: string path, dynamic options
+		try {
+			return await backend.rawSend(path, options)
+		} catch(error) {
+			const status = error?.status
+			if(!(status >= 400 && status <= 404) || path.includes("/auth-refresh") || !backend.pocketbase.authStore.token) throw error
+			const refreshError = await backend.tryRefreshAuth()
+			if(refreshError) throw (refreshError.status ? error : refreshError)
+			console.log("Request "+path+" was rejected ("+status+"), sending it again with the refreshed token")
+			return await backend.rawSend(path, options)
+		}
+
+	// Gets a new token for the signed in user (the SDK stores it). false when it failed: a rejected refresh means the session is
+	// gone (the store is cleared, isSessionExpired is set), a network error leaves the session as it is
+	async js bool refreshAuth
+		return !(await backend.tryRefreshAuth())
+
+	// The error of a failed refresh, null after a success. Concurrent callers share the refresh in flight
+	private js async dynamic tryRefreshAuth
+		if(!backend.authRefreshPromise) backend.authRefreshPromise = (async () => {
+			try {
+				await backend.pocketbase.collection("users").authRefresh()
+				backend.isSessionRefreshed = true
+				return null
+			} catch(error) {
+				if(backend.isRejected(error) || !backend.pocketbase.authStore.isValid) {
+					console.error("Session expired, the token was rejected:", error?.message)
+					backend.logout()
+					backend.isSessionExpired = true
+				} else {
+					console.error("Refreshing the session failed:", error?.message)
+				}
+				return error || new Error("Refreshing the session failed")
+			} finally {
+				backend.authRefreshPromise = null
+			}
+		})()
+		return await backend.authRefreshPromise
 
 	// Log in a user with an email and password and return the authenticated user
 	// Example:
