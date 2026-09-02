@@ -1565,6 +1565,7 @@ transient skipInit global unit graphics
 		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
 		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
+		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
