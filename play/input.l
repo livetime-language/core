@@ -524,7 +524,10 @@ skipInit global unit input
 	// A list of all players
 	Player[] players
 
-	bool active = true	// false switches the input off: the touch areas (onTouchDown), justPressed, isPressed, justReleased and getScrollDelta report nothing (see withoutHandlingInput)
+	// false switches every input event off (see withoutHandlingInput): the touch areas (onTouchDown/Over/Move/Up), the wheel (onScroll,
+	// getScrollDelta), the keys (onKeyDown/Up, onType, onTextInput/Composition, isKeyDown, justPressed/isPressed/justReleased,
+	// allJustPressed/Released) and onNavigate report nothing. Only the state stays readable: getPointer (the position, drawn hover effects keep working) and the focus
+	bool active = true
 
 	// Shared rewind (see core.checkRewindMechanic). Both fields are deliberately part of the
 	// serialized, checksummed state: the snapshot pin restores them and rollback replays
@@ -1924,6 +1927,7 @@ skipInit global unit input
 	global importance:0 onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
@@ -2226,12 +2230,14 @@ skipInit global unit input
 		document.body.style.cursor = input.cursor
 
 	onTextComposition: void(string characters) do
+		if not active then return
 		for internalUsers as user if user
 			for user.textCompositions as characters
 				do characters
 				
 	onTextInput: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		         void(string textInput) do           // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by)
 			for internalUsers[.id].textInputs
 				do .
@@ -2243,6 +2249,7 @@ skipInit global unit input
 		              KeyCode key                             // The key that will trigger the event
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys
 				if . == key
@@ -2267,6 +2274,7 @@ skipInit global unit input
 		              bool shift = false
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys
 				if . == key
@@ -2285,6 +2293,7 @@ skipInit global unit input
 	// Do something when a player presses a key
 	global importance:0 onKeyDown: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys as key
 				bool actualCmdOrCtrl, actualShift, actualAlt
@@ -2300,6 +2309,7 @@ skipInit global unit input
 	// Do something when a player releases a key
 	global importance:0 onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
 		            void(KeyCode key, Player pressedBy) do  // Do this for each key that is released
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].upKeys as key
 				do key, player
@@ -2307,6 +2317,7 @@ skipInit global unit input
 	// Do something when a player types a character
 	global importance:0 onType: implicit nocolon Player[] by = null         // Only consider characters typed by this player or list of players
 		           void(string character, Player pressedBy) do // Do this for each character that is typed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].pressedKeys as character
 				do character, player
@@ -2314,6 +2325,7 @@ skipInit global unit input
 	// Returns true if a given key is currently held down
 	isKeyDown: KeyCode key          // The key to check
 		       Player by = null // Only consider keys pressed by this player 
+		if not active then return false
 		if (core.mode == Connected || core.simulateConnection) && by
 			let player = playersById[by.id]
 				return player.keysCurrentlyDown.includes key
@@ -2326,6 +2338,7 @@ skipInit global unit input
 	// Do something when the user navigates back or forward in the browser	
 	global onNavigate: implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		               void(string url) do                 // Do this for each event
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].navigations as url
 				do url
@@ -2611,12 +2624,12 @@ input
 
 	global Input[] allJustPressed: int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user then return []
+		if not active or not user then return []
 		return user.allJustPressed
 
 	global Input[] allJustReleased: int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user then return []
+		if not active or not user then return []
 		return user.allJustReleased
 
 	global string getFocus: int player = 0
@@ -2653,6 +2666,8 @@ input
 	// Runs do with the input switched off, e.g. to draw a page that fades out without its buttons and keys reacting
 	global withoutHandlingInput: void() do
 		bool prevInputActive = active
-		active = false
-		do()
-		active = prevInputActive
+		try
+			active = false
+			do()
+		finally
+			active = prevInputActive
