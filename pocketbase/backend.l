@@ -183,7 +183,7 @@ transient skipInit static class backend
 	// The SDK builds the request from options on every send (copies them first), so a rejected request can simply be sent again:
 	// the retry picks up the refreshed token from the store. A refresh that failed with a network error is thrown instead of
 	// the rejection, so the caller retries it like any network error; a rejected refresh throws the original error (the session is gone)
-	private js async dynamic sendWithAuthRetry: string path, dynamic options
+	private js alwaysInclude async dynamic sendWithAuthRetry: string path, dynamic options
 		try {
 			return await backend.rawSend(path, options)
 		} catch(error) {
