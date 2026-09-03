@@ -11,7 +11,11 @@ transient unit Physics
 	js void step
 		if(window.world) window.world.Step(1/core.ticksPerSecond, 8, 3)
 			
+	// Counts every destroyed body, also in headless mode (tests check that abandoned bodies are freed)
+	int destroyCount
+
 	js void destroy: PhysicsBody body
+		Physics.destroyCount++
 		if(system.isHeadless) return
 		world.DestroyBody(body.body)
 
