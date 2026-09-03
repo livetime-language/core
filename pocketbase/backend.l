@@ -173,7 +173,7 @@ transient skipInit static class backend
 	js bool isRejected: dynamic error
 		return error?.status >= 400 && error?.status < 500
 
-	private js void installAuthRetry
+	private js alwaysInclude void installAuthRetry
 		const pb = backend.pocketbase
 		backend.rawSend = pb.send.bind(pb)
 		backend.isSessionExpired = false
