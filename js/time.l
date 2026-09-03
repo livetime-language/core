@@ -206,11 +206,14 @@ struct float
 class string
 	implicit inline TimeString toTimeString() this
 
-// A string representation of a date and time in the ISO 8601 format, for example "2000-12-31 17:30:00.000Z".
+// A string representation of a date and time in the form PocketBase stores it, for example "2000-12-31 17:30:00.000Z":
+// ISO 8601 with a space instead of the "T". PocketBase keeps date fields as text in this form and binds a filter literal as a
+// plain string, so a value the client writes or puts into a filter must have the same form - the ISO "T" (0x54) sorts after
+// the space (0x20), so "due <= '2000-12-31T17:30:00.000Z'" matched every due of the day, whatever its hour.
 // It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
 string TimeString
-	static TimeString now => Date.fromTime(Time.now).utcString
-	static TimeString fromTime(float value) => Date.fromTime(value).utcString
+	static TimeString now => fromTime(Time.now)
+	static inline js TimeString fromTime(float value) new Date(value).toISOString().replace("T", " ")
 	
 	inline js bool toBool => this
 	inline string toString() this

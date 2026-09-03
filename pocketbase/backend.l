@@ -25,6 +25,7 @@ transient skipInit static class backend
 	DatabaseTable<User> users
 	void() onDataChange = null
 	dynamic headlessData	// Records the headless stub serves per collection, seeded by tests: backend.headlessData["cards"] = [...]
+	dynamic headlessFilters	// The filter of the last fetch per collection in headless mode (the stub ignores it, a test checks it): backend.headlessFilters["cards"]
 		
 	async js void connect: string url = ""
 		if(system.isHeadless) {
@@ -78,16 +79,17 @@ transient skipInit static class backend
 	// auth retry of sendWithAuthRetry applies and a test can reject requests by path: backend.rawSend = async (path, options) => ...
 	private js dynamic createHeadlessStub
 		backend.headlessData = {}
+		backend.headlessFilters = {}
 		const none = async () => null
 		const seeded = name => backend.headlessData[name] || []
 		const records = name => "/api/collections/"+name+"/records"
 		// then instead of await: the compiler would make this function async, and connect expects the stub itself
 		const request = (method, path, result) => backend.pocketbase.send(path, {method}).then(() => result)
 		const collection = name => ({
-			getList: () => request("GET", records(name), {items:[...seeded(name)], totalItems:seeded(name).length}),
-			getFullList: () => request("GET", records(name), [...seeded(name)]),
+			getList: (page, perPage, options) => (backend.headlessFilters[name] = options && options.filter, request("GET", records(name), {items:[...seeded(name)], totalItems:seeded(name).length})),
+			getFullList: options => (backend.headlessFilters[name] = options && options.filter, request("GET", records(name), [...seeded(name)])),
 			// Like the server: an empty result is a 404 (DatabaseTable.fetchOne turns it into null)
-			getFirstListItem: () => request("GET", records(name), seeded(name)[0]).then(item => {
+			getFirstListItem: filter => (backend.headlessFilters[name] = filter, request("GET", records(name), seeded(name)[0])).then(item => {
 				if(!item) throw Object.assign(new Error("The requested resource wasn't found."), {status:404})
 				return item
 			}),
