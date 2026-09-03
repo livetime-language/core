@@ -524,7 +524,7 @@ skipInit global unit input
 	// A list of all players
 	Player[] players
 
-	bool active = true
+	bool active = true	// false switches the input off: the touch areas (onTouchDown), justPressed, isPressed, justReleased and getScrollDelta report nothing (see withoutHandlingInput)
 
 	// Shared rewind (see core.checkRewindMechanic). Both fields are deliberately part of the
 	// serialized, checksummed state: the snapshot pin restores them and rollback replays
@@ -2549,7 +2549,7 @@ input
 	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
 	global bool justPressed: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user or user.handledAtFrame[item.index] == core.frame then return false
+		if not active or not user or user.handledAtFrame[item.index] == core.frame then return false
 
 		// Pressed this frame?
 		int pressedAtFrame = user.pressedAtFrame[item.index]
@@ -2563,7 +2563,7 @@ input
 
 	global bool justPressed: string keyCombination, int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user then return false
+		if not active or not user then return false
 		let keyStrings = keyCombination.toLowerCase.split("+")
 		bool anyPressedThisFrame = false
 		for keyStrings
@@ -2585,13 +2585,13 @@ input
 	// (false if it was pressed and released in the same frame, then only justPressed and justReleased are true)
 	global bool isPressed: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user then return false
+		if not active or not user then return false
 		return user.pressedAtFrame[item.index] > user.releasedAtFrame[item.index]
 
 	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled this frame)
 	global bool justReleased: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user then return false
+		if not active or not user then return false
 		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] != core.frame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
@@ -2606,7 +2606,7 @@ input
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
 		let user = internalUserBySyncedIndex[player]
-		if not user then return {0,0}
+		if not active or not user then return {0,0}
 		return user.scrollDelta
 
 	global Input[] allJustPressed: int player = 0
@@ -2649,3 +2649,10 @@ input
 	// Returns true if the input was marked as handled this frame
 	bool isHandled: Input item, int player = 0
 		return internalUserBySyncedIndex[player]?.handledAtFrame[item.index] == core.frame
+		
+	// Runs do with the input switched off, e.g. to draw a page that fades out without its buttons and keys reacting
+	global withoutHandlingInput: void() do
+		bool prevInputActive = active
+		active = false
+		do()
+		active = prevInputActive
