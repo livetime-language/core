@@ -35,54 +35,54 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		English: {"en", "en-US", [
+			{"Google", minSpeed:0.9}
 			{"Zoe (Enhanced)", minSpeed:0.75}
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.9}
 		]}
 		Spanish: {"es", "es-ES", [
-			{"Microsoft Alonso", minSpeed:0.85}	// Edge (Window, Mac)
-			{"Microsoft Sofia", minSpeed:0.75}	// Edge (Window, Mac)
-			{"Microsoft Catalina", minSpeed:0.75}	// Edge (Window, Mac)
-			{"Microsoft Ximena", minSpeed:0.75}	// Edge (Window, Mac)
 			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
 			{"Google español de Estados Unidos", minSpeed:0.9}	// Chrome (Windows, Mac)
 			{"Paulina", minSpeed:0.75}	// Safari, Firefox (Mac)
 			{"Mónica", minSpeed:0.75}	// Safari, Firefox (Mac)
+			{"Microsoft Alonso", minSpeed:0.85}	// Edge (Window, Mac), prefer local over Microsoft online voices
+			{"Microsoft Sofia", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Microsoft Catalina", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Microsoft Ximena", minSpeed:0.75}	// Edge (Window, Mac)
 		]}
 		French: {"fr", "fr-FR", [
-			{"Microsoft Vivienne", minSpeed:0.75}	// Edge (Window, Mac)
-			{"Microsoft", minSpeed:0.75}	// Edge (Window, Mac)
 			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
 			{"Thomas", minSpeed:0.75}	// Safari, Firefox (Mac)
 			{"Amélie", minSpeed:0.75}	// Safari, Firefox (Mac)
+			{"Microsoft Vivienne", minSpeed:0.75}	// Edge (Window, Mac),prefer local over Microsoft online voices
+			{"Microsoft", minSpeed:0.75}	// Edge (Window, Mac)
 		]}	
 		Portuguese: {"pt", "pt-PT", [
-			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.9}
+			{"Microsoft", minSpeed:0.75}
 		]}
 		Russian: {"ru", "ru-RU", [
-			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.9}
+			{"Microsoft", minSpeed:0.75}
 		]}
 		German:  {"de", "de-DE", [
-			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.9}
 			{"Helena", minSpeed:0.75}
 			{"Anna", minSpeed:0.75}
+			{"Microsoft", minSpeed:0.75}
 		]}
 		Italian: {"it", "it-IT", [
-			{"Microsoft Giuseppe", minSpeed:0.9}	// Edge (Window, Mac)
-			{"Microsoft", minSpeed:0.9}	// Edge (Window, Mac)
 			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
 			{"Alice", minSpeed:0.75}	// Safari, Firefox (Mac)
+			{"Microsoft Isabella", minSpeed:0.9}	// Edge (Window, Mac), prefer local over Microsoft online voices, multilingual voice sometimes reads single words in English
+			{"Microsoft", minSpeed:0.9}	// Edge (Window, Mac)
 		]}
 		Croatian: {"hr", "hr-HR", [
-			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.9}
+			{"Microsoft", minSpeed:0.75}
 		]}
 		Swedish: {"sv", "sv-SE", [
-			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.9}
+			{"Microsoft", minSpeed:0.75}
 		]}
 	}
 	string[string] voiceForLanguage
