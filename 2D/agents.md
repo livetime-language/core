@@ -1,9 +1,9 @@
 # Keep up to date information
-Keep all information above, memory and code comments up to date. Use the "memory/" folder to read and write important information about project. All memories must be in the repo in this folder (do not store memories elsewhere).
+Keep all information above, memory and code comments up to date. Remove information that is no longer relevant (avoid "This app used to..." unless there is a very important reason). Use the "memory/" folder to read and write important information about the project. All memories must be in the repo in this folder (do not store memories elsewhere).
 
-# Fast, efficient, simple code
-Write fast, efficient, elegant code. Keep code simple and easy to reason about.
-Avoid small, trivial functions. Avoid too many small functions.
+# Fast, efficient, elegant code
+Write fast, efficient, elegant code. Keep code short, simple and easy to reason about.
+Avoid small, trivial functions. Avoid functions you only call once (unless there is a good reason).
 
 # LiveTime Programming Language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
