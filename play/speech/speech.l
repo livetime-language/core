@@ -27,14 +27,14 @@ transient speech
 	// alive against GC (see say)
 	int sayCounter
 	dynamic currentUtterance
-	// Headless tests: the simulated utterance that is "speaking", as {text, resolve} - the test ends
+	// Headless tests: the simulated utterance that is "speaking", as {text, voice, rate, resolve} - the test ends
 	// it with speech.headlessSay.resolve(). A newer say overwrites it and stop clears it, dropping the
 	// old resolve, so a superseded awaiter never resumes - the same rule the browser path enforces
 	// with the sayCounter check in finish
 	dynamic headlessSay
 	
 	VoicePreference[string] preferences = {
-English: {"en", "en-US", [
+		English: {"en", "en-US", [
 			{"Zoe (Enhanced)", minSpeed:0.75}
 			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.75}
@@ -48,7 +48,7 @@ English: {"en", "en-US", [
 			{"Paulina", minSpeed:0.75}
 			{"Mónica", minSpeed:0.75}
 		]}
-French: {"fr", "fr-FR", [
+		French: {"fr", "fr-FR", [
 			{"Microsoft Vivienne", minSpeed:0.75}	// Edge (Window, Mac)
 			{"Microsoft", minSpeed:0.75}	// Edge (Window, Mac)
 			{"Google", minSpeed:0.85}	// Chrome (Windows, Mac)
@@ -83,8 +83,10 @@ French: {"fr", "fr-FR", [
 		]}
 	}
 	string[string] voiceForLanguage
-	// The speed the user picked in the settings, 0 to use the tuned minSpeed of the voice
+	// The speed the user picked in the settings, 0 to use the tuned minSpeed of the voice (a new user has no preference)
 	float userSpeedPreference = 0
+	// The speed of a language none of whose tuned voices is installed (the browser picks a voice by lang) when the user picked none
+	const float defaultSpeed = 0.75
 	
 	// The voice and the speed the user picked in the settings. An empty voiceName keeps the current voice (the user only changed the speed).
 	// The cached voice is dropped, so the next getVoice picks up both.
@@ -94,7 +96,12 @@ French: {"fr", "fr-FR", [
 		let pref = preferences[language] or preferences["English"]
 			pref.voice = null
 	
-	inline js SpeechSynthesisVoice[] getVoices() (window.speechSynthesis?.getVoices() || [])
+	// Headless tests: the voices getVoices returns instead of the browser's
+	SpeechSynthesisVoice[] headlessVoices
+
+	js SpeechSynthesisVoice[] getVoices
+		if(system.isHeadless) return speech.headlessVoices;
+		return window.speechSynthesis?.getVoices() || [];
 		
 	nextVoice
 		voiceOverride = voices[voiceIndex incrementAndWrap voices.length]
@@ -118,24 +125,38 @@ French: {"fr", "fr-FR", [
 		let pref = preferences[language] or preferences["English"]
 		if pref.voice == null
 			let allVoices = getVoices
+			// Safari lists every installed variant of a voice (Thomas compact and super-compact), all are shown:
+			// by name, then by variant, worst first - so the last voice of a name is its best
 			voices = allVoices.filter.lang.startsWith(pref.lang)
-			// for voices: print "{.lang} {.name}"
+			voices.sortBy.name thenBy variants.indexOf(variant(.))
 			
-			// User preference
+			// pref.minSpeed is the speed a say without a preference speaks with: the speed the user picked in the settings
+			// (it wins even below the tuned speed), else the tuned speed of the voice, else defaultSpeed
+			// User preference: the voiceURI the settings store, or the name an older version stored
 			let userPref = voiceForLanguage[language]
-				let voice = allVoices.find.name.includes(userPref)
+				let voice = voices.find backwards .voiceURI == userPref or .name == userPref
 					pref.voice = voice
-					pref.minSpeed = userSpeedPreference
+					let tuned = pref.voices.find voice.name.includes(.name)
+					pref.minSpeed = userSpeedPreference > 0 ? userSpeedPreference : tuned ? tuned.minSpeed : defaultSpeed
 					return pref
 					
 			// System preferences
 			for pref.voices as voicePreference
-				let voice = voices.find.name.includes(voicePreference.name)
+				let voice = voices.find backwards .name.includes(voicePreference.name)
 					pref.voice = voice
 					pref.minSpeed = userSpeedPreference > 0 ? userSpeedPreference : voicePreference.minSpeed
 					return pref
+			pref.minSpeed = userSpeedPreference > 0 ? userSpeedPreference : defaultSpeed
 		return pref
 		
+	// The variant of an Apple voice from its identifier (com.apple.voice.<variant>.fr-FR.Thomas), "" for any other voice.
+	// The settings show it after the name, the list sorts by its position in variants: worst first, enhanced and
+	// premium are the downloadable high quality voices, any other voice (index -1) comes first
+	const string[] variants = ["super-compact", "compact", "enhanced", "premium"]
+	string variant: SpeechSynthesisVoice voice
+		let uri = voice.voiceURI
+		return uri.startsWith("com.apple.voice.") ? uri.substring(16 to uri.indexOf(".", 16)) : ""
+
 	// The promise resolves when the utterance ended - but only if this say is still the latest one:
 	// a say that was superseded by a newer say or stop never resumes its awaiter (see finish),
 	// so the code after "await speech.say" (training.nextStep, reader.updateProgress) cannot run stale
@@ -146,7 +167,8 @@ French: {"fr", "fr-FR", [
 			// superseded awaiter never resumes (see headlessSay)
 			speech.lastWord = value;
 			console.log(`speech #${++speech.sayCounter} say headless "${value.length > 60 ? value.substring(0, 60) + "…" : value}"`);
-			return new Promise(resolve => speech.headlessSay = {text: value, resolve: resolve});
+			const pref = speech.getVoice(language); // Recorded for tests of the voice and speed selection
+			return new Promise(resolve => speech.headlessSay = {text: value, voice: pref.voice, rate: Math.max(rate, pref.minSpeed), resolve: resolve});
 		}
 		// Editor replays and tests (isPremiere false) and uncertain (predicted) frames don't
 		// speak - the certain replay of an uncertain frame calls say again. Logged so a skipped
@@ -196,7 +218,7 @@ French: {"fr", "fr-FR", [
 					if(speech.sayCounter === id) { console.log(`speech #${id} ${reason}`); resolve(); }
 					else console.log(`speech #${id} ${reason} - superseded, awaiter not resumed`);
 				};
-				utterance.onstart = () => { sawStart = true; console.log(`speech #${id} started, voice: ${utterance.voice ? utterance.voice.name : "default"}, rate: ${utterance.rate}`); };
+				utterance.onstart = () => { sawStart = true; console.log(`speech #${id} started, voice: ${utterance.voice ? utterance.voice.name + " " + utterance.voice.voiceURI : "default"}, rate: ${utterance.rate}`); };
 				utterance.onend = () => finish("ended");
 				utterance.onerror = e => {
 					// The retry cancel's error can arrive seconds late (Chrome delays utterance events),
