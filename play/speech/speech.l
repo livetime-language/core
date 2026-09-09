@@ -34,6 +34,11 @@ transient speech
 	dynamic headlessSay
 	
 	VoicePreference[string] preferences = {
+English: {"en", "en-US", [
+			{"Zoe (Enhanced)", minSpeed:0.75}
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
+		]}
 		Spanish: {"es", "es-ES", [
 			{"Microsoft Sofia", minSpeed:0.75}
 			{"Microsoft Catalina", minSpeed:0.75}
@@ -43,14 +48,36 @@ transient speech
 			{"Paulina", minSpeed:0.75}
 			{"Mónica", minSpeed:0.75}
 		]}
+French: {"fr", "fr-FR", [
+			{"Microsoft Vivienne", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Microsoft", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Google", minSpeed:0.85}	// Chrome (Windows, Mac)
+			{"Thomas", minSpeed:0.75}	// Chrome, Firefox, Safari (Mac)
+			{"Amélie", minSpeed:0.75}	// Chrome, Firefox, Safari (Mac)
+		]}	
+		Portuguese: {"pt", "pt-PT", [
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
+		]}
+		Russian: {"ru", "ru-RU", [
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
+		]}
 		German:  {"de", "de-DE", [
 			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.75}
 			{"Helena", minSpeed:0.75}
 			{"Anna", minSpeed:0.75}
 		]}
-		English: {"en", "en-US", [
-			{"Zoe (Enhanced)", minSpeed:0.75}
+		Italian: {"it", "it-IT", [
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
+		]}
+		Croatian: {"hr", "hr-HR", [
+			{"Microsoft", minSpeed:0.75}
+			{"Google", minSpeed:0.75}
+		]}
+		Swedish: {"sv", "sv-SE", [
 			{"Microsoft", minSpeed:0.75}
 			{"Google", minSpeed:0.75}
 		]}
