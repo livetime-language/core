@@ -37,49 +37,52 @@ transient speech
 		English: {"en", "en-US", [
 			{"Zoe (Enhanced)", minSpeed:0.75}
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
 		]}
 		Spanish: {"es", "es-ES", [
-			{"Microsoft Sofia", minSpeed:0.75}
-			{"Microsoft Catalina", minSpeed:0.75}
-			{"Microsoft Ximena", minSpeed:0.75}
-			{"Google", minSpeed:0.9}
-			{"Google español de Estados Unidos", minSpeed:1.0}
-			{"Paulina", minSpeed:0.75}
-			{"Mónica", minSpeed:0.75}
+			{"Microsoft Alonso", minSpeed:0.85}	// Edge (Window, Mac)
+			{"Microsoft Sofia", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Microsoft Catalina", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Microsoft Ximena", minSpeed:0.75}	// Edge (Window, Mac)
+			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
+			{"Google español de Estados Unidos", minSpeed:0.9}	// Chrome (Windows, Mac)
+			{"Paulina", minSpeed:0.75}	// Safari, Firefox (Mac)
+			{"Mónica", minSpeed:0.75}	// Safari, Firefox (Mac)
 		]}
 		French: {"fr", "fr-FR", [
 			{"Microsoft Vivienne", minSpeed:0.75}	// Edge (Window, Mac)
 			{"Microsoft", minSpeed:0.75}	// Edge (Window, Mac)
-			{"Google", minSpeed:0.85}	// Chrome (Windows, Mac)
-			{"Thomas", minSpeed:0.75}	// Chrome, Firefox, Safari (Mac)
-			{"Amélie", minSpeed:0.75}	// Chrome, Firefox, Safari (Mac)
+			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
+			{"Thomas", minSpeed:0.75}	// Safari, Firefox (Mac)
+			{"Amélie", minSpeed:0.75}	// Safari, Firefox (Mac)
 		]}	
 		Portuguese: {"pt", "pt-PT", [
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
 		]}
 		Russian: {"ru", "ru-RU", [
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
 		]}
 		German:  {"de", "de-DE", [
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
 			{"Helena", minSpeed:0.75}
 			{"Anna", minSpeed:0.75}
 		]}
 		Italian: {"it", "it-IT", [
-			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Microsoft Giuseppe", minSpeed:0.9}	// Edge (Window, Mac)
+			{"Microsoft", minSpeed:0.9}	// Edge (Window, Mac)
+			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
+			{"Alice", minSpeed:0.75}	// Safari, Firefox (Mac)
 		]}
 		Croatian: {"hr", "hr-HR", [
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
 		]}
 		Swedish: {"sv", "sv-SE", [
 			{"Microsoft", minSpeed:0.75}
-			{"Google", minSpeed:0.75}
+			{"Google", minSpeed:0.9}
 		]}
 	}
 	string[string] voiceForLanguage
