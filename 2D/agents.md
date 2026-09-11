@@ -1,5 +1,5 @@
 # Keep up to date information
-Keep all information above, memory and code comments up to date. Remove information that is no longer relevant (avoid "This app used to..." unless there is a very important reason). Use the "memory/" folder to read and write important information about the project. All memories must be in the repo in this folder (do not store memories elsewhere).
+Keep all information above, memory and code comments up to date. Remove information that is no longer relevant (do NOT say what the code USED TO do unless there is an important reason). Use the "memory/" folder to read and write important information about the project. Reference memory files in this document. All memories must be in the repo in this folder (do not store memories elsewhere).
 
 # Fast, efficient, elegant code
 Write fast, efficient, elegant code. Keep code short, simple and easy to reason about.
