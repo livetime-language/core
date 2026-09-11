@@ -510,7 +510,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -560,7 +560,7 @@ transient skipInit global unit graphics
 					-halfSizeX,
 					-halfSizeY,
 					sizeX, sizeY,
-					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 					`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
@@ -711,7 +711,7 @@ transient skipInit global unit graphics
 				y,
 				scaledLeftSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Left Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -724,7 +724,7 @@ transient skipInit global unit graphics
 				y,
 				sizeX - scaledLeftSlice - scaledRightSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Middle Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -737,7 +737,7 @@ transient skipInit global unit graphics
 				y,
 				scaledRightSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Right Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -774,7 +774,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`PartialImage ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -968,7 +968,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer != int.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, text,
+				layer != int.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, null, text,
 				"Text \"{text.replaceAll("\n", "\\n").replaceAll("\"", "\\\"")}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(sizeX)} topLeft:\{{math.round(position.x-halfSizeX)},{math.round(position.y-halfSizeY)}\} bottomRight:\{{math.round(position.x+halfSizeX)},{math.round(position.y+halfSizeY)}\} color:{effectiveColor}",
 				location, position.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 
@@ -1204,7 +1204,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, text,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, null, text,
 				"Text \"{text}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(size.x)}",
 				location, position.location, size.location,
 				(color || currentColor).hex, 
@@ -1341,7 +1341,8 @@ transient skipInit global unit graphics
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                          HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                          VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
-		                          SourceCodeLocation location
+		                          DisplayShadow shadow = null
+								  SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
@@ -1352,7 +1353,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Rectangle",
 				`Rectangle position:{${Math.round(position.x)},${Math.round(position.y)}} size:{${Math.round(sizeX)},${Math.round(sizeY)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}} color:${color?.hex}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1387,7 +1388,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "RoundedRectangle", 
 				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${graphics.alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
@@ -1438,7 +1439,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Circle", 
 				`Circle position:{${Math.round(position.x)},${Math.round(position.y)}} size:${Math.round(sizeX)} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
@@ -1470,7 +1471,7 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
 				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, from.location, null,
 				to,
@@ -1499,7 +1500,7 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
 				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, position.location, null,
 				points,
@@ -1559,22 +1560,23 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawPolygon [{-50,50}, {0,-50}, {50,50}] color:White outlineColor:Blue
 	// Image: drawPolygon.png
-	global importance:4 js void drawPolygon: Vector2[] points                    // A list of points for the polygon
-		                        Vector2 position = {0,0}            // The position all polygon points are relative to
-		                        Color color = null                  // The color of the area within the polygon
-		                        Color outlineColor = null           // The color of the outline around the polygon
-		                        outlineWidth = 0.0                    // The width of the outline around the polygon in pixels
-		                        smooth = false                      // Smooth the corners of the polygon
-		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
-		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
-		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
+	global importance:4 js void drawPolygon: Vector2[] points	// A list of points for the polygon
+		                        Vector2 position = {0,0}	// The position all polygon points are relative to
+		                        Color color = null	// The color of the area within the polygon
+		                        Color outlineColor = null	// The color of the outline around the polygon
+		                        outlineWidth = 0.0	// The width of the outline around the polygon in pixels
+		                        smooth = false	// Smooth the corners of the polygon
+		                        implicit Player[] visibleFor = null	// Only this player or list of players will see the polygon
+		                        implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
+		                        alpha = 1.0	// The opacity of the polygon (0: fully transparent, 1: fully visible)
+								DisplayShadow shadow = null
 		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Polygon",
 				`Polygon {points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
@@ -1609,7 +1611,7 @@ transient skipInit global unit graphics
 					m: totalMatrix,
 					x: position.x, y: position.y,
 					w: size.x,     h: size.y,
-					1000000, alpha:1.0, currentClippingPath, "Video",
+					1000000, alpha:1.0, currentClippingPath, null, "Video",
 					player.id, shape
 				)
 				
@@ -1664,7 +1666,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
 				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1699,7 +1701,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file, 
 				`Texture "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1748,7 +1750,7 @@ transient skipInit global unit graphics
 					position.x - sizeX/2,
 					position.y - sizeY/2,
 					sizeX, sizeY,
-					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
 					`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 					location, position.location, size.location,
 					texture.imageOrCanvas,
@@ -1781,7 +1783,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, "Clear", 
+				layer != int.minValue ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, null, "Clear", 
 				`ClearRectangle position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX*.5)},${Math.round(position.y-sizeY*.5)}} bottomRight:{${Math.round(position.x+sizeX*.5)},${Math.round(position.y+sizeY*.5)}}`,
 				location, position.location, size.location,
 				"clear", null, 0
@@ -2456,17 +2458,24 @@ awardScreen
 				
 // --------------------------------------------- Display Item ---------------------------------------------
 
+immutable class DisplayShadow
+	float x = 8
+	float y = 8
+	float blur = 48
+	Color color = #00000060
+
 internal transient immutable DisplayItem
 	float x, y, w, h
 	float layer
 	float alpha
 	ClippingPath clippingPath
+	DisplayShadow shadow
 	string name
 	string description
 	SourceCodeLocation location
 	SourceCodeLocation positionLocation
 	SourceCodeLocation sizeLocation
-	
+		
 	visible float m0, m1, m2, m3, m4, m5
 	visible ImmutableList<Vector2> poly
 
@@ -2500,6 +2509,15 @@ internal transient immutable DisplayItem
 	js void endClipping
 		if(this.clippingPath.points.length >= 2)
 			graphics.context.restore()
+			
+	js void startShadow
+		graphics.context.shadowOffsetX = this.shadow.x
+		graphics.context.shadowOffsetY = this.shadow.y
+		graphics.context.shadowBlur = this.shadow.blur
+		graphics.context.shadowColor = this.shadow.color.hex
+		
+	js void endShadow
+		graphics.context.shadowColor = "transparent"
 			
 internal transient immutable DisplayItem DisplayImage
 	object htmlImage
@@ -2661,7 +2679,7 @@ internal transient immutable DisplayItem DisplayRectangle
 		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
-			
+		if(this.shadow) this.startShadow()
 		if(this.color == "clear") {
 			graphics.context.clearRect(this.x, this.y, this.w, this.h)
 		}
@@ -2675,6 +2693,7 @@ internal transient immutable DisplayItem DisplayRectangle
 			graphics.context.strokeStyle = this.outlineColor
 			graphics.context.strokeRect(this.x, this.y, this.w, this.h)
 		}
+		if(this.shadow) this.endShadow()
 		if(this.clippingPath) this.endClipping()
 		
 internal transient immutable DisplayItem DisplayRoundedRectangle
@@ -2735,6 +2754,7 @@ internal transient immutable DisplayItem DisplayPolygon
 		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
+		if(this.shadow) this.startShadow()
 		let x = this.x, y = this.y
 		let points = this.points, startPoint = points[0]
 		
@@ -2769,6 +2789,7 @@ internal transient immutable DisplayItem DisplayPolygon
 			graphics.context.strokeStyle = this.outlineColor
 			graphics.context.stroke()
 		}
+		if(this.shadow) this.endShadow()
 		if(this.clippingPath) this.endClipping()
 		
 internal transient immutable DisplayItem DisplayCircle
