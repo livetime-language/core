@@ -45,7 +45,7 @@ global transient skipInit unit system
 		}
 			
 	js bool setLocalStorageString: string key
-		                           string value
+		                           implicit string value
 		try {
 			localStorage.setItem(key, value)
 			return true
