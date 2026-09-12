@@ -91,9 +91,12 @@ static test class tests
 		// Assert
 		expect app.grid[1,0].player == players[1]
 
-# Write extensive print statements
-Write extensive print statements that describe each action after it happened. Use the past tense. Use type:Action for actions performed by a player, use type:Reaction for reactions or consequences of an action. For example:
-
+# Print debug info
+Always print all the information you will need to find and fix bugs in your code (client and server)!
+Use type:Action for actions by the user.
+Use type:Reaction for consequences of an action.
+Use type:Error for errors.
+Example:
 app
 	tick
 		drawStandardButton "Swap"
