@@ -35,6 +35,8 @@ transient speech
 	
 	VoicePreference[string] preferences = {
 		English: {"en", "en-US", [
+			{"Google UK English Male", minSpeed:0.9}	// Chrome (Windows, Mac)
+			{"Google UK", minSpeed:0.9}	// Chrome (Windows, Mac)
 			{"Google", minSpeed:0.9}	// Chrome (Windows, Mac)
 			{"Zoe", minSpeed:0.75}	// Safari, Firefox (Mac)
 			{"Microsoft EmmaMultilingual", minSpeed:0.9}	// Edge (Window, Mac), prefer local over Microsoft online voices
