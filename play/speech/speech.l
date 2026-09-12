@@ -113,11 +113,18 @@ transient speech
 	nextVoice
 		voiceOverride = voices[voiceIndex incrementAndWrap voices.length]
 		
+	// Chrome fills its voice list asynchronously and in stages (the platform voices, then the Google network voices when
+	// their extension has loaded), so a voice picked from an early list is dropped whenever the list changes and the next
+	// getVoice picks again from the complete list - a pick made before the user's stored voice was listed (the language's
+	// system preference or another voice of the same family) would otherwise stay for the whole session
 	js void setup: string language = "Spanish", float rate = 1
 		if(system.isHeadless) return
+		speechSynthesis.onvoiceschanged = () => {
+			speech.preferences.forEach(pref => pref.voice = null);
+			console.log(`speech: voices changed (${speechSynthesis.getVoices().length} voices), cached voice picks dropped`);
+		};
 		var utterance = new SpeechSynthesisUtterance("");
-		// speechSynthesis.addEventListener("voiceschanged", () => speech.setupVoice(language, voicePreferences));
-		let voice = speech.getVoice();
+		let voice = speech.getVoice(language);
 		utterance.lang = voice.langAndCountry;
 		utterance.voice = speech.currentVoice = voice.voice;
 		utterance.rate = speech.rate = rate;
@@ -146,6 +153,9 @@ transient speech
 					let tuned = pref.voices.find voice.name.includes(.name)
 					pref.minSpeed = userSpeedPreference > 0 ? userSpeedPreference : tuned ? tuned.minSpeed : defaultSpeed
 					return pref
+				// The stored voice is not installed (removed by a browser update, or the list is still loading - a pick from an
+				// empty list is not cached): the system preferences below decide, logged with the voices the browser has
+				if voices then print "Stored {language} voice '{userPref}' is not installed, using the system preferences. Installed: {voices.joinToString.name}", type:Reaction
 					
 			// System preferences
 			for pref.voices as voicePreference
