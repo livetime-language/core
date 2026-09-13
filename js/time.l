@@ -163,6 +163,11 @@ struct float
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
 	private static DateTimeFormat dayShortMonthNameFormat
+
+	// (31 Dec 00)
+	inline string dayShortMonthNameShortYearString
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
@@ -249,6 +254,11 @@ string TimeString
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
 	private static DateTimeFormat dayShortMonthNameFormat
+
+	// (31 Dec 00)
+	inline string dayShortMonthNameShortYearString
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
@@ -375,6 +385,11 @@ js(Date) internal transient class Date
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
 	private static DateTimeFormat dayShortMonthNameFormat
+
+	// (31 Dec 00)
+	inline string dayShortMonthNameShortYearString
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(this)
+	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
