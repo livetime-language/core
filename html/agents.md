@@ -71,7 +71,7 @@ app
 		]
 		documents.add doc
 		documents.remove doc
-		documents.orderBy.created
+		documents.sortBy.created
 		documents.clear
 		let itemsFromIndex3To7 = documents[3 to 7]
 
@@ -145,10 +145,10 @@ app
 		int flooredInteger = math.floor(1 / 2)
 
 		// Query
-		Player[] healthyPlayers	= players.where.health > 0
-		Player[] top10Players	= (players.orderByDescending.score).take 10
-		Player[] seniors	= (users.where.age > 65).orderBy.age
-		Player[] highscoreList	= (player.where.isAlive).orderByDescending.score
+		Player[] healthyPlayers	= players.filter.health > 0
+		Player[] top10Players	= (players.sortByDescending.score).take 10
+		Player[] seniors	= (users.filter.age > 65).sortBy.age
+		Player[] highscoreList	= (player.filter.isAlive).sortByDescending.score
 
 		// Cast
 		string jsonString	= "\{value:7\}"
@@ -219,7 +219,7 @@ app
 static class helpers
 	// bool(Document doc) defines a function that takes a Document as an argument and returns a boolean
 	Document[] filterDocuments: bool(Document doc) predicate
-		return app.documents.where predicate(.)
+		return app.documents.filter predicate(.)
 
 	// void(Document[] documents) defines a function that takes a list of Documents as an argument and doesn't return anything
 	async fetchAllDocuments: void(Document[] documents) callback
@@ -233,7 +233,7 @@ static class helpers
 		return (app.documents.find.id == id).id
 
 	Document[] getAllDoneItems
-		return (app.documents.where.state == Done).orderBy.created
+		return (app.documents.filter.state == Done).sortBy.created
 
 # Example application
 // Defines the enum ItemState that stores its values as strings
