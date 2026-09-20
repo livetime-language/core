@@ -2575,8 +2575,9 @@ input
 		return pressedAtFrame > releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
 	global bool justPressed: string keyCombination, int player = 0
+		if not active or not keyCombination then return false
 		let user = internalUserBySyncedIndex[player]
-		if not active or not user then return false
+		if  not user then return false
 		let keyStrings = keyCombination.toLowerCase.split("+")
 		bool anyPressedThisFrame = false
 		for keyStrings
