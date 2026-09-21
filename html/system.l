@@ -77,7 +77,7 @@ global transient skipInit unit system
 		try
 			this.isDebug = isDebug
 			// print Time.preciseTime - startTime
-						
+			
 			this.referenceSizes = [
 				{500 forWidthBelow:1000 isMobile:true}
 			]
@@ -86,19 +86,19 @@ global transient skipInit unit system
 			this.resetWhenCodeChanged = true
 			
 			initMedia
-			
+
 			await loadFont "OpenSans.woff2"
-						try
+			try
 				html.reset
 				initAll
-								html.resize
-								app.start??()
-								refresh
-				
+				html.resize
+				app.start??()
+				refresh
+
 				// Do we sill need this? In which case would it prevent "unwanted scrolling"?
 				// We need to call resize again after the first refresh to prevent unwanted scrolling
 				// html.resize
-				
+
 				startTickInterval
 				sendToEditor {type:"startupComplete"}
 			finally
@@ -379,7 +379,7 @@ global transient skipInit unit system
 		if(color) console.log(`%c${text}`, `color: ${color.colorString}`)
 		else      console.log(text)
 		if(system.isDebug && location) {
-			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
+			_sendStringToEditor(`${type}|${text.replaceAll("\n", "\\n")}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
 		}
 	
 global skipInit unit math
