@@ -14,13 +14,12 @@ global transient skipInit unit system
 	js async void setFullscreen: value = true
 		                         Player forPlayer = null
 		if(!system.isStaging && !system.isDebug && !system.fastForward && (forPlayer == null || input.localUser?.id == forPlayer.id)) {
-			try {
-				if(value) await document.body.requestFullscreen()
-				else      await document.exitFullscreen()
-			} catch(error) {
-				core.onError(error)
-			}
-		}	
+			// ?.() makes iPhone Safari (no element Fullscreen API) a silent no-op
+			let go = () => (value ? document.body.requestFullscreen?.() : document.exitFullscreen?.())?.catch(core.onError)
+			// Buttons fire on touch DOWN, but a touch only grants user activation when the finger lifts: wait for it
+			if(navigator.userActivation?.isActive === false) window.addEventListener("pointerup", go, {once:true})
+			else go()
+		}
 		
 	inline js void preventScrolling
 		window.scrollTo(0,0)
