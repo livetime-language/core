@@ -1507,7 +1507,7 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
-				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
+				`Line ${points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
 				null, // no fill color, because we want to draw a line instead of a polygon
@@ -1583,7 +1583,7 @@ transient skipInit global unit graphics
 				position.x, position.y,
 				0, 0,
 				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Polygon",
-				`Polygon {points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
+				`Polygon ${points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
