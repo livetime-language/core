@@ -20,7 +20,11 @@ global transient skipInit unit system
 			if(navigator.userActivation?.isActive === false) window.addEventListener("pointerup", go, {once:true})
 			else go()
 		}
-		
+
+	// False on iPhone Safari (no element Fullscreen API) and in iframes without allow="fullscreen"
+	js bool isFullscreenSupported
+		return !!globalThis.document?.fullscreenEnabled
+
 	inline js void preventScrolling
 		window.scrollTo(0,0)
 		
