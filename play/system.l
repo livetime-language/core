@@ -9,6 +9,14 @@ enum IntervalMode: JavaScriptInterval, AnimationFrame
 transient dynamic TestFunction
 	string name
 
+// graphics.onResize uses the first entry of system.referenceSizes whose forWidthBelow is above the window width (0 while isSmallScreen)
+// and, if forPortrait, whose window is portrait (inner width < inner height)
+transient class ReferenceSize
+	Vector2 referenceSize = {1920, 1080}
+	float forWidthBelow = float.maxValue
+	bool forPortrait = false
+	bool isMobile = false
+
 global transient skipInit unit system
 	// Configuration
 	public int userCount = 2
@@ -19,6 +27,8 @@ global transient skipInit unit system
 	public bool showPlayModeInPageIcon = true
 	public IntervalMode intervalMode = JavaScriptInterval
 	public bool enableStatusLogging = true
+	// Set in app.init, e.g. [{{1080,1920} forPortrait:true isMobile:true}, {}] - no match: graphics.referenceSize and isMobile stay as they are
+	public ReferenceSize[] referenceSizes
 	
 	// Rewind: while any player holds rewindInput, all clients step the world state BACKWARD by
 	// rewindFrames frames per tick instead of simulating forward, and on release the game
@@ -153,6 +163,7 @@ global transient skipInit unit system
 		try
 			system.log "system.start"
 			let now = PlainDate.preciseTime
+			this.referenceSizes = []
 			
 			initMedia
 			initPlatform isHeadless:false, isEmbedded
@@ -164,6 +175,7 @@ global transient skipInit unit system
 			if backend?? then await backend??.connect2()
 			statistics.startTime = now
 			showDebugInfo = getLocalStorageObject("showDebugInfo") == "true"
+			isSmallScreen = getLocalStorageObject("smallScreen") == "true"
 		
 			// isMobile = true
 			// await graphics.setup {referenceSizeX, referenceSizeY}
@@ -375,6 +387,7 @@ global transient skipInit unit system
 		isSmallScreen = !isSmallScreen;
 		print isSmallScreen
 		setLocalStorageObject("smallScreen", isSmallScreen ? "true" : "false")
+		graphics.onResize
 		
 	js string generateObjectId
 		var result = (Date.now() / 1000 | 0).toString(16)

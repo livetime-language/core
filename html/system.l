@@ -4,9 +4,12 @@ CompilerSettings
 	sourceCodeLocation = true
 	clone = true
 	
+// html.resize uses the first entry of system.referenceSizes whose forWidthBelow is above the window width (0 while isMobile is toggled on)
+// and, if forPortrait, whose window is portrait (inner width < inner height)
 class ReferenceSize
 	float referenceWidth = 1920
 	float forWidthBelow = float.maxValue
+	bool forPortrait = false
 	bool isMobile = false
 	
 enum TickMode: Interval, AnimationFrame

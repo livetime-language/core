@@ -301,7 +301,13 @@ transient skipInit global unit graphics
 		}
 		graphics.pixelRatio = window.devicePixelRatio;
 		graphics.pixelSize = new Vector2(window.innerWidth*graphics.pixelRatio, window.innerHeight*graphics.pixelRatio, null);
-		graphics.isSmallScreen = screen.width < 600 || (localStorage.getItem("smallScreen") == "true")
+		let screenWidth = system.isSmallScreen ? 0 : window.innerWidth
+		let isPortrait = window.innerWidth < window.innerHeight
+		let entry = system.referenceSizes.find(entry => screenWidth < entry.forWidthBelow && (!entry.forPortrait || isPortrait))
+		if(entry) {
+			graphics.referenceSize = entry.referenceSize
+			system.isMobile = entry.isMobile
+		}
 		graphics.canvas.style.width = window.innerWidth + "px";
 		graphics.canvas.style.height = window.innerHeight + "px";
 		graphics.canvas.width = graphics.pixelSize.x;
