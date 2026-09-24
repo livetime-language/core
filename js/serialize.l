@@ -77,19 +77,19 @@ interface object
 		let names = lines[0].split("\t")
 		let types = lines[1].split("\t")
 		dynamic[] result
-		for i = 2 to lines.length
-			let line = lines[i]
+		for lineIndex = 2 to lines.length
+			let line = lines[lineIndex]
 				let values = line.split("\t")
 				dynamic obj = {}
-				for names
-					let value = values[i]
-					switch types[i]
-						"object"	obj[.] = json.parse(value)
-						"number"	obj[.] = value.toFloat
-						"boolean"	obj[.] = value == "true"
+				for fieldIndex, name in names
+					let value = values[fieldIndex]
+					switch types[fieldIndex]
+						"object"	obj[name] = json.parse(value)
+						"number"	obj[name] = value.toFloat
+						"boolean"	obj[name] = value == "true"
 						"undefined"	
-						"null"	obj[.] = null
-						default	obj[.] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
+						"null"	obj[name] = null
+						default	obj[name] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
 				result.add(obj)
 		return result
 

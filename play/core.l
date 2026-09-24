@@ -2096,7 +2096,7 @@ global transient skipInit unit system
 				drawDebugInfo()
 				graphics.isDrawingDebugInfo = false
 			}
-			core.addOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+			core.addOutput(`${type}|${text.replaceAll("\n", "\\n")}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
 			core.log(text, color);
 		}
