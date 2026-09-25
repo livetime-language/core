@@ -1386,6 +1386,7 @@ transient skipInit global unit graphics
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                                 HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                                 VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
+		                                 SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
@@ -1472,6 +1473,7 @@ transient skipInit global unit graphics
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                     implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
+		                     SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayLine(
 				graphics.totalMatrix,
@@ -1501,6 +1503,7 @@ transient skipInit global unit graphics
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                      implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
+		                      SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
@@ -1663,6 +1666,7 @@ transient skipInit global unit graphics
 		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
+		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			if(!texture?.ensureIsAvailable()) return
 			let sizeX = size.x || texture.size.x
@@ -1698,6 +1702,7 @@ transient skipInit global unit graphics
 		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
+		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			if(!texture?.ensureIsAvailable()) return
 			let sizeX = size.x || texture.size.x
@@ -1781,6 +1786,7 @@ transient skipInit global unit graphics
 		                           implicit layer = 0                  // Higher layers are drawn in front of lower layers
                                    HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
                                    VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
+                                   SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
