@@ -243,7 +243,12 @@ enum AnchorMode: TopLeft, TopCenter, Center
 enum HorizontalAlignment: Left, Center, Right
 enum VerticalAlignment: Top, Middle, Bottom
 enum FontStyle: Normal, Bold
-internal immutable ClippingPath: ImmutableList<Vector2> points; bool show
+
+internal immutable ClippingPath
+	ImmutableList<Vector2> points
+	bool show
+	Matrix2D matrix	// Clone of graphics.totalMatrix when clip was called (a rotated image draws with its own matrix)
+	object path	// The Path2D of the points, built once by the first item drawn in the clip and shared by all of them
 	
 internal TextHighlight
 	string from
@@ -1983,7 +1988,7 @@ transient skipInit global unit graphics
 		  void() code           // All drawing operations within this block of code will be clipped
 		let prev = currentClippingPath
 		Vector2[] absolutePoints = points.map . + position
-		currentClippingPath = ClippingPath(show, absolutePoints)
+		currentClippingPath = ClippingPath(show, absolutePoints, totalMatrix)
 		code()
 		currentClippingPath = prev
 		
@@ -2503,19 +2508,25 @@ internal transient immutable DisplayItem
 	draw
 		
 	js void startClipping
-		let points = this.clippingPath.points
+		let clippingPath = this.clippingPath, points = clippingPath.points
 		if(points.length >= 2) {
-			let x = this.x, y = this.y
-			let firstPos = points[points.length-1]
-			graphics.context.beginPath();
-			graphics.context.moveTo(firstPos.x, firstPos.y)
-			for(let p of points) graphics.context.lineTo(p.x, p.y)
-			if(this.clippingPath.show) {
+			let path = clippingPath.path
+			if(!path) {
+				path = clippingPath.path = new Path2D()
+				let lastPos = points[points.length-1]
+				path.moveTo(lastPos.x, lastPos.y)
+				for(let p of points) path.lineTo(p.x, p.y)
+			}
+			let m = clippingPath.matrix
+			let hasOwnMatrix = m.m0 != this.m0 || m.m1 != this.m1 || m.m2 != this.m2 || m.m3 != this.m3 || m.m4 != this.m4 || m.m5 != this.m5
+			if(hasOwnMatrix) graphics.context.setTransform(m.m0, m.m1, m.m2, m.m3, m.m4, m.m5)
+			if(clippingPath.show) {
 				graphics.context.fillStyle = "#ff000080"
-				graphics.context.fill()
+				graphics.context.fill(path)
 			}
 			graphics.context.save()
-			graphics.context.clip()
+			graphics.context.clip(path)
+			if(hasOwnMatrix) graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		}
 		
 	js void endClipping
