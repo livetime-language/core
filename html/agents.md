@@ -33,11 +33,14 @@ go run ../server serve
 "src/model.l" defines the database schema. To change, edit model.l and run "livetime schema update". 
 
 # Library Source Code
-lib/core/js/base.l	Standard Library (int, float, string, List, Grid, Dictionary, etc).
-lib/core/js/time.l	Time Library (Time, Date, etc).
-lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
-lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
-lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
+"lib/core/" contains the LiveTime standard library as a git submodule. You can improve code and fix bugs, but be careful with project specific changes that might break other projects.
+
+lib/core/js/base.l	int, float, string, List, Dictionary, etc
+lib/core/js/time.l	Date, TimeString, etc
+lib/core/html/system.l	system.start, print, etc
+lib/core/html/htmlElements.l	div, img, button, input, etc
+lib/core/html/cssStyles.l	color, border, alignItems, justifyContent, etc
+lib/core/pocketbase/backend.l	PocketBase API, DatabaseTable, etc
 
 # Basics of LiveTime
 enum State
