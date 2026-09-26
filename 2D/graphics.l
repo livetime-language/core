@@ -58,26 +58,30 @@ immutable Color
 			math.floor(blue  * iprogress + target.blue  * progress)
 		}
 		
-enum TextOverflow: Visible, Wrap, Scale, WrapAndScale, CutOff, Ellipsis
+enum TextOverflow: Visible, Scale, CutOff, Ellipsis, Wrap, WrapAndScale, WrapAndCutOff, WrapAndEllipsis
 
 // A texture that can be loaded into video memory
 immutable Texture
 	string file
 	Vector2 size
 	transient dynamic imageOrCanvas, context
+	transient bool loadFailed	// The image could not be loaded (drawImageFromUrl draws its fallbackUrl instead)
 	
 	Texture
-		if system.engineStarted and file
+		// Headless mode has no Image: the texture counts as available (ensureIsAvailable), so display items are still recorded
+		if system.engineStarted and file and not system.isHeadless
 			open
 			
 	internal js bool ensureIsAvailable()
+		// In headless mode (node.js), images can't be loaded, but display items are still recorded for printWhatIsOnScreen
+		if(system.isHeadless) return true
 		if(!this.imageOrCanvas && this.file) {
 			this.imageOrCanvas = _htmlImageCache[this.file]
 		}
 		return this.imageOrCanvas != null
 
 	js bool isAvailable
-		return this.imageOrCanvas != null
+		return this.imageOrCanvas != null || system.isHeadless
 	
 	internal js void open
 		if(!window._htmlImageCache) _htmlImageCache = {}
@@ -93,6 +97,7 @@ immutable Texture
 				}
 				image.onerror = e => {
 					console.log("Error loading image: ", this.file, e)
+					this.loadFailed = true
 					reject(e)
 				}
 				image.src = system.getAbsoluteUrl(this.file)
@@ -238,7 +243,12 @@ enum AnchorMode: TopLeft, TopCenter, Center
 enum HorizontalAlignment: Left, Center, Right
 enum VerticalAlignment: Top, Middle, Bottom
 enum FontStyle: Normal, Bold
-internal immutable ClippingPath: ImmutableList<Vector2> points; bool show
+
+internal immutable ClippingPath
+	ImmutableList<Vector2> points
+	bool show
+	Matrix2D matrix	// Clone of graphics.totalMatrix when clip was called (a rotated image draws with its own matrix)
+	object path	// The Path2D of the points, built once by the first item drawn in the clip and shared by all of them
 	
 internal TextHighlight
 	string from
@@ -266,6 +276,7 @@ transient skipInit global unit graphics
 	private dynamic canvas
 	internal dynamic context
 	internal Matrix2D baseMatrix, totalMatrix, localMatrix
+	bool isTransforming
 	internal DisplayItem[] items		
 	private const alignmentFactor = [0, .5, 1]
 	
@@ -285,7 +296,7 @@ transient skipInit global unit graphics
 	bool isDrawingDebugInfo
 	
 	async setup
-		if system.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
+		// if system.isDebug then topAndBottomMarginColor = leftAndRightMarginColor = #202020
 	
 	internal js void onResize
 		graphics.canvas = document.querySelector("canvas");
@@ -295,7 +306,13 @@ transient skipInit global unit graphics
 		}
 		graphics.pixelRatio = window.devicePixelRatio;
 		graphics.pixelSize = new Vector2(window.innerWidth*graphics.pixelRatio, window.innerHeight*graphics.pixelRatio, null);
-		graphics.isSmallScreen = screen.width < 600 || (localStorage.getItem("smallScreen") == "true")
+		let screenWidth = system.isSmallScreen ? 0 : window.innerWidth
+		let isPortrait = window.innerWidth < window.innerHeight
+		let entry = system.referenceSizes.find(entry => screenWidth < entry.forWidthBelow && (!entry.forPortrait || isPortrait))
+		if(entry) {
+			graphics.referenceSize = entry.referenceSize
+			system.isMobile = entry.isMobile
+		}
 		graphics.canvas.style.width = window.innerWidth + "px";
 		graphics.canvas.style.height = window.innerHeight + "px";
 		graphics.canvas.width = graphics.pixelSize.x;
@@ -308,6 +325,8 @@ transient skipInit global unit graphics
 	// Update the base matrix
 	// Called when resizing and after calling init() because we could change the scaleMode and anchor in App.init
 	internal updateBaseMatrix
+		// In headless mode (node.js), there is no window, so we treat the reference size as the pixel size
+		if system.isHeadless then pixelSize = referenceSize; pixelRatio = 1
 		let statisticsMargin = system.showDebugInfo ? statistics.margin : {}
 		let referenceSizeWithMargin = referenceSize + statisticsMargin
 		Vector2 ratio = {pixelSize.x / referenceSizeWithMargin.x, pixelSize.y / referenceSizeWithMargin.y}
@@ -335,7 +354,8 @@ transient skipInit global unit graphics
 		
 	internal js void startFrame
 		graphics.reset()
-		if(!system.fastForward && !system.waitingForInitialData) {
+		// In headless mode (node.js), there is no canvas context: items are recorded but nothing is painted
+		if(!system.fastForward && !system.waitingForInitialData && graphics.context) {
 			if(!graphics.backgroundColor || graphics.backgroundColor.hex == "#000000") {
 				graphics.context.clearRect(0, 0, graphics.pixelSize.x, graphics.pixelSize.y)
 			} else {
@@ -355,12 +375,15 @@ transient skipInit global unit graphics
 	internal reset
 		totalMatrix = baseMatrix
 		localMatrix.clear
+		isTransforming = false
 		currentlyVisibleFor = null
 		isDrawingDebugInfo = false
 		items.clear
 
 	internal finishFrame
 		if(system.fastForward) return
+		// In headless mode (node.js), there is no canvas context: items are recorded but nothing is painted
+		if not graphics.context then return
 
 		// Draw pointers
 		ShowPointersMode showPointersMode
@@ -498,7 +521,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -548,7 +571,7 @@ transient skipInit global unit graphics
 					-halfSizeX,
 					-halfSizeY,
 					sizeX, sizeY,
-					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 					`Image ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 					location, position.location, size.location,
 					image.texture.imageOrCanvas,
@@ -699,7 +722,7 @@ transient skipInit global unit graphics
 				y,
 				scaledLeftSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Left Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -712,7 +735,7 @@ transient skipInit global unit graphics
 				y,
 				sizeX - scaledLeftSlice - scaledRightSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Middle Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -725,7 +748,7 @@ transient skipInit global unit graphics
 				y,
 				scaledRightSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Right Slice`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -762,7 +785,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, image.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`PartialImage ${image.name} position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}}`,
 				location, position.location, size.location,
 				image.texture.imageOrCanvas,
@@ -780,30 +803,32 @@ transient skipInit global unit graphics
 	//             if winner == me
 	//                 drawText "You've won!", size:100, color:Black, font:OpenSans, visibleFor:me
 	// Image: drawText.png
-	global importance:4 drawText: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
-		             Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		             implicit Vector2 size = {}           // The font size of the text
-		             Color color = null                   // The color of the text
-		             HorizontalAlignment align = Center   // The horizontal alignment of the text
-		             VerticalAlignment valign = Middle    // The vertical alignment of the text
-		             FontStyle style = Normal             // Whether the text should be bold or normal style
-		             Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		             Color outlineColor = null            // The color of the outline around the text
-		             outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		             implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
-		             alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
-		             angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		             implicit Player[] visibleFor = null  // Only this player or list of players will see the text
-		             implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
-		             clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
-		             showClickableArea = false            // Highlight the clickable area for debugging
-		             hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
-		             overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
-		             maxWidth = 0.0                       // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
-		             lineHeight = 0.0                     // The height of each line when overflow is set to 'Wrap'
-		             void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
+	importance:4
+	global drawText: implicit string text	// A string or anything that can be converted into a string (for example, an interger or a float)
+		             Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		             implicit Vector2 size = {}	// The font size of the text
+		             Color color = null	// The color of the text
+		             HorizontalAlignment align = Center	// The horizontal alignment of the text
+		             VerticalAlignment valign = Middle	// The vertical alignment of the text
+		             FontStyle style = Normal	// Whether the text should be bold or normal style
+		             Font font = null	// To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
+		             Color outlineColor = null	// The color of the outline around the text
+		             outlineWidth = 0.0	// The width of the outline around the text in pixels
+		             implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
+		             alpha = 1.0	// The opacity of the text (0: fully transparent, 1: fully visible)
+		             angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		             implicit Player[] visibleFor = null	// Only this player or list of players will see the text
+		             implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the text
+		             clickableMargin = Vector2(16,16)	// The margin around the text within which it is clickable
+		             showClickableArea = false	// Highlight the clickable area for debugging
+		             hotkey = KeyCode.None	// This keyboard shortcut will execute the onClick handler
+		             overflow = TextOverflow.Scale	// Should text that exceeds the max width be hidden or wrapped?
+		             maxWidth = 0.0	// The maximum width of line when overflow is set 'Scale', 'CutOff', 'Wrap', 'WrapAndScale', 'WrapAndCutOff' or 'WrapAndEllipsis'
+		             maxHeight = 0.0	// The maximum height of the text when overflow is set 'WrapAndScale', 'WrapAndCutOff' or 'WrapAndEllipsis'
+		             lineHeight = 0.0	// The height of each line when overflow is set to 'Wrap'
+		             void(Touch touch) onClick = null	// Execute this code when the user touches or clicks the text or presses the hotkey
 		             SourceCodeLocation location
-		if not text then return
+		if not text then return 0
 		bool isVisible = isVisibleFor(visibleFor)
 		Font effectiveFont = font || currentFont
 		int fontSize = math.floor(size.y || size.x || currentFontSize)
@@ -813,7 +838,7 @@ transient skipInit global unit graphics
 		float effectiveLineHeight
 		float offsetX, offsetY
 		
-		if ((overflow == Wrap or overflow == WrapAndScale or overflow == Ellipsis) and maxWidth)
+		if ((overflow == Wrap or overflow == WrapAndScale or overflow == WrapAndCutOff or overflow == WrapAndEllipsis or overflow == Ellipsis) and maxWidth)
 		or text.includes("\n")
 			if maxWidth == 0	then maxWidth = float.maxValue
 			if overflow == Ellipsis	then maxWidth -= getTextWidth("...", fontSize, effectiveFont, style)
@@ -833,66 +858,96 @@ transient skipInit global unit graphics
 					word += c
 			if word then words.add word
 				
-			// Layout lines
-			let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
-			lines = []
-			float totalWidth
-			string line
-			for w in words
-				float wordWidth = getTextWidth(w, {x:fontSize}, effectiveFont, style)
-				if totalWidth + wordWidth > maxWidth
-					if overflow == Ellipsis then line += "..."
-						
-					if line
-						// Finish the line and start a new line with the current word
-						lines.add line
-						line = w + " "
-						totalWidth = wordWidth + spaceWidth
+			float factor = -alignmentFactor[align]
+			while true
+				// Layout lines
+				let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
+				lines = []
+				float totalWidth
+				string line
+				for w in words
+					float wordWidth = getTextWidth(w, {x:fontSize}, effectiveFont, style)
+					if totalWidth + wordWidth > maxWidth
+						if overflow == Ellipsis then line += "..."
+
+						if line
+							// Finish the line and start a new line with the current word
+							lines.add line
+							line = w + " "
+							totalWidth = wordWidth + spaceWidth
+						else
+							// A single word is already too wide for the line
+							// Create a line with this word start a new empty line
+							lines.add w
+							line = ""
+							totalWidth = 0
+
+						if overflow == Ellipsis or overflow == CutOff
+							line = ""
+							break
 					else
-						// A single word is already too wide for the line
-						// Create a line with this word start a new empty line
-						lines.add w
+						line += w + " "
+						totalWidth += wordWidth + spaceWidth
+
+					if w[w.length-1] == "\n"
+						lines.add line
 						line = ""
 						totalWidth = 0
 
-					if overflow == Ellipsis or overflow == CutOff
-						line = ""
-						break
-				else
-					line += w + " "
-					totalWidth += wordWidth + spaceWidth
-					
-				if w[w.length-1] == "\n"
-					lines.add line
-					line = ""
-					totalWidth = 0
-					
-			if line then lines.add line
-			
-			// Calculate offset for each line and find widest line
-			string widestLine
-			sizeX = -1
-			lineOffsets = []
-			float factor = -alignmentFactor[align]
-			for lines
-				float lineSizeX = getTextWidth(. size:fontSize)
-				lineOffsets.add lineSizeX * factor
-				if lineSizeX > sizeX
-					sizeX = lineSizeX
-					widestLine = .
-					
-			if overflow == WrapAndScale and sizeX > maxWidth
-				// Scale
-				fontSize = math.floor(fontSize * maxWidth/sizeX)
-				sizeX = getTextWidth(widestLine, {x:fontSize}, effectiveFont, style)
-				while sizeX > maxWidth
-					sizeX = getTextWidth(widestLine, {x:--fontSize}, effectiveFont, style)
-					
+				if line then lines.add line
+
+				// Calculate offset for each line and find widest line
+				string widestLine
+				sizeX = -1
+				lineOffsets = []
 				for lines
-					lineOffsets[i] = getTextWidth(. size:fontSize)*factor
-				
-			effectiveLineHeight = lineHeight || fontSize*1.3
-			sizeY = lines.length * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
+					float lineSizeX = getTextWidth(. size:fontSize)
+					lineOffsets.add lineSizeX * factor
+					if lineSizeX > sizeX
+						sizeX = lineSizeX
+						widestLine = .
+
+				if overflow == WrapAndScale and sizeX > maxWidth
+					// Scale
+					fontSize = math.floor(fontSize * maxWidth/sizeX)
+					sizeX = getTextWidth(widestLine, {x:fontSize}, effectiveFont, style)
+					while sizeX > maxWidth
+						sizeX = getTextWidth(widestLine, {x:--fontSize}, effectiveFont, style)
+
+					for lines
+						lineOffsets[i] = getTextWidth(. size:fontSize)*factor
+
+				effectiveLineHeight = lineHeight || fontSize*1.3
+				sizeY = lines.length * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
+
+				if overflow == WrapAndScale and maxHeight and sizeY > maxHeight and fontSize > 1
+					// Scale down to fit maxHeight (at least 1 less than before), then relayout the text and check again
+					int scaledFontSize = math.ceil(fontSize * maxHeight/sizeY)
+					if scaledFontSize >= fontSize then scaledFontSize = fontSize-1
+					fontSize = scaledFontSize < 1 ? 1 : scaledFontSize
+				else
+					break
+
+			if (overflow == WrapAndCutOff or overflow == WrapAndEllipsis) and maxHeight and sizeY > maxHeight
+				// Hide the lines that don't fit
+				int visibleLineCount = math.floor((maxHeight - fontSize * effectiveFont.actualHeightFactor) / effectiveLineHeight) + 1
+				if visibleLineCount < 1 then visibleLineCount = 1
+				if visibleLineCount < lines.length
+					lines.setLength visibleLineCount
+					lineOffsets.setLength visibleLineCount
+					if overflow == WrapAndEllipsis
+						// Display "..." at the end of the last visible line, dropping trailing words so it stays inside maxWidth
+						string lastLine = lines[visibleLineCount-1].trimEnd
+						float lastLineSizeX = getTextWidth(lastLine + "...", {x:fontSize}, effectiveFont, style)
+						while lastLineSizeX > maxWidth
+							let lastSpace = lastLine.lastIndexOf(" ")
+							if lastSpace < 0 then break
+							lastLine = lastLine.substring(0 to lastSpace).trimEnd
+							lastLineSizeX = getTextWidth(lastLine + "...", {x:fontSize}, effectiveFont, style)
+						lines[visibleLineCount-1] = lastLine + "..."
+						lineOffsets[visibleLineCount-1] = lastLineSizeX * factor
+						if lastLineSizeX > sizeX then sizeX = lastLineSizeX
+					sizeY = visibleLineCount * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
 							
 		else
 			if isVisible or onClick != null
@@ -924,7 +979,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer != int.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, text,
+				layer != int.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, null, text,
 				"Text \"{text.replaceAll("\n", "\\n").replaceAll("\"", "\\\"")}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(sizeX)} topLeft:\{{math.round(position.x-halfSizeX)},{math.round(position.y-halfSizeY)}\} bottomRight:\{{math.round(position.x+halfSizeX)},{math.round(position.y+halfSizeY)}\} color:{effectiveColor}",
 				location, position.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 
@@ -941,11 +996,11 @@ transient skipInit global unit graphics
 			// Handle click (only visible buttons are clickable)
 			let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
 				Vector2 effectiveSize = {sizeX + clickableMargin.x, sizeY + clickableMargin.y}
-				input.onTouchDown {position.x + offsetX, position.y + offsetY}, size:effectiveSize, by:effectiveClickableBy, showClickableArea, align:Left, valign:Top, do:onClick
+				input.onTouchDown {position.x + offsetX - clickableMargin.x/2, position.y + offsetY - clickableMargin.y/2}, size:effectiveSize, by:effectiveClickableBy, showClickableArea, align:Left, valign:Top, do:onClick
 				if hotkey
 					input.onKeyDown hotkey, by:effectiveClickableBy
 						onClick null
-						
+			
 		return sizeY
 		
 	// Draw text with segments highlighted which are surrounded by given characters.
@@ -955,29 +1010,30 @@ transient skipInit global unit graphics
 	//         { "«"  to: "»"  color:White, backgroundColor:app.primaryColor, padding:{12,3}, cornerRadius:12 }
 	//         { "\"" to: "\"" color:White, backgroundColor:app.helpingColor, padding:{12,3}, cornerRadius:12 }
 	//     ]
-	global float drawTextWithHighlight: implicit string text                 // A string or anything that can be converted into a string (for example, an interger or a float)
-		                                Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
-		                                TextHighlight[] highlights = []      // Sepecifies which characters surround a sections and how it should be highlighted
-		                                implicit Vector2 size = {}           // The font size of the text
-		                                Color color = null                   // The color of the text
-		                                HorizontalAlignment align = Center   // The horizontal alignment of the text
-		                                VerticalAlignment valign = Middle    // The vertical alignment of the text
-		                                FontStyle style = Normal             // Whether the text should be bold or normal style
-		                                Font font = null                     // To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
-		                                Color outlineColor = null            // The color of the outline around the text
-		                                outlineWidth = 0.0                     // The width of the outline around the text in pixels
-		                                implicit layer = float.minValue        // Higher layers are drawn in front of lower layers
-		                                alpha = 1.0                          // The opacity of the text (0: fully transparent, 1: fully visible)
-		                                angle = 0.0                          // Rotate the image by this angle in radians (one full rotation is 2*pi)
-		                                implicit Player[] visibleFor = null  // Only this player or list of players will see the text
-		                                implicit Player[] clickableBy = null // Only this player or list of players can touch or click the text
-		                                clickableMargin = Vector2(16,16)     // The margin around the text within which it is clickable
-		                                showClickableArea = false            // Highlight the clickable area for debugging
-		                                hotkey = KeyCode.None                    // This keyboard shortcut will execute the onClick handler
-		                                overflow = TextOverflow.Scale          // Should text that exceeds the max width be hidden or wrapped?
-		                                float maxWidth = float.maxValue        // The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
-		                                float lineHeight = 0.0                // The height of each line when overflow is set to 'Wrap'
-		                                void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the text or presses the hotkey
+	global float drawTextWithHighlight: implicit string text	// A string or anything that can be converted into a string (for example, an interger or a float)
+		                                Vector2 position = {}	// By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                                TextHighlight[] highlights = []	// Sepecifies which characters surround a sections and how it should be highlighted
+		                                implicit Vector2 size = {}	// The font size of the text
+		                                Color color = null	// The color of the text
+		                                HorizontalAlignment align = Center	// The horizontal alignment of the text
+		                                VerticalAlignment valign = Middle	// The vertical alignment of the text
+		                                FontStyle style = Normal	// Whether the text should be bold or normal style
+		                                Font font = null	// To use a custom font, just copy a TTF, WOFF or WOFF2 file to the "media" folder
+		                                Color outlineColor = null	// The color of the outline around the text
+		                                outlineWidth = 0.0	// The width of the outline around the text in pixels
+		                                implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
+		                                alpha = 1.0	// The opacity of the text (0: fully transparent, 1: fully visible)
+		                                angle = 0.0	// Rotate the image by this angle in radians (one full rotation is 2*pi)
+		                                implicit Player[] visibleFor = null	// Only this player or list of players will see the text
+		                                implicit Player[] clickableBy = null	// Only this player or list of players can touch or click the text
+		                                clickableMargin = Vector2(16,16)	// The margin around the text within which it is clickable
+		                                showClickableArea = false	// Highlight the clickable area for debugging
+		                                hotkey = KeyCode.None	// This keyboard shortcut will execute the onClick handler
+		                                overflow = TextOverflow.Scale	// Should text that exceeds the max width be hidden or wrapped?
+		                                float maxWidth = float.maxValue	// The maximum width of line when overflow is set 'Scale', 'Hidden' or 'Wrap'
+		                                float maxHeight = 0.0	// The maximum height of the text when overflow is set 'WrapAndScale', 'WrapAndCutOff' or 'WrapAndEllipsis'
+		                                float lineHeight = 0.0	// The height of each line when overflow is set to 'Wrap'
+		                                void(Touch touch) onClick = null	// Execute this code when the user touches or clicks the text or presses the hotkey
 		                                SourceCodeLocation location
 		bool isVisible = isVisibleFor(visibleFor)
 		Font effectiveFont = font || currentFont
@@ -1004,87 +1060,132 @@ transient skipInit global unit graphics
 		if word then words.add word
 			
 		// Layout lines
-		let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
-		TextSegment segment = {}
-		TextSegment[] segments = [ segment ]
+		TextSegment segment
+		TextSegment[] segments
 		TextHighlight highlight
-		
-		for w in words
-			string suffix, prefix
-			float suffixWidth, prefixWidth
-			TextHighlight startHighlight, endHighlight
-			int startIndex
-			float expectedSegmentWidth = segment.size.x
+		while true
+			effectiveLineHeight = lineHeight or fontSize*1.3
+			let spaceWidth = getTextWidth(" ", {x:fontSize}, effectiveFont, style)
+			segment = {}
+			segments = [ segment ]
+			highlight = null
 			
-			if not highlight
-				// Find highlight start character
-				for highlights
-					startIndex = w.indexOf .from
-					if startIndex != -1
-						startHighlight = .
-						if startIndex > 0
-							prefix = w[..startIndex]
-							prefixWidth = getTextWidth(prefix size:fontSize, effectiveFont, style)
-							expectedSegmentWidth += prefixWidth
-						w = w[startIndex+1..]
-						expectedSegmentWidth += .margin.x + .padding.x*2
-						break
+			for w in words
+				string suffix, prefix
+				float suffixWidth, prefixWidth
+				TextHighlight startHighlight, endHighlight
+				int startIndex
+				float expectedSegmentWidth = segment.size.x
+			
+				if not highlight
+					// Find highlight start character
+					for highlights
+						startIndex = w.indexOf .from
+						if startIndex != -1
+							startHighlight = .
+							if startIndex > 0
+								prefix = w[..startIndex]
+								prefixWidth = getTextWidth(prefix size:fontSize, effectiveFont, style)
+								expectedSegmentWidth += prefixWidth
+							w = w[startIndex+1..]
+							expectedSegmentWidth += .margin.x + .padding.x*2
+							break
 						
-			if highlight or startHighlight
-				// Find highlight end character
-				for highlights
-					int endIndex = w.indexOf .to, startIndex+1
-					if endIndex != -1
-						endHighlight = .
-						if endIndex < w.length-1
-							suffix = w[endIndex+1..]
-							suffixWidth = getTextWidth(suffix size:fontSize, effectiveFont, style)
-							expectedSegmentWidth += suffixWidth
-						w = w[..endIndex]
-						break
+				if highlight or startHighlight
+					// Find highlight end character
+					for highlights
+						int endIndex = w.indexOf .to, startIndex+1
+						if endIndex != -1
+							endHighlight = .
+							if endIndex < w.length-1
+								suffix = w[endIndex+1..]
+								suffixWidth = getTextWidth(suffix size:fontSize, effectiveFont, style)
+								expectedSegmentWidth += suffixWidth
+							w = w[..endIndex]
+							break
 		
-			// Measure current word
-			float wordWidth = getTextWidth(w, size:fontSize, effectiveFont, style)
+				// Measure current word
+				float wordWidth = getTextWidth(w, size:fontSize, effectiveFont, style)
 			
-			// Is there something in the current line?
-			if segment.text or segment.position.x > 0
-				expectedSegmentWidth += spaceWidth
-				if highlight then expectedSegmentWidth += highlight.margin.x
+				// Is there something in the current line?
+				if segment.text or segment.position.x > 0
+					expectedSegmentWidth += spaceWidth
+					if highlight then expectedSegmentWidth += highlight.margin.x
 				
-				// Check if the current word still fits in the line
-				if segment.position.x + expectedSegmentWidth + wordWidth > maxWidth
-					if highlight == null or highlight.wrap
-						segments.add segment = {position:{0, segment.position.y}, highlight, size:highlight ? highlight.padding*2 : {}}
-					segment.position.x = 0
-					segment.position.y += effectiveLineHeight
+					// Check if the current word still fits in the line
+					if segment.position.x + expectedSegmentWidth + wordWidth > maxWidth
+						if highlight == null or highlight.wrap
+							segments.add segment = {position:{0, segment.position.y}, highlight, size:highlight ? highlight.padding*2 : {}}
+						segment.position.x = 0
+						segment.position.y += effectiveLineHeight
 			
-			// Space between words
-			if segment.text or segment.position.x > 0
-				segment.text += " "
-				segment.size.x += spaceWidth
+				// Space between words
+				if segment.text or segment.position.x > 0
+					segment.text += " "
+					segment.size.x += spaceWidth
 		
-			// Start highlight
-			if startHighlight
-				if prefix
-					segment.text += prefix
-					segment.size.x += prefixWidth
-				highlight = startHighlight
-				segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y}, highlight, size:highlight.padding*2 }
+				// Start highlight
+				if startHighlight
+					if prefix
+						segment.text += prefix
+						segment.size.x += prefixWidth
+					highlight = startHighlight
+					segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y}, highlight, size:highlight.padding*2 }
 				
-			// Add word
-			segment.text += w
-			segment.size.x += wordWidth
+				// Add word
+				segment.text += w
+				segment.size.x += wordWidth
 				
-			// End highlight
-			if endHighlight
-				segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y} }
-				highlight = null
-				if suffix
-					segment.text += suffix
-					segment.size.x += suffixWidth
+				// End highlight
+				if endHighlight
+					segments.add segment = { position:{segment.position.x + segment.size.x + highlight.margin.x, segment.position.y} }
+					highlight = null
+					if suffix
+						segment.text += suffix
+						segment.size.x += suffixWidth
 					
-			if segment.text[segment.text.length-1] == "\n"
-				segments.add segment = {position:{0, segment.position.y + effectiveLineHeight}, highlight, size:highlight ? highlight.padding*2 : {}}
+				if segment.text[segment.text.length-1] == "\n"
+					segments.add segment = {position:{0, segment.position.y + effectiveLineHeight}, highlight, size:highlight ? highlight.padding*2 : {}}
+
+			sizeY = segments ? segments.last.position.y + fontSize : 0
+
+			if overflow == WrapAndScale and maxHeight and sizeY > maxHeight and fontSize > 1
+				// Scale down to fit maxHeight (at least 1 less than before), then relayout the text and check again
+				int scaledFontSize = math.ceil(fontSize * maxHeight/sizeY)
+				if scaledFontSize >= fontSize then scaledFontSize = fontSize-1
+				fontSize = scaledFontSize < 1 ? 1 : scaledFontSize
+			else
+				break
+
+		if (overflow == WrapAndCutOff or overflow == WrapAndEllipsis) and maxHeight and sizeY > maxHeight
+			// Hide the lines that don't fit
+			int visibleLineCount = math.floor((maxHeight - fontSize) / effectiveLineHeight) + 1
+			if visibleLineCount < 1 then visibleLineCount = 1
+			float maxVisibleY = (visibleLineCount-1) * effectiveLineHeight + 0.5
+			while segments and segments.last.position.y > maxVisibleY
+				segments.removeAt segments.length-1
+			if overflow == WrapAndEllipsis
+				// Display "..." at the end, dropping trailing words so the dots stay inside maxWidth
+				float dotsWidth = getTextWidth("...", {x:fontSize}, effectiveFont, style)
+				while segments
+					let lastSegment = segments.last
+					bool isLineStart = segments.length == 1 or segments[segments.length-2].position.y != lastSegment.position.y
+					int lastSpace = lastSegment.text.trimEnd.lastIndexOf(" ")
+					if lastSegment.position.x + lastSegment.size.x + dotsWidth <= maxWidth
+					or (lastSpace < 0 and isLineStart)
+						// Append the dots (a single word at the start of the line that is too wide keeps them anyway)
+						string withDots = lastSegment.text.trimEnd + "..."
+						lastSegment.size.x += getTextWidth(withDots, {x:fontSize}, effectiveFont, style) - getTextWidth(lastSegment.text, {x:fontSize}, effectiveFont, style)
+						lastSegment.text = withDots
+						break
+					if lastSpace >= 0
+						// Drop the trailing word
+						string shortened = lastSegment.text.substring(0 to lastSpace)
+						lastSegment.size.x -= getTextWidth(lastSegment.text, {x:fontSize}, effectiveFont, style) - getTextWidth(shortened, {x:fontSize}, effectiveFont, style)
+						lastSegment.text = shortened
+					else
+						// The segment ran out of words, continue with the previous segment on the same line
+						segments.removeAt segments.length-1
 
 		// Align
 		float factor = alignmentFactor[align]
@@ -1114,7 +1215,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, text,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, null, text,
 				"Text \"{text}\" position:\{{math.round(position.x)},{math.round(position.y)}\} size:{math.round(size.x)}",
 				location, position.location, size.location,
 				(color || currentColor).hex, 
@@ -1251,7 +1352,8 @@ transient skipInit global unit graphics
 		                          alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                          HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                          VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
-		                          SourceCodeLocation location
+		                          DisplayShadow shadow = null
+								  SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
@@ -1262,7 +1364,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Rectangle",
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Rectangle",
 				`Rectangle position:{${Math.round(position.x)},${Math.round(position.y)}} size:{${Math.round(sizeX)},${Math.round(sizeY)}} topLeft:{${Math.round(position.x-halfSizeX)},${Math.round(position.y-halfSizeY)}} bottomRight:{${Math.round(position.x+halfSizeX)},${Math.round(position.y+halfSizeY)}} color:${color?.hex}`,
 				location, position.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1289,6 +1391,7 @@ transient skipInit global unit graphics
 		                                 alpha = 1.0                         // The opacity of the rectangle (0: fully transparent, 1: fully visible)
 		                                 HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
 		                                 VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
+		                                 SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
@@ -1297,7 +1400,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "RoundedRectangle", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "RoundedRectangle", 
 				`RoundedRectangle position:${Math.round(position.x)},${Math.round(position.y)} size:${Math.round(size.x)},${Math.round(size.y)}${graphics.alignmentDescription(align, valign)}`,
 				location, position.location, size.location,
 				radius,
@@ -1348,7 +1451,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2, 
 				position.y - sizeY/2, 
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Circle", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Circle", 
 				`Circle position:{${Math.round(position.x)},${Math.round(position.y)}} size:${Math.round(sizeX)} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, position.location, size.location,
 				startAngle, angle,
@@ -1375,12 +1478,13 @@ transient skipInit global unit graphics
 		                     implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                     implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                     alpha = 1.0                         // The opacity of the line (0: fully transparent, 1: fully visible)
+		                     SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayLine(
 				graphics.totalMatrix,
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
 				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, from.location, null,
 				to,
@@ -1404,13 +1508,14 @@ transient skipInit global unit graphics
 		                      implicit Player[] visibleFor = null // Only this player or list of players will see the line
 		                      implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                      alpha = 1.0                         // The opacity of the lines (0: fully transparent, 1: fully visible)
+		                      SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Line", 
-				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
+				`Line ${points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
 				null, // no fill color, because we want to draw a line instead of a polygon
@@ -1469,22 +1574,24 @@ transient skipInit global unit graphics
 	//         tick
 	//             drawPolygon [{-50,50}, {0,-50}, {50,50}] color:White outlineColor:Blue
 	// Image: drawPolygon.png
-	global importance:4 js void drawPolygon: Vector2[] points                    // A list of points for the polygon
-		                        Vector2 position = {0,0}            // The position all polygon points are relative to
-		                        Color color = null                  // The color of the area within the polygon
-		                        Color outlineColor = null           // The color of the outline around the polygon
-		                        outlineWidth = 0.0                    // The width of the outline around the polygon in pixels
-		                        smooth = false                      // Smooth the corners of the polygon
-		                        implicit Player[] visibleFor = null // Only this player or list of players will see the polygon
-		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
-		                        alpha = 1.0                         // The opacity of the polygon (0: fully transparent, 1: fully visible)
+	global importance:4 js void drawPolygon: Vector2[] points	// A list of points for the polygon
+		                        Vector2 position = {0,0}	// The position all polygon points are relative to
+		                        Color color = null	// The color of the area within the polygon
+		                        Color outlineColor = null	// The color of the outline around the polygon
+		                        outlineWidth = 0.0	// The width of the outline around the polygon in pixels
+		                        smooth = false	// Smooth the corners of the polygon
+		                        implicit Player[] visibleFor = null	// Only this player or list of players will see the polygon
+		                        implicit layer = float.minValue	// Higher layers are drawn in front of lower layers
+		                        alpha = 1.0	// The opacity of the polygon (0: fully transparent, 1: fully visible)
+								DisplayShadow shadow = null
+		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			graphics.add(new DisplayPolygon(
 				graphics.totalMatrix,
 				position.x, position.y,
 				0, 0,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, "Polygon",
-				`Polygon {points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Polygon",
+				`Polygon ${points.joinToString(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, position.location, null,
 				points,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1518,7 +1625,7 @@ transient skipInit global unit graphics
 					m: totalMatrix,
 					x: position.x, y: position.y,
 					w: size.x,     h: size.y,
-					1000000, alpha:1.0, currentClippingPath, "Video",
+					1000000, alpha:1.0, currentClippingPath, null, "Video",
 					player.id, shape
 				)
 				
@@ -1564,6 +1671,7 @@ transient skipInit global unit graphics
 		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
+		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			if(!texture?.ensureIsAvailable()) return
 			let sizeX = size.x || texture.size.x
@@ -1573,7 +1681,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
 				`Texture "${texture.file}" position:{${position.x},${position.y}} topLeft:{${position.x-sizeX/2},${position.y-sizeY/2}} bottomRight:{${position.x+sizeX/2},${position.y+sizeY/2}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1599,6 +1707,7 @@ transient skipInit global unit graphics
 		                        implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                        alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                        Color color = White                 // Tint the texture with this color
+		                        SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			if(!texture?.ensureIsAvailable()) return
 			let sizeX = size.x || texture.size.x
@@ -1608,7 +1717,7 @@ transient skipInit global unit graphics
 				position.x - sizeX/2,
 				position.y - sizeY/2,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file, 
+				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file, 
 				`Texture "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 				location, position.location, size.location,
 				texture.imageOrCanvas,
@@ -1624,6 +1733,7 @@ transient skipInit global unit graphics
 		
 	global js void drawImageFromUrl: string url                          // The texture to draw
 		                             Vector2 position = {}               // The target position to draw to
+		                             string fallbackUrl = ""             // Drawn instead when the image at url can't be loaded (a blocked favicon service, a dead link)
 		                             Vector2 size = {}                   // The size of the target area to draw to
 		                             Vector2 sourcePosition = {}         // The center of the area of the source texture to draw from
 		                             Vector2 sourceSize = {}             // The size of the area of the source texture to draw from
@@ -1631,6 +1741,7 @@ transient skipInit global unit graphics
 		                             implicit layer = float.minValue   // Higher layers are drawn in front of lower layers
 		                             alpha = 1.0                         // The opacity of the texture (0: fully transparent, 1: fully visible)
 		                             Color color = White                 // Tint the texture with this color
+		                             SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			if(!graphics.imagesFromUrl) graphics.imagesFromUrl = new Map()
 			let texture = graphics.imagesFromUrl.get(url)
@@ -1638,19 +1749,28 @@ transient skipInit global unit graphics
 				texture = new Texture(url)
 				graphics.imagesFromUrl.set(url, texture)
 			}
+			if(texture.loadFailed && fallbackUrl) {
+				texture = graphics.imagesFromUrl.get(fallbackUrl)
+				if(!texture) {
+					texture = new Texture(fallbackUrl)
+					graphics.imagesFromUrl.set(fallbackUrl, texture)
+				}
+			}
 			if(texture?.isAvailable()) {
-				let sizeX = size.x || texture.size.x
-				let sizeY = size.y || (sizeX/texture.size.x)*texture.size.y
+				// In headless mode the image is never loaded, so the texture has no size: the given size (or nothing) is recorded
+				let textureSize = texture.size || size
+				let sizeX = size.x || textureSize.x
+				let sizeY = size.y || (textureSize.x ? (sizeX/textureSize.x)*textureSize.y : 0)
 				graphics.add(new DisplayImage(
 					graphics.totalMatrix,
 					position.x - sizeX/2,
 					position.y - sizeY/2,
 					sizeX, sizeY,
-					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, texture.file,
+					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
 					`ImageFromUrl "${texture.file}" position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX/2)},${Math.round(position.y-sizeY/2)}} bottomRight:{${Math.round(position.x+sizeX/2)},${Math.round(position.y+sizeY/2)}}`,
 					location, position.location, size.location,
 					texture.imageOrCanvas,
-					0, 0, texture.size.x, texture.size.y,
+					0, 0, textureSize.x, textureSize.y,
 					color
 				))
 			}
@@ -1671,6 +1791,7 @@ transient skipInit global unit graphics
 		                           implicit layer = 0                  // Higher layers are drawn in front of lower layers
                                    HorizontalAlignment align = Center  // The horizontal alignment of the rectangle
                                    VerticalAlignment valign = Middle   // The vertical alignment of the rectangle
+                                   SourceCodeLocation location
 		if(graphics.isVisibleFor(visibleFor)) {
 			let sizeX = size.x
 			let sizeY = size.y || size.x
@@ -1679,7 +1800,7 @@ transient skipInit global unit graphics
 				align == 0  ? position.x : align  == 1 ? position.x-sizeX*.5 : position.x-sizeX,
 				valign == 0 ? position.y : valign == 1 ? position.y-sizeY*.5 : position.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, "Clear", 
+				layer != int.minValue ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, null, "Clear", 
 				`ClearRectangle position:{${Math.round(position.x)},${Math.round(position.y)}} topLeft:{${Math.round(position.x-sizeX*.5)},${Math.round(position.y-sizeY*.5)}} bottomRight:{${Math.round(position.x+sizeX*.5)},${Math.round(position.y+sizeY*.5)}}`,
 				location, position.location, size.location,
 				"clear", null, 0
@@ -1699,13 +1820,23 @@ transient skipInit global unit graphics
 	// Image: graphicsMove.png
 	move: Vector2 distance // The distance to move
 		  void() code      // All drawing operations within this block will be moved
+		if distance.x == 0 and distance.y == 0 then code; return
+		
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Move matrix
 		localMatrix.move distance
 		totalMatrix.move distance
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 							
 	// Rotate all drawing operations in a block of code by a given angle
 	//			
@@ -1719,13 +1850,22 @@ transient skipInit global unit graphics
 	rotate: float angle  // The angle in radians (one full rotation is 2*pi)
 		    void() code  // All drawing operations within this block of code will be rotated
 		if angle == 0 then code; return
+			
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Rotate matrix
 		localMatrix.rotate angle
 		totalMatrix.rotate angle
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 	
 	// Scale all drawing operations in a block of code by a given factor.
 	//
@@ -1739,13 +1879,22 @@ transient skipInit global unit graphics
 	scale: float factor // The factor to scale by
 		   void() code  // All drawing operations within this block of code will be scaled
 		if factor == 1 then code; return
+			
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Scale matrix
 		localMatrix.scale {factor, factor}
 		totalMatrix.scale {factor, factor}
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 	
 	// Move, rotate and scale all drawing operations in a block of code.
 	//
@@ -1760,8 +1909,14 @@ transient skipInit global unit graphics
 		       rotate = 0.0                 // The angle in radians (one full rotation is 2*pi)
 		       scale = 1.0                  // The factor to scale by
 		       void() code                  // All drawing operations within this block of code will be moved, rotated and scaled
+		
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Move, rotate and scale matrix
 		if move
 			localMatrix.move move
 			totalMatrix.move move
@@ -1772,8 +1927,11 @@ transient skipInit global unit graphics
 			localMatrix.rotate rotate
 			totalMatrix.rotate rotate
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5 
+		isTransforming = prevIsTransforming
 	
 	// Apply a matrix to all drawing operations in a block of code.
 	//
@@ -1786,13 +1944,22 @@ transient skipInit global unit graphics
 	// Image: graphicsApplyMatrix.png
 	applyMatrix: Matrix2D matrix // The matrix to apply
 		         void() code     // The matrix will be applied to all drawing operation within this block of code
+		
+		// Save matrix
 		let a0 = localMatrix.m0, a1 = localMatrix.m1, a2 = localMatrix.m2, a3 = localMatrix.m3, a4 = localMatrix.m4, a5 = localMatrix.m5
 		let b0 = totalMatrix.m0, b1 = totalMatrix.m1, b2 = totalMatrix.m2, b3 = totalMatrix.m3, b4 = totalMatrix.m4, b5 = totalMatrix.m5
+		let prevIsTransforming = isTransforming
+		isTransforming = true
+		
+		// Apply matrix
 		this.localMatrix.multiplyLeft matrix
 		this.totalMatrix.multiplyLeft matrix
 		code
+		
+		// Restore matrix
 		localMatrix.m0 = a0; localMatrix.m1 = a1; localMatrix.m2 = a2; localMatrix.m3 = a3; localMatrix.m4 = a4; localMatrix.m5 = a5 
 		totalMatrix.m0 = b0; totalMatrix.m1 = b1; totalMatrix.m2 = b2; totalMatrix.m3 = b3; totalMatrix.m4 = b4; totalMatrix.m5 = b5
+		isTransforming = prevIsTransforming
 	
 	// ------------------------------------------------------- Clip -------------------------------------------------------
 	
@@ -1821,7 +1988,7 @@ transient skipInit global unit graphics
 		  void() code           // All drawing operations within this block of code will be clipped
 		let prev = currentClippingPath
 		Vector2[] absolutePoints = points.map . + position
-		currentClippingPath = ClippingPath(show, absolutePoints)
+		currentClippingPath = ClippingPath(show, absolutePoints, totalMatrix)
 		code()
 		currentClippingPath = prev
 		
@@ -1952,6 +2119,8 @@ transient skipInit global unit graphics
 		if(!text) return 0
 		let effectiveFont = font || graphics.currentFont
 		let fontSize = size.y || size.x || graphics.currentFontSize
+		// In headless mode (node.js), there is no canvas context, so we return an estimate
+		if(!graphics.context) return text.length * fontSize * (style ? 0.6 : 0.55)
 		graphics.context.font =  (style ? "bold ":"")+fontSize+"px "+effectiveFont.name;
 		let textSize = graphics.context.measureText(text)
 		return textSize.width
@@ -2306,17 +2475,24 @@ awardScreen
 				
 // --------------------------------------------- Display Item ---------------------------------------------
 
+immutable class DisplayShadow
+	float x = 8
+	float y = 8
+	float blur = 48
+	Color color = #00000060
+
 internal transient immutable DisplayItem
 	float x, y, w, h
 	float layer
 	float alpha
 	ClippingPath clippingPath
+	DisplayShadow shadow
 	string name
 	string description
 	SourceCodeLocation location
 	SourceCodeLocation positionLocation
 	SourceCodeLocation sizeLocation
-	
+		
 	visible float m0, m1, m2, m3, m4, m5
 	visible ImmutableList<Vector2> poly
 
@@ -2332,24 +2508,39 @@ internal transient immutable DisplayItem
 	draw
 		
 	js void startClipping
-		let points = this.clippingPath.points
+		let clippingPath = this.clippingPath, points = clippingPath.points
 		if(points.length >= 2) {
-			let x = this.x, y = this.y
-			let firstPos = points[points.length-1]
-			graphics.context.beginPath();
-			graphics.context.moveTo(firstPos.x, firstPos.y)
-			for(let p of points) graphics.context.lineTo(p.x, p.y)
-			if(this.clippingPath.show) {
+			let path = clippingPath.path
+			if(!path) {
+				path = clippingPath.path = new Path2D()
+				let lastPos = points[points.length-1]
+				path.moveTo(lastPos.x, lastPos.y)
+				for(let p of points) path.lineTo(p.x, p.y)
+			}
+			let m = clippingPath.matrix
+			let hasOwnMatrix = m.m0 != this.m0 || m.m1 != this.m1 || m.m2 != this.m2 || m.m3 != this.m3 || m.m4 != this.m4 || m.m5 != this.m5
+			if(hasOwnMatrix) graphics.context.setTransform(m.m0, m.m1, m.m2, m.m3, m.m4, m.m5)
+			if(clippingPath.show) {
 				graphics.context.fillStyle = "#ff000080"
-				graphics.context.fill()
+				graphics.context.fill(path)
 			}
 			graphics.context.save()
-			graphics.context.clip()
+			graphics.context.clip(path)
+			if(hasOwnMatrix) graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		}
 		
 	js void endClipping
 		if(this.clippingPath.points.length >= 2)
 			graphics.context.restore()
+			
+	js void startShadow
+		graphics.context.shadowOffsetX = this.shadow.x
+		graphics.context.shadowOffsetY = this.shadow.y
+		graphics.context.shadowBlur = this.shadow.blur
+		graphics.context.shadowColor = this.shadow.color.hex
+		
+	js void endShadow
+		graphics.context.shadowColor = "transparent"
 			
 internal transient immutable DisplayItem DisplayImage
 	object htmlImage
@@ -2511,7 +2702,7 @@ internal transient immutable DisplayItem DisplayRectangle
 		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
-			
+		if(this.shadow) this.startShadow()
 		if(this.color == "clear") {
 			graphics.context.clearRect(this.x, this.y, this.w, this.h)
 		}
@@ -2525,6 +2716,7 @@ internal transient immutable DisplayItem DisplayRectangle
 			graphics.context.strokeStyle = this.outlineColor
 			graphics.context.strokeRect(this.x, this.y, this.w, this.h)
 		}
+		if(this.shadow) this.endShadow()
 		if(this.clippingPath) this.endClipping()
 		
 internal transient immutable DisplayItem DisplayRoundedRectangle
@@ -2585,6 +2777,7 @@ internal transient immutable DisplayItem DisplayPolygon
 		graphics.context.setTransform(this.m0, this.m1, this.m2, this.m3, this.m4, this.m5)
 		graphics.context.globalAlpha = this.alpha
 		if(this.clippingPath) this.startClipping()
+		if(this.shadow) this.startShadow()
 		let x = this.x, y = this.y
 		let points = this.points, startPoint = points[0]
 		
@@ -2619,6 +2812,7 @@ internal transient immutable DisplayItem DisplayPolygon
 			graphics.context.strokeStyle = this.outlineColor
 			graphics.context.stroke()
 		}
+		if(this.shadow) this.endShadow()
 		if(this.clippingPath) this.endClipping()
 		
 internal transient immutable DisplayItem DisplayCircle

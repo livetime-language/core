@@ -458,9 +458,9 @@ global priority low skipInit static class html
 
 		let referenceWidth = 0
 		if(system.referenceSizes) {
-			system.referenceSizes.sort((a,b) => a.forWidthBelow - b.forWidthBelow)
+			let isPortrait = window.innerWidth < window.innerHeight
 			for(let entry of system.referenceSizes) {
-				if(screenWidth < entry.forWidthBelow) {
+				if(screenWidth < entry.forWidthBelow && (!entry.forPortrait || isPortrait)) {
 					referenceWidth = entry.referenceWidth
 					system.isMobile = entry.isMobile
 					break;

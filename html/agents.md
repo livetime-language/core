@@ -1,42 +1,48 @@
-# Memory
-Use "doc/MEMORY.md" to read and write important information about the project.
+# Keep up to date information
+Keep all information above, memory and code comments up to date. Use the "memory/" folder to read and write important information about the project. Reference memory files in this document. All memories must be in the repo in this folder (do not store memories elsewhere).
 
-# We use the LiveTime Programming Language and HTML Framework with a PocketBase backend
-LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces). 
+# No History Lessons in docs and comments
+In documents and comments, remove information that is no longer relevant. Do NOT state what the code USED TO do (unless there is a very important reason). Do NOT state how you changed the code or what you removed. 
 
-LiveTime uses inline styles for all html elements. 
-Very important: To re-render the html after changing data, you need to call refresh.
+# Fast, efficient, elegant code
+Write fast, efficient, elegant code. Keep code short, simple and easy to reason about.
+Avoid small, trivial functions. Avoid functions you only call once (unless there is a good reason).
 
-# Simple code
-Always write the shortest, simplest possible code that meet the specifications.
-Prefer a few medium to large functions over lots of small functions.
-Only create functions if you need to reuse code in several places.
-Keep the flow simple and easy to understand.
-Check your code for opportunities to simplify the code or implement the same functionality with less code.
-
-# Fast and efficient code
-Write the fastest, most efficient code possible.
-
-# Descriptive names, no abbreviations
-Use readable and descriptive variable and function names. Do not use abbreviations. For example, use "verticalCollision" instead of "vCol".
-
-# Group related code in the same function
-Elements that are grouped together visually should be in the same function.
-Aim for about 1 to 5 draw functions per page.
-
-# Library Source Code
-When you want to find a name of a function in the standard library or you have problems resolving errors, read the source code in the folders "lib/core/js/", "lib/core/html/" and "lib/core/pocketbase/"
-
-lib/core/js/base.l	Standard Libaray (int, float, string, List, Grid, Dictionary, etc).
-lib/core/js/time.l	Time Library (Time, Date, etc).
-lib/core/html/htmlElements.l	HTML elements (div, img, button, input, etc)
-lib/core/html/cssStyles.l	CSS styles and enums (color, alignItems, justifyContent, etc)
-lib/core/pocketbase/backend.l	PocketBase API (backend, DatabaseTable, etc)
+# LiveTime Programming Language
+LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
 
 # Compile
 Check your code with "livetime check", build with "livetime build".
 
-# Basics of the LiveTime programming language
+# Inline styles
+Use inline styles for all html elements.
+
+# Refresh to re-render
+Very important: To re-render the html after changing data, you need to call refresh.
+
+# Group related code in the same function
+Elements that are grouped together visually should be in the same function.
+
+# PocketBase Server
+The server source is in "server/", its data is in "dist/". It's written in Go.
+Usually, a local server is already running at localhost:8090. If not, start one with:
+cd dist
+go run ../server serve
+
+# Database Schema
+"src/model.l" defines the database schema. To change, edit model.l and run "livetime schema update". 
+
+# Library Source Code
+"lib/core/" contains the LiveTime standard library as a git submodule. You can improve code and fix bugs, but be careful with project specific changes that might break other projects.
+
+lib/core/js/base.l	int, float, string, List, Dictionary, etc
+lib/core/js/time.l	Date, TimeString, etc
+lib/core/html/system.l	system.start, print, etc
+lib/core/html/htmlElements.l	div, img, button, input, etc
+lib/core/html/cssStyles.l	color, border, alignItems, justifyContent, etc
+lib/core/pocketbase/backend.l	PocketBase API, DatabaseTable, etc
+
+# Basics of LiveTime
 enum State
 	InProgress
 	Done
@@ -71,7 +77,7 @@ app
 		]
 		documents.add doc
 		documents.remove doc
-		documents.orderBy.created
+		documents.sortBy.created
 		documents.clear
 		let itemsFromIndex3To7 = documents[3 to 7]
 
@@ -80,9 +86,9 @@ app
 		documentsById["2f"] = {id:"2f"}
 		documentsById.remove "2f"
 		documentsById.clear
-		for documents as doc
+		for doc in documents
 			documentsById[doc.id] = doc
-		for documentsById as doc, id
+		for id, doc in documentsById
 			print "id:{id} created:{doc.created.toDayMonthYearString}"
 
 		// Find
@@ -104,20 +110,20 @@ app
 			print "Did not find player with name Mike"
 
 		// Iterate over a List
-		for documents as doc
+		for doc in documents
 			print doc.id
 
-		// Iterate over an integer range
-		// Prints "01234", the upper bound is exclusive 
-		for 0 to 5 as i
+		// Iterate from lower bound to exclusive upper bound
+		// Prints "01234"
+		for i = 0 to 5
 			print i
 
-		// If you leave out the lower bound, it defaults to 0
-		// If you leave out the declaration of the index variable, it defaults to i
+		// Lower bound defaults to 0 if left out
+		// Index variable defaults to i if left out
 		for 5
 			print i
 
-		// You can use "." to refer to the current item while iterating
+		// Use "." to refer to the current item
 		for documents
 			print .
 
@@ -125,17 +131,17 @@ app
 		for 5
 			print .
 			
-		// Use the "backwards" keyword to iterate backwards
+		// Use "step -1" for reverse order
 		// Prints "43210"
-		for 5 backwards as i
+		for i = 0 to 5 step -1
 			print i
 
 		// Iterate over a List by index
-		for documents.length as i
+		for i = 0 to documents.length
 			print documents[i].state
 
 		// Iterate over a Dictionary
-		for documentsById as value, key
+		for key, value in documentsById
 			print "{key}: {value}"
 
 		// If you divide an integer by an integer in LiveTime, you always get a float
@@ -145,25 +151,24 @@ app
 		int flooredInteger = math.floor(1 / 2)
 
 		// Query
-		Player[] healthyPlayers	= players.where.health > 0
-		Player[] top10Players	= (players.orderByDescending.score).take 10
-		Player[] seniors	= (users.where.age > 65).orderBy.age
-		Player[] highscoreList	= (player.where.isAlive).orderByDescending.score
+		Player[] healthyPlayers	= players.filter.health > 0
+		Player[] top10Players	= (players.sortByDescending.score).take 10
+		Player[] seniors	= (users.filter.age > 65).sortBy.age
+		Player[] highscoreList	= (player.filter.isAlive).sortByDescending.score
 
 		// Cast
 		string jsonString	= "\{value:7\}"
 		dynamic config	= json.parse(jsonString)
 		int value	= (int)config.value
 
-		// In LiveTime, the % symbol is used for percentages, like in css.
+		// Use "%" for percentages (like in CSS)
 		div width:100%
 
-		// To calucate the remainder of a division, use mod or remainder. 
-		// mod returns the remainder after a floored division, like in Python.
-		// A negative value mod a positive value will always be positive.
-		let a = 107 mod 100	// a = 7
-		let b =  -1 mod 100	// b = 99
-		let c =  -1 remainder 100	// c = -1
+		// Use "mod" for remainder after floored division (negative mod positive is positive)
+		// Use "remainder" for remainder after truncated division (negative remainder positive is negative)
+		17 mod 10       ==  7
+		-1 mod 10       ==  9
+		-1 remainder 10 == -1
 			
 	// This function renders the html elements (on startup and when refresh is called)
 	draw
@@ -173,7 +178,7 @@ app
 		// Html div element with children
 		let doneItems = helpers.getAllDoneItems
 		div display:flex, flexDirection:column
-			for doneItems as doc
+			for doc in doneItems
 				div text:"{doc.created.toDayMonthYearHourMinuteString} {doc.state}"
 
 		// Html div element children and onClick listener
@@ -220,7 +225,7 @@ app
 static class helpers
 	// bool(Document doc) defines a function that takes a Document as an argument and returns a boolean
 	Document[] filterDocuments: bool(Document doc) predicate
-		return app.documents.where predicate(.)
+		return app.documents.filter predicate(.)
 
 	// void(Document[] documents) defines a function that takes a list of Documents as an argument and doesn't return anything
 	async fetchAllDocuments: void(Document[] documents) callback
@@ -234,7 +239,7 @@ static class helpers
 		return (app.documents.find.id == id).id
 
 	Document[] getAllDoneItems
-		return (app.documents.where.state == Done).orderBy.created
+		return (app.documents.filter.state == Done).sortBy.created
 
 # Example application
 // Defines the enum ItemState that stores its values as strings
@@ -309,7 +314,7 @@ static class app
 							refresh
 
 				if items.length > 0
-					for items as item
+					for item in items
 						drawItem item
 				else
 					div text:"No items", fontSize, fontStyle:italic
@@ -342,24 +347,9 @@ static class app
 		refresh
 
 # Images
-Place images in the folder "assets/pb_public/media". 
+Place images in the folder "dist/pb_public/media". 
 If you place "Example.png" in this folder, you can use "Example" in the img component:
 app
 	draw
-		img Example, width:64px // Renders the image "assets/pb_public/media/Example.png"
-
-# When you are done writing code, test if it is working
-1. Check if you wrote the simplest possible code. Refactor your code until you arrive at the shortest, simplest possible and most efficient code.
-
-2. Double check you are calling refresh after changing data.
-
-3. Make sure you fixed all diagnostics and linter errors.
-
-4. Your code should contain print statements that output all relevant information to verify that everything works as specified.
-
-5. In case something isn't working, first output a list of hypothesis of all possible causes. Then add detailed print statements that help you identify the true cause of the problem and fix it.
-
-6. Navigate to http://localhost:8080 in the browser. Test the app to ensure it works and looks great.
-
-7. Fix all problems and repeat until you verified everything works as specified.
+		img Example, width:64px // Renders the image "dist/pb_public/media/Example.png"
 

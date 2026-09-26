@@ -1,6 +1,6 @@
 global transient skipInit unit system
-	public inline js string url	=> location.href
-	public inline js string hostname	=> location.hostname
+	public inline js string url	=> (window.location?.href || "")
+	public inline js string hostname	=> (window.location?.hostname || "")
 	public protocolAndHost	=> !system.isDebug && hostname && hostname != "127.0.0.1" ? "https://"+hostname : "http://127.0.0.1"
 	public inline js int userAgent	=> navigator.userAgent.replace(/,/g," ")
 	public inline js float usedMemory	=> (performance.memory ? performance.memory.usedJSHeapSize : 0)
@@ -9,19 +9,22 @@ global transient skipInit unit system
 		return relativeUrl.startsWith("http") || relativeUrl.startsWith("data:") ? relativeUrl : _basePath+relativeUrl
 
 	js void setTitle: string title
-		document.title = title
+		if(window.document) document.title = title
 		
 	js async void setFullscreen: value = true
 		                         Player forPlayer = null
 		if(!system.isStaging && !system.isDebug && !system.fastForward && (forPlayer == null || input.localUser?.id == forPlayer.id)) {
-			try {
-				if(value) await document.body.requestFullscreen()
-				else      await document.exitFullscreen()
-			} catch(error) {
-				core.onError(error)
-			}
-		}	
-		
+			// ?.() makes iPhone Safari (no element Fullscreen API) a silent no-op
+			let go = () => (value ? document.body.requestFullscreen?.() : document.exitFullscreen?.())?.catch(core.onError)
+			// Buttons fire on touch DOWN, but a touch only grants user activation when the finger lifts: wait for it
+			if(navigator.userActivation?.isActive === false) window.addEventListener("pointerup", go, {once:true})
+			else go()
+		}
+
+	// False on iPhone Safari (no element Fullscreen API) and in iframes without allow="fullscreen"
+	js bool isFullscreenSupported
+		return !!globalThis.document?.fullscreenEnabled
+
 	inline js void preventScrolling
 		window.scrollTo(0,0)
 		
@@ -45,7 +48,7 @@ global transient skipInit unit system
 		}
 			
 	js bool setLocalStorageString: string key
-		                           string value
+		                           implicit string value
 		try {
 			localStorage.setItem(key, value)
 			return true
@@ -84,12 +87,15 @@ global transient skipInit unit system
 		clearDelay(debounceId)
 		debounceId = delay(time, then)
 		
-	inline js int delay: float time // The delay in milliseconds
-		                  void() then
-		setTimeout(then, time)
-
-	inline js void clearDelay: int id
-		clearTimeout(id)
+	global inline js int delay: float time // The delay in milliseconds
+		                        void() do
+		setTimeout(do, time)
+		
+	global inline js async void delay: float time // The delay in milliseconds
+		new Promise(resolve => setTimeout(resolve, time))
+		
+	global inline js int clearDelay: int handle
+		clearTimeout(handle)
 		
 	inline js void copyToClipboard(string text)
 		if(core.isPremiere && input.isCertain) {

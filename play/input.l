@@ -1,11 +1,11 @@
-// The internal state of a user that isn't serialized and shoudn't be accessed by the app
+// The internal state of a user that isn't synced and shouldn't be accessed by the app
 internal transient class InternalUser
-	int id              // This id stays the same when a user reconnects
-	bool local          // Is this the local user?
-	int connectionId    // The connectionId increases with every connection, even if the same user reconnects
-	int index
-	string _id          // User account id
-	string name         // User account name
+	int id	// connection id:	might be different on each client.	Assigned when a user connects, stays the same when reconnecting.
+	int syncedIndex	// player.playerIndex:	the same on all clients.	Assigned deterministically in updatePlayers.
+	bool local	// Is this the local user?
+	int connectionId	// The connectionId increases with every connection, even if the same user reconnects
+	string _id	// User account id (in the server database)
+	string name	// User account name
 	
 	// Event Stream
 	bool collectInputs          // When we are done pinging, we add a join event and start collecting inputs
@@ -45,14 +45,6 @@ internal transient class InternalUser
 	visible KeyCode[] downKeys, upKeys
 	visible string[] pressedKeys, textInputs, textCompositions
 	visible string[] navigations
-
-	// Modern Input
-	// For each input, we store the frame when it was pressed and the frame when it was released
-	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
-	visible int[] pressedAtFrame, releasedAtFrame
-	Vector2 pointerPosition, scrollDelta
-	Input[] allJustPressed, allJustReleased
-	string focus, prevFocus
 
 	// Video + Audio
 	object mediaStream
@@ -99,6 +91,17 @@ internal transient class InternalUser
 	
 	int certainFrame
 	int prevCertainFrame
+	
+	// Modern Input
+	// These values are synced (guaranteed to be the same on all clients)
+	// For each input, we store the frame when it was pressed and the frame when it was released
+	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
+	visible int[] pressedAtFrame, releasedAtFrame
+	// The frame in which the input was marked as handled (input.markAsHandled), justPressed returns false for the rest of that frame
+	int[] handledAtFrame
+	Vector2 pointerPosition, scrollDelta
+	Input[] allJustPressed, allJustReleased
+	string focus, prevFocus
 
 	reset
 		// Modern Input
@@ -106,6 +109,7 @@ internal transient class InternalUser
 		for Input.items.length
 			pressedAtFrame[i] = -2
 			releasedAtFrame[i] = -1
+			handledAtFrame[i] = -1
 	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
@@ -149,6 +153,7 @@ internal transient class InternalUser
 		bufferFrames = 5
 		smoothFrame = frame - bufferFrames		
 		
+// The syned player state that is guaranteed to be the same on all clients
 priority class Player
 	int	playerIndex	// The index of the player in the players list
 	Color	playerColor	// Use this color to draw an outline around the current player (blue, red, green, yellow by default)
@@ -508,7 +513,8 @@ internal transient PendingObjectRecord
 
 // Collect user input
 skipInit global unit input
-	transient visible InternalUser[] internalUsers
+	transient visible InternalUser[] internalUsers	// Internal user by id, which might be different on each client
+	transient visible InternalUser[] internalUserBySyncedIndex	// Internal user by synced index, which is the same on all clients
 	transient InternalUser localUser
 	transient internal Player localPlayer
 	transient bool isCertain
@@ -518,6 +524,9 @@ skipInit global unit input
 	// A list of all players
 	Player[] players
 
+	// false switches every input event off (see withoutHandlingInput): the touch areas (onTouchDown/Over/Move/Up), the wheel (onScroll,
+	// getScrollDelta), the keys (onKeyDown/Up, onType, onTextInput/Composition, isKeyDown, justPressed/isPressed/justReleased,
+	// allJustPressed/Released) and onNavigate report nothing. Only the state stays readable: getPointer (the position, drawn hover effects keep working) and the focus
 	bool active = true
 
 	// Shared rewind (see core.checkRewindMechanic). Both fields are deliberately part of the
@@ -609,6 +618,7 @@ skipInit global unit input
 			return false;
 		}
 		window.onkeydown = e => {
+			if(e.repeat) return
 			let keyCode = e.keyCode
 			let key = e.key
 			let ctrlOrCmd = e.ctrlKey || e.metaKey
@@ -738,9 +748,6 @@ skipInit global unit input
 		inputs.writeInt32 keyIndex
 		if inputType == KeyDown then inputs.writeString key.length == 1 and not ctrl and not meta ? key : ""
 
-		if inputType == KeyDown then print "------ DOWN ------ ", code, key, keyIndex
-		else if inputType == KeyUp then print "------ UP ------ ", code, key, keyIndex
-			
 		// Pass event to embedded system
 		run??.runningApp?.input.handleKeyEvent(inputType, code, key, ctrl, alt, meta)
 		
@@ -881,8 +888,10 @@ skipInit global unit input
 		int flags = data[start]
 		int pointerX = data[start + 1]
 		int pointerY = data[start + 2]
-		int firstPointerButton = cast InputButton.LeftMouseButton
-		int lastPointerButton = cast InputButton.RightMouseButton
+		// Pointer buttons arrive as the Input indices that touchDown/touchUp write: LeftMouseButton to RightMouseButton in the order
+		// of TouchType. Pointer, the parent of LeftMouseButton, arrives along with it and is skipped (touchDown sets it again)
+		int firstPointerButton = Input.LeftMouseButton.index
+		int lastPointerButton = Input.RightMouseButton.index
 
 		// The pointer moved: write one TouchMove record. At most one move arrives per input
 		// frame, so the in-place coalescing of handleTouchEvent isn't needed
@@ -895,6 +904,7 @@ skipInit global unit input
 		// Just pressed inputs
 		for pressedCount as i
 			int index = data[start + 6 + i]
+			if index == Input.Pointer.index then continue
 			inputs.writeInt32 frame
 			if firstPointerButton <= index <= lastPointerButton
 				inputs.writeUnsignedInt16 cast(InputEventType.TouchDown) + ((index - firstPointerButton) shiftLeft 5)
@@ -909,6 +919,7 @@ skipInit global unit input
 		// Just released inputs
 		for releasedCount as i
 			int index = data[readPos + i]
+			if index == Input.Pointer.index then continue
 			inputs.writeInt32 frame
 			if firstPointerButton <= index <= lastPointerButton
 				inputs.writeUnsignedInt16 cast(InputEventType.TouchUp) + ((index - firstPointerButton) shiftLeft 5)
@@ -1151,6 +1162,7 @@ skipInit global unit input
 					
 					players.add player = {id:userId, playerIndex:players.length}
 					playersById[userId] = player
+					internalUserBySyncedIndex[player.playerIndex] = internalUser
 					if internalUser.local then localPlayer = player
 					updatePlayers
 				
@@ -1292,17 +1304,19 @@ skipInit global unit input
 					
 					// Match users
 					playersById.clear
+					internalUserBySyncedIndex.clear
 					let availableUsers = clone input.internalUsers
 					for p in players
 						let user = availableUsers.popWhere.name == p.playerName
-						if not user then user = availableUsers.popWhere.index == p.playerIndex
+						if not user then user = availableUsers.popWhere.syncedIndex == p.playerIndex
 						if not user then availableUsers.pop
 						p.id = user.id
 						
 						user._id = p._id
-						user.index = p.playerIndex
+						user.syncedIndex = p.playerIndex
 						user.name = p.playerName
 						playersById[p.id] = p
+						internalUserBySyncedIndex[user.syncedIndex] = user
 					refreshLocalPlayer
 
 				else
@@ -1406,10 +1420,15 @@ skipInit global unit input
 		// app.onTouchDown??(touch)
 		// player.onTouchDown??(touch)
 
-		// Modern Input
-		int buttonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
-		internalUser.pressedAtFrame[buttonIndex] = core.frame
+		// --- Modern Input ---
+		// The Input items LeftMouseButton, MiddleMouseButton and RightMouseButton follow each other like TouchType (a finger and a pen are the left mouse button)
+		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
 		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = true
+		internalUser.pressedAtFrame[buttonIndex] = core.frame
+		
+		// Save when the parent was pressed (Pointer is the parent of LeftMouseButton, like "Shift" is the parent of "ShiftLeft")
+		let parent = Input.items[buttonIndex].parent
+			internalUser.pressedAtFrame[parent.index] = core.frame
 		internalUser.pointerPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
@@ -1478,14 +1497,15 @@ skipInit global unit input
 			else
 				core.addOutput "code|drag {touch.startPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
 
-		// Modern Input
-		int buttonIndex = InputButton.LeftMouseButton + type
+		// --- Modern Input ---
+		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
+		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 		internalUser.releasedAtFrame[buttonIndex] = core.frame
+		
+		// Save when the parent was released (Pointer is the parent of LeftMouseButton)
+		let parent = Input.items[buttonIndex].parent
+			internalUser.releasedAtFrame[parent.index] = core.frame
 		internalUser.pointerPosition = referencePos
-
-		// Same clamp as touchDown: a finger/pen touch counts as the left mouse button
-		int rewindButtonIndex = type == MiddleMouseButton or type == RightMouseButton ? InputButton.LeftMouseButton + type : InputButton.LeftMouseButton
-		if rewindButtonIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 
 	internal scroll: InternalUser internalUser
 	                 Player player
@@ -1518,28 +1538,29 @@ skipInit global unit input
 		// app.onKeyDown??(key, character)
 		// player.onKeyDown??(key, character)
 
-		// Modern Input
-		// if character
-		// 	internalUser.typedCharacters += character
-		// else
-		// if key == Backspace
-		// 	internalUser.typedCharacters += "\b"
-
+		// --- Modern Input ---
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = true
 		Input key = Input.items[keyIndex]
 		if not key or (character and key.character != character)
 			key = {type:Keyboard, code:key ? key.code : "", character}
-		internalUser.pressedAtFrame[keyIndex] = core.frame
-		internalUser.allJustPressed.add key
-		let parent = key?.parent
-			internalUser.pressedAtFrame[parent.index] = core.frame
-			internalUser.allJustPressed.add parent
 			
-			// CmdOrCtrl
+		// Save when key was pressed if it's not already pressed (to cancel out OS key repeat and support custom repeat)
+		if internalUser.releasedAtFrame[keyIndex] >= internalUser.pressedAtFrame[keyIndex]
+			internalUser.pressedAtFrame[keyIndex] = core.frame
+			internalUser.allJustPressed.add key
+			
+		// Save when the parent key was pressed if it's not already pressed (e.g. "Shift" is the parent of "ShiftLeft")
+		let parent = key?.parent
+			if internalUser.releasedAtFrame[parent.index] >= internalUser.pressedAtFrame[parent.index]
+				internalUser.pressedAtFrame[parent.index] = core.frame
+				internalUser.allJustPressed.add parent
+			
+			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
-				internalUser.allJustPressed.add Input.CmdOrCtrl
-				internalUser.pressedAtFrame[Input.CmdOrCtrl.index] = core.frame
+				if internalUser.releasedAtFrame[Input.CmdOrCtrl.index] >= internalUser.pressedAtFrame[Input.CmdOrCtrl.index]
+					internalUser.allJustPressed.add Input.CmdOrCtrl
+					internalUser.pressedAtFrame[Input.CmdOrCtrl.index] = core.frame
 			
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -1556,16 +1577,20 @@ skipInit global unit input
 		// // app.onKeyUp??(key)
 		// // player.onKeyUp??(key)
 			
-		// Modern Input
+		// --- Modern Input ---
 		if keyIndex >= 0 and keyIndex == core.rewindKeyIndex then player.holdingRewindKey = false
 		Input key = Input.items[keyIndex]
+		
+		// Save when key was released
 		internalUser.releasedAtFrame[keyIndex] = core.frame
 		internalUser.allJustReleased.add key
+		
+		// Save when the parent key was released (e.g. "Shift" is the parent of "ShiftLeft")
 		let parent = key?.parent
 			internalUser.releasedAtFrame[parent.index] = core.frame
 			internalUser.allJustReleased.add parent
 			
-			// CmdOrCtrl
+			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				internalUser.releasedAtFrame[Input.CmdOrCtrl.index] = core.frame
@@ -1586,7 +1611,10 @@ skipInit global unit input
 			// transiently resurrects their player, so the count can exceed the palette)
 			.playerColor = graphics.defaultColors[i mod graphics.defaultColors.length]
 			.playerDarkColor = graphics.darkDefaultColors[i mod graphics.darkDefaultColors.length]
-			internalUsers[.id].index = i
+			
+			let internalUser = internalUsers[.id]
+			internalUser.syncedIndex = i
+			internalUserBySyncedIndex[.playerIndex] = internalUser
 			
 		if core.mode == Local and not core.simulateConnection
 			if players.length >= 1
@@ -1749,6 +1777,7 @@ skipInit global unit input
 		if not player then return
 		players.remove player
 		playersById[removeUserId] = null
+		internalUserBySyncedIndex[player.playerIndex] = null
 		updatePlayers
 		print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
 
@@ -1774,6 +1803,7 @@ skipInit global unit input
 			player.playerName = user.name
 			players.add player
 			playersById[user.id] = player
+			internalUserBySyncedIndex[player.playerIndex] = user
 			if user.local then localPlayer = player
 			updatePlayers
 
@@ -1897,6 +1927,7 @@ skipInit global unit input
 	global importance:0 onTouchDown: implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		                bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		                void(Touch touch) do                // Do this for each touch or click
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
@@ -2193,16 +2224,20 @@ skipInit global unit input
 		field.handleTextInput(7, value)
 		
 	js void updateCursor
+		// In headless mode (node.js) there is no document to show a cursor on
+		if(system.isHeadless) return
 		// document.body.style.cursor = (input.showPointers == 2 && system.playMode == 4 ? "none" : input.cursor)
 		document.body.style.cursor = input.cursor
 
 	onTextComposition: void(string characters) do
+		if not active then return
 		for internalUsers as user if user
 			for user.textCompositions as characters
 				do characters
 				
 	onTextInput: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		         void(string textInput) do           // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by)
 			for internalUsers[.id].textInputs
 				do .
@@ -2214,6 +2249,7 @@ skipInit global unit input
 		              KeyCode key                             // The key that will trigger the event
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys
 				if . == key
@@ -2238,6 +2274,7 @@ skipInit global unit input
 		              bool shift = false
 		              implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys
 				if . == key
@@ -2256,6 +2293,7 @@ skipInit global unit input
 	// Do something when a player presses a key
 	global importance:0 onKeyDown: implicit nocolon Player[] by = null // Only consider keys pressed by this player or list of players
 		              void(KeyCode key, Player pressedBy, bool cmdOrCtrl, bool alt, bool shift) do  // Do this for each key that is pressed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].downKeys as key
 				bool actualCmdOrCtrl, actualShift, actualAlt
@@ -2271,6 +2309,7 @@ skipInit global unit input
 	// Do something when a player releases a key
 	global importance:0 onKeyUp: implicit nocolon Player[] by = null // Only consider keys released by this player or list of players
 		            void(KeyCode key, Player pressedBy) do  // Do this for each key that is released
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].upKeys as key
 				do key, player
@@ -2278,6 +2317,7 @@ skipInit global unit input
 	// Do something when a player types a character
 	global importance:0 onType: implicit nocolon Player[] by = null         // Only consider characters typed by this player or list of players
 		           void(string character, Player pressedBy) do // Do this for each character that is typed
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].pressedKeys as character
 				do character, player
@@ -2285,6 +2325,7 @@ skipInit global unit input
 	// Returns true if a given key is currently held down
 	isKeyDown: KeyCode key          // The key to check
 		       Player by = null // Only consider keys pressed by this player 
+		if not active then return false
 		if (core.mode == Connected || core.simulateConnection) && by
 			let player = playersById[by.id]
 				return player.keysCurrentlyDown.includes key
@@ -2297,6 +2338,7 @@ skipInit global unit input
 	// Do something when the user navigates back or forward in the browser	
 	global onNavigate: implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		               void(string url) do                 // Do this for each event
+		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[.id].navigations as url
 				do url
@@ -2333,12 +2375,12 @@ class Input
 	InputType type
 	string code
 	string character
-	string name
+	string name, alternativeName
 	Input parent
 	int index
 	
 	Input
-		if not name then name = code.toLowerCase
+		if not name then name = character or code.toLowerCase
 
 	inline string toString() this.character
 
@@ -2361,12 +2403,13 @@ class Input
 	global const Right	= {type:Gamepad,	code:"Right",	name:"gamepadright"}
 	
 	// Pointer
-	global const LeftMouseButton	= {type:Pointer,	code:"LeftMouseButton"}
+	global const Input Pointer	= {type:Pointer}
+	global const LeftMouseButton	= {type:Pointer,	code:"LeftMouseButton", parent:Pointer}
 	global const MiddleMouseButton	= {type:Pointer,	code:"MiddleMouseButton"}
 	global const RightMouseButton	= {type:Pointer,	code:"RightMouseButton"}
 
 	// Function row
-	global const Esc	= {type:Keyboard,	code:"Escape"}
+	global const Escape	= {type:Keyboard,	code:"Escape", name:"esc", alternativeName:"escape"}
 	global const F1	= {type:Keyboard,	code:"F1"}
 	global const F2	= {type:Keyboard,	code:"F2"}
 	global const F3	= {type:Keyboard,	code:"F3"}
@@ -2384,81 +2427,81 @@ class Input
 	const Pause	= {type:Keyboard,	code:"Pause"}
 
 	// Number row
-	const Backquote	= {type:Keyboard,	code:"Backquote",	character:"`"}
-	const Digit1	= {type:Keyboard,	code:"Digit1",	character:"1",	name:"1"}
-	const Digit2	= {type:Keyboard,	code:"Digit2",	character:"2",	name:"2"}
-	const Digit3	= {type:Keyboard,	code:"Digit3",	character:"3",	name:"3"}
-	const Digit4	= {type:Keyboard,	code:"Digit4",	character:"4",	name:"4"}
-	const Digit5	= {type:Keyboard,	code:"Digit5",	character:"5",	name:"5"}
-	const Digit6	= {type:Keyboard,	code:"Digit6",	character:"6",	name:"6"}
-	const Digit7	= {type:Keyboard,	code:"Digit7",	character:"7",	name:"7"}
-	const Digit8	= {type:Keyboard,	code:"Digit8",	character:"8",	name:"8"}
-	const Digit9	= {type:Keyboard,	code:"Digit9",	character:"9",	name:"9"}
-	const Digit0	= {type:Keyboard,	code:"Digit0",	character:"0",	name:"0"}
-	const Minus	= {type:Keyboard,	code:"Minus",	character:"-"}
-	const Equal	= {type:Keyboard,	code:"Equal",	character:"="}
+	const Backquote	= {type:Keyboard,	code:"Backquote",	character:"`", alternativeName:"backquote"}
+	const Digit1	= {type:Keyboard,	code:"Digit1",	character:"1"}
+	const Digit2	= {type:Keyboard,	code:"Digit2",	character:"2"}
+	const Digit3	= {type:Keyboard,	code:"Digit3",	character:"3"}
+	const Digit4	= {type:Keyboard,	code:"Digit4",	character:"4"}
+	const Digit5	= {type:Keyboard,	code:"Digit5",	character:"5"}
+	const Digit6	= {type:Keyboard,	code:"Digit6",	character:"6"}
+	const Digit7	= {type:Keyboard,	code:"Digit7",	character:"7"}
+	const Digit8	= {type:Keyboard,	code:"Digit8",	character:"8"}
+	const Digit9	= {type:Keyboard,	code:"Digit9",	character:"9"}
+	const Digit0	= {type:Keyboard,	code:"Digit0",	character:"0"}
+	const Minus	= {type:Keyboard,	code:"Minus",	character:"-", alternativeName:"minus"}
+	const Equal	= {type:Keyboard,	code:"Equal",	character:"=", alternativeName:"equal"}
 	global const Backspace	= {type:Keyboard,	code:"Backspace"}
 
 	// Top letter row
-	global const Tab	= {type:Keyboard,	code:"Tab",	character:"\t"}
-	const KeyQ	= {type:Keyboard,	code:"KeyQ",	character:"q",	name:"q"}
-	const KeyW	= {type:Keyboard,	code:"KeyW",	character:"w",	name:"w"}
-	const KeyE	= {type:Keyboard,	code:"KeyE",	character:"e",	name:"e"}
-	const KeyR	= {type:Keyboard,	code:"KeyR",	character:"r",	name:"r"}
-	const KeyT	= {type:Keyboard,	code:"KeyT",	character:"t",	name:"t"}
-	const KeyY	= {type:Keyboard,	code:"KeyY",	character:"y",	name:"y"}
-	const KeyU	= {type:Keyboard,	code:"KeyU",	character:"u",	name:"u"}
-	const KeyI	= {type:Keyboard,	code:"KeyI",	character:"i",	name:"i"}
-	const KeyO	= {type:Keyboard,	code:"KeyO",	character:"o",	name:"o"}
-	const KeyP	= {type:Keyboard,	code:"KeyP",	character:"p",	name:"p"}
-	const BracketLeft	= {type:Keyboard,	code:"BracketLeft",	character:"["}
-	const BracketRight	= {type:Keyboard,	code:"BracketRight",	character:"]"}
-	const Backslash	= {type:Keyboard,	code:"Backslash",	character:"\\"}
+	global const Tab	= {type:Keyboard,	code:"Tab",	character:"\t", name:"tab", alternativeName:"tabulator"}
+	const KeyQ	= {type:Keyboard,	code:"KeyQ",	character:"q"}
+	const KeyW	= {type:Keyboard,	code:"KeyW",	character:"w"}
+	const KeyE	= {type:Keyboard,	code:"KeyE",	character:"e"}
+	const KeyR	= {type:Keyboard,	code:"KeyR",	character:"r"}
+	const KeyT	= {type:Keyboard,	code:"KeyT",	character:"t"}
+	const KeyY	= {type:Keyboard,	code:"KeyY",	character:"y"}
+	const KeyU	= {type:Keyboard,	code:"KeyU",	character:"u"}
+	const KeyI	= {type:Keyboard,	code:"KeyI",	character:"i"}
+	const KeyO	= {type:Keyboard,	code:"KeyO",	character:"o"}
+	const KeyP	= {type:Keyboard,	code:"KeyP",	character:"p"}
+	const BracketLeft	= {type:Keyboard,	code:"BracketLeft",	character:"[",	alternativeName:"bracketleft"}
+	const BracketRight	= {type:Keyboard,	code:"BracketRight",	character:"]",	alternativeName:"bracketright"}
+	const Backslash	= {type:Keyboard,	code:"Backslash",	character:"\\",	alternativeName:"backslash"}
 
 	// Home row
 	global const CapsLock	= {type:Keyboard,	code:"CapsLock"}
-	const KeyA	= {type:Keyboard,	code:"KeyA",	character:"a",	name:"a"}
-	const KeyS	= {type:Keyboard,	code:"KeyS",	character:"s",	name:"s"}
-	const KeyD	= {type:Keyboard,	code:"KeyD",	character:"d",	name:"d"}
-	const KeyF	= {type:Keyboard,	code:"KeyF",	character:"f",	name:"f"}
-	const KeyG	= {type:Keyboard,	code:"KeyG",	character:"g",	name:"g"}
-	const KeyH	= {type:Keyboard,	code:"KeyH",	character:"h",	name:"h"}
-	const KeyJ	= {type:Keyboard,	code:"KeyJ",	character:"j",	name:"j"}
-	const KeyK	= {type:Keyboard,	code:"KeyK",	character:"k",	name:"k"}
-	const KeyL	= {type:Keyboard,	code:"KeyL",	character:"l",	name:"l"}
-	const Semicolon	= {type:Keyboard,	code:"Semicolon",	character:";"}
-	const Quote	= {type:Keyboard,	code:"Quote",	character:"'"}
-	global const Enter	= {type:Keyboard,	code:"Enter",	character:"\n"}
+	const KeyA	= {type:Keyboard,	code:"KeyA",	character:"a"}
+	const KeyS	= {type:Keyboard,	code:"KeyS",	character:"s"}
+	const KeyD	= {type:Keyboard,	code:"KeyD",	character:"d"}
+	const KeyF	= {type:Keyboard,	code:"KeyF",	character:"f"}
+	const KeyG	= {type:Keyboard,	code:"KeyG",	character:"g"}
+	const KeyH	= {type:Keyboard,	code:"KeyH",	character:"h"}
+	const KeyJ	= {type:Keyboard,	code:"KeyJ",	character:"j"}
+	const KeyK	= {type:Keyboard,	code:"KeyK",	character:"k"}
+	const KeyL	= {type:Keyboard,	code:"KeyL",	character:"l"}
+	const Semicolon	= {type:Keyboard,	code:"Semicolon",	character:";",	alternativeName:"semicolon"}
+	const Quote	= {type:Keyboard,	code:"Quote",	character:"'",	alternativeName:"quote"}
+	global const Enter	= {type:Keyboard,	code:"Enter",	character:"\n", name:"enter", alternativeName:"return"}
 
 	// Bottom letter row
 	global const Shift	= {type:Keyboard}
 	const ShiftLeft	= {type:Keyboard,	code:"ShiftLeft",	parent:Shift}
 	const IntlBackslash	= {type:Keyboard,	code:"IntlBackslash"} // The extra key European (ISO) keyboards have between the left Shift and Z
-	const KeyZ	= {type:Keyboard,	code:"KeyZ",	character:"z",	name:"z"}
-	const KeyX	= {type:Keyboard,	code:"KeyX",	character:"x",	name:"x"}
-	const KeyC	= {type:Keyboard,	code:"KeyC",	character:"c",	name:"c"}
-	const KeyV	= {type:Keyboard,	code:"KeyV",	character:"v",	name:"v"}
-	const KeyB	= {type:Keyboard,	code:"KeyB",	character:"b",	name:"b"}
-	const KeyN	= {type:Keyboard,	code:"KeyN",	character:"n",	name:"n"}
-	const KeyM	= {type:Keyboard,	code:"KeyM",	character:"m",	name:"m"}
-	const Comma	= {type:Keyboard,	code:"Comma",	character:","}
-	const Period	= {type:Keyboard,	code:"Period",	character:"."}
-	const Slash	= {type:Keyboard,	code:"Slash",	character:"/"}
+	const KeyZ	= {type:Keyboard,	code:"KeyZ",	character:"z"}
+	const KeyX	= {type:Keyboard,	code:"KeyX",	character:"x"}
+	const KeyC	= {type:Keyboard,	code:"KeyC",	character:"c"}
+	const KeyV	= {type:Keyboard,	code:"KeyV",	character:"v"}
+	const KeyB	= {type:Keyboard,	code:"KeyB",	character:"b"}
+	const KeyN	= {type:Keyboard,	code:"KeyN",	character:"n"}
+	const KeyM	= {type:Keyboard,	code:"KeyM",	character:"m"}
+	const Comma	= {type:Keyboard,	code:"Comma",	character:",",	alternativeName:"comma"}
+	const Period	= {type:Keyboard,	code:"Period",	character:".",	alternativeName:"period"}
+	const Slash	= {type:Keyboard,	code:"Slash",	character:"/",	alternativeName:"slash"}
 	const ShiftRight	= {type:Keyboard,	code:"ShiftRight",	parent:Shift}
 
 	// Bottom row
-	global const CmdOrCtrl	= {type:Keyboard}
-	global const Ctrl	= {type:Keyboard}
-	global const Meta	= {type:Keyboard}
-	global const Alt	= {type:Keyboard}
-	const CtrlLeft	= {type:Keyboard,	code:"CtrlLeft",	parent:Ctrl}
-	const MetaLeft	= {type:Keyboard,	code:"MetaLeft",	parent:Meta}
-	const AltLeft	= {type:Keyboard,	code:"AltLeft",	parent:Alt}
-	global const Space	= {type:Keyboard,	code:"Space",	character:" "}
-	const AltRight	= {type:Keyboard,	code:"AltRight",	parent:Alt}
-	const MetaRight	= {type:Keyboard,	code:"MetaRight",	parent:Meta}
+	global const CmdOrCtrl	= {type:Keyboard,	name:"cmdorctrl",	alternativeName:"commandorcontrol"}
+	global const Ctrl	= {type:Keyboard,	name:"ctrl",	alternativeName:"control"}
+	global const Meta	= {type:Keyboard,	name:"meta",	alternativeName:"super"}
+	global const Alt	= {type:Keyboard,	name:"alt",	alternativeName:"option"}
+	const CtrlLeft	= {type:Keyboard,	code:"ControlLeft",	alternativeName:"ctrlleft",	parent:Ctrl}
+	const MetaLeft	= {type:Keyboard,	code:"MetaLeft",	alternativeName:"metaleft",	parent:Meta}
+	const AltLeft	= {type:Keyboard,	code:"AltLeft",	alternativeName:"altleft",	parent:Alt}
+	global const Space	= {type:Keyboard,	code:"Space",	character:" ", name:"space"}
+	const AltRight	= {type:Keyboard,	code:"AltRight",	alternativeName:"altright",	parent:Alt}
+	const MetaRight	= {type:Keyboard,	code:"MetaRight",	alternativeName:"metaright",	parent:Meta}
 	const ContextMenu	= {type:Keyboard,	code:"ContextMenu"}
-	const CtrlRight	= {type:Keyboard,	code:"CtrlRight",	parent:Ctrl}
+	const CtrlRight	= {type:Keyboard,	code:"ControlRight",	alternativeName:"ctrlright",	parent:Ctrl}
 
 	// Navigation
 	const Insert	= {type:Keyboard,	code:"Insert"}
@@ -2467,29 +2510,29 @@ class Input
 	const Delete	= {type:Keyboard,	code:"Delete"}
 	const End	= {type:Keyboard,	code:"End"}
 	const PageDown	= {type:Keyboard,	code:"PageDown"}
-	global const ArrowUp	= {type:Keyboard,	code:"ArrowUp"}
-	global const ArrowLeft	= {type:Keyboard,	code:"ArrowLeft"}
-	global const ArrowDown	= {type:Keyboard,	code:"ArrowDown"}
-	global const ArrowRight	= {type:Keyboard,	code:"ArrowRight"}
+	global const ArrowUp	= {type:Keyboard,	code:"ArrowUp",	name:"up",	alternativeName:"arrowup"}
+	global const ArrowLeft	= {type:Keyboard,	code:"ArrowLeft",	name:"left",	alternativeName:"arrowleft"}
+	global const ArrowDown	= {type:Keyboard,	code:"ArrowDown",	name:"down",	alternativeName:"arrowdown"}
+	global const ArrowRight	= {type:Keyboard,	code:"ArrowRight",	name:"right",	alternativeName:"arrowright"}
 
 	// Numpad
 	const NumLock	= {type:Keyboard,	code:"NumLock"}
-	const NumpadDivide	= {type:Keyboard,	code:"NumpadDivide",	character:"/"}
-	const NumpadMultiply	= {type:Keyboard,	code:"NumpadMultiply",	character:"*"}
-	const NumpadSubtract	= {type:Keyboard,	code:"NumpadSubtract",	character:"-"}
-	const Numpad7	= {type:Keyboard,	code:"Numpad7",	character:"7"}
-	const Numpad8	= {type:Keyboard,	code:"Numpad8",	character:"8"}
-	const Numpad9	= {type:Keyboard,	code:"Numpad9",	character:"9"}
-	const NumpadAdd	= {type:Keyboard,	code:"NumpadAdd",	character:"+"}
-	const Numpad4	= {type:Keyboard,	code:"Numpad4",	character:"4"}
-	const Numpad5	= {type:Keyboard,	code:"Numpad5",	character:"5"}
-	const Numpad6	= {type:Keyboard,	code:"Numpad6",	character:"6"}
-	const Numpad1	= {type:Keyboard,	code:"Numpad1",	character:"1"}
-	const Numpad2	= {type:Keyboard,	code:"Numpad2",	character:"2"}
-	const Numpad3	= {type:Keyboard,	code:"Numpad3",	character:"3"}
-	const NumpadEnter	= {type:Keyboard,	code:"NumpadEnter",	character:"\n"}
-	const Numpad0	= {type:Keyboard,	code:"Numpad0",	character:"0"}
-	const NumpadDecimal	= {type:Keyboard,	code:"NumpadDecimal",	character:"."}
+	const NumpadDivide	= {type:Keyboard,	code:"NumpadDivide",	character:"/", name:"numpaddivide",	alternativeName:"numpadslash"}
+	const NumpadMultiply	= {type:Keyboard,	code:"NumpadMultiply",	character:"*", name:"numpadmultiply",	alternativeName:"numpadasterisk"}
+	const NumpadSubtract	= {type:Keyboard,	code:"NumpadSubtract",	character:"-", name:"numpadsubtract",	alternativeName:"numpadminus"}
+	const Numpad7	= {type:Keyboard,	code:"Numpad7",	character:"7", name:"numpad7"}
+	const Numpad8	= {type:Keyboard,	code:"Numpad8",	character:"8", name:"numpad8"}
+	const Numpad9	= {type:Keyboard,	code:"Numpad9",	character:"9", name:"numpad9"}
+	const NumpadAdd	= {type:Keyboard,	code:"NumpadAdd",	character:"+", name:"numpadadd",	alternativeName:"numpadplus"}
+	const Numpad4	= {type:Keyboard,	code:"Numpad4",	character:"4", name:"numpad4"}
+	const Numpad5	= {type:Keyboard,	code:"Numpad5",	character:"5", name:"numpad5"}
+	const Numpad6	= {type:Keyboard,	code:"Numpad6",	character:"6", name:"numpad6"}
+	const Numpad1	= {type:Keyboard,	code:"Numpad1",	character:"1", name:"numpad1"}
+	const Numpad2	= {type:Keyboard,	code:"Numpad2",	character:"2", name:"numpad2"}
+	const Numpad3	= {type:Keyboard,	code:"Numpad3",	character:"3", name:"numpad3"}
+	const NumpadEnter	= {type:Keyboard,	code:"NumpadEnter",	character:"\n", name:"numpadenter",	alternativeName:"numpadreturn"}
+	const Numpad0	= {type:Keyboard,	code:"Numpad0",	character:"0", name:"numpad0"}
+	const NumpadDecimal	= {type:Keyboard,	code:"NumpadDecimal",	character:".", name:"numpaddecimal",	alternativeName:"numpadperiod"}
 
 	static Input[] items
 	inline js static dynamic keysObject => Input
@@ -2518,9 +2561,10 @@ input
 	// keyboard and pointer, and their events land in their own stream (the old behavior forced
 	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
 	global bool justPressed: Input item, int player = 0
+		let user = internalUserBySyncedIndex[player]
+		if not active or not user or user.handledAtFrame[item.index] == core.frame then return false
+
 		// Pressed this frame?
-		let user = internalUsers[player]
-		if not user then return false
 		int pressedAtFrame = user.pressedAtFrame[item.index]
 		int framesSincePress = core.frame - pressedAtFrame
 		if framesSincePress == 0 then return true
@@ -2528,68 +2572,103 @@ input
 		// Repeating?
 		if keyRepeatEvery == 0 then return false
 		int releasedAtFrame = user.releasedAtFrame[item.index]
-		return pressedAtFrame >= releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
+		return pressedAtFrame > releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
 	global bool justPressed: string keyCombination, int player = 0
+		if not active or not keyCombination then return false
+		let user = internalUserBySyncedIndex[player]
+		if  not user then return false
 		let keyStrings = keyCombination.toLowerCase.split("+")
+		bool anyPressedThisFrame = false
 		for keyStrings
-			let keyString = .trim
-			let item = Input.items.find(.name == keyString)
-			if not item or input.justPressed(item, player) then return false
-		return true
+			let name = .trim
+			if not name then return false
+				
+			let item = Input.items.find.name == name or .alternativeName == name
+			if not item or user.handledAtFrame[item.index] == core.frame then return false
+			
+			let pressedAtFrame = user.pressedAtFrame[item.index]
+			let releasedAtFrame = user.releasedAtFrame[item.index]
+			if pressedAtFrame < releasedAtFrame then return false
+				
+			if pressedAtFrame == core.frame then anyPressedThisFrame = true
+			
+		return anyPressedThisFrame
 
 	// Returns true if the player is currently pressing the given button
+	// (false if it was pressed and released in the same frame, then only justPressed and justReleased are true)
 	global bool isPressed: Input item, int player = 0
-		let user = internalUsers[player]
-		if not user then return false
-		return user.pressedAtFrame[item.index] >= user.releasedAtFrame[item.index]
+		let user = internalUserBySyncedIndex[player]
+		if not active or not user then return false
+		return user.pressedAtFrame[item.index] > user.releasedAtFrame[item.index]
 
-	// Returns true if the player has just released the given button this frame
+	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled this frame)
 	global bool justReleased: Input item, int player = 0
-		let user = internalUsers[player]
-		if not user then return false
-		return user.releasedAtFrame[item.index] == core.frame
+		let user = internalUserBySyncedIndex[player]
+		if not active or not user then return false
+		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] != core.frame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
 	// players' pointers are available and deterministic
 	global Vector2 getPointer: int player = 0
-		let requestedPlayer = players[player]
-			return requestedPlayer.pointerPosition
-		return {0,0}
+		let user = internalUserBySyncedIndex[player]
+		if not user then return {0,0}
+		if graphics.isTransforming then	return user.pointerPosition.getRelativeTo graphics.localMatrix
+		else	return user.pointerPosition
 
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
-		let requestedPlayer = players[player]
-			return internalUsers[requestedPlayer.id].scrollDelta
-		return {0,0}
+		let user = internalUserBySyncedIndex[player]
+		if not active or not user then return {0,0}
+		return user.scrollDelta
 
 	global Input[] allJustPressed: int player = 0
-		let user = internalUsers[player]
-		if user then return user.allJustPressed
-		Input[] empty
-		return empty
+		let user = internalUserBySyncedIndex[player]
+		if not active or not user then return []
+		return user.allJustPressed
 
 	global Input[] allJustReleased: int player = 0
-		let user = internalUsers[player]
-		if user then return user.allJustReleased
-		Input[] empty
-		return empty
+		let user = internalUserBySyncedIndex[player]
+		if not active or not user then return []
+		return user.allJustReleased
 
 	global string getFocus: int player = 0
 		player = 0
-		return internalUsers[player].focus
+		return internalUserBySyncedIndex[player].focus
 
 	global void setFocus: string value, int player = 0
 		player = 0
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		// if value != user.prevFocus then user.lostFocus = user.prevFocus
 		user.focus = value
 
 	global string getLostFocus: int player = 0
 		player = 0
-		let user = internalUsers[player]
+		let user = internalUserBySyncedIndex[player]
 		return user.focus != user.prevFocus ? user.prevFocus : ""
 		// let lostFocus = user.lostFocus
 		// user.lostFocus = ""
 		// return lostFocus
+
+	// Marks the input and its parent (e.g. Pointer for LeftMouseButton) as handled for this frame, so justPressed and justReleased
+	// return false for them in the rest of the frame (isPressed is state, not an event, and stays unaffected). Call this when an overlay or a button consumed the press, so the elements drawn below or after it don't react to it as well
+	global markAsHandled: Input item, int player = 0
+		let user = internalUserBySyncedIndex[player]
+		if not user then return
+		user.handledAtFrame[item.index] = core.frame
+		let parent = item.parent
+			user.handledAtFrame[parent.index] = core.frame
+
+	// Returns true if the input was marked as handled this frame
+	bool isHandled: Input item, int player = 0
+		return internalUserBySyncedIndex[player]?.handledAtFrame[item.index] == core.frame
+		
+	// Runs do with the input switched off, e.g. to draw a page that fades out without its buttons and keys reacting
+	global withoutHandlingInput: void() do
+		bool prevInputActive = active
+		try
+			active = false
+			do()
+		finally
+			active = prevInputActive

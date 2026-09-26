@@ -518,9 +518,9 @@ importance:5 dynamic Style
 	//     div "Abort", backgroundColor:#ff0000
 	Color backgroundColor
 	// The background-image for an element. 
-	// Place an image in the folder "assets/pb_public/media" and it will automatically show up in the auto completions (without the file extension).
+	// Place an image in the folder "dist/pb_public/media" and it will automatically show up in the auto completions (without the file extension).
 	// 
-	// Example: We place the image "OkButton.png" in "assets/pb_public/media".
+	// Example: We place the image "OkButton.png" in "dist/pb_public/media".
 	//     div backgroundImage:OkButton
 	Image backgroundImage // The background-image for an element
 	Vector2 backgroundPosition // The starting position of a background-image

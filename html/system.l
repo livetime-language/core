@@ -4,9 +4,12 @@ CompilerSettings
 	sourceCodeLocation = true
 	clone = true
 	
+// html.resize uses the first entry of system.referenceSizes whose forWidthBelow is above the window width (0 while isMobile is toggled on)
+// and, if forPortrait, whose window is portrait (inner width < inner height)
 class ReferenceSize
 	float referenceWidth = 1920
 	float forWidthBelow = float.maxValue
+	bool forPortrait = false
 	bool isMobile = false
 	
 enum TickMode: Interval, AnimationFrame
@@ -37,7 +40,7 @@ global transient skipInit unit system
 	public inline js string locationHash	=> location.hash
 	public inline js string basePath	=> _basePath
 	public inline js string referrer	=> document.referrer
-	public inline js string protocolAndHost() (location.host && !system.isDebug ? location.origin : "http://localhost")
+	public inline js string protocolAndHost() (window.location?.host && !system.isDebug ? location.origin : "http://localhost")
 	public inline js dynamic networkInformation() navigator.connection
 	public inline js void reload() location.reload(/*forceReload=*/true)
 
@@ -47,6 +50,8 @@ global transient skipInit unit system
 
 	private inline js void initMedia
 		this.electron = window?.process?.versions?.electron
+		
+		// Detect the operating system
 		const ua = navigator.userAgent;
 		switch (true) {
 			case /Android/i.test(ua):             this.os = "Android"; break;
@@ -56,13 +61,18 @@ global transient skipInit unit system
 			case /Linux/i.test(ua):               this.os = "Linux";   break;
 			default:                              this.os = "Unknown";
 		}
+		
+		// Polyfill
+		if(!String.prototype.replaceAll) {
+			String.prototype.replaceAll = function(a, b) { return this.split(a).join(b); }
+		}
+		
 		IndexedDB.stores = []
 		audio.init();
 		media.init();
 		PlainDate.init();
 		html.init();
 		app.init?.()
-		
 
 	inline js float startTime => _startTime
 			
@@ -70,7 +80,6 @@ global transient skipInit unit system
 		try
 			this.isDebug = isDebug
 			// print Time.preciseTime - startTime
-			Time.startTimer
 			
 			this.referenceSizes = [
 				{500 forWidthBelow:1000 isMobile:true}
@@ -80,28 +89,18 @@ global transient skipInit unit system
 			this.resetWhenCodeChanged = true
 			
 			initMedia
-			Time.printTimer "system.start: initMedia"
 
 			await loadFont "OpenSans.woff2"
-			Time.printTimer "system.start: loadFont"
 			try
 				html.reset
 				initAll
-				Time.printTimer "system.start: initAll"
-
 				html.resize
-				Time.printTimer "system.start: html.resize"
-
 				app.start??()
-				Time.printTimer "system.start: startApp"
-
 				refresh
-				Time.printTimer "system.start: refresh"
 
 				// Do we sill need this? In which case would it prevent "unwanted scrolling"?
 				// We need to call resize again after the first refresh to prevent unwanted scrolling
 				// html.resize
-				// Time.printTimer "system.start: resize"
 
 				startTickInterval
 				sendToEditor {type:"startupComplete"}
@@ -383,7 +382,7 @@ global transient skipInit unit system
 		if(color) console.log(`%c${text}`, `color: ${color.colorString}`)
 		else      console.log(text)
 		if(system.isDebug && location) {
-			_sendStringToEditor(`${type}|${text}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
+			_sendStringToEditor(`${type}|${text.replaceAll("\n", "\\n")}|${location.file}|${location.start}|${color ? color.colorString : ""}`)
 		}
 	
 global skipInit unit math

@@ -854,6 +854,7 @@ internal transient skipInit unit PeerNetwork
 		return true
 
 	private logStatusSummary: float now
+		if not system.enableStatusLogging then return
 		let localUser = input.localUser
 		string wsState = ServerNetwork.connected ? "up" : "DOWN"
 		if not ServerNetwork.joined then wsState += " not-joined"

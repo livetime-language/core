@@ -719,7 +719,7 @@ internal transient skipInit unit core
 	// Each line carries a millisecond timestamp and the current frame, so client logs can be
 	// correlated with each other and with the server log (which logs microseconds) after a
 	// real-world incident
-	js void log: logstring text
+	js void log: logstring text, Color color = null
 		if(Time.now > core.prevLog + 3000) core.logs += "\n"
 		core.prevLog = Time.now
 
@@ -734,12 +734,17 @@ internal transient skipInit unit core
 			statistics.systemLogs.splice(0, 10000);
 			statistics.successfullySentSystemLogs = Math.max(0, statistics.successfullySentSystemLogs - 10000);
 		}
-		console.log(str)
+		if(color) console.log(`%c${text}`, `color: ${color.hex}`);
+		else      console.log(text);
 		core.logs += str + "\n"
 		// Bound the in-memory log: drop the oldest half once it exceeds ~2 MB (F28)
 		if(core.logs.length > 2097152) {
 			core.logs = core.logs.substring(core.logs.indexOf("\n", core.logs.length - 1048576) + 1);
 		}
+		
+		let localStorageLog = (localStorage.getItem("log") || "") + str + "\n"
+		if(localStorageLog.length > 32000) localStorageLog = localStorageLog.substring(localStorageLog.length-32000);
+		localStorage.setItem("log", localStorageLog);
 			
 	internal string logs
 	internal bool hasErrors
@@ -876,6 +881,9 @@ internal transient skipInit unit core
 	// This is all the logic that is executed in a unit test for each frame.
 	// Called in step and in tests
 	internal tick: bool draw
+		// Headless tests: resume pending awaits before every frame (see system.resumePendingAwaits).
+		// The browser engine is untouched, its microtasks run between animation frames anyway
+		if system.isHeadless then system.resumePendingAwaits
 		// if targetFrame != -1 and frame > targetFrame	return
 
 		// Set time: the app clock follows the surviving timeline (the rewind playhead), not the
@@ -903,7 +911,7 @@ internal transient skipInit unit core
 		try
 			resetStateIndex()
 			system.trace(Time.ticks)
-			Framework??.tick
+			Framework??.tick()
 			tickTimes.add tickTime = PlainDate.measure
 				if lobby.inLobby then	lobby.tick
 				else	app??.tick()
@@ -2089,9 +2097,9 @@ global transient skipInit unit system
 				drawDebugInfo()
 				graphics.isDrawingDebugInfo = false
 			}
-			core.addOutput(`${type}|${text}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+			core.addOutput(`${type}|${text.replaceAll("\n", "\\n")}|${location.file}|${location.start}|${color ? color.hex : ""}`)
 		} else {
-			core.log(text);
+			core.log(text, color);
 		}
 
 	global debug: void() drawDebugInfo
@@ -2220,7 +2228,7 @@ skipInit transient unit statistics
 			gameId: core.gameId
 			roomId: core.roomId
 			userId
-			userIndex: input.localUser.index
+			userIndex: input.localUser.syncedIndex
 			userEmail: user.email
 			version: system.buildVersion
 			staging: system.isStaging
@@ -2368,7 +2376,5 @@ tests
 	
 	// Used internally. Do not call in your code.
 	internal tick
-		system.log "### tick core.frame:{core.frame} core.targetFrame:{core.targetFrame} "
-		// if core.frame <= core.targetFrame
 		system.fastForward = core.frame != core.targetFrame
 		core.tick draw:core.frame == core.targetFrame

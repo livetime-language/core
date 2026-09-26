@@ -1896,10 +1896,10 @@ Returns HTMLElement
 
 ### img
 Render an image html element within the draw function.
-Place an image in the folder "assets/pb_public/media" and it will automatically show up in the auto completions (without the file extension).
+Place an image in the folder "dist/pb_public/media" and it will automatically show up in the auto completions (without the file extension).
 
 
-*Example: We place the image "OkButton.png" in "assets/pb_public/media".*
+*Example: We place the image "OkButton.png" in "dist/pb_public/media".*
 ```
 app
     int clicks = 0
@@ -1908,7 +1908,7 @@ app
         img OkButton, onClick:clicks++; refresh
 ```
 
-*Example: We place the images "On.png" and "Off.png" in "assets/pb_public/media".*
+*Example: We place the images "On.png" and "Off.png" in "dist/pb_public/media".*
 ```
 app
     bool isOn = true

@@ -50,6 +50,8 @@ skipInit immutable Sound
 		if(this.audioElement) this.audioElement.currentTime = value
 		
 	private js void doPlay: PlayingSound ps
+		// In headless mode (node.js) there is no Audio element
+		if(system.isHeadless) return;
 		// Recreate audio if it was lost during serialization
 		if(!this.nextAudioElement) this.preloadForNextPlayback();
 			
@@ -62,6 +64,7 @@ skipInit immutable Sound
 		this.preloadForNextPlayback()
 		
 	internal js void preloadForNextPlayback
+		if(system.isHeadless) return;
 		this.nextAudioElement = new Audio();
 		if(PeerNetwork.audioOutputId && this.nextAudioElement.setSinkId) 
 			await this.nextAudioElement.setSinkId(PeerNetwork.audioOutputId);

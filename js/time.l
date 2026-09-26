@@ -163,6 +163,11 @@ struct float
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
 	private static DateTimeFormat dayShortMonthNameFormat
+
+	// (31 Dec 00)
+	inline string dayShortMonthNameShortYearString
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
@@ -206,14 +211,25 @@ struct float
 class string
 	implicit inline TimeString toTimeString() this
 
-// A string representation of a date and time in the ISO 8601 format, for example "2000-12-31 17:30:00.000Z".
+// A string representation of a date and time in the form PocketBase stores it, for example "2000-12-31 17:30:00.000Z":
+// ISO 8601 with a space instead of the "T". PocketBase keeps date fields as text in this form and binds a filter literal as a
+// plain string, so a value the client writes or puts into a filter must have the same form - the ISO "T" (0x54) sorts after
+// the space (0x20), so "due <= '2000-12-31T17:30:00.000Z'" matched every due of the day, whatever its hour.
 // It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
 string TimeString
-	static TimeString now => Date.fromTime(Time.now).utcString
-	static TimeString fromTime(float value) => Date.fromTime(value).utcString
+	static TimeString now => fromTime(Time.now)
+	static inline js TimeString fromTime(float value) new Date(value).toISOString().replace("T", " ")
 	
 	inline js bool toBool => this
 	inline string toString() this
+
+	// Parses the string into a Date. PocketBase writes "2000-12-31 17:30:00.000Z" with a space instead of the "T" of
+	// ISO 8601, which older Safari and iOS WebKit refused (Invalid Date), so the space is replaced before parsing
+	inline js Date toDate() new Date(this.replace(" ", "T"))
+	
+	// Parses the string to milliseconds since 1 January 1970. PocketBase writes "2000-12-31 17:30:00.000Z" with a space instead of the "T" of
+	// ISO 8601, which older Safari and iOS WebKit refused (Invalid Date), so the space is replaced before parsing
+	inline js float toTime() new Date(this.replace(" ", "T")).getTime()
 
 	// Returns 0 for an exact match, 1 if first is larger, -1 if second is larger
 	inline js int localeCompare: TimeString value // The string to compare to
@@ -238,6 +254,11 @@ string TimeString
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
 	private static DateTimeFormat dayShortMonthNameFormat
+
+	// (31 Dec 00)
+	inline string dayShortMonthNameShortYearString
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(new Date(this))
+	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
@@ -279,7 +300,7 @@ string TimeString
 js(Date) internal transient class Date
 	inline js Date(float time) new Date(time)
 	inline js Date(TimeString timeString) new Date(timeString)
-	inline js Date(int year, int month, int day, int hour, int minute, int second, int milliseconds) new Date(year, month-1, day, hour, minute, second, milliseconds)
+	inline js Date(int year=1970, int month=0, int day=1, int hour=0, int minute=0, int second=0, int milliseconds=0) new Date(year, month-1, day, hour, minute, second, milliseconds)
 	
 	static inline js Date fromTime(float time) new Date(time)
 	static inline js Date fromString(string timeString) new Date(timeString)
@@ -331,6 +352,9 @@ js(Date) internal transient class Date
 			":" + pad(Math.abs(tzo) % 60);
 
 	inline js TimeString utcString() this.toISOString()
+	
+	// IANA timezone of the browser, e.g. "Europe/Berlin"
+	static inline js string localTimezone() Intl.DateTimeFormat().resolvedOptions().timeZone
 
 	Date + float delta 
 		return Date.fromTime(this.time + delta)
@@ -361,6 +385,11 @@ js(Date) internal transient class Date
 	inline string dayShortMonthNameString
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
 	private static DateTimeFormat dayShortMonthNameFormat
+
+	// (31 Dec 00)
+	inline string dayShortMonthNameShortYearString
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(this)
+	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
