@@ -524,13 +524,14 @@ internal transient skipInit unit core
 			output = core.output.slice(core.outputSentUpTo);
 			core.outputSentUpTo = core.output.length;
 		}
-		let traces = null;
+		let traces = null, traceCount = 0;
 		if(typeof _traceIndex != "undefined" && _traceIndex > 0) {
-			traces = _traces.slice(0, _traceIndex);
-			core.sentTraceCount += _traceIndex;
+			traceCount = _traceIndex;
+			traces = _traces.slice(0, traceCount);
+			core.sentTraceCount += traceCount;
 			_traceIndex = 0;
 		}
-		_sendToEditor({type:"frame", pixels, traces, output, frame, frames:core.frames, playMode:system.playMode});
+		_sendToEditor({type:"frame", pixels, traces, traceCount, output, frame, frames:core.frames, playMode:system.playMode});
 
 	// Smooth out animations by only executing code when we received inputs from everybody
 	smooth: Player player
