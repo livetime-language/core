@@ -63,9 +63,9 @@ global transient skipInit unit system
 	
 	global visible bool isDebug
 	global public bool isOnlineMultiplayer
+	global visible bool isMobile
 
 	visible OperatingSystem os
-	visible bool isMobile
 	visible bool isBrowser
 	visible bool isNode
 	visible bool isSmallScreen
