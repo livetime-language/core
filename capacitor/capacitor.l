@@ -1,11 +1,13 @@
 file
+	string homeDirectory
+
 	async string read: string filename
 		const result = await Capacitor.Plugins.Filesystem.readFile({path:filename, encoding:"utf8"})
 		return result.data
 
 	getFileUrl: string filename, string cacheKey = null
-		if cacheKey then	return system.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename) + "&cacheKey=" + cacheKey
-		else	return system.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + http.encodeURIComponent(filename)
+		if cacheKey then	return system.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + system.encodeURIComponent(filename) + "&cacheKey=" + cacheKey
+		else	return system.protocolAndHost() + "/_capacitor_content_/org.livetime.mygames.media?path=" + system.encodeURIComponent(filename)
 
 	readdir
 
