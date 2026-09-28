@@ -52,7 +52,7 @@ interface object
 						"object"	result += json.stringify(value)
 						"number"	result += value.toString()
 						"boolean"	result += value ? "true" : "false"
-						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n")
+						default	result += string(value.toString()).replaceAll("\t" with "\\t").replaceAll("\n" with "\\n").replaceAll("\r" with "")
 			result += "\n"
 
 		return result
