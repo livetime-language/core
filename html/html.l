@@ -52,6 +52,7 @@ dynamic HTMLElement
 	bool complete // Is the resouce completely loaded?
 	
 	HTMLElement[string] childrenByKey
+	string key
 	bool used
 		
 	inline js HTMLElement remove() this.remove()
