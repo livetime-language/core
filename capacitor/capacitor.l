@@ -116,22 +116,31 @@ file
 			return false
 		}
 
-	js async bool saveUrl: string url
-		                   string to
+	async bool saveUrl: string url
+		                string to
+		return await saveUrls [url], to
+
+	// Downloads all urls and saves them concatenated into one file (e.g. the segments of a video stream)
+	js async bool saveUrls: string[] urls
+		                    string to
+		let i = 0
 		try {
-			const response = await Capacitor.Plugins.CapacitorHttp.get({url, responseType:"arraybuffer"})
-			const type = Object.entries(response.headers || {}).find(([key]) => key.toLowerCase() == "content-type")?.[1]?.toLowerCase() || ""
-			if(response.status < 200 || response.status >= 300) return false
-			if(type.includes("text") || type.includes("json") || type.includes("xml") || type.includes("html")) return false
-			let data = response.data
-			if(data instanceof ArrayBuffer) data = arrayBufferToBase64(data)
-			else if(ArrayBuffer.isView(data)) data = arrayBufferToBase64(data.buffer)
-			else if(Array.isArray(data)) data = arrayBufferToBase64(new Uint8Array(data).buffer)
-			else if(typeof data == "string" && data.startsWith("data:")) data = data.split(",")[1]
-			if(typeof data != "string" || !data) return false
-			await Capacitor.Plugins.Filesystem.writeFile({path:to, data, recursive:true})
-			return true
+			for(; i < urls.length; i++) {
+				const response = await Capacitor.Plugins.CapacitorHttp.get({url:urls[i], responseType:"arraybuffer"})
+				const type = Object.entries(response.headers || {}).find(([key]) => key.toLowerCase() == "content-type")?.[1]?.toLowerCase() || ""
+				if(response.status < 200 || response.status >= 300 || type.includes("text") || type.includes("json") || type.includes("xml") || type.includes("html")) throw new Error("No media at " + urls[i])
+				let data = response.data
+				if(data instanceof ArrayBuffer) data = arrayBufferToBase64(data)
+				else if(ArrayBuffer.isView(data)) data = arrayBufferToBase64(data.buffer)
+				else if(Array.isArray(data)) data = arrayBufferToBase64(new Uint8Array(data).buffer)
+				else if(typeof data == "string" && data.startsWith("data:")) data = data.split(",")[1]
+				if(typeof data != "string" || !data) throw new Error("No data at " + urls[i])
+				if(i == 0) await Capacitor.Plugins.Filesystem.writeFile({path:to, data, recursive:true})
+				else await Capacitor.Plugins.Filesystem.appendFile({path:to, data})
+			}
+			return urls.length > 0
 		} catch(error) {
+			if(i > 0) await Capacitor.Plugins.Filesystem.deleteFile({path:to}).catch(() => {})
 			return false
 		}
 
