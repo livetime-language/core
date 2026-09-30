@@ -262,10 +262,10 @@ html
 		if not active or not user then return false
 		return user.pressedAtFrame[item.index] > user.releasedAtFrame[item.index]
 
-	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled this frame)
+	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled since it was pressed, the release may come frames later)
 	global bool justReleased: Input item, int player = 0
 		if not active or not user then return false
-		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] != core.frame
+		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] < user.pressedAtFrame[item.index]
 
 	Image getInputImage: Input item
 		return {}

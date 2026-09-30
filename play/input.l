@@ -97,7 +97,7 @@ internal transient class InternalUser
 	// For each input, we store the frame when it was pressed and the frame when it was released
 	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
 	visible int[] pressedAtFrame, releasedAtFrame
-	// The frame in which the input was marked as handled (input.markAsHandled), justPressed returns false for the rest of that frame
+	// The frame in which the input was marked as handled (input.markAsHandled), justPressed returns false for the rest of that frame, justReleased for the release of that press
 	int[] handledAtFrame
 	Vector2 pointerPosition, scrollDelta
 	Input[] allJustPressed, allJustReleased
@@ -2619,11 +2619,11 @@ input
 		if not active or not user then return false
 		return user.pressedAtFrame[item.index] > user.releasedAtFrame[item.index]
 
-	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled this frame)
+	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled since it was pressed, the release may come frames later)
 	global bool justReleased: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
 		if not active or not user then return false
-		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] != core.frame
+		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] < user.pressedAtFrame[item.index]
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
@@ -2668,8 +2668,8 @@ input
 		// user.lostFocus = ""
 		// return lostFocus
 
-	// Marks the input and its parent (e.g. Pointer for LeftMouseButton) as handled for this frame, so justPressed and justReleased
-	// return false for them in the rest of the frame (isPressed is state, not an event, and stays unaffected). Call this when an overlay or a button consumed the press, so the elements drawn below or after it don't react to it as well
+	// Marks the input and its parent (e.g. Pointer for LeftMouseButton) as handled for this frame, so justPressed returns false for them in the rest
+	// of the frame and justReleased for the release of the press, even when it comes frames later (isPressed is state, not an event, and stays unaffected). Call this when an overlay or a button consumed the press, so the elements drawn below or after it don't react to it as well
 	global markAsHandled: Input item, int player = 0
 		let user = internalUserBySyncedIndex[player]
 		if not user then return
