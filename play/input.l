@@ -2574,6 +2574,23 @@ input
 		int releasedAtFrame = user.releasedAtFrame[item.index]
 		return pressedAtFrame > releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
+	// Returns true the player has just clicked within a rectangle
+	global bool justPressed: Input item = Pointer
+							 int player = 0
+	                         Vector2 position
+		                     Vector2 size
+						     HorizontalAlignment align = Center
+						     VerticalAlignment valign = Middle	
+						     bool show = false
+		if show then drawRectangle position, size, align, valign, layer:int.maxValue, color:#ff000080
+		if justPressed item, player
+			let pointer = getPointer player
+			let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
+			let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
+			return pointer.x >= posX and pointer.x < posX + size.x
+			   and pointer.y >= posY and pointer.y < posY + size.y
+		return false
+
 	global bool justPressed: string keyCombination, int player = 0
 		if not active or not keyCombination then return false
 		let user = internalUserBySyncedIndex[player]
