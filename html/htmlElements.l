@@ -30,18 +30,21 @@ global static class html
 			// If a key is specified, we store all nodes in a dictionary on the parent object
 			if not parentNode.childrenByKey then parentNode.childrenByKey = {}
 			element = parentNode.childrenByKey[key]
-			if not element
-				// Create new element (with key)
+			if element
+				nodesUpdated++
+			else
 				element = HTMLElement.create tag
+				element.key = key
 				parentNode.childrenByKey[key] = element
+				nodesCreated++
+				
+			// Move the element to the current position unless it is already there
+			if element == currentNode
+				nextNode = currentNode.nextSibling
+			else
 				nextNode = currentNode
 				if nextNode then parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
-				nodesCreated++
-			else
-				// Resuse existing element (with key)
-				nextNode = currentNode ? currentNode.nextSibling : null
-				nodesUpdated++
 			element.used = true
 			
 		else	
@@ -116,7 +119,7 @@ global static class html
 				for parentNode.childrenByKey
 					if not .used
 						.remove
-						parentNode.childrenByKey.remove key
+						parentNode.childrenByKey.remove .key
 			else
 				// If the chidren don't have keys, remove all remaining nodes, that haven't been reused
 				while currentNode

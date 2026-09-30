@@ -35,22 +35,34 @@ file
 		await fs.mkdir(path.dirname(to), {recursive:true})
 		await fs.rename(from, to)
 
-	js async bool saveUrl: string url
-		                   string to
+	async bool saveUrl: string url
+		                string to
+		return await saveUrls [url], to
+
+	// Downloads all urls and saves them concatenated into one file (e.g. the segments of a video stream)
+	js async bool saveUrls: string[] urls
+		                    string to
 		const fs = require("fs").promises;
 		const path = require("path");
 		const { Buffer } = require("node:buffer");
-		const response = await fetch(url)
-		if(!response.ok) return false
-		const type = (response.headers.get("content-type") || "").toLowerCase()
-		if(type.includes("text") || type.includes("json") || type.includes("xml") || type.includes("html")) {
-			const text = (await response.text()).trim()
-			if(text == "NOMEDIA" || text == "CRCOK" || text == "MD5OK" || text == "SHA1OK" || text.startsWith("Erreur")) return false
+		let i = 0
+		try {
+			for(; i < urls.length; i++) {
+				const response = await fetch(urls[i])
+				const type = (response.headers.get("content-type") || "").toLowerCase()
+				if(!response.ok || type.includes("text") || type.includes("json") || type.includes("xml") || type.includes("html")) throw new Error("No media at " + urls[i])
+				const data = Buffer.from(await response.arrayBuffer())
+				if(i == 0) {
+					await fs.mkdir(path.dirname(to), {recursive:true})
+					await fs.writeFile(to, data)
+				}
+				else await fs.appendFile(to, data)
+			}
+			return urls.length > 0
+		} catch(error) {
+			if(i > 0) await fs.rm(to, {force:true})
 			return false
 		}
-		await fs.mkdir(path.dirname(to), {recursive:true})
-		await fs.writeFile(to, Buffer.from(await response.arrayBuffer()), {encoding:null})
-		return true
 		
 	js void download: string text
 		              string to
