@@ -233,11 +233,16 @@ struct Vector2
 		)
 		
 	// Returns whether the vector is within a given rectangle
-	importance:4 insideRectangle: Vector2 center // The center of the rectangle
-		               Vector2 size   // The size of the rectangle
-		let halfSizeX = size.x/2, halfSizeY = size.y/2
-		return x >= center.x - halfSizeX && x < center.x + halfSizeX
-		    && y >= center.y - halfSizeY && y < center.y + halfSizeY
+	importance:4 insideRectangle: Vector2 position
+		                          Vector2 size
+								  HorizontalAlignment align = Center
+								  VerticalAlignment valign = Middle	
+								  bool show = false
+		if show then drawRectangle position:position, size:size, align:align, valign:valign, color:#ff000080
+		let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
+		let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
+		return x >= posX && x < posX + size.x
+		    && y >= posY && y < posY + size.y
 		
 	// Returns whether the vector is within a given polygon
 	importance:4 insidePolygon: ImmutableList<Vector2> poly // A list of points that make up the polygon
