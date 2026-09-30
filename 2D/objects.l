@@ -381,12 +381,13 @@ Object ParticleSystem
 				for particlesPerBurst
 					let angle = math.randomFloat angleSpread
 					let speedFactor = math.randomFloat(minSpeed to maxSpeed)
-					particles.add Particle
+					particles.add {
 						pos: position
 						speed: math.getVectorForAngle(angle, speedFactor)
 						angle
 						frame: math.randomInteger(image.frames.length)
 						rotationSpeed: math.randomFloat(-maxRotationSpeed to maxRotationSpeed)
+					}
 				nextBurst = ++burst < bursts ? Time.now + burstInterval : float.maxValue
 
 		for particles backwards
