@@ -1,9 +1,11 @@
+enum GamepadType: Keyboard, Xbox, PlayStation, Nintendo
 internal transient class InternalUser
 	// Modern Input
 	visible int[] pressedAtFrame, releasedAtFrame
 	int[] handledAtFrame
 	Vector2 pointerPosition, scrollDelta
 	string focus, prevFocus
+	GamepadType gamepadType
 	
 internal transient immutable InternalGamepadButton
 	bool pressed, touched
@@ -211,6 +213,9 @@ html
 						if not pressed then user.releasedAtFrame[inputIndex] = core.frame
 					else
 						if pressed then user.pressedAtFrame[inputIndex] = core.frame
+							
+				user.gamepadType = internalGamepad.id.includes("054c") or internalGamepad.id.includes("810") ? PlayStation : internalGamepad.id.includes("retro") ? Nintendo : Xbox
+
 		
 	int keyRepeatAfter = 0
 	int keyRepeatEvery = 0
@@ -267,5 +272,26 @@ html
 		if not active or not user then return false
 		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] < user.pressedAtFrame[item.index]
 
+	const Image[string][GamepadType] gamepadImages = {
+		Xbox: {
+			"A": ButtonA
+			"B": ButtonB
+			"X": ButtonX
+			"Y": ButtonY
+		}
+		Nintendo: {
+			"A": ButtonA
+			"B": ButtonB
+			"X": ButtonX
+			"Y": ButtonY
+		}
+		PlayStation: {
+			"A": ButtonCross
+			"B": ButtonCircle
+			"X": ButtonSquare
+			"Y": ButtonTriangle
+		}
+	}
+
 	Image getInputImage: Input item
-		return {}
+		return gamepadImages[user.gamepadType || Xbox][item.code]
