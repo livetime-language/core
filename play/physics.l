@@ -4,8 +4,8 @@ transient unit Physics
 	
 	js async void start
 		if(system.isHeadless) return
-		await system.openScript((_basePath || location.href.getUntilLast("/")+"/")+"lib/liquidfun.js")
-		if(window.world) _b2World_Delete(world)
+		if(typeof b2World == "undefined") await system.openScript((_basePath || location.href.getUntilLast("/")+"/")+"lib/liquidfun.js")
+		if(window.world) _b2World_Delete(window.world.ptr)
 		window.world = new b2World(new b2Vec2(0, 10))
 		
 	js void step
