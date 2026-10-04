@@ -1847,7 +1847,7 @@ skipInit global unit input
 				if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					this.cursor = cursor
 				
-		// if showClickableArea then drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
+		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
 
 	// Do something when the player touches or clicks within a given circle.
 	//
