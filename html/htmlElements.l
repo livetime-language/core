@@ -127,7 +127,13 @@ global static class html
 					currentNode.remove
 					currentNode = next
 			parentNode = prevParentNode
-			
+
+		if attributes?.scrollIntoView
+			if not element.scrolledIntoView then element.scrollIntoView {block:"nearest"}
+			element.scrolledIntoView = true
+		else if element.scrolledIntoView
+			element.scrolledIntoView = false
+
 		element.hasChildren = children != null
 		currentNode = nextNode
 		return element

@@ -54,6 +54,7 @@ dynamic HTMLElement
 	HTMLElement[string] childrenByKey
 	string key
 	bool used
+	bool scrolledIntoView
 		
 	inline js HTMLElement remove() this.remove()
 	inline js void appendChild(HTMLElement element) this.appendChild(element)
@@ -186,7 +187,8 @@ importance:5 dynamic Attributes
 	string class // A string to assign a class to one or more elements, often used to style several elements
 	string key   // A unique identifier used to find the html element that should be reused
 	string title
-	
+	bool scrollIntoView // Scroll the element just enough to make it fully visible, whenever this changes to true
+
 	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element
 	native void(PointerEvent ev) onPointerDown = null	// Execute this code when the user presses down the left mouse button on the HTML element
