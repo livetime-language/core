@@ -188,6 +188,7 @@ importance:5 dynamic Attributes
 	string key   // A unique identifier used to find the html element that should be reused
 	string title
 	bool scrollIntoView // Scroll the element just enough to make it fully visible, whenever this changes to true
+	bool scrollToTop // Scroll the content of the element to the very top on every draw where this is true
 
 	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element

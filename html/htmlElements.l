@@ -134,6 +134,8 @@ global static class html
 		else if element.scrolledIntoView
 			element.scrolledIntoView = false
 
+		if attributes?.scrollToTop then element.scrollTop = 0
+
 		element.hasChildren = children != null
 		currentNode = nextNode
 		return element
