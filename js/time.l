@@ -218,6 +218,10 @@ class string
 // It uses DateTimeFormat for formatting to handle the transition to and from daylight saving time well.
 string TimeString
 	static TimeString now => fromTime(Time.now)
+	
+	// The wall clock time in milliseconds since 1 January 1970. Be careful: Do not use when you need network synchronization or deterministic replay.
+	static TimeString realtime => fromTime(Time.realtime)
+	
 	static inline js TimeString fromTime(float value) new Date(value).toISOString().replace("T", " ")
 	
 	inline js bool toBool => this
@@ -306,10 +310,9 @@ js(Date) internal transient class Date
 	static inline js Date fromString(string timeString) new Date(timeString)
 	static inline js Date fromValues(int year, int month=1, int day=1, int hour = 0, int minute = 0, int second = 0) new Date(year, (month)-1, day, hour, minute, second)
 	
-	// Returns the real time, even during replay. Be careful: This can break the replay.
+	// The wall clock time. Be careful: Do not use when you need network synchronization or deterministic replay.
 	static inline js Date realtime => new Date()
 	
-	static inline js Date now	=> new Date()
 	inline js int year	=> this.getFullYear()
 	inline js int month	=> (this.getMonth()+1)
 	inline js int day	=> this.getDate()

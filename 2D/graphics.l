@@ -2431,9 +2431,9 @@ internal skipInit transient unit gizmo
 					influences.add {cursorLocation.file, cursorLocation.end, cursorLocation.end, deltas:[referencePos.x - touchDownPos.x, referencePos.y - touchDownPos.y], initialValues:[0,0], label:"position"}
 				
 			// Send manipulation to editor
-			let now = PlainDate.realTime
-			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and now > lastSendTime + 100
-				lastSendTime = now
+			let realtime = Time.realtime
+			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and realtime > lastSendTime + 100
+				lastSendTime = realtime
 				if not isManipulating and movedSinceTouchDown
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true
