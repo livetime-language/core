@@ -370,6 +370,10 @@ struct Angle
 static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 static inline js float now() Date.now()
+	static inline js float realtime() Date.now()
+	
+Date
+	static inline js Date now => new Date()
 	
 global priority low skipInit static class html
 	Overflow overflow = scroll
