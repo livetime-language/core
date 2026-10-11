@@ -1,12 +1,24 @@
 // File System abstraction for Desktop, Mobile and Web platforms. 
 // Capacitor (Capacitor.Plugins.Filesystem)
-// Node.js (require("fs"))
+// Node.js (require("fs") or process.getBuiltinModule("fs"))
 // File System API (showDirectoryPicker, FileSystemDirectoryHandle, etc), if above not available
 // IndexedDB, if basePathOrHandle == null or above not available
 
 class DirEntry
 	string name
 	bool isDir
+
+// Binary data, a JavaScript Uint8Array
+js Uint8Array
+immutable Bytes
+	inline js Bytes(int[] list) new Uint8Array(list)
+
+	inline js int get: implicit int index
+		this[index]
+
+	importance:5 inline js int length() this.length
+
+	inline js int[] toList() Array.from(this)
 
 transient storage
 	private dynamic basePathOrHandle = null
@@ -20,7 +32,7 @@ transient storage
 		if (h && typeof h.getDirectoryHandle === "function") return "fsapi"; // FileSystemDirectoryHandle
 		if (typeof h === "string") {
 			if (typeof Capacitor !== "undefined" && Capacitor.Plugins && Capacitor.Plugins.Filesystem) return "capacitor";
-			if (typeof require === "function") return "node";
+			if (typeof require === "function" || globalThis.process?.getBuiltinModule) return "node";
 		}
 		return "idb";
 
@@ -57,7 +69,7 @@ transient storage
 			}
 			case "node": {
 				try {
-					return await require("fs").promises.readFile(this.joinPath(path), "utf8");
+					return await this.nodeModule("fs").promises.readFile(this.joinPath(path), "utf8");
 				} catch (e) { return null; }
 			}
 			case "fsapi": {
@@ -80,6 +92,47 @@ transient storage
 			}
 		}
 
+	// Read the raw bytes of the file at relative path using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
+	// Returns null if the file doesn't exist
+	async js async Bytes readBinaryFile: string path
+		try {
+			switch (this.backend()) {
+				case "capacitor": {
+					// Native platforms return base64, the web implementation returns a Blob
+					const data = (await Capacitor.Plugins.Filesystem.readFile({path: this.joinPath(path)})).data;
+					if (typeof data !== "string") return new Uint8Array(await data.arrayBuffer());
+					const binary = atob(data), bytes = new Uint8Array(binary.length);
+					for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+					return bytes;
+				}
+				case "node": {
+					const data = await this.nodeModule("fs").promises.readFile(this.joinPath(path));
+					return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+				}
+				case "fsapi": {
+					const parts = path.split("/").filter(p => p.length);
+					const name = parts.pop();
+					let dir = this.basePathOrHandle;
+					for (const part of parts) dir = await dir.getDirectoryHandle(part);
+					const file = await (await dir.getFileHandle(name)).getFile();
+					return new Uint8Array(await file.arrayBuffer());
+				}
+				default: {
+					const store = await this.idbStore("readonly");
+					const data = await new Promise((resolve, reject) => {
+						const r = store.get(path);
+						r.onsuccess = () => resolve(r.result);
+						r.onerror = () => reject(r.error);
+					});
+					if (data == null) return null;
+					if (typeof data === "string") return new TextEncoder().encode(data);
+					if (data instanceof Blob) return new Uint8Array(await data.arrayBuffer());
+					if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+					return new Uint8Array(data);
+				}
+			}
+		} catch (e) { return null; }
+
 	// Write a utf8 string to relative path using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
 	async js async void writeFile: string path, string content
 		switch (this.backend()) {
@@ -87,9 +140,9 @@ transient storage
 				await Capacitor.Plugins.Filesystem.writeFile({path: this.joinPath(path), data: content, encoding: "utf8", recursive: true});
 				return;
 			case "node": {
-				const fs = require("fs").promises;
+				const fs = this.nodeModule("fs").promises;
 				const full = this.joinPath(path);
-				await fs.mkdir(require("path").dirname(full), {recursive: true});
+				await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
 				await fs.writeFile(full, content, "utf8");
 				return;
 			}
@@ -121,7 +174,7 @@ transient storage
 				try { await Capacitor.Plugins.Filesystem.deleteFile({path: this.joinPath(path)}); } catch (e) {}
 				return;
 			case "node":
-				try { await require("fs").promises.unlink(this.joinPath(path)); } catch (e) {}
+				try { await this.nodeModule("fs").promises.unlink(this.joinPath(path)); } catch (e) {}
 				return;
 			case "fsapi": {
 				try {
@@ -152,7 +205,7 @@ transient storage
 				return result.files.map(f => new DirEntry(f.name, f.type === "directory"));
 			}
 			case "node": {
-				const entries = await require("fs").promises.readdir(this.joinPath(path), {withFileTypes: true});
+				const entries = await this.nodeModule("fs").promises.readdir(this.joinPath(path), {withFileTypes: true});
 				return entries.map(e => new DirEntry(e.name, e.isDirectory()));
 			}
 			case "fsapi": {
@@ -186,6 +239,10 @@ transient storage
 				return entries;
 			}
 		}
+
+	// Load a built-in Node.js module, require is not available in ES modules
+	private js dynamic nodeModule: string name
+		return typeof require === "function" ? require(name) : process.getBuiltinModule(name);
 
 	// Join the base path string (Capacitor/Node) with a relative path
 	private js string joinPath: string path
