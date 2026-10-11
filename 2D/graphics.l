@@ -868,17 +868,17 @@ transient skipInit global unit graphics
 				for w in words
 					float wordWidth = getTextWidth(w, {x:fontSize}, effectiveFont, style)
 					if totalWidth + wordWidth > maxWidth
-						if overflow == Ellipsis then line += "..."
+						if overflow == Ellipsis then line = line.trimEnd + "..."
 
 						if line
 							// Finish the line and start a new line with the current word
-							lines.add line
+							lines.add line.trimEnd
 							line = w + " "
 							totalWidth = wordWidth + spaceWidth
 						else
 							// A single word is already too wide for the line
 							// Create a line with this word start a new empty line
-							lines.add w
+							lines.add w.trimEnd
 							line = ""
 							totalWidth = 0
 
@@ -890,18 +890,19 @@ transient skipInit global unit graphics
 						totalWidth += wordWidth + spaceWidth
 
 					if w[w.length-1] == "\n"
-						lines.add line
+						lines.add line.trimEnd
 						line = ""
 						totalWidth = 0
 
-				if line then lines.add line
+				// The trailing space and line break are not drawn, so they must not be measured (canvas draws them as spaces)
+				if line then lines.add line.trimEnd
 
 				// Calculate offset for each line and find widest line
 				string widestLine
 				sizeX = -1
 				lineOffsets = []
 				for lines
-					float lineSizeX = getTextWidth(. size:fontSize)
+					float lineSizeX = getTextWidth(. size:fontSize, effectiveFont, style)
 					lineOffsets.add lineSizeX * factor
 					if lineSizeX > sizeX
 						sizeX = lineSizeX
@@ -915,7 +916,7 @@ transient skipInit global unit graphics
 						sizeX = getTextWidth(widestLine, {x:--fontSize}, effectiveFont, style)
 
 					for lines
-						lineOffsets[i] = getTextWidth(. size:fontSize)*factor
+						lineOffsets[i] = getTextWidth(. size:fontSize, effectiveFont, style)*factor
 
 				effectiveLineHeight = lineHeight || fontSize*1.3
 				sizeY = lines.length * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
@@ -996,7 +997,7 @@ transient skipInit global unit graphics
 			// Handle click (only visible buttons are clickable)
 			let effectiveClickableBy = getClickableBy(visibleFor, clickableBy)
 				Vector2 effectiveSize = {sizeX + clickableMargin.x, sizeY + clickableMargin.y}
-				input.onTouchDown {position.x + offsetX - clickableMargin.x/2, position.y + offsetY - clickableMargin.y/2}, size:effectiveSize, by:effectiveClickableBy, showClickableArea, align:Left, valign:Top, do:onClick
+				input.onTouchDown {position.x - alignmentFactor[align]*sizeX - clickableMargin.x/2, position.y + offsetY - clickableMargin.y/2}, size:effectiveSize, by:effectiveClickableBy, showClickableArea, align:Left, valign:Top, do:onClick
 				if hotkey
 					input.onKeyDown hotkey, by:effectiveClickableBy
 						onClick null
@@ -2430,9 +2431,9 @@ internal skipInit transient unit gizmo
 					influences.add {cursorLocation.file, cursorLocation.end, cursorLocation.end, deltas:[referencePos.x - touchDownPos.x, referencePos.y - touchDownPos.y], initialValues:[0,0], label:"position"}
 				
 			// Send manipulation to editor
-			let now = PlainDate.realTime
-			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and now > lastSendTime + 100
-				lastSendTime = now
+			let realtime = Time.realtime
+			if inputType == TouchMove and touchDownPos and codeId >= waitingForCodeId and realtime > lastSendTime + 100
+				lastSendTime = realtime
 				if not isManipulating and movedSinceTouchDown
 					// Start manipulation as soon as we dragged more than a certain threshold
 					isManipulating = true

@@ -57,8 +57,6 @@ class string
 immutable skipInit class PlainDate
 	static inline js float preciseTime => performance.now()
 
-	static internal inline js float realTime => Date.now()
-
 	static int localTimezoneOffset, defaultTimezoneOffset
 
 	init

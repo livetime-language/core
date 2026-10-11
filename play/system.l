@@ -455,6 +455,9 @@ skipInit static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 float now
 	
+	// The wall clock time in milliseconds since 1 January 1970. Be careful: Do not use when you need network synchronization or deterministic replay.
+	internal static inline js float realtime => Date.now()
+	
 	// The total amount of ticks passed since the app started (by default, there are 30 ticks per second).
 	// Counted along the SURVIVING timeline (the rewind playhead), like Time.now: without rewinds this
 	// equals the frame counter, and after a shared rewind (system.rewindInput) it continues from the

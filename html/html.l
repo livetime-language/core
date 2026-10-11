@@ -52,7 +52,9 @@ dynamic HTMLElement
 	bool complete // Is the resouce completely loaded?
 	
 	HTMLElement[string] childrenByKey
+	string key
 	bool used
+	bool scrolledIntoView
 		
 	inline js HTMLElement remove() this.remove()
 	inline js void appendChild(HTMLElement element) this.appendChild(element)
@@ -62,6 +64,7 @@ dynamic HTMLElement
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
 	inline js void focus() this.focus()
 	inline js void scrollToBottom() this.scrollTo(0, this.scrollHeight)
+	inline js void scrollTo(dynamic options) this.scrollTo(options) // e.g. {top:0, behavior:"instant"}
 	inline js void scrollIntoView(dynamic options = {}) this.scrollIntoView(options)
 	inline js void on(string eventName, void(dynamic event) listener) this.addEventListener(eventName, listener)
 	inline js dynamic getContext(string type) this.getContext(type)
@@ -184,7 +187,9 @@ importance:5 dynamic Attributes
 	string class // A string to assign a class to one or more elements, often used to style several elements
 	string key   // A unique identifier used to find the html element that should be reused
 	string title
-	
+	bool scrollIntoView // Scroll the element just enough to make it fully visible, whenever this changes to true
+	bool scrollToTop // Scroll the content of the element to the very top on every draw where this is true
+
 	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element
 	native void(PointerEvent ev) onPointerDown = null	// Execute this code when the user presses down the left mouse button on the HTML element
@@ -365,6 +370,10 @@ struct Angle
 static class Time
 	// The number of milliseconds elapsed since 1 January 1970
 	importance:5 static inline js float now() Date.now()
+	static inline js float realtime() Date.now()
+	
+Date
+	static inline js Date now => new Date()
 	
 global priority low skipInit static class html
 	Overflow overflow = scroll

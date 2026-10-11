@@ -1556,7 +1556,7 @@ internal transient skipInit unit core
 			
 	internal saveLogs
 		// Ensure that current eventLog is added to the table even if we haven't processed a single frame
-		file.saveText "{input.localUser.id} {system.appName} {Date.now.isoString} v{system.buildVersion}.csv", logs
+		file.saveText "{input.localUser.id} {system.appName} {Date.realtime.isoString} v{system.buildVersion}.csv", logs
 			
 	saveEventStream
 		Buffer buffer = {}
@@ -1585,7 +1585,7 @@ internal transient skipInit unit core
 		for milestones
 			buffer.writeBuffer .
 			
-		let date = Date.now
+		let date = Date.realtime
 		file.saveBinary "{system.appName} {date.dayShortMonthNameYearString} {date.hourMinuteSecondString} v{system.buildVersion}.state", buffer
 		
 	const dbChunkSize = 4096
@@ -2167,13 +2167,13 @@ skipInit transient unit statistics
 	float nextSendTime = float.maxValue
 	
 	scheduleSendIn: float delay
-		nextSendTime = math.min(nextSendTime, PlainDate.realTime + delay)
+		nextSendTime = math.min(nextSendTime, Time.realtime + delay)
 	
 	tick
-		if PlainDate.realTime > nextSendTime
+		if Time.realtime > nextSendTime
 			if not sessionStarted then startSession
 			else                   saveStatistics
-			nextSendTime = PlainDate.realTime + core.sendStatisticsEvery
+			nextSendTime = Time.realtime + core.sendStatisticsEvery
 
 		// Only outside an active send: a send in flight references absolute indices
 		if not currentlySendingStatistics then trimSentData
