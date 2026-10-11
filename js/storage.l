@@ -62,6 +62,56 @@ transient storage
 		}
 		return null;
 
+	// Show a dialog to pick a file to open, returns null if canceled
+	// The file can be passed to readBinaryFile and writeBinaryFile, getFileName returns its name. It is
+	// Electron: an absolute path, Web: a FileSystemFileHandle or a File where the File System API is not available (Firefox, Safari, Capacitor)
+	async js async dynamic showOpenFilePicker: string description, string mimeType, string[] extensions
+		if(_global.core && !_global.core.isPremiere) return null;
+		if (typeof require === "function") {
+			try {
+				const result = await require("@electron/remote").dialog.showOpenDialog({filters: [{name: description, extensions: extensions.map(e => e.replace(".", ""))}], properties: ["openFile"]});
+				return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
+			} catch (e) {}
+		}
+		if (typeof window === "undefined") return null;
+		if (window.showOpenFilePicker) {
+			try {
+				return (await window.showOpenFilePicker({types: [{description, accept: {[mimeType]: extensions}}]}))[0];
+			} catch (e) { return null; }
+		}
+		return await new Promise(resolve => {
+			const input = document.createElement("input");
+			input.type = "file";
+			input.accept = extensions.join(",");
+			input.onchange = () => resolve(input.files[0] || null);
+			input.oncancel = () => resolve(null);
+			input.click();
+		});
+
+	// Show a dialog to pick where to save a file, returns null if canceled
+	// Electron: an absolute path, Web: a FileSystemFileHandle, or an empty Blob named like the suggested name if the File System API is not available,
+	// writeBinaryFile downloads it then (Firefox, Safari). Capacitor has no dialog, it returns the suggested name, a path relative to basePathOrHandle
+	async js async dynamic showSaveFilePicker: string suggestedName, string description, string mimeType, string[] extensions
+		if(_global.core && !_global.core.isPremiere) return null;
+		if (typeof require === "function") {
+			try {
+				const result = await require("@electron/remote").dialog.showSaveDialog({defaultPath: suggestedName, filters: [{name: description, extensions: extensions.map(e => e.replace(".", ""))}], properties: ["createDirectory"]});
+				return result.canceled || !result.filePath ? null : result.filePath;
+			} catch (e) {}
+		}
+		if (typeof Capacitor !== "undefined" && Capacitor.isNativePlatform?.()) return suggestedName;
+		if (typeof window === "undefined") return null;
+		if (window.showSaveFilePicker) {
+			try {
+				return await window.showSaveFilePicker({suggestedName, types: [{description, accept: {[mimeType]: extensions}}]});
+			} catch (e) { return null; }
+		}
+		return Object.assign(new Blob(), {name: suggestedName});	// The File constructor is replaced by the LiveTime class File
+
+	// Name of a file returned by a file picker or the last part of a path
+	js string getFileName: dynamic file
+		return typeof file === "string" ? file.split(/[\\/]/).pop() : file.name;
+
 	// Read a utf8 string from relative path using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
 	async js async string readFile: string path
 		switch (this.backend()) {
@@ -96,10 +146,12 @@ transient storage
 			}
 		}
 
-	// Read the raw bytes of the file at relative path using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
+	// Read the raw bytes of a file returned by a file picker or of the file at path (absolute or relative)
+	// using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
 	// Returns null if the file doesn't exist
-	async js async Bytes readBinaryFile: string path
+	async js async Bytes readBinaryFile: dynamic path
 		try {
+			if (typeof path !== "string") return new Uint8Array(await (path.getFile ? await path.getFile() : path).arrayBuffer());
 			switch (this.backend()) {
 				case "capacitor": {
 					// Native platforms return base64, the web implementation returns a Blob
@@ -170,6 +222,63 @@ transient storage
 				return;
 			}
 		}
+
+	// Write raw bytes to a file returned by a file picker or to the file at path (absolute or relative)
+	// using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
+	// A File or Blob (from the pickers without the File System API) can't be written, it is downloaded with its name
+	// Returns false on failure
+	async js async bool writeBinaryFile: dynamic path, Bytes bytes
+		try {
+			if (path instanceof Blob) {
+				const link = document.createElement("a");
+				link.href = URL.createObjectURL(new Blob([bytes]));
+				link.download = path.name;
+				link.click();
+				setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+				return true;
+			}
+			if (typeof path !== "string") {
+				if (await path.queryPermission?.({mode: "readwrite"}) === "prompt") await path.requestPermission({mode: "readwrite"});
+				const writable = await path.createWritable();
+				await writable.write(bytes);
+				await writable.close();
+				return true;
+			}
+			switch (this.backend()) {
+				case "capacitor": {
+					let binary = "";
+					for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+					await Capacitor.Plugins.Filesystem.writeFile({path: this.joinPath(path), data: btoa(binary), recursive: true});
+					return true;
+				}
+				case "node": {
+					const fs = this.nodeModule("fs").promises;
+					const full = this.joinPath(path);
+					await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
+					await fs.writeFile(full, bytes);
+					return true;
+				}
+				case "fsapi": {
+					const parts = path.split("/").filter(p => p.length);
+					const name = parts.pop();
+					let dir = this.basePathOrHandle;
+					for (const part of parts) dir = await dir.getDirectoryHandle(part, {create: true});
+					const writable = await (await dir.getFileHandle(name, {create: true})).createWritable();
+					await writable.write(bytes);
+					await writable.close();
+					return true;
+				}
+				default: {
+					const store = await this.idbStore("readwrite");
+					await new Promise((resolve, reject) => {
+						const r = store.put(bytes, path);
+						r.onsuccess = () => resolve();
+						r.onerror = () => reject(r.error);
+					});
+					return true;
+				}
+			}
+		} catch (e) { return false; }
 
 	// Delete the file at relative path using Capacitor/Node/File System API if basePathOrHandle is set, otherwise using IndexedDB
 	async js async void deleteFile: string path
@@ -248,10 +357,10 @@ transient storage
 	private js dynamic nodeModule: string name
 		return typeof require === "function" ? require(name) : process.getBuiltinModule(name);
 
-	// Join the base path string (Capacitor/Node) with a relative path
+	// Join the base path string (Capacitor/Node) with a relative path, file: URLs and absolute Node paths are kept
 	private js string joinPath: string path
 		const base = this.basePathOrHandle;
-		if (!base) return path;
+		if (!base || path.startsWith("file:") || this.backend() === "node" && this.nodeModule("path").isAbsolute(path)) return path;
 		return base.replace(/\/+$/, "") + "/" + path.replace(/^\/+/, "");
 
 	// Open the IndexedDB object store used as the fallback file system, in the given transaction mode
