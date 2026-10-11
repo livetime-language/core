@@ -20,6 +20,10 @@ immutable Bytes
 
 	inline js int[] toList() Array.from(this)
 
+	// Copy of the bytes from start (inclusive) to end (exclusive)
+	inline js Bytes slice: int start, int end
+		this.slice(start, end)
+
 transient storage
 	private dynamic basePathOrHandle = null
 
