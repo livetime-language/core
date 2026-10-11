@@ -8,7 +8,7 @@ class DirEntry
 	string name
 	bool isDir
 
-storage
+transient storage
 	private dynamic basePathOrHandle = null
 
 	setBasePathOrHandle: dynamic pathOrHandle
