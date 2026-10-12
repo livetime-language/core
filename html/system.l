@@ -163,7 +163,7 @@ global transient skipInit unit system
 
 	onError: Error error
 		system.logError error
-		sendStringToEditor("exception|{error.stack}||0")
+		sendStringToEditor("exception|{(error?.stack).replaceAll("\n", "\\n")}||0")
 
 	internal inline js void sendToEditor: dynamic message
 		if(system.isDebug) _sendToEditor(message)
