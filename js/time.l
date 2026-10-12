@@ -389,6 +389,11 @@ js(Date) internal transient class Date
 		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
 	private static DateTimeFormat dayShortMonthNameFormat
 
+	// (Dec)
+	inline string shortMonthNameString
+		(shortMonthNameFormat?.locale == Loca.locale ? shortMonthNameFormat : (shortMonthNameFormat = {options:{month:short}})).format(this)
+	private static DateTimeFormat shortMonthNameFormat
+
 	// (31 Dec 00)
 	inline string dayShortMonthNameShortYearString
 		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(this)
