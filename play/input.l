@@ -1851,7 +1851,7 @@ skipInit global unit input
 				if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					this.cursor = cursor
 				
-		if showClickableArea then drawRectangle position, size, color:{"#ff000080"}, align, valign, layer:10000000
+		if showClickableArea then drawRectangle pos:{x,y}, size:size, fillColor:#ff000080
 
 	// Do something when the player touches or clicks within a given circle.
 	//
@@ -1988,7 +1988,8 @@ skipInit global unit input
 					if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 						this.cursor = cursor
 				
-		// if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
+		if showClickableArea then drawRectangle pos:{x, y}, size:size, fillColor:#ff000080
+
 
 			
 	// ---------------------------------------------- Touch Move ----------------------------------------------
@@ -2124,8 +2125,6 @@ skipInit global unit input
 					do touch
 					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
-						
-		// if showClickableArea then drawRectangle position, size, color:{"#ff000080"}
 
 	// Do something when the player ends a touch or click within a given circle.
 	//
@@ -2141,7 +2140,6 @@ skipInit global unit input
 		              float radius                        // The radius of the circle
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		              Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
-		              bool showClickableArea = false      // Highlight the clickable area for debugging
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
 		              void(Touch touch) do                // Do this for each touch or click
 		if not active then return
@@ -2156,8 +2154,6 @@ skipInit global unit input
 				for localUser.movingTouches as touch
 					if !touch.handled && (touch.position distanceTo position) <= radius
 						this.cursor = cursor
-				
-		// if showClickableArea then drawCircle position, radius*2, color:{"#ff000080"}
 						
 	// ---------------------------------------------- Scroll ----------------------------------------------
 	
@@ -2173,7 +2169,6 @@ skipInit global unit input
 	global onScrolllWithin: Vector2 position                    // The center of the rectangle
 		                    Vector2 size                        // The size of the rectangle
 		                    implicit nocolon Player[] by = null // Only consider events by this player or list of players
-		                    bool showClickableArea = false      // Highlight the rectangle for debugging
 		                    bool markAsHandled = true           // Mark the touch as handled so it won't trigger more events
 		                    void(ScrollEvent event) do          // Do this for each event
 		if not active then return
@@ -2182,8 +2177,6 @@ skipInit global unit input
 				if !.handled and position.x <= .position.x < position.x + size.x and position.y <= .position.y < position.y + size.y
 					do .
 					if markAsHandled then .markAsHandled
-						
-		// if showClickableArea then drawRectangle position, size, Red
 			
 	// ---------------------------------------------- Text Input ----------------------------------------------
 	
@@ -2585,15 +2578,17 @@ input
 		                     Vector2 size
 						     HorizontalAlignment align = Center
 						     VerticalAlignment valign = Middle	
-						     bool show = false
-		if show then drawRectangle position, size, align, valign, layer:int.maxValue, color:#ff000080
-		if justPressed item, player
-			let pointer = getPressPosition player
-			let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
-			let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
-			return pointer.x >= posX and pointer.x < posX + size.x
-			   and pointer.y >= posY and pointer.y < posY + size.y
-		return false
+						     bool showClickableArea = false
+		bool pressed = justPressed item, player
+		if not pressed and showClickableArea then return false
+		
+		let pointer = getPressPosition player
+		let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
+		let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
+		
+		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, fillColor:#ff000080		
+		return pressed and pointer.x >= posX and pointer.x < posX + size.x
+			           and pointer.y >= posY and pointer.y < posY + size.y
 
 	global bool justPressed: string keyCombination, int player = 0
 		if not active or not keyCombination then return false

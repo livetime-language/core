@@ -237,10 +237,10 @@ struct Vector2
 		                          Vector2 size
 								  HorizontalAlignment align = Center
 								  VerticalAlignment valign = Middle	
-								  bool show = false
-		if show then drawRectangle position:position, size:size, align:align, valign:valign, color:#ff000080
+								  bool showClickableArea = false
 		let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
 		let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
+		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, fillColor:#ff000080
 		return x >= posX && x < posX + size.x
 		    && y >= posY && y < posY + size.y
 		

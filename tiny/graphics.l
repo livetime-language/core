@@ -244,15 +244,17 @@ media
 		then()
 
 transient global skipInit graphics
-	updateBaseMatrix
-	
-	clearDebugInfo
-	finishDrawingDebugInfo
-	isDrawingDebugInfo = false
-	getWhatIsOnScreen => ""
-
+	const isTransforming = false
+	const Matrix2D localMatrix = {}
 	const Color[] defaultColors = [{"#398CA9", name:"Blue"}, {"#C01352", name:"Red"}, {"#16C66E", name:"Green"}, {"#FFD166", name:"Yellow"}]
 	const Color[] darkDefaultColors = [{"#193742", name:"Dark Blue"}, {"#470B21", name:"Dark Red"}, {"#0A3620", name:"Dark Green"}, {"#4B3F21", name:"Dark Yellow"}]	
+	
+	isDrawingDebugInfo = false
+	
+	updateBaseMatrix	
+	clearDebugInfo
+	finishDrawingDebugInfo
+	getWhatIsOnScreen => ""
 
 // --------------------------------------------- Graphics ---------------------------------------------
 
@@ -538,7 +540,7 @@ transient global skipInit graphics
 		// if help then print pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
 		handleClickAndHelp onClick, help, pos, {font.sourceSize.x * text.length, font.sourceSize.y}, margin
 
-	global void drawRect: Vector2 pos = {0,0}
+	global void drawRectangle: Vector2 pos = {0,0}
 		                  implicit Vector2 size = {8,8}
 						  implicit Color fillColor = null
 						  implicit Color outlineColor = null
@@ -570,10 +572,10 @@ transient global skipInit graphics
 					end += stride
 
 		if outlineColor != null and outlineWidth > 0 and outlineColor != fillColor
-			drawRect {x,y}, {sizeX, outlineWidth}, fillColor:outlineColor
-			drawRect {x, y + sizeY - outlineWidth}, {sizeX, outlineWidth}, fillColor:outlineColor
-			drawRect {x, y}, {outlineWidth, sizeY}, fillColor:outlineColor
-			drawRect {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
+			drawRectangle {x,y}, {sizeX, outlineWidth}, fillColor:outlineColor
+			drawRectangle {x, y + sizeY - outlineWidth}, {sizeX, outlineWidth}, fillColor:outlineColor
+			drawRectangle {x, y}, {outlineWidth, sizeY}, fillColor:outlineColor
+			drawRectangle {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
 
 		handleClickAndHelp onClick, help, pos, size, margin
 
