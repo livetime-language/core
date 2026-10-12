@@ -400,7 +400,7 @@ transient global skipInit graphics
 			end += tilesStride
 			offsetToTarget += targetStride - tilesStride
 
-	private handleClickAndHelp: void() onClick, string help, Vector2 pos, Vector2 size = {1,1}, Vector2 margin = {2,2}
+	private void handleClickAndHelp: void() onClick, string help, Vector2 pos, Vector2 size = {1,1}, Vector2 margin = {2,2}
 		bool isClick = onClick != null and justPressed LeftMouseButton
 		if not isClick and not help then return
 
