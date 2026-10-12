@@ -100,6 +100,7 @@ internal transient class InternalUser
 	// The frame in which the input was marked as handled (input.markAsHandled), justPressed returns false for the rest of that frame, justReleased for the release of that press
 	int[] handledAtFrame
 	Vector2 pointerPosition, scrollDelta
+	Vector2 pressPosition	// Pointer position of the last press, the pointer might have moved further in the same frame
 	Input[] allJustPressed, allJustReleased
 	string focus, prevFocus
 
@@ -682,6 +683,8 @@ skipInit global unit input
 			
 			} else {
 				input.handleKeyEvent(5, e.code, e.key, e.ctrlKey, e.altKey, e.metaKey)
+				// macOS sends no keyup for keys released while Command is down, release them right away (except modifiers)
+				if(e.metaKey && !["Meta", "Shift", "Alt", "Control"].includes(e.key)) input.handleKeyEvent(6, e.code, e.key, e.ctrlKey, e.altKey, e.metaKey)
 				if(keyCode == 9) e.preventDefault();
 			}
 		}
@@ -1430,6 +1433,7 @@ skipInit global unit input
 		let parent = Input.items[buttonIndex].parent
 			internalUser.pressedAtFrame[parent.index] = core.frame
 		internalUser.pointerPosition = referencePos
+		internalUser.pressPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
 	                    Player player
@@ -2474,7 +2478,7 @@ class Input
 	global const Enter	= {type:Keyboard,	code:"Enter",	character:"\n", name:"enter", alternativeName:"return"}
 
 	// Bottom letter row
-	global const Shift	= {type:Keyboard}
+	global const Shift	= {type:Keyboard,	name:"shift"}
 	const ShiftLeft	= {type:Keyboard,	code:"ShiftLeft",	parent:Shift}
 	const IntlBackslash	= {type:Keyboard,	code:"IntlBackslash"} // The extra key European (ISO) keyboards have between the left Shift and Z
 	const KeyZ	= {type:Keyboard,	code:"KeyZ",	character:"z"}
@@ -2584,7 +2588,7 @@ input
 						     bool show = false
 		if show then drawRectangle position, size, align, valign, layer:int.maxValue, color:#ff000080
 		if justPressed item, player
-			let pointer = getPointer player
+			let pointer = getPressPosition player
 			let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
 			let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
 			return pointer.x >= posX and pointer.x < posX + size.x
@@ -2604,11 +2608,10 @@ input
 			let item = Input.items.find.name == name or .alternativeName == name
 			if not item or user.handledAtFrame[item.index] == core.frame then return false
 			
+			// Each key must be pressed this frame or held down, at least one key must be pressed this frame
 			let pressedAtFrame = user.pressedAtFrame[item.index]
-			let releasedAtFrame = user.releasedAtFrame[item.index]
-			if pressedAtFrame < releasedAtFrame then return false
-				
-			if pressedAtFrame == core.frame then anyPressedThisFrame = true
+			if pressedAtFrame == core.frame	then anyPressedThisFrame = true
+			else if pressedAtFrame <= user.releasedAtFrame[item.index]	then return false
 			
 		return anyPressedThisFrame
 
@@ -2633,6 +2636,13 @@ input
 		if not user then return {0,0}
 		if graphics.isTransforming then	return user.pointerPosition.getRelativeTo graphics.localMatrix
 		else	return user.pointerPosition
+
+	// Returns the position where the player last pressed the pointer. Use it with justPressed(Pointer): the pointer might have moved further in the same frame
+	global Vector2 getPressPosition: int player = 0
+		let user = internalUserBySyncedIndex[player]
+		if not user then return {0,0}
+		if graphics.isTransforming then	return user.pressPosition.getRelativeTo graphics.localMatrix
+		else	return user.pressPosition
 
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
