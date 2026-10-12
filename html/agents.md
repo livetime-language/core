@@ -144,11 +144,11 @@ app
 		for key, value in documentsById
 			print "{key}: {value}"
 
-		// If you divide an integer by an integer in LiveTime, you always get a float
-		float fraction = 1 / 2	// fraction = 0.5
-
-		// Use math.floor after a division if you need an integer
-		int flooredInteger = math.floor(1 / 2)
+		// Declare local variable fraction with value 0.5 (alternative to "let")
+		fraction := 1 / 2
+		
+		// Assigning a float to an int rounds it down (wholeNumber is 3)
+		int wholeNumber = 10 / 3
 
 		// Query
 		Player[] healthyPlayers	= players.filter.health > 0
