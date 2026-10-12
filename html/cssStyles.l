@@ -760,5 +760,7 @@ importance:5 dynamic Style
 	bool overlay
 	
 	string gridArea
+	string gridRow
+	string gridColumn
 	ImageRendering imageRendering
 		
