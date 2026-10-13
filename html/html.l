@@ -167,7 +167,7 @@ dynamic HTMLElement
 				do(touch, touches, this, ev)
 		}
 		
-	js void onScroll: void(Vector2 position, Vector2 delta, bool isPinch) do
+	js void onScroll: void(Vector2 pos, Vector2 delta, bool isPinch) do
 		this.onwheel = ev => {
 			ev.preventDefault();
 			ev.stopPropagation();
@@ -603,10 +603,10 @@ global priority low skipInit static class html
 		let rect = element.getBoundingClientRect()
 		return new Vector2((event.clientX - rect.left)/system.scale, (event.clientY - rect.top)/system.scale)
 
-	js void setCursorPosition: HTMLElement element, int position
+	js void setCursorPosition: HTMLElement element, int pos
 		const range = document.createRange();
 		const selection = window.getSelection();
-		range.setStart(element.childNodes[0], position);
+		range.setStart(element.childNodes[0], pos);
 		range.collapse(true);
 		selection.removeAllRanges();
 		selection.addRange(range);

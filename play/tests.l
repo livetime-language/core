@@ -4,12 +4,12 @@ tests
 	// Example:
 	//     click {250,350} by bluePlayer
 	importance:5
-	void click: Vector2 position	// The screen position to click
+	void click: Vector2 pos	// The screen position to click
 		        TouchType with = LeftMouseButton	// LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
 	            nocolon Player by = input.players[0]	// The player to click
 		let internalUser = input.internalUsers[by.id]
-		input.touchDown internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
-		input.touchUp internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
+		input.touchDown internalUser, player:by, id:0, referencePos:pos, type:with, isSmoothPosition:true
+		input.touchUp internalUser, player:by, id:0, referencePos:pos, type:with, isSmoothPosition:true
 		tick
 
 	// Simulate a drag by a given player.
@@ -45,11 +45,11 @@ tests
 	// Example:
 	//     hover {250,350} by bluePlayer
 	importance:5
-	void hover: Vector2 position	// The screen position to hover over
+	void hover: Vector2 pos	// The screen position to hover over
 	            TouchType with = LeftMouseButton	// LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
 	            nocolon Player by = input.players[0]	// The player to hover over the given screen position
 		let internalUser = input.internalUsers[by.id]
-		input.touchMove internalUser, player:by, id:0, referencePos:position, type:with, isSmoothPosition:true
+		input.touchMove internalUser, player:by, id:0, referencePos:pos, type:with, isSmoothPosition:true
 		tick
 
 	// Simulate pressing a key or typing a character by a given player

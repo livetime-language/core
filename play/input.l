@@ -1818,13 +1818,13 @@ skipInit global unit input
 	// Example: Draw an OK button and print "Clicked OK" when the user touches it.
 	//     app
 	//         tick
-	//             drawText "OK", position:{0,0}, size:40, color:White
-	//             drawRoundedRectangle position:{0,0}, size:{300,100}, color:Blue
+	//             drawText "OK", pos:{0,0}, size:40, color:White
+	//             drawRoundedRectangle pos:{0,0}, size:{300,100}, color:Blue
 	//             
-	//             onTouchDown position:{0,0}, size:{300,100}
+	//             onTouchDown pos:{0,0}, size:{300,100}
 	//                 print "Clicked OK"
 	// Image: onTouchDown1.png
-	global importance:0 onTouchDown: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchDown: Vector2 pos                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1836,8 +1836,8 @@ skipInit global unit input
 		if not active then return
 		let sizeX = size.x
 		let sizeY = size.y || size.x
-		let x = align == Left ? position.x : align  == Center ? position.x-sizeX/2 : position.x-sizeX
-		let y = valign == Top ? position.y : valign == Middle ? position.y-sizeY/2 : position.y-sizeY
+		let x = align == Left ? pos.x : align  == Center ? pos.x-sizeX/2 : pos.x-sizeX
+		let y = valign == Top ? pos.y : valign == Middle ? pos.y-sizeY/2 : pos.y-sizeY
 		
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
@@ -1851,7 +1851,7 @@ skipInit global unit input
 				if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					this.cursor = cursor
 				
-		if showClickableArea then drawRectangle pos:{x,y}, size:size, fillColor:#ff000080
+		if showClickableArea then drawRectangle pos:{x,y}, size:size, color:#ff000080
 
 	// Do something when the player touches or clicks within a given circle.
 	//
@@ -1863,7 +1863,7 @@ skipInit global unit input
 	//             onTouchDown pos, radius:50
 	//                 print "Clicked ball"
 	// Image: onTouchDown3.png
-	global importance:0 onTouchDown: Vector2 position                    // The center of the circle
+	global importance:0 onTouchDown: Vector2 pos                    // The center of the circle
 		                float radius                        // The radius of the circle
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this circle
@@ -1874,16 +1874,16 @@ skipInit global unit input
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].downTouches as touch
 				if !touch.handled and (player.enableTouch or touch.type != Finger)
-				and (touch.position distanceTo position) <= radius
+				and (touch.position distanceTo pos) <= radius
 					do touch
 					if markAsHandled then touch.handled = true
 						
 			if cursor != Auto
 				for localUser.movingTouches as touch
-					if !touch.handled && (touch.position distanceTo position) <= radius
+					if !touch.handled && (touch.position distanceTo pos) <= radius
 						this.cursor = cursor
 				
-		// if showClickableArea then drawCircle position, radius*2, color:{"#ff0000b0"}, layer:10000000
+		// if showClickableArea then drawCircle pos, radius*2, color:{"#ff0000b0"}, layer:10000000
 
 	// Do something when the player touches or clicks within a given polygon.
 	//
@@ -1899,7 +1899,7 @@ skipInit global unit input
 	//                 print "Clicked OK"
 	// Image: onTouchDown4.png
 	global importance:0 onTouchDown: Vector2[] points                    // The points that define the clickable polygon
-		                Vector2 position = {0,0}            // The position all polygon points are relative to
+		                Vector2 pos = {0,0}            // The position all polygon points are relative to
 		                implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this polygon
 		                bool showClickableArea = false      // Highlight the clickable area for debugging
@@ -1918,7 +1918,7 @@ skipInit global unit input
 					if !touch.handled && touch.position.insidePolygon(points)
 						this.cursor = cursor
 				
-		// if showClickableArea then drawPolygon position, points, color:{"#ff0000b0"}, layer:10000000
+		// if showClickableArea then drawPolygon pos, points, color:{"#ff0000b0"}, layer:10000000
 			
 	// Do something when the player touches or clicks anywhere on the screen.
 	//
@@ -1963,7 +1963,7 @@ skipInit global unit input
 	//             onTouchOver pos, size, by:me
 	//                 drawRectangle pos, size+{32,32}, outlineColor:Black, outlineWidth:8
 	// Image: onTouchOver.png
-	global importance:0 onTouchOver: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchOver: Vector2 pos                    // The center of the touch area
 		                Vector2 size                        // The size of the rectangular touch area
 		                implicit nocolon Player[] by = null // Only consider the mouse from this player  
 		                Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -1975,8 +1975,8 @@ skipInit global unit input
 		if not active then return
 		let sizeX = size.x
 		let sizeY = size.y || size.x
-		let x = align == Left ? position.x : align  == Center ? position.x-sizeX/2 : position.x-sizeX
-		let y = valign == Top ? position.y : valign == Middle ? position.y-sizeY/2 : position.y-sizeY
+		let x = align == Left ? pos.x : align  == Center ? pos.x-sizeX/2 : pos.x-sizeX
+		let y = valign == Top ? pos.y : valign == Middle ? pos.y-sizeY/2 : pos.y-sizeY
 		
 		for getTargetedPlayers(by) as player
 			for player.touches as touch
@@ -1988,7 +1988,7 @@ skipInit global unit input
 					if !touch.handled && x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 						this.cursor = cursor
 				
-		if showClickableArea then drawRectangle pos:{x, y}, size:size, fillColor:#ff000080
+		if showClickableArea then drawRectangle pos:{x, y}, size:size, color:#ff000080
 
 
 			
@@ -2106,13 +2106,13 @@ skipInit global unit input
 	// Example: Draw an OK button and print "Clicked OK" when the player ends a touch or releases the mouse button over this button
 	//     app
 	//         tick
-	//             drawText "OK", position:{0,0}, size:40, color:White
-	//             drawRoundedRectangle position:{0,0}, size:{300,100}, color:Blue
+	//             drawText "OK", pos:{0,0}, size:40, color:White
+	//             drawRoundedRectangle pos:{0,0}, size:{300,100}, color:Blue
 	//             
-	//             onTouchUp position:{0,0}, size:{300,100}
+	//             onTouchUp pos:{0,0}, size:{300,100}
 	//                 print "Clicked OK"
 	// Image: onTouchDown1.png
-	global importance:0 onTouchUp: Vector2 position                    // The center of the touch area
+	global importance:0 onTouchUp: Vector2 pos                    // The center of the touch area
 		              Vector2 size                        // The size of the rectangular touch area
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool showClickableArea = false      // Highlight the clickable area for debugging
@@ -2121,7 +2121,7 @@ skipInit global unit input
 		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].upTouches as touch
-				if !touch.handled and position.x <= touch.position.x < position.x + size.x and position.y <= touch.position.y < position.y + size.y
+				if !touch.handled and pos.x <= touch.position.x < pos.x + size.x and pos.y <= touch.position.y < pos.y + size.y
 					do touch
 					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
@@ -2136,7 +2136,7 @@ skipInit global unit input
 	//             onTouchUp pos, radius:50
 	//                 print "Clicked ball"
 	// Image: onTouchDown3.png
-	global importance:0 onTouchUp: Vector2 position                    // The center of the circle
+	global importance:0 onTouchUp: Vector2 pos                    // The center of the circle
 		              float radius                        // The radius of the circle
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players  
 		              Cursor cursor = Auto                // Change the mouse cursor image when hovering over this area
@@ -2145,14 +2145,14 @@ skipInit global unit input
 		if not active then return
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].upTouches as touch
-				if !touch.handled && (touch.position distanceTo position) <= radius
+				if !touch.handled && (touch.position distanceTo pos) <= radius
 					do touch
 					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
 					
 			if cursor != Auto
 				for localUser.movingTouches as touch
-					if !touch.handled && (touch.position distanceTo position) <= radius
+					if !touch.handled && (touch.position distanceTo pos) <= radius
 						this.cursor = cursor
 						
 	// ---------------------------------------------- Scroll ----------------------------------------------
@@ -2166,7 +2166,7 @@ skipInit global unit input
 				do .
 	
 	// Do something when a player scrolls with the touch pad or mouse wheel over a rectangle
-	global onScrolllWithin: Vector2 position                    // The center of the rectangle
+	global onScrolllWithin: Vector2 pos                    // The center of the rectangle
 		                    Vector2 size                        // The size of the rectangle
 		                    implicit nocolon Player[] by = null // Only consider events by this player or list of players
 		                    bool markAsHandled = true           // Mark the touch as handled so it won't trigger more events
@@ -2174,7 +2174,7 @@ skipInit global unit input
 		if not active then return
 		for getTargetedPlayers(by)
 			for internalUsers[.id].wheelEvents
-				if !.handled and position.x <= .position.x < position.x + size.x and position.y <= .position.y < position.y + size.y
+				if !.handled and pos.x <= .position.x < pos.x + size.x and pos.y <= .position.y < pos.y + size.y
 					do .
 					if markAsHandled then .markAsHandled
 			
@@ -2574,7 +2574,7 @@ input
 	// Returns true the player has just clicked within a rectangle
 	global bool justPressed: Input item = Pointer
 							 int player = 0
-	                         Vector2 position
+	                         Vector2 pos
 		                     Vector2 size
 						     HorizontalAlignment align = Center
 						     VerticalAlignment valign = Middle	
@@ -2583,10 +2583,10 @@ input
 		if not pressed and showClickableArea then return false
 		
 		let pointer = getPressPosition player
-		let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
-		let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
+		let posX = align  == Center ? pos.x-size.x*.5 : align == Left ? pos.x : pos.x-size.x
+		let posY = valign == Middle ? pos.y-size.y*.5 : valign == Top ? pos.y : pos.y-size.y
 		
-		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, fillColor:#ff000080		
+		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, color:#ff000080		
 		return pressed and pointer.x >= posX and pointer.x < posX + size.x
 			           and pointer.y >= posY and pointer.y < posY + size.y
 

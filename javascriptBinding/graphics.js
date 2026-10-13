@@ -2,9 +2,9 @@ function getVector2(value, x = 0, y = 0) {
 	return value?.x != undefined || value?.y != undefined ? value : new Vector2(value ?? x, value == undefined ? y : 0)
 }
 
-function drawImage(image, position, options) {
+function drawImage(image, pos, options) {
 	options ||= {}
-	position ||= new Vector2(0, 0)
+	pos ||= new Vector2(0, 0)
 	let scale = options.scale ?? 1
 	let size = getVector2(options.size)
 	let visibleFor = options.visibleFor
@@ -42,69 +42,69 @@ function drawImage(image, position, options) {
 		let sizeX = (size.x || currentFrame.w) * scale
 		let sizeY = size.y ? size.y * scale : sizeX * currentFrame.h / currentFrame.w
 		let alignmentFactor = graphics.alignmentFactor || [0, .5, 1]
-		position = position._plus(new Vector2((.5 - alignmentFactor[align]) * sizeX, (.5 - alignmentFactor[valign]) * sizeY))
+		pos = pos._plus(new Vector2((.5 - alignmentFactor[align]) * sizeX, (.5 - alignmentFactor[valign]) * sizeY))
 	}
 
 	if(isClickable) {
 		if(isRotated) {
-			graphics.drawImage6(image, position, scale, size, visibleFor, clickableBy, frame, layer, alpha, color, angle, flipX, flipY, clickableMargin, showClickableArea, hotkey, onClick, location)
+			graphics.drawImage6(image, pos, scale, size, visibleFor, clickableBy, frame, layer, alpha, color, angle, flipX, flipY, clickableMargin, showClickableArea, hotkey, onClick, location)
 		} else {
-			graphics.drawImage5(image, position, scale, size, visibleFor, clickableBy, frame, layer, alpha, color, align, valign, clickableMargin, showClickableArea, hotkey, onClick, location)
+			graphics.drawImage5(image, pos, scale, size, visibleFor, clickableBy, frame, layer, alpha, color, align, valign, clickableMargin, showClickableArea, hotkey, onClick, location)
 		}
 		return
 	}
 
 	if(isAnimated) {
 		if(isRotated) {
-			graphics.drawImage4(image, position, scale, size, visibleFor, framesPerSecond, frameOffset, frameCount, layer, alpha, color, angle, flipX, flipY, location)
+			graphics.drawImage4(image, pos, scale, size, visibleFor, framesPerSecond, frameOffset, frameCount, layer, alpha, color, angle, flipX, flipY, location)
 		} else {
-			graphics.drawImage3(image, position, scale, size, visibleFor, framesPerSecond, frameOffset, frameCount, layer, alpha, color, location)
+			graphics.drawImage3(image, pos, scale, size, visibleFor, framesPerSecond, frameOffset, frameCount, layer, alpha, color, location)
 		}
 		return
 	}
 
 	if(isRotated) {
-		graphics.drawImage2(image, position, scale, size, visibleFor, frame, layer, alpha, color, angle, flipX, flipY, location)
+		graphics.drawImage2(image, pos, scale, size, visibleFor, frame, layer, alpha, color, angle, flipX, flipY, location)
 	} else {
-		graphics.drawImage(image, position, scale, size, visibleFor, frame, layer, alpha, color, align, valign, location)
+		graphics.drawImage(image, pos, scale, size, visibleFor, frame, layer, alpha, color, align, valign, location)
 	}
 }
 
-function drawSlicedImage(image, position, options) {
+function drawSlicedImage(image, pos, options) {
 	options ||= {}
-	graphics.drawSlicedImage(image, position || new Vector2(0, 0), getVector2(options.size), options.visibleFor, options.frame ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White, options.leftSlice ?? 0, options.rightSlice ?? 0, options.align ?? 1, options.valign ?? 1, options.location)
+	graphics.drawSlicedImage(image, pos || new Vector2(0, 0), getVector2(options.size), options.visibleFor, options.frame ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White, options.leftSlice ?? 0, options.rightSlice ?? 0, options.align ?? 1, options.valign ?? 1, options.location)
 }
-function drawPartialImage(image, position, options) {
+function drawPartialImage(image, pos, options) {
 	options ||= {}
-	graphics.drawPartialImage(image, position || new Vector2(0, 0), options.scale ?? 1, getVector2(options.size), getVector2(options.sourcePosition), getVector2(options.sourceSize), options.visibleFor, options.frame ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White, options.align ?? 1, options.valign ?? 1, options.location)
+	graphics.drawPartialImage(image, pos || new Vector2(0, 0), options.scale ?? 1, getVector2(options.size), getVector2(options.sourcePosition), getVector2(options.sourceSize), options.visibleFor, options.frame ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White, options.align ?? 1, options.valign ?? 1, options.location)
 }
-function drawText(text, position, options) {
+function drawText(text, pos, options) {
 	options ||= {}
-	return graphics.drawText(text, position || new Vector2(0, 0), getVector2(options.size), options.color ?? null, options.align ?? 1, options.valign ?? 1, options.style ?? 0, options.font ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.angle ?? 0, options.visibleFor, options.clickableBy, getVector2(options.clickableMargin, 16, 16), options.showClickableArea ?? false, options.hotkey ?? 0, options.overflow ?? 2, options.maxWidth ?? 0, options.lineHeight ?? 0, options.onClick ?? null, options.location)
+	return graphics.drawText(text, pos || new Vector2(0, 0), getVector2(options.size), options.color ?? null, options.align ?? 1, options.valign ?? 1, options.style ?? 0, options.font ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.angle ?? 0, options.visibleFor, options.clickableBy, getVector2(options.clickableMargin, 16, 16), options.showClickableArea ?? false, options.hotkey ?? 0, options.overflow ?? 2, options.maxWidth ?? 0, options.lineHeight ?? 0, options.onClick ?? null, options.location)
 }
-function drawTextWithHighlight(text, position, options) {
+function drawTextWithHighlight(text, pos, options) {
 	options ||= {}
-	return graphics.drawTextWithHighlight(text, position || new Vector2(0, 0), options.highlights || [], getVector2(options.size), options.color ?? null, options.align ?? 1, options.valign ?? 1, options.style ?? 0, options.font ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.angle ?? 0, options.visibleFor, options.clickableBy, getVector2(options.clickableMargin, 16, 16), options.showClickableArea ?? false, options.hotkey ?? 0, options.overflow ?? 2, options.maxWidth ?? Number.MAX_VALUE, options.lineHeight ?? 0, options.onClick ?? null, options.location)
+	return graphics.drawTextWithHighlight(text, pos || new Vector2(0, 0), options.highlights || [], getVector2(options.size), options.color ?? null, options.align ?? 1, options.valign ?? 1, options.style ?? 0, options.font ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.angle ?? 0, options.visibleFor, options.clickableBy, getVector2(options.clickableMargin, 16, 16), options.showClickableArea ?? false, options.hotkey ?? 0, options.overflow ?? 2, options.maxWidth ?? Number.MAX_VALUE, options.lineHeight ?? 0, options.onClick ?? null, options.location)
 }
-function drawCircularText(text, position, options) {
+function drawCircularText(text, pos, options) {
 	options ||= {}
-	graphics.drawCircularText(text, position || new Vector2(0, 0), options.size ?? 0, options.color ?? null, options.font ?? null, options.layer ?? int.minValue, options.radius ?? 100, options.angle ?? 0, options.spacing ?? .2, options.visibleFor, options.location)
+	graphics.drawCircularText(text, pos || new Vector2(0, 0), options.size ?? 0, options.color ?? null, options.font ?? null, options.layer ?? int.minValue, options.radius ?? 100, options.angle ?? 0, options.spacing ?? .2, options.visibleFor, options.location)
 }
-function drawButton(text, position, options) {
+function drawButton(text, pos, options) {
 	options ||= {}
-	graphics.drawButton(options.image ?? null, text ?? "", position || new Vector2(0, 0), getVector2(options.size), options.frame ?? -1, options.textColor ?? null, options.textSize ?? 24, getVector2(options.textOffset), getVector2(options.clickableMargin, 16, 16), options.showClickableArea ?? false, options.scaleOnHover ?? 1, options.frameOnHover ?? 1, options.textColorOnHover ?? null, options.accentImage ?? null, options.accentColor ?? null, options.visibleFor, options.clickableBy, options.hotkey ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.enabled ?? true, options.alphaWhenDisabled ?? .5, options.onClick ?? null, options.location)
+	graphics.drawButton(options.image ?? null, text ?? "", pos || new Vector2(0, 0), getVector2(options.size), options.frame ?? -1, options.textColor ?? null, options.textSize ?? 24, getVector2(options.textOffset), getVector2(options.clickableMargin, 16, 16), options.showClickableArea ?? false, options.scaleOnHover ?? 1, options.frameOnHover ?? 1, options.textColorOnHover ?? null, options.accentImage ?? null, options.accentColor ?? null, options.visibleFor, options.clickableBy, options.hotkey ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.enabled ?? true, options.alphaWhenDisabled ?? .5, options.onClick ?? null, options.location)
 }
-function drawRectangle(position, size, options) {
+function drawRectangle(pos, size, options) {
 	options ||= {}
-	graphics.drawRectangle(position || new Vector2(0, 0), getVector2(size, 256, 256), options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.align ?? 1, options.valign ?? 1, options.location)
+	graphics.drawRectangle(pos || new Vector2(0, 0), getVector2(size, 256, 256), options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.align ?? 1, options.valign ?? 1, options.location)
 }
-function drawRoundedRectangle(position, size, options) {
+function drawRoundedRectangle(pos, size, options) {
 	options ||= {}
-	graphics.drawRoundedRectangle(position || new Vector2(0, 0), getVector2(size, 256, 256), options.radius ?? 32, options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.align ?? 1, options.valign ?? 1)
+	graphics.drawRoundedRectangle(pos || new Vector2(0, 0), getVector2(size, 256, 256), options.radius ?? 32, options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.align ?? 1, options.valign ?? 1)
 }
-function drawCircle(position, size, options) {
+function drawCircle(pos, size, options) {
 	options ||= {}
-	graphics.drawCircle(position || new Vector2(0, 0), getVector2(size, 256, 256), options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.startAngle ?? 0, options.angle ?? math.twoPi, options.direction ?? 1, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.location)
+	graphics.drawCircle(pos || new Vector2(0, 0), getVector2(size, 256, 256), options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.startAngle ?? 0, options.angle ?? math.twoPi, options.direction ?? 1, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.location)
 }
 function drawLine(from, to, options) {
 	options ||= {}
@@ -112,7 +112,7 @@ function drawLine(from, to, options) {
 }
 function drawLines(points, options) {
 	options ||= {}
-	graphics.drawLines(points, getVector2(options.position), options.color ?? null, options.width ?? 0, options.smooth ?? false, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1)
+	graphics.drawLines(points, getVector2(options.pos), options.color ?? null, options.width ?? 0, options.smooth ?? false, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1)
 }
 function drawArrow(from, to, options) {
 	options ||= {}
@@ -120,29 +120,29 @@ function drawArrow(from, to, options) {
 }
 function drawPolygon(points, options) {
 	options ||= {}
-	graphics.drawPolygon(points, getVector2(options.position), options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.smooth ?? false, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1)
+	graphics.drawPolygon(points, getVector2(options.pos), options.color ?? null, options.outlineColor ?? null, options.outlineWidth ?? 0, options.smooth ?? false, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1)
 }
-function drawVideo(player, position, options) {
+function drawVideo(player, pos, options) {
 	options ||= {}
-	graphics.drawVideo(player, position || new Vector2(0, 0), getVector2(options.size, 440, 0), options.shape ?? 0, options.visibleFor, options.location)
+	graphics.drawVideo(player, pos || new Vector2(0, 0), getVector2(options.size, 440, 0), options.shape ?? 0, options.visibleFor, options.location)
 }
 function drawPointer(player, options) {
 	options ||= {}
 	graphics.drawPointer(player, options.mode ?? 2, options.color ?? null)
 }
-function drawTexture(texture, position, options) {
+function drawTexture(texture, pos, options) {
 	options ||= {}
 	let size = getVector2(options.size)
-	if(options.sourcePosition != undefined || options.sourceSize != undefined) graphics.drawTexture2(texture, position || new Vector2(0, 0), size, getVector2(options.sourcePosition), getVector2(options.sourceSize), options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White)
-	else graphics.drawTexture(texture, position || new Vector2(0, 0), size, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White)
+	if(options.sourcePosition != undefined || options.sourceSize != undefined) graphics.drawTexture2(texture, pos || new Vector2(0, 0), size, getVector2(options.sourcePosition), getVector2(options.sourceSize), options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White)
+	else graphics.drawTexture(texture, pos || new Vector2(0, 0), size, options.visibleFor, options.layer ?? int.minValue, options.alpha ?? 1, options.color ?? Color.White)
 }
-function drawStandardButton(text, position, options) {
+function drawStandardButton(text, pos, options) {
 	options ||= {}
-	graphics.drawButton(media.Button, text ?? "", position || new Vector2(0, 0), new Vector2(0, 0), -1, null, 24, new Vector2(0, 0), new Vector2(16, 16), false, 1, 1, Color.Black, media.ButtonAccent, options.accentColor ?? null, options.visibleFor, options.clickableBy, options.hotkey ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.enabled ?? true, .5, options.onClick ?? null, options.location)
+	graphics.drawButton(media.Button, text ?? "", pos || new Vector2(0, 0), new Vector2(0, 0), -1, null, 24, new Vector2(0, 0), new Vector2(16, 16), false, 1, 1, Color.Black, media.ButtonAccent, options.accentColor ?? null, options.visibleFor, options.clickableBy, options.hotkey ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.enabled ?? true, .5, options.onClick ?? null, options.location)
 }
-function drawLargeButton(text, position, options) {
+function drawLargeButton(text, pos, options) {
 	options ||= {}
-	graphics.drawButton(media.LargeButton, text ?? "", position || new Vector2(0, 0), new Vector2(0, 0), -1, null, options.textSize ?? 24, new Vector2(0, 0), new Vector2(16, 16), false, 1, 1, Color.Black, media.LargeButtonAccent, options.accentColor ?? null, options.visibleFor, options.clickableBy, options.hotkey ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.enabled ?? true, .5, options.onClick ?? null, options.location)
+	graphics.drawButton(media.LargeButton, text ?? "", pos || new Vector2(0, 0), new Vector2(0, 0), -1, null, options.textSize ?? 24, new Vector2(0, 0), new Vector2(16, 16), false, 1, 1, Color.Black, media.LargeButtonAccent, options.accentColor ?? null, options.visibleFor, options.clickableBy, options.hotkey ?? 0, options.layer ?? int.minValue, options.alpha ?? 1, options.enabled ?? true, .5, options.onClick ?? null, options.location)
 }
 
 function print(text, options) {

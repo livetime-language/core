@@ -708,10 +708,10 @@ class IsometicGrid
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
 		
-	limitToInside: IntVector2 position
+	limitToInside: IntVector2 pos
 		return IntVector2(
-			math.clamp position.x, min:0, max:size.x-1
-			math.clamp position.y, min:0, max:size.y-1
+			math.clamp pos.x, min:0, max:size.x-1
+			math.clamp pos.y, min:0, max:size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector
@@ -829,12 +829,12 @@ immutable Rect
 	float top	=> position.y - size.y/2
 	float bottom	=> position.y + size.y/2
 	
-	bool includes: Vector2 position
-		return this.position - this.size/2 <=  position < this.position + this.size/2
+	bool includes: Vector2 pos
+		return this.position - this.size/2 <=  pos < this.position + this.size/2
 	
-	bool intersectsWith: Vector2 position
+	bool intersectsWith: Vector2 pos
 		                 Vector2 size
-		return this.position - this.size/2 - size/2 <=  position < this.position + this.size/2 + size/2
+		return this.position - this.size/2 - size/2 <=  pos < this.position + this.size/2 + size/2
 
 struct Grid<T>
 	IntVector2 size
@@ -847,9 +847,9 @@ struct Grid<T>
 		 int y // The row to get the value from
 		return items[y*size.x + x]
 	
-	get: IntVector2 position // The vector to get the value from
-		if {0,0} <= position < size
-			return items[position.y*size.x + position.x]
+	get: IntVector2 pos // The vector to get the value from
+		if {0,0} <= pos < size
+			return items[pos.y*size.x + pos.x]
 		else
 			return null
 	
@@ -858,9 +858,9 @@ struct Grid<T>
 		 T value // The value to set
 		items[y*size.x + x] = value
 	
-	set: IntVector2 position // The grid position of the value to set
-		 T value             // The value to set
-		items[position.y*size.x + position.x] = value
+	set: IntVector2 pos // The grid position of the value to set
+		 T value        // The value to set
+		items[pos.y*size.x + pos.x] = value
 		
 	// Do something for each item in the grid
 	inline cpp void each: -> void(

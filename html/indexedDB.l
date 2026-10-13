@@ -95,7 +95,7 @@ class IndexedDBStore<T>
 			}
 		})
 
-	js async T getAtPosition: int position
+	js async T getAtPosition: int pos
 		return new Promise((resolve, reject) => {
 			try {
 				let trans = IndexedDB.db.transaction(this.name, "readonly");
@@ -103,9 +103,9 @@ class IndexedDBStore<T>
 				let hasAdvancedToPosition = false;
 				req.openCursor().onsuccess = e => {
 					var cursor = e.target.result;
-					if(position > 0 && !hasAdvancedToPosition) {
+					if(pos > 0 && !hasAdvancedToPosition) {
 						hasAdvancedToPosition = true;
-						cursor.advance(position);
+						cursor.advance(pos);
 						return;
 					}
 					if(cursor) {

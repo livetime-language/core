@@ -117,7 +117,7 @@ class Object
 		fx.add MoveAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startPosition, delta
 		return this
 		
-	moveAndScaleTo: Vector2 position
+	moveAndScaleTo: Vector2 pos
 		            implicit Vector2 size
 		            float duration = 1000 // After the this time in milliseconds, the object should reach the target position and scale
 		            float delay = 0       // After this time in milliseconds, the object should start moving
@@ -130,7 +130,7 @@ class Object
 			startPosition = moveAnimation.startValue + moveAnimation.delta
 
 		let startTime = fx.endOfPrevAnimation(this)+delay
-		fx.add MoveAnimation startTime, duration, this, startPosition, delta:position - startPosition
+		fx.add MoveAnimation startTime, duration, this, startPosition, delta:pos - startPosition
 		fx.add ScaleAnimation startTime, duration, this, startSize, delta:endSize - startSize
 		return this
 		
@@ -224,13 +224,13 @@ Object CircleObject
 		if alpha then drawCircle position, size, color:color, visibleFor, layer
 
 global transient skipInit unit system
-	global visualize: Vector2 position = {}
+	global visualize: Vector2 pos = {}
 		              Color color = White
 		              logstring text = ""
 		              SourceCodeLocation location
-		VisualizeObject(position, color, index:core.watchIndex, text)
+		VisualizeObject(pos, color, index:core.watchIndex, text)
 		if system.isDebug and core.frame >= core.frameWithNewWatches and location
-			system.sendWatch core.frame, text:text or position.toString, location.start, location.file
+			system.sendWatch core.frame, text:text or pos.toString, location.start, location.file
 		core.watchIndex++
 
 Object VisualizeObject
@@ -391,7 +391,7 @@ Object ParticleSystem
 				nextBurst = ++burst < bursts ? Time.now + burstInterval : float.maxValue
 
 		for particles backwards
-			drawImage image, position:.pos, angle:.angle, frame:.frame, visibleFor, layer: layer
+			drawImage image, pos:.pos, angle:.angle, frame:.frame, visibleFor, layer: layer
 			.pos += .speed
 			.speed.y += gravity
 			.angle += .rotationSpeed

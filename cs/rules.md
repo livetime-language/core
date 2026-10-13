@@ -68,7 +68,7 @@ static class app {
 			player.tick();
 		}
 		if(phase == Phase.GameOver) {
-			drawText("Game Over", position:new Vector2(256,0), size:180, color:Black);
+			drawText("Game Over", pos:new Vector2(256,0), size:180, color:Black);
 		}
 	}
 	// Called when the player touch.by touches or clicks at touch.position
@@ -119,19 +119,19 @@ class Player {
 		float radius = 255
 		Color outlineColor = app.currentPlayer == this ? color : darkColor
 		Vector2 videoPos = new Vector2(-560, -265*moveDirection)
-		drawCircle(position:videoPos, size:radius*2, outlineColor:outlineColor, outlineWidth:12)
-		drawVideo(player:this, position:videoPos, size:radius*2-75, shape:Circle)
+		drawCircle(pos:videoPos, size:radius*2, outlineColor:outlineColor, outlineWidth:12)
+		drawVideo(player:this, pos:videoPos, size:radius*2-75, shape:Circle)
 
 		// Draw score
 		Vector2 scorePos = videoPos + math.getVectorForAngle(-45°)*radius
-		drawCircle(position:scorePos, color:Black, outlineColor:outlineColor, size:60)
-		drawText(score, position:scorePos, size:31)
+		drawCircle(pos:scorePos, color:Black, outlineColor:outlineColor, size:60)
+		drawText(score, pos:scorePos, size:31)
 
 		foreach(move in possibleMoves) {
-			drawImage(Target, position:app.getPixelPos(move), layer:0);
+			drawImage(Target, pos:app.getPixelPos(move), layer:0);
 		}
 		foreach(capture in possibleCaptures) {
-			drawImage(Capture, position:capture.pixelPos, layer:2);
+			drawImage(Capture, pos:capture.pixelPos, layer:2);
 		}
 	}
 	void calculatePossibleMoves(IntVector2 gridPos) {

@@ -542,7 +542,7 @@ transient global skipInit graphics
 
 	global void drawRectangle: Vector2 pos = {0,0}
 		                  implicit Vector2 size = {8,8}
-						  implicit Color fillColor = null
+						  implicit Color color = null
 						  implicit Color outlineColor = null
 						  int outlineWidth = 1
 					      void() onClick = null
@@ -552,8 +552,8 @@ transient global skipInit graphics
 		let x = pos.x.floor, y = pos.y.floor
 		let sizeX = size.x.ceil, sizeY = size.y.ceil
 		let target = screen.pixels
-		if fillColor == null and outlineColor == null then fillColor = graphics.color
-		if fillColor != null
+		if color == null and outlineColor == null then color = graphics.color
+		if color != null
 			int stride = floor(screen.size.x)
 			int startX = x, endX = x + sizeX
 			int startY = y, endY = y + sizeY
@@ -562,7 +562,7 @@ transient global skipInit graphics
 			if startY < screen.clipY1 then startY = screen.clipY1
 			if endY > screen.clipY2 then endY = screen.clipY2
 			if startX < endX and startY < endY
-				int fillValue = fillColor.value
+				int fillValue = color.value
 				int start = startY * stride + startX
 				int end = start + endX - startX
 				for yy = startY to endY
@@ -571,11 +571,11 @@ transient global skipInit graphics
 					start += stride
 					end += stride
 
-		if outlineColor != null and outlineWidth > 0 and outlineColor != fillColor
-			drawRectangle {x,y}, {sizeX, outlineWidth}, fillColor:outlineColor
-			drawRectangle {x, y + sizeY - outlineWidth}, {sizeX, outlineWidth}, fillColor:outlineColor
-			drawRectangle {x, y}, {outlineWidth, sizeY}, fillColor:outlineColor
-			drawRectangle {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, fillColor:outlineColor
+		if outlineColor != null and outlineWidth > 0 and outlineColor != color
+			drawRectangle {x,y}, {sizeX, outlineWidth}, color:outlineColor
+			drawRectangle {x, y + sizeY - outlineWidth}, {sizeX, outlineWidth}, color:outlineColor
+			drawRectangle {x, y}, {outlineWidth, sizeY}, color:outlineColor
+			drawRectangle {x + sizeX - outlineWidth, y}, {outlineWidth, sizeY}, color:outlineColor
 
 		handleClickAndHelp onClick, help, pos, size, margin
 
@@ -592,13 +592,13 @@ transient global skipInit graphics
 
 	global void drawCircle: Vector2 center = {0,0}
 		                    Vector2 radius
-							implicit Color fillColor = null
+							implicit Color color = null
 							implicit Color outlineColor = null
 					        void() onClick = null
 					        string help = ""
 					        Vector2 margin = {0,0}
 		if system.fastForward then return
-		if fillColor == null and outlineColor == null then fillColor = Colors.White
+		if color == null and outlineColor == null then color = Colors.White
 		if radius.y == 0 then radius.y = radius.x
 
 		// Pixel art ellipse/circle centered on center, fitting exactly in the bounding box
@@ -633,9 +633,9 @@ transient global skipInit graphics
 				int xStep = 8 * b * b
 				int yStep = 8 * a * a
 
-				bool hasFill = fillColor != null
+				bool hasFill = color != null
 				bool hasOutline = outlineColor != null
-				int fillValue = hasFill ? fillColor.value : 0
+				int fillValue = hasFill ? color.value : 0
 				int outlineValue = hasOutline ? outlineColor.value : 0
 				int rowY0 = y0 * stride         // row offsets, stepped by stride instead of multiplying per row
 				int rowY1 = y1 * stride
@@ -705,8 +705,8 @@ transient global skipInit graphics
 
 		handleClickAndHelp onClick, help, center - radius, radius*2, margin
 
-	global void drawCircle: Vector2 center = {0,0}, float radius = 8, Color fillColor = null, Color outlineColor = null
-		drawCircle center, radius:{radius, radius}, fillColor, outlineColor
+	global void drawCircle: Vector2 center = {0,0}, float radius = 8, Color color = null, Color outlineColor = null
+		drawCircle center, radius:{radius, radius}, color, outlineColor
 
 	global void drawLine: Vector2 from = {0,0}
 		                  Vector2 to = {0,0}

@@ -1380,11 +1380,11 @@ struct Vector2
 	// A vector with the absolute value of each coordinate
 	abs => Vector2(math.abs(x), math.abs(y))
 		
-	within: Vector2 position
+	within: Vector2 pos
 		    Vector2 size
 		float hx = size.x / 2
 		float hy = size.y / 2
-		return x >= position.x - hx && x < position.x + hx && y >= position.y - hy && y < position.y + hy
+		return x >= pos.x - hx && x < pos.x + hx && y >= pos.y - hy && y < pos.y + hy
 		
 	within: Vector2 size
 		float hx = size.x / 2
@@ -1954,10 +1954,10 @@ class IsometicGrid
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
 		
-	limitToInside: IntVector2 position
+	limitToInside: IntVector2 pos
 		return IntVector2(
-			math.clamp position.x, min:0, max:size.x-1
-			math.clamp position.y, min:0, max:size.y-1
+			math.clamp pos.x, min:0, max:size.x-1
+			math.clamp pos.y, min:0, max:size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector
@@ -2055,12 +2055,12 @@ class Rect
 	float top	=> position.y - size.y/2
 	float bottom	=> position.y + size.y/2
 	
-	bool includes: Vector2 position
-		return this.position - this.size/2 <=  position < this.position + this.size/2
+	bool includes: Vector2 pos
+		return this.position - this.size/2 <=  pos < this.position + this.size/2
 	
-	bool intersectsWith: Vector2 position
+	bool intersectsWith: Vector2 pos
 		                 Vector2 size
-		return this.position - this.size/2 - size/2 <=  position < this.position + this.size/2 + size/2
+		return this.position - this.size/2 - size/2 <=  pos < this.position + this.size/2 + size/2
 
 class Grid<T>
 	IntVector2 size
@@ -2073,17 +2073,17 @@ class Grid<T>
 		 int y // The row to get the value from
 		return items[y*size.x + x]
 	
-	get: IntVector2 position // The vector to get the value from
-		return items[position.y*size.x + position.x]
+	get: IntVector2 pos // The vector to get the value from
+		return items[pos.y*size.x + pos.x]
 	
 	set: int x   // The column of the value to set
 		 int y   // The row of the value to set
 		 T value // The value to set
 		items[y*size.x + x] = value
 	
-	set: IntVector2 position // The grid position of the value to set
-		 T value             // The value to set
-		items[position.y*size.x + position.x] = value
+	set: IntVector2 pos // The grid position of the value to set
+		 T value        // The value to set
+		items[pos.y*size.x + pos.x] = value
 		
 	// Do something for each item in the grid
 	inline js void each: -> void(

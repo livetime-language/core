@@ -159,7 +159,7 @@ global skipInit unit graphics
 		offset = {anchor >= TopCenter ? pixelSize.x/2 : 0, anchor >= Center ? pixelSize.y/2 : 0}
 		
 	global cpp void drawTexture: Texture texture
-		                         Vector2 position = {0,0}
+		                         Vector2 pos = {0,0}
 		
 	// ------------------------------------------------------- Image -------------------------------------------------------
 	
@@ -167,10 +167,10 @@ global skipInit unit graphics
 	// Example: We place an image called "Idle.png" in the "media" folder. Then, we draw this image at the position {0,0}, scale it to a width of 32 pixels. Only the current player instance will see the image.
 	//     Player
 	//         tick
-	//             drawImage Idle, position:{0,0}, size:32, frame:0, visibleFor:me
+	//             drawImage Idle, pos:{0,0}, size:32, frame:0, visibleFor:me
 	// Image: drawImage0.png
 	global void drawImage: Image image                         // The image to draw. PNG images in the "media" folder will automatically show up here
-		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                      Vector2 pos = {}                    // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                      implicit Vector2 size = {}          // A float scales the image to that width keeping the aspect ratio, a vector stretches the image
 		                      implicit Player[] visibleFor = []   // Only this player or list of players will see the image
 		                      implicit frame = 0                  // The frame to draw from a sequence of images (for example "Walk0.png", "Walk1.png", ...)
@@ -184,8 +184,8 @@ global skipInit unit graphics
 			float unscaledSizeX = size.x ? size.x : f.w
 			float sizeX = unscaledSizeX * scale
 			float sizeY = (size.y ? size.y : (unscaledSizeX/f.w)*f.h) * scale
-			float posX = (align == Left ? position.x : align  == Center ? position.x-sizeX*.5 : position.x-sizeX) + offset.x
-			float posY = (valign == Top ? position.y : valign == Middle ? position.y-sizeY*.5 : position.y-sizeY) + offset.y
+			float posX = (align == Left ? pos.x : align  == Center ? pos.x-sizeX*.5 : pos.x-sizeX) + offset.x
+			float posY = (valign == Top ? pos.y : valign == Middle ? pos.y-sizeY*.5 : pos.y-sizeY) + offset.y
 			items.add DisplayImage(
 				cast posX, cast posY, cast sizeX, cast sizeY, 
 				layer, alpha,
@@ -203,7 +203,7 @@ global skipInit unit graphics
 	//                 drawText "You've won!", size:100, color:Black, font:OpenSans, visibleFor:me
 	// Image: drawText.png
 	global drawText: implicit string text                // A string or anything that can be converted into a string (for example, an interger or a float)
-		                      Vector2 position = {}               // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                      Vector2 pos = {}                    // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                      implicit Vector2 size = {}          // The size of the text
 		                      Color color = White                 // The color of the text
 		                      HorizontalAlignment align = Center  // The horizontal alignment of the text
@@ -224,7 +224,7 @@ global skipInit unit graphics
 	//         tick
 	//             drawRectangle size:{500,100}, color:White, outlineColor:Black, outlineWidth:8
 	// Image: drawRectangle.png
-	global drawRectangle: position = Vector2()                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+	global drawRectangle: pos = Vector2()                     // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                  implicit size = Vector2(256,256)    // The size of the rectangle, use a float to draw a square, use a vector to draw a rectangle
 		                  Color color = White                 // The color of the area within the rectangle
 		                  Color outlineColor = White          // The color of the outline around the rectangle
@@ -238,8 +238,8 @@ global skipInit unit graphics
 		if(isVisibleFor(visibleFor))
 			float sizeX = size.x * scale
 			float sizeY = (size.y ? size.y : size.x) * scale
-			float posX = (align == Left ? position.x : align  == Center ? position.x-sizeX*.5 : position.x-sizeX) + offset.x
-			float posY = (valign == Top ? position.y : valign == Middle ? position.y-sizeY*.5 : position.y-sizeY) + offset.y
+			float posX = (align == Left ? pos.x : align  == Center ? pos.x-sizeX*.5 : pos.x-sizeX) + offset.x
+			float posY = (valign == Top ? pos.y : valign == Middle ? pos.y-sizeY*.5 : pos.y-sizeY) + offset.y
 			items.add DisplayRectangle(
 				cast posX, cast posY, cast sizeX, cast sizeY, 
 				layer, alpha, color, outlineWidth

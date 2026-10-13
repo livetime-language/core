@@ -14,7 +14,7 @@
 		if justPressed(A, player:1) then print "Player 1 pressed A"	// Available inputs: Up, Down, Left, Right, A, B, X, Y, Start, Select, Pointer, RightMouseButton
 		if justReleased(B, player:2) then print "Player 2 released B"	// Check if player 2 just released the B button on their gamepad
 		if isPressed(Up, player:3) then pos += {0,-1}	// Check if player 3 is currently pressing the Up button on their gamepad
-		drawImage Example, position:{0,0}, visibleBy:player[0]	// Draws image "media/Example.png", leave out visibleBy to draw for everyone
+		drawImage Example, pos:{0,0}, visibleBy:player[0]	// Draws image "media/Example.png", leave out visibleBy to draw for everyone
 		drawVideo player[1], pos:{0,0}, size:435, shape:Circle	// Draw video feed of player 1, available shapes: Rectangle, Square, Circle
 		drawRectangle pos, size, outlineColor:Red, outlineWidth:5	// Draw rectangle centered at pos
 		drawText "Score: {score}", pos, size:12, color:#00a0a0	// Draw text centered at pos
@@ -49,7 +49,7 @@ Read "src/media.l" for all images, sounds and fonts available in the project. Pl
 
 app
 	tick
-		drawImage Example, position:{0,0} // draws the image "media/Example.png"
+		drawImage Example, pos:{0,0} // draws the image "media/Example.png"
 
 # Unit Tests
 Write unit tests that cover the complete specification and all edges cases.

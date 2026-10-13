@@ -86,7 +86,7 @@ Object Piece
 		// Rotate	
 		Vector2 iconPos = this.iconPos ? this.iconPos : (rotatable ? {(size.x+size.y)*.29, (size.x+size.y)*.29}*{1,-1} : size/2*{1,-1})
 		if rotatable and Framework.selectedObjects.includes(this)
-			onTouchDown position:position+iconPos, size:Image.rotateIcon.size+clickableMargin, by:visibleFor
+			onTouchDown pos:position+iconPos, size:Image.rotateIcon.size+clickableMargin, by:visibleFor
 				rotateTouch = touch
 				rotateOffset = angle - math.getAngleForVector(touch.position - position)
 				rotatedOverThreshold = false
@@ -125,7 +125,7 @@ Object Piece
 		
 		// Flip	
 		if Framework.selectedObjects.includes(this) && flipable
-			drawButton flipIcon, position:position+iconPos*{-1,1}, clickableMargin:{50,50}
+			drawButton flipIcon, pos:position+iconPos*{-1,1}, clickableMargin:{50,50}
 				side = side == Back ? Front : Back
 		
 		// Animate rotation
@@ -136,7 +136,7 @@ Object Piece
 		
 		// Draw rotation icon
 		if rotatable and Framework.selectedObjects.includes(this) and not (rotateTouch and rotatedOverThreshold)
-			drawImage rotateIcon, position:position+iconPos, layer:10000, visibleFor
+			drawImage rotateIcon, pos:position+iconPos, layer:10000, visibleFor
 		
 		draw
 				
@@ -168,11 +168,12 @@ Piece Stack
 	
 	stackable = true
 	
-	Stack: Vector2 position, PieceSide side = Back
-		basePosition = position
+	Stack: Vector2 pos, PieceSide side = Back
+		position = pos
+		basePosition = pos
 	
 	static create: Piece a, Piece b, PieceSide side = Front
-		Stack stack = {position:a.position, side:side}
+		Stack stack = {pos:a.position, side:side}
 		stack.add a
 		stack.add b
 						
@@ -287,13 +288,13 @@ Piece Board
 		// Visiblity icon
 		if contentVisibleForOthers == On or contentVisibleForOthers == Off
 			Image icon =  contentVisibleForOthers == On ? visibleIcon : hiddenIcon
-			drawButton icon, position:position+{size.x/2-32, -size.y/2+32}, clickableBy:owner
+			drawButton icon, pos:position+{size.x/2-32, -size.y/2+32}, clickableBy:owner
 				contentVisibleForOthers = contentVisibleForOthers == On ? Off : On
 				
 		if color: drawRectangle position, size, color:color, layer:-1, visibleFor
 		if image: drawImage image, position, size
 		
-	snap: Piece currentObject, Vector2 position
+	snap: Piece currentObject, Vector2 pos
 		
 Board SmartBoard
 	Grid<Piece> grid = {{8, 8}}
@@ -302,12 +303,12 @@ Board SmartBoard
 	Vector2[] getValidPositions: Piece currentObject
 		return []
 			
-	snap: Piece currentObject, Vector2 position
+	snap: Piece currentObject, Vector2 pos
 		Vector2 closestSpotPos = Vector2.none
 		float minDistance = int.maxValue
 		let positions = getValidPositions currentObject
 		
-		let snapToPosition = (positions.withMin (. - position).length, cellSize.length) or Vector2.none
+		let snapToPosition = (positions.withMin (. - pos).length, cellSize.length) or Vector2.none
 			currentObject.position = snapToPosition
 			
 		if snapToPosition != currentObject.snappedAt
@@ -330,12 +331,12 @@ Board SpotBoard
 	addSpot: Spot spot
 		spots.add spot
 	
-	snap: Piece currentObject, Vector2 position
+	snap: Piece currentObject, Vector2 pos
 		Vector2 closestSpotPos = Vector2.none
 		float minDistance = int.maxValue
 		for spots -> spot
-			let spotPos = spot.getClosestPoint position, this.position
-			let delta = (spotPos - position).abs
+			let spotPos = spot.getClosestPoint pos, this.position
+			let delta = (spotPos - pos).abs
 			let distance = delta.length
 			if delta < threshold and distance < minDistance
 				minDistance = distance

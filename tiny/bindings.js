@@ -29,11 +29,11 @@ function drawSprite(sprite, x = 0, y = 0) {
 function drawText(text = "", x = 0, y = 0, color = 7) {
 	graphics.drawText(text, new Vector2(x, y), color);
 }
-function drawRect(x = 0, y = 0, width = 8, height = 8, fillColor = 7, strokeColor = 0, strokeWidth = 0) {
-	graphics.drawRect(new Vector2(x, y), new Vector2(width, height), fillColor, strokeColor, strokeWidth);
+function drawRect(x = 0, y = 0, width = 8, height = 8, color = 7, strokeColor = 0, strokeWidth = 0) {
+	graphics.drawRect(new Vector2(x, y), new Vector2(width, height), color, strokeColor, strokeWidth);
 }
-function drawCircle(x = 0, y = 0, radius = 8, fillColor = 7, strokeColor = 0, strokeWidth = 0) {
-	graphics.drawCircle(new Vector2(x, y), new Vector2(radius, radius), fillColor, strokeColor, strokeWidth);
+function drawCircle(x = 0, y = 0, radius = 8, color = 7, strokeColor = 0, strokeWidth = 0) {
+	graphics.drawCircle(new Vector2(x, y), new Vector2(radius, radius), color, strokeColor, strokeWidth);
 }
 function clip(x = 0, y = 0, width = 0, height = 0) {
 	graphics.clip(new Vector2(x, y), new Vector2(width, height));

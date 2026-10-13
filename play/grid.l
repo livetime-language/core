@@ -16,8 +16,8 @@ class Grid<T>
 		for size.x * size.y
 			items.add null
 	
-	get: Vector2 position // The vector to get the value from
-		return 0.0 <= position.x < size.x and 0.0 <= position.y < size.y ? items[floor(position.y)*size.x + position.x] : null
+	get: Vector2 pos // The vector to get the value from
+		return 0.0 <= pos.x < size.x and 0.0 <= pos.y < size.y ? items[floor(pos.y)*size.x + pos.x] : null
 	
 	get: float x // The column to get the value from
 		 float y // The row to get the value from
@@ -27,9 +27,9 @@ class Grid<T>
 		 int y // The row to get the value from
 		return 0 <= x < size.x and 0 <= y < size.y ? items[y*size.x + x] : null
 	
-	T set: Vector2 position // The grid position of the value to set
+	T set: Vector2 pos // The grid position of the value to set
 		   T value             // The value to set
-		return items[floor(position.y)*size.x + position.x] = value
+		return items[floor(pos.y)*size.x + pos.x] = value
 
 	T set: float x   // The column of the value to set
 		   float y   // The row of the value to set

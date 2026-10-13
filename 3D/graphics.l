@@ -326,7 +326,7 @@ transient skipInit global unit graphics
 		return mesh
 		
 	global drawImage: Image image
-		              Vector3 position = {}
+		              Vector3 pos = {}
 		              Quaternion rotation = {}
 		              float scale = 1
 		              implicit Player[] visibleFor = null // Only this player or list of players will see the image
@@ -337,7 +337,7 @@ transient skipInit global unit graphics
 		let bucket = buckets[key] ?= {}
 		let mesh = bucket.meshes[bucket.nextMeshIndex] ?= createPlane(image)
 		mesh.drawnThisFrame = true
-		mesh.position = position// - cameraPosition
+		mesh.position = pos// - cameraPosition
 		mesh.quaternion = rotation
 		mesh.scale.x = mesh.scale.y = mesh.scale.z = scale
 		bucket.nextMeshIndex++
@@ -363,7 +363,7 @@ transient skipInit global unit graphics
 	//                 drawText "You've won!", size:100, color:Black, font:Roboto, visibleFor:me
 	// Image: drawText.png
 	global drawText: implicit string text                         // A string or anything that can be converted into a string (for example, an interger or a float)
-		             Vector3 position = {}                        // By default, {0,0} is the center, {-960,-540} is the bottom left, {960,540} is the top right
+		             Vector3 pos = {}                             // By default, {0,0} is the center, {-960,-540} is the bottom left, {960,540} is the top right
 		             Quaternion rotation = {}                     // The rotation of the text
 		             float size = 0                               // The size of the text
 		             implicit Vector2 containerSize = {1920,1080} // The size of the container
@@ -383,7 +383,7 @@ transient skipInit global unit graphics
 		let mesh = bucket.meshes[bucket.nextMeshIndex] ?= createText(effectiveFont)
 		if(!containerSize.y) containerSize.y = 1080
 		mesh.drawnThisFrame = true
-		mesh.position = position
+		mesh.position = pos
 		mesh.quaternion = rotation
 		mesh.scale.x = mesh.scale.y = mesh.scale.z = scale
 		mesh.set({ textAlign: align, justifyContent: valign, width: containerSize.x, height: containerSize.y, backgroundOpacity, backgroundColor })

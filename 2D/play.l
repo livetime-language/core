@@ -11,7 +11,7 @@ transient skipInit global unit graphics
 	//                     done = true
 	// Image: drawButton.png
 	global void drawStandardButton: text = ""                            // The text of the button
-		                            Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                            Vector2 pos = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                            Color accentColor = null             // Tint the accent image with this color, defaults to the color of the local player
 		                            implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                            implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
@@ -22,7 +22,7 @@ transient skipInit global unit graphics
 		                            markAsHandled = true                 // Mark the touch as handled so it won't trigger more touch events. Buttons that only exist on SOME clients (drawn behind a client-local condition) must pass false: touch.handled is rolled-back state, and marking it on one client forks the checksums
 		                            void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the button or presses the hotkey
 	                                SourceCodeLocation location
-		drawButton Button, accentImage:ButtonAccent, textColorOnHover:Black, textSize:24, text, position, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, markAsHandled, onClick, location
+		drawButton Button, accentImage:ButtonAccent, textColorOnHover:Black, textSize:24, text, pos, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, markAsHandled, onClick, location
 		
 	// Draw a large button with the default style.
 	//
@@ -35,7 +35,7 @@ transient skipInit global unit graphics
 	//                     done = true
 	// Image: drawButton.png
 	global void drawLargeButton: text = ""                            // The text of the button
-		                         Vector2 position = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
+		                         Vector2 pos = {}                // By default, {0,0} is the center, {-960,-540} is the top left, {960,540} is the bottom right
 		                         Color accentColor = null             // Tint the accent image with this color, defaults to the color of the local player
 		                         implicit Player[] visibleFor = null  // Only this player or list of players will see the button
 		                         implicit Player[] clickableBy = null // Only this player or list of players can touch or click the button
@@ -46,4 +46,4 @@ transient skipInit global unit graphics
 		                         enabled = true                       // When not enabled, the button isn't clickable and is drawn transparently (50% by default)
 		                         void(Touch touch) onClick = null     // Execute this code when the user touches or clicks the button or presses the hotkey
 	                             SourceCodeLocation location
-		drawButton LargeButton, accentImage:LargeButtonAccent, textColorOnHover:Black, textSize, text, position, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, onClick, location
+		drawButton LargeButton, accentImage:LargeButtonAccent, textColorOnHover:Black, textSize, text, pos, accentColor, visibleFor, clickableBy, hotkey, layer, alpha, enabled, onClick, location
