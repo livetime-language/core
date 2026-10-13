@@ -81,7 +81,7 @@ class Player
 	tick
 		if justPressed(LeftMouseButton, player:index)
 			Vector2 gridPos = ((getPointer(player:index) - app.boardOffset) / 8).floor
-			if {0,0} <= gridPos < app.boardSize
+			if {0.0, 0.0} <= gridPos < app.boardSize
 				placePiece gridPos
 
 	placePiece: Vector2 gridPos
