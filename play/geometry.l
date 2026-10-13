@@ -113,15 +113,18 @@ struct Vector2
 		y = -y
 		return this
 		
-	// Round each coordinate to the closest integer value
-	importance:4 IntVector2 round => IntVector2(math.round(x), math.round(y))
+	// Casting a Vector2 to an IntVector2 rounds it down #evaluate
+	IntVector2 toIntVector2 => IntVector2(math.floor(x), math.floor(y))
 	
 	// Round each coordinate down to an integer value
 	importance:4 IntVector2 floor => IntVector2(math.floor(x), math.floor(y))
 		
 	// Round each coordinate up to an integer value
 	importance:4 IntVector2 ceil => IntVector2(math.ceil(x), math.ceil(y))
-		
+	
+	// Round each coordinate to the closest integer value
+	importance:4 IntVector2 round => IntVector2(math.round(x), math.round(y))
+	
 	// Return a new vector with each coordinate positive
 	importance:4 abs
 		return {math.abs(x), math.abs(y)}
