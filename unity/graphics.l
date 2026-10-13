@@ -102,7 +102,7 @@ global unit graphics
 		return ray.GetPoint(distance);
 						
 	global View drawModel: Model model
-		                   Vector3 position = Vector3.zero
+		                   Vector3 pos = Vector3.zero
 		                   Quaternion rotation = Quaternion.identity
 		                   Animation animation = {}
 		                   float crossfade = .5
@@ -112,7 +112,7 @@ global unit graphics
 		let view = bucket.views[bucket.nextViewIndex] ?= {gameObject:create(model)}
 		..drawnThisFrame = true
 		view.gameObject.transform
-		..localPosition = position
+		..localPosition = pos
 		..localRotation = rotation
 		if animation: view.play animation, crossfade
 		bucket.nextViewIndex++

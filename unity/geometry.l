@@ -698,10 +698,10 @@ global transient skipInit unit system
 // 	isValid: IntVector2 pos
 // 		return pos >= {0,0} and pos < size
 		
-// 	limitToInside: IntVector2 position
+// 	limitToInside: IntVector2 pos
 // 		return IntVector2(
-// 			Math.clamp position.x, min:0, max:size.x-1
-// 			Math.clamp position.y, min:0, max:size.y-1
+// 			Math.clamp pos.x, min:0, max:size.x-1
+// 			Math.clamp pos.y, min:0, max:size.y-1
 // 		)
 		
 // 	getScreenVector: Vector2 worldVector
@@ -777,8 +777,8 @@ struct Direction
 
 // class Rect
 // 	Vector2 position, size
-// 	bool includes: Vector2 position
-// 		return this.position-this.size/2 <=  position < this.position+this.size/2
+// 	bool includes: Vector2 pos
+// 		return this.position-this.size/2 <=  pos < this.position+this.size/2
 	
 class Grid<T>
 	IntVector2 size
@@ -788,25 +788,25 @@ class Grid<T>
 		 int y // The row to get the value from
 		return items[y*size.x + x]
 	
-	get: IntVector2 position // The vector to get the value from
-		return items[position.y*size.x + position.x]
+	get: IntVector2 pos // The vector to get the value from
+		return items[pos.y*size.x + pos.x]
 	
 	T set: int x   // The column of the value to set
 		   int y   // The row of the value to set
 		   T value // The value to set
 		return items[y*size.x + x] = value
 		
-	T set: IntVector2 position // The grid position of the value to set
-		   T value             // The value to set
-		return items[position.y*size.x + position.x] = value
+	T set: IntVector2 pos // The grid position of the value to set
+		   T value        // The value to set
+		return items[pos.y*size.x + pos.x] = value
 		
 	isValid: int x, int y
 		return 0 <= x < size.x 
 		   and 0 <= y < size.y
 		
-	isValid: IntVector2 position
-		return 0 <= position.x < size.x 
-		   and 0 <= position.y < size.y
+	isValid: IntVector2 pos
+		return 0 <= pos.x < size.x 
+		   and 0 <= pos.y < size.y
 		
 	inline cs(UnityEngine, System) void each: -> void(
 		                     T it,      // The current item of the list we are iterating over with the for-loop

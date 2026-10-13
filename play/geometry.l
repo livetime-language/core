@@ -236,14 +236,14 @@ struct Vector2
 		)
 		
 	// Returns whether the vector is within a given rectangle
-	importance:4 insideRectangle: Vector2 position
+	importance:4 insideRectangle: Vector2 pos
 		                          Vector2 size
 								  HorizontalAlignment align = Center
 								  VerticalAlignment valign = Middle	
 								  bool showClickableArea = false
-		let posX = align  == Center ? position.x-size.x*.5 : align == Left ? position.x : position.x-size.x
-		let posY = valign == Middle ? position.y-size.y*.5 : valign == Top ? position.y : position.y-size.y
-		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, fillColor:#ff000080
+		let posX = align  == Center ? pos.x-size.x*.5 : align == Left ? pos.x : pos.x-size.x
+		let posY = valign == Middle ? pos.y-size.y*.5 : valign == Top ? pos.y : pos.y-size.y
+		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, color:#ff000080
 		return x >= posX && x < posX + size.x
 		    && y >= posY && y < posY + size.y
 		
@@ -899,10 +899,10 @@ class IsometicGrid
 	isValid: IntVector2 pos
 		return pos >= {0,0} and pos < size
 		
-	clamp: IntVector2 position
+	clamp: IntVector2 pos
 		return IntVector2(
-			position.x.clamp 0 to size.x-1
-			position.y.clamp 0 to size.y-1
+			pos.x.clamp 0 to size.x-1
+			pos.y.clamp 0 to size.y-1
 		)
 		
 	getScreenVector: Vector2 worldVector

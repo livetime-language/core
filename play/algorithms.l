@@ -126,7 +126,7 @@ BoxCollider
 	topLeft = true
 	topRight = true	
 	
-	BoxCollider: Vector2 position
+	BoxCollider: Vector2 pos
 		         Vector2 size
 		         float radius
 		         right = true
@@ -135,26 +135,26 @@ BoxCollider
 		         top = true
 		if left
 			leftLine = {
-				start:position + {-(size.x/2+radius), -(size.y/2+(topLeft    ? radius : 0))}
-				end:  position + {-(size.x/2+radius),  (size.y/2+(bottomLeft ? radius : 0))}
+				start:pos + {-(size.x/2+radius), -(size.y/2+(topLeft    ? radius : 0))}
+				end:  pos + {-(size.x/2+radius),  (size.y/2+(bottomLeft ? radius : 0))}
 				Segment
 			}
 		if right
 			rightLine = {
-				start:position + {(size.x/2+radius), -(size.y/2+(topRight    ? radius : 0))}
-				end:  position + {(size.x/2+radius),  (size.y/2+(bottomRight ? radius : 0))}
+				start:pos + {(size.x/2+radius), -(size.y/2+(topRight    ? radius : 0))}
+				end:  pos + {(size.x/2+radius),  (size.y/2+(bottomRight ? radius : 0))}
 				Segment
 			}
 		if top
 			topLine = {
-				start:position + {-(size.x/2+(topLeft  ? radius : 0)), -(size.y/2+radius)}
-				end:  position + { (size.x/2+(topRight ? radius : 0)), -(size.y/2+radius)}
+				start:pos + {-(size.x/2+(topLeft  ? radius : 0)), -(size.y/2+radius)}
+				end:  pos + { (size.x/2+(topRight ? radius : 0)), -(size.y/2+radius)}
 				Segment
 			}
 		if bottom
 			bottomLine = {
-				start:position + {-(size.x/2+(bottomLeft  ? radius : 0)), (size.y/2+radius)}
-				end:  position + { (size.x/2+(bottomRight ? radius : 0)), (size.y/2+radius)}
+				start:pos + {-(size.x/2+(bottomLeft  ? radius : 0)), (size.y/2+radius)}
+				end:  pos + { (size.x/2+(bottomRight ? radius : 0)), (size.y/2+radius)}
 				Segment
 			}
  	

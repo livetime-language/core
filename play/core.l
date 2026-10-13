@@ -1027,9 +1027,9 @@ internal transient skipInit unit core
 	private int rewindStepFrames
 		return math.max(system.rewindFrames, 1)
 
-	private int alignUpToRewindStep: int position
+	private int alignUpToRewindStep: int pos
 		int step = rewindStepFrames
-		return position + ((step - (position mod step)) mod step)
+		return pos + ((step - (pos mod step)) mod step)
 
 	// The state entering a step is the world at the current playhead: if the deterministic
 	// capture schedule wants an entry here that no step has captured yet, capture it now.
@@ -1088,10 +1088,10 @@ internal transient skipInit unit core
 		entry.captureFrame = frame
 		Snapshot.serialize entry.bytes
 
-	private dropRewindShadow: int position
-		let shadow = rewindShadow[position]
+	private dropRewindShadow: int pos
+		let shadow = rewindShadow[pos]
 		if shadow
-			rewindShadow.remove position
+			rewindShadow.remove pos
 			rewindEntryPool.add shadow
 
 	// A rollback to rootFrame discarded every predicted step at or above it - discard the

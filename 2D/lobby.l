@@ -60,19 +60,19 @@ unit lobby
 	
 	tick
 		tickSettings
-		drawText "Version:{system.buildVersion}", size:20, position:{-940, 520}, align:Left
+		drawText "Version:{system.buildVersion}", size:20, pos:{-940, 520}, align:Left
 		// Show caught exceptions in staging, but NEVER return early: core.errorMessage is
 		// client-local (set by core.onError, not part of the rolled-back state), so skipping
 		// the rest of the tick forks the deterministic timeline of just this client - a
 		// rejoiner replaying from frame 0 with a stale error never re-ran the lobby exit and
 		// desynced for good (churn desync, seed 339031744)
 		if core.errorMessage and system.isStaging
-			drawText core.errorMessage, size:14, position:{0,40}
+			drawText core.errorMessage, size:14, pos:{0,40}
 
 		// A failed or degraded media setup must not hide the lobby, because the join continues without media
 		// -> Show what is missing and a Retry button, in production too
 		if PeerNetwork.error
-			drawText PeerNetwork.error, position:{0,-512}, size:24, color:Yellow
+			drawText PeerNetwork.error, pos:{0,-512}, size:24, color:Yellow
 			let localPlayer = input.players.find.id == input.localUser.id
 				// markAsHandled:false - this button only exists on the client whose media setup
 				// failed (PeerNetwork.error is client-local), and touch.handled is rolled-back
@@ -107,7 +107,7 @@ unit lobby
 			
 			for input.players as player, playerIndex
 				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
-				onTouchDown position:pos size:{videoWidth, videoWidth*3/4}
+				onTouchDown pos:pos size:{videoWidth, videoWidth*3/4}
 					cyclePlayer player
 					
 			for input.players as player, playerIndex
@@ -134,8 +134,8 @@ unit lobby
 					else
 					if internalUser.hidden then state = "away"
 				if state && state != "connected"
-					drawText state, size:80, color:state == "failed" ? Red : Yellow, position:pos+{0, -halfVideoHeight-40}
-					drawText "x", size:50, color:#808080, position:closePos
+					drawText state, size:80, color:state == "failed" ? Red : Yellow, pos:pos+{0, -halfVideoHeight-40}
+					drawText "x", size:50, color:#808080, pos:closePos
 				onTouchDown closePos, size:{32,32}
 					input.removePlayer player
 				
@@ -148,7 +148,7 @@ unit lobby
 					if editNames
 						// Suggestions
 						for nameSuggestions as name
-							drawButton name, position:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:input.host
+							drawButton name, pos:pos+{-150+100*(i mod 4),halfVideoHeight+150+20*math.floor(i/4)}, textSize:14, textColor:#808080, textColorOnHover:White, visibleFor:input.host
 								fields[playerIndex].text = name
 								setPlayerName player, name
 								
@@ -161,7 +161,7 @@ unit lobby
 			onTouchDown
 				points.add .position.clone
 				print "Adding point at {.position} total points: {points.length}", input.isCertain
-			points.each drawText text:. position:. size:30; drawCircle . outlineColor:White size:200
+			points.each drawText text:. pos:. size:30; drawCircle . outlineColor:White size:200
 			drawText ++counter, {0, -480}, size:100
 		
 		// Switch language

@@ -528,7 +528,7 @@ skipInit unit Input
 	// 		internalUsers[.id].index = i
 				
 	// // Do something when the user touches or clicks within a given area
-	// onTouchDown: Vector2 position = {}      // The center of the touch area
+	// onTouchDown: Vector2 pos = {}           // The center of the touch area
 	// 	               Vector2 size               // The size of a rectangular touch area
 	// 	               int userId = -1            // Only consider touches or clicks from this user  
 	// 	               string cursor = ""         // Change the mouse cursor image when hovering over this area
@@ -536,10 +536,10 @@ skipInit unit Input
 	// 	               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	               void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = usersById[userId]
@@ -562,9 +562,9 @@ skipInit unit Input
 	// 				if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 					this.cursor = cursor
 				
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}, layer:10000000
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}, layer:10000000
 
-	// onTouchDown: Vector2 position           // The center of the touch area
+	// onTouchDown: Vector2 pos                // The center of the touch area
 	// 	               Vector2 size               // The size of a rectangular touch area
 	// 	               int[] userId               // Only consider touches or clicks from this user  
 	// 	               string cursor = ""         // Change the mouse cursor image when hovering over this area
@@ -572,10 +572,10 @@ skipInit unit Input
 	// 	               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	               void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
@@ -592,10 +592,10 @@ skipInit unit Input
 	// 			if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 				this.cursor = cursor
 				
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}
 
 	// // Do something when the user touches or clicks within a given area
-	// onTouchDown: Vector2 position           // The center of the touch area
+	// onTouchDown: Vector2 pos                // The center of the touch area
 	// 	               Vector2 size               // The size of a rectangular touch area
 	// 	               float angle                 // Rotate the touch area by this angle
 	// 	               int userId = -1            // Only consider touches or clicks from this user  
@@ -604,10 +604,10 @@ skipInit unit Input
 	// 	               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	               void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		(position + Vector2( -size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
-	// 		(position + Vector2( +size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
-	// 		(position + Vector2( +size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
-	// 		(position + Vector2( -size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( -size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( +size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( +size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( -size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
 	// 	]
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = usersById[userId]
@@ -630,9 +630,9 @@ skipInit unit Input
 	// 				if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 					this.cursor = cursor
 				
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}
 
-	// onTouchDown: Vector2 position           // The center of the touch area
+	// onTouchDown: Vector2 pos                // The center of the touch area
 	// 	               Vector2 size               // The size of a rectangular touch area
 	// 	               float angle                 // Rotate the touch area by this angle
 	// 	               int[] userId               // Only consider touches or clicks from this user  
@@ -641,10 +641,10 @@ skipInit unit Input
 	// 	               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	               void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		(position + Vector2( -size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
-	// 		(position + Vector2( +size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
-	// 		(position + Vector2( +size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
-	// 		(position + Vector2( -size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( -size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( +size.x/2, -size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( +size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
+	// 		(pos + Vector2( -size.x/2, +size.y/2 ).rotate(angle)).transform(graphics.localMatrix),
 	// 	]
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
@@ -662,10 +662,10 @@ skipInit unit Input
 	// 				if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 					this.cursor = cursor
 				
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}
 
 	// Do something when the user touches or clicks within a given circle
-	onTouchDown: Vector3 position           // The center of the touch area
+	onTouchDown: Vector3 pos                // The center of the touch area
 		               float radius               // The radius of a round touch area
 		               int userId = -1            // Only consider touches or clicks from this user  
 		               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
@@ -673,18 +673,18 @@ skipInit unit Input
 		if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 			let user = internalUsers[userId]
 				for user.downTouches -> touch
-					if !touch.handled and(touch.position distanceTo position) <= radius
+					if !touch.handled and(touch.position distanceTo pos) <= radius
 						do touch
 						if markAsHandled: touch.handled = true
 		else
 			for internalUsers -> user if .active
 				for user.downTouches -> touch
-					if !touch.handled and (touch.position distanceTo position) <= radius
+					if !touch.handled and (touch.position distanceTo pos) <= radius
 						do touch
 						if markAsHandled: touch.handled = true
 
 	// Do something when the user touches or clicks within a given area
-	onTouchDown: Vector3 position           // The center of the touch area
+	onTouchDown: Vector3 pos                // The center of the touch area
 		               Vector3 size               // The size of the touch area
 		               int userId = -1            // Only consider touches or clicks from this user  
 		               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
@@ -692,18 +692,18 @@ skipInit unit Input
 		if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 			let user = internalUsers[userId]
 				for user.downTouches -> touch
-					if !touch.handled and touch.position isInside position, size
+					if !touch.handled and touch.position isInside pos, size
 						do touch
 						if markAsHandled: touch.handled = true
 		else
 			for internalUsers -> user if .active
 				for user.downTouches -> touch
-					if !touch.handled and touch.position isInside position, size
+					if !touch.handled and touch.position isInside pos, size
 						do touch
 						if markAsHandled: touch.handled = true
 
 	// // Do something when the user touches or clicks within a given polygon
-	// onTouchDown: Vector2 position           // The center of the touch area
+	// onTouchDown: Vector2 pos                // The center of the touch area
 	// 	               Vector2[] points           // The points that define the touch area
 	// 	               int userId = -1            // Only consider touches or clicks from this user  
 	// 	               string cursor = ""         // Change the mouse cursor image when hovering over this polygon
@@ -711,7 +711,7 @@ skipInit unit Input
 	// 	               bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	               void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly
-	// 	for points: poly.add (position + .).transform(graphics.localMatrix)
+	// 	for points: poly.add (pos + .).transform(graphics.localMatrix)
 			
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = usersById[userId]
@@ -734,20 +734,20 @@ skipInit unit Input
 	// 				if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 					this.cursor = cursor
 				
-	// 	if showClickableArea: drawPolygon position, points, fillColor:{"ff0000b0"}
+	// 	if showClickableArea: drawPolygon pos, points, color:{"ff0000b0"}
 
 	// // Do something when the user touches or clicks within a given area
-	// : Vector2 position           // The center of the touch area
+	// : Vector2 pos                // The center of the touch area
 	// 	             Vector2 size               // The size of a rectangular touch area
 	// 	             int userId = -1            // Only consider touches or clicks from this user
 	// 	             bool showClickableArea = false // Draw a red rectangle to visualize that area to touch
 	// 	             bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	             void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = internalUsers[userId]
@@ -765,19 +765,19 @@ skipInit unit Input
 	// 					do touch
 	// 					if markAsHandled: touch.handled = true
 	// 					Snapshot.autoSave
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}
 
-	// : Vector2 position           // The center of the touch area
+	// : Vector2 pos                // The center of the touch area
 	// 	             Vector2 size               // The size of a rectangular touch area
 	// 	             int[] userId               // Only consider touches or clicks from this user
 	// 	             bool showClickableArea = false // Draw a red rectangle to visualize that area to touch
 	// 	             bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	             void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
@@ -789,17 +789,17 @@ skipInit unit Input
 	// 					do touch
 	// 					if markAsHandled: touch.handled = true
 	// 					Snapshot.autoSave
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}
 
 	// // Do something when the user touches or clicks within a given area
-	// : Vector2 position           // The center of the touch area
+	// : Vector2 pos                // The center of the touch area
 	// 	             float radius               // The radius of a round touch area
 	// 	             int userId = -1            // Only consider touches or clicks from this user  
 	// 	             string cursor = ""         // Change the mouse cursor image when hovering over this area
 	// 	             bool showClickableArea = false // Draw a red circle to visualize that area to touch
 	// 	             bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	             void(Touch touch) do       // Do this for each touch or click
-	// 	let referencePosition = position.transform(graphics.localMatrix)
+	// 	let referencePosition = pos.transform(graphics.localMatrix)
 	// 	let referenceRadius = radius * graphics.localMatrix.scaleVector.x
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = internalUsers[userId]
@@ -819,12 +819,12 @@ skipInit unit Input
 	// 					Snapshot.autoSave
 	// 		if cursor
 	// 			for localUser.movingTouches -> touch
-	// 				if !touch.handled && (touch.referencePosition distanceTo position) <= radius
+	// 				if !touch.handled && (touch.referencePosition distanceTo pos) <= radius
 	// 					this.cursor = cursor
 				
-	// 	if showClickableArea: drawCircle position, radius*2, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawCircle pos, radius*2, color:{"ff000080"}
 
-	// onTouchOver: Vector2 position           // The center of the touch area
+	// onTouchOver: Vector2 pos                // The center of the touch area
 	// 	         Vector2 size               // The size of a rectangular touch area
 	// 	         int userId = -1            // Only consider touches or clicks from this user  
 	// 	         string cursor = ""         // Change the mouse cursor image when hovering over this area
@@ -832,10 +832,10 @@ skipInit unit Input
 	// 	         bool markAsHandled = true  // Mark the touch as handled so it won't trigger more touch events
 	// 	         void(Touch touch) do       // Do this for each touch or click
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = usersById[userId]
@@ -854,7 +854,7 @@ skipInit unit Input
 	// 				if !touch.handled && touch.referencePosition.isInsidePoygon(poly)
 	// 					this.cursor = cursor
 				
-	// 	if showClickableArea: drawRectangle position, size, fillColor:{"ff000080"}
+	// 	if showClickableArea: drawRectangle pos, size, color:{"ff000080"}
 
 	// Do something when the user touches or clicks
 	onTouchDown: int userId = -1      // Only consider touches or clicks from this user
@@ -955,17 +955,17 @@ skipInit unit Input
 	// 				do .
 	
 	// // Do something when a user moves the mouse wheel within a given rectangle
-	// onWheelWithin: Vector2 position            // The center of the rectangle
+	// onWheelWithin: Vector2 pos                 // The center of the rectangle
 	// 	           Vector2 size                // The size of the rectangle
 	// 	           int userId = -1             // Only consider wheel movments from this user
 	// 	           bool showClickableArea = false  // Draw a red rectangle to visualize that area to touch
 	// 	           bool markAsHandled = true   // Mark the touch as handled so it won't trigger more touch events
 	// 	           void(WheelEvent event) do   // Do this for each mouse wheel movement
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if (Core.mode == Connected || Core.simulateConnection) && userId != -1
 	// 		let user = internalUsers[userId]
@@ -981,19 +981,19 @@ skipInit unit Input
 	// 					log "wheel", event.referencePosition
 	// 					do event
 	// 					if markAsHandled: event.markAsHandled
-	// 	if showClickableArea: drawRectangle position, size, Red
+	// 	if showClickableArea: drawRectangle pos, size, Red
 			
-	// onWheelWithin: Vector2 position            // The center of the rectangle
+	// onWheelWithin: Vector2 pos                 // The center of the rectangle
 	// 	           Vector2 size                // The size of the rectangle
 	// 	           int[] userId               // Only consider wheel movments from this user
 	// 	           bool showClickableArea = false  // Draw a red rectangle to visualize that area to touch
 	// 	           bool markAsHandled = true   // Mark the touch as handled so it won't trigger more touch events
 	// 	           void(WheelEvent event) do   // Do this for each mouse wheel movement
 	// 	Vector2[] poly = [
-	// 		{ position.x-size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y-size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x+size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
-	// 		{ position.x-size.x/2, position.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y-size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x+size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
+	// 		{ pos.x-size.x/2, pos.y+size.y/2 }.transform(graphics.localMatrix),
 	// 	]
 	// 	if not (Core.mode == Connected || Core.simulateConnection)
 	// 		userId = null
@@ -1005,7 +1005,7 @@ skipInit unit Input
 	// 					log "wheel", event.referencePosition
 	// 					do event
 	// 					if markAsHandled: event.markAsHandled
-	// 	if showClickableArea: drawRectangle position, size, Red
+	// 	if showClickableArea: drawRectangle pos, size, Red
 			
 	// bool isTextInputActive = false
 	

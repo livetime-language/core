@@ -177,7 +177,7 @@ transient speech
 	// The promise resolves when the utterance ended - but only if this say is still the latest one:
 	// a say that was superseded by a newer say or stop never resumes its awaiter (see finish),
 	// so the code after "await speech.say" (training.nextStep, reader.updateProgress) cannot run stale
-	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float position = 0, float duration = 0
+	js async Promise say: string value, string language, float rate = speech.rate, string title = "", string artist = "", float pos = 0, float duration = 0
 		if(system.isHeadless) {
 			// Simulated utterance for headless tests: it stays "speaking" until the test ends it with
 			// speech.headlessSay.resolve(). Overwriting the previous entry drops its resolve, so a
@@ -199,7 +199,7 @@ transient speech
 		if(window.webkit) {
 			console.log(`speech #${id} say via webkit "${value.substring(0, 60)}", language: ${language}, certain: ${input.isCertain}, frame: ${core.frame}`);
 			let pref = speech.preferences.get(language) || speech.preferences.get("English")
-			window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: position, duration: duration});
+			window.webkit.messageHandlers.speak.postMessage({text: value, language: pref.lang, preferredVoices: pref.names, title: title, artist: artist, position: pos, duration: duration});
 		} else {
 			return new Promise((resolve, reject) => {
 				const synth = window.speechSynthesis;
