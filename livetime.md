@@ -35,12 +35,17 @@ app	// Use lowercase name to declare static class. Access members with app.with 
 		fraction := 1/2	// 1/2 creates a float with value 0.5
 		int wholeNumber = 10/3	// Floats are rounded down when assigned to int (wholeNumber is 3)
 		floor(3.1); ceil(3.9); round(3.5)	// Rounds down with floor, round up with ceil
+		value = value atLeast 0 atMost 100	// Clamp value
 		abs(-5)	// Absolute value
 		randomInteger(0 to 10); randomFloat(0 to 1)	// Random values
+		string firstChar = filename[0]	// Get character at index 0
 		int dot = filename.indexOf(".")	// Find index of string
 		filename = filename.substring(0 to dot)	// Substring
+		str := "Use backslash to escape \" \{ and \\"	// Escape special characters in strings
 		nextPlayer := players[(index+1) mod players.length]	// a mod b is always between 0 and b (-1 mod 10 == 9)
 		Vector2 pos = {cos(x*2*pi), sin(y*2*pi)}	// Trigonometric functions: sin, cos, tan, atan
+		Vector2 currentPos = pos	// Structs (Vector2, IntVector2) are value types and copied on assignment
+		players.each.tick	// Call tick for each player in list
 		players.sortBy.score	// Sort list by score
 		winner := players.withMax.score	// Get player with maximum score
 		charlie := players.find.name == "Charlie"	// Find item by condition

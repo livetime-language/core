@@ -3,8 +3,8 @@
 		player.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
 	tick	// app.tick is called every frame (30 times per second by default)
 		move currentPlayer, delta:{1,0}	// You don't need parenthesis when calling a function that doesn't return anything
-		setPixel {x,y}, color:LightGray	// Colors: Black, DarkGray, LightGray, White, Blue, Red, Green, Yellow, Earth, Sand, Pink, Violet, DarkBlue, DarkRed, DarkGreen, Orange
-		drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text
+		setPixel pos:screenSize/2, color:LightGray	// Set pixel in the middle of the screen, screenSize is 224x168 pixels by default
+		drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text, each character is 6x10 pixels by default
 		drawRectangle pos:{x,y}, size:{8,8}, color:Red, outlineColor:Green	// Draw rectangle, leave out color for no fill, leave out outlineColor for no outline
 		drawCircle center:{x,y}, radius:8, color:Blue, outlineColor:Yellow	// Draw circle around center, radius can also be a Vector2 for an ellipse
 		drawLine {0,0} to {8,8}, color:Orange	// Draw line
@@ -31,8 +31,8 @@ sprites	// Contains available sprites. Add sprites as needed.
 	redSquare = Sprite(frames:3, [	// Sprites can have multiple animation frames next to each other	
 		"rrrrrrrr                "	// The sprite "redSquare" has 3 frames, each 8x8 pixels
 		"r      r rrrrrr         "	// Sprites can have a string with comma separated tags
-		"r      r r    r   rrrr  "	// Each letter represets a color:
-		"r      r r    r   r  r  "	//   Black
+		"r      r r    r   rrrr  "	// Each letter represents a color:
+		"r      r r    r   r  r  "	//   Black (transparent by default)
 		"r      r r    r   rrrr  "	// d DarkGray
 		"r      r r    r         "	// l LightGray
 		"r      r rrrrrr         "	// w White

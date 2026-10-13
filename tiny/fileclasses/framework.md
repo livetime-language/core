@@ -31,7 +31,7 @@ js void navigateTo: string url	// js keyword indicates that function body is in 
 redSquare = Sprite(frames:3, [	// Sprites can have multiple animation frames next to each other	
 	"rrrrrrrr                "	// The sprite "redSquare" has 3 frames, each 8x8 pixels
 	"r      r rrrrrr         "	// Sprites can have a string with comma separated tags
-	"r      r r    r   rrrr  "	// Each letter represets a color:
+	"r      r r    r   rrrr  "	// Each letter represents a color:
 	"r      r r    r   r  r  "	//   Black
 	"r      r r    r   rrrr  "	// d DarkGray
 	"r      r r    r         "	// l LightGray
