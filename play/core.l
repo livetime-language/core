@@ -767,7 +767,7 @@ internal transient skipInit unit core
 					statistics.add "smooth", userIndex:.playerIndex, value:frame - internalUser.smoothFrame, .playerColor, set:1
 					statistics.add "delta", userIndex:.playerIndex, value:internalUser.certainFrame - internalUser.prevCertainFrame, .playerColor, set:2
 
-			if replayFrom != -1 then statistics.add "replay", value:frame - replayFrom, color:LightGrey
+			if replayFrom != -1 then statistics.add "replay", value:frame - replayFrom, color:LightGray
 		else
 		if mode == Local and simulateRollback
 			input.internalUsers.each.simulateRollback frame

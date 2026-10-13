@@ -1,7 +1,7 @@
 static skipInit class Colors
 	global const Color Black 	= { "#000000", " ", 0 }
-	global const Color DarkGrey 	= { "#5F574F", "d", 5 }
-	global const Color LightGrey 	= { "#C2C3C7", "l", 6 }
+	global const Color DarkGray 	= { "#5F574F", "d", 5 }
+	global const Color LightGray 	= { "#C2C3C7", "l", 6 }
 	global const Color White 	= { "#FFF1E8", "w", 7 }
 	global const Color Blue 	= { "#29ADFF", "b", 12 }
 	global const Color Red 	= { "#FF004D", "r", 8 }
@@ -22,8 +22,8 @@ static skipInit class Colors
 	global const Color DarkerPurple 	= { "#422136", "u", -14 }
 	global const Color BlueGreen 	= { "#125359", "c", -13 }
 	global const Color DarkBrown 	= { "#742F29", "n", -12 }
-	global const Color DarkerGrey 	= { "#49333B", "a", -11 }
-	global const Color MediumGrey 	= { "#A28879", "m", -10 }
+	global const Color DarkerGray 	= { "#49333B", "a", -11 }
+	global const Color MediumGray 	= { "#A28879", "m", -10 }
 	global const Color LightYellow 	= { "#F3EF7D", "Y", -9 }
 
 	global const Color DarkerRed 	= { "#BE1250", "E", -8 }
@@ -46,11 +46,11 @@ static skipInit class Colors
 	// 	"I": new PaletteEntry("I",	153, 105, 45, 255,	"orange",	8,	"#DD8855", "c64"),
 	// 	"J": new PaletteEntry("J",	103, 82, 0, 255,	"brown",	9,	"#664400", "c64"),
 	// 	"K": new PaletteEntry("K",	193, 129, 120, 255,	"pink",	10,	"#FF7777", "c64"),
-	// 	"L": new PaletteEntry("L",	96, 96, 96, 255,	"dark grey",	11,	"#333333", "c64"),
-	// 	"M": new PaletteEntry("M",	138, 138, 138, 255,	"grey",	12,	"#777777", "c64"),
+	// 	"L": new PaletteEntry("L",	96, 96, 96, 255,	"dark gray",	11,	"#333333", "c64"),
+	// 	"M": new PaletteEntry("M",	138, 138, 138, 255,	"gray",	12,	"#777777", "c64"),
 	// 	"N": new PaletteEntry("N",	179, 236, 145, 255,	"light green",	13,	"#AAFF66", "c64"),
 	// 	"O": new PaletteEntry("O",	134, 122, 222, 255,	"light blue",	14,	"#0088FF", "c64"),
-	// 	"P": new PaletteEntry("P",	179, 179, 179, 255,	"light grey",	15,	"#BBBBBB", "c64"),
+	// 	"P": new PaletteEntry("P",	179, 179, 179, 255,	"light gray",	15,	"#BBBBBB", "c64"),
 	// 	"Q": new PaletteEntry("Q",	0,0,252,255,	"",	1,	"#0000fc","nes"),	// Closest color: 28 (difference: 167)
 	// 	"R": new PaletteEntry("R",	216,0,204,255,	"",	20,	"#d800cc","nes"),	// Closest color: 8 (difference: 166)
 	// 	"S": new PaletteEntry("S",	0,232,216,255,	"",	44,	"#00e8d8","nes"),	// Closest color: 12 (difference: 139)

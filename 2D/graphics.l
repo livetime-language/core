@@ -5,8 +5,8 @@ static class Colors
 	global const Color Yellow	= { "#ffd166", "Yellow"}
 	global const Color Green	= { "#06d6a0", "Green"}
 	global const Color Blue	= { "#118ab2", "Blue"}
-	global const Color DarkGrey 	= { "#5F574F", "Dark Grey" }
-	global const Color LightGrey 	= { "#C2C3C7", "Light Grey" }
+	global const Color DarkGray 	= { "#5F574F", "Dark Gray" }
+	global const Color LightGray 	= { "#C2C3C7", "Light Gray" }
 	const Color TransparentRed	= { "#ff000080", "Transparent Red"}
 	
 // A color comprised of a red, green, blue and alpha component
