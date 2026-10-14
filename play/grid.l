@@ -10,7 +10,7 @@ class Grid<T>
 	// (lifecycle seed 285888347). The 3D engine's Grid always declared IntVector2
 	IntVector2 size
 	T[] items
-	transient void(T item, Vector2 pos)[string] itemForCharacter = null
+	transient void(T item, IntVector2 pos)[string] itemForCharacter = null
 	
 	Grid
 		for size.x * size.y
@@ -42,7 +42,7 @@ class Grid<T>
 		return items[y*size.x + x] = value
 	
 	map: string character
-		 stored void(T item, Vector2 pos) to
+		 stored void(T item, IntVector2 pos) to
 		if not itemForCharacter then itemForCharacter = {}
 		itemForCharacter.set(character, to)
 
