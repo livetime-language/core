@@ -53,6 +53,7 @@ unit lobby
 		inLobby = true
 		showNameIndex = 1
 		editNames = false
+		input.removeDisconnectedPlayers
 		input.players.each.isReadyInLobby = false
 		sounds.stop
 		

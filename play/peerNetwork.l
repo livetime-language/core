@@ -48,7 +48,7 @@ internal transient MediaDevices
 // The connection to the signaling server
 internal transient skipInit unit ServerNetwork
 	// Must match protocolVersion in server/hub.go, sent in Join and verified in JoinResponse
-	const int protocolVersion = 7
+	const int protocolVersion = 8
 	// The session token minted by the server when our user id was first handed out: every claim
 	// of the id must present it (a claim without it joins as a fresh player instead of stealing
 	// the identity). Loaded from the stored RoomInfo at boot, refreshed from every JoinResponse
@@ -688,6 +688,7 @@ internal transient skipInit unit PeerNetwork
 				if now > .lastIncomingMessageTime + reconnectNotifyMillis and not .reconnectNotified and core.mode == Connected
 					.reconnectNotified = true
 					app.onTryingToReconnectTo??(.id)
+				if core.mode == Connected then reportConnectionState ., now
 
 				// A leaving peer is gone on purpose (tab closed or navigated away) - reconnect
 				// attempts would be pointless churn; any later message clears the flag
@@ -892,6 +893,37 @@ internal transient skipInit unit PeerNetwork
 			if user and not user.removed
 				if user.local then return true
 				if now < user.lastIncomingMessageTime + removalGraceMillis then return false
+		return true
+
+	// Player.state is deterministic game state, but whether a user is reachable is local knowledge:
+	// one reporter turns it into PlayerConnection events in its input stream, which every client
+	// applies at the same frame. A user is TryingToReconnect after reconnectNotifyMillis of
+	// silence on every transport, Connected again on any message; Disconnected only comes from
+	// the removal (RemoveUser event). The reporter for a user is the lowest-id living user other
+	// than that user - ourselves if every lower-id user has been silent for reconnectNotifyMillis
+	// too, so a silent host is reported by the next user instead of waiting removalGraceMillis
+	// like the removal host election (amHost). Clients that briefly disagree on the reporter may
+	// both write: the events are idempotent and apply in the deterministic stream order. A report
+	// is repeated after 3 s while the parsed state still disagrees (our own event may not have
+	// parsed yet, another reporter may have reported the opposite)
+	private reportConnectionState: InternalUser user, float now
+		if restoring or core.inputRecordingPaused then return
+		let player = input.playersById[user.id]
+		if not player or player.state == Disconnected then return
+		PlayerState observed = now > user.lastIncomingMessageTime + reconnectNotifyMillis ? TryingToReconnect : Connected
+		if observed == player.state then return
+		if observed == user.reportedConnectionState and now < user.reportedConnectionStateTime + 3000 then return
+		if not isConnectionReporterFor(user, now) then return
+		user.reportedConnectionState = observed
+		user.reportedConnectionStateTime = now
+		core.log "#peer <{user.id}> Reporting {observed}"
+		input.handlePlayerConnection user.id, observed
+
+	private bool isConnectionReporterFor: InternalUser subject, float now
+		for input.internalUsers as user
+			if user and user != subject and not user.removed
+				if user.local then return true
+				if now < user.lastIncomingMessageTime + reconnectNotifyMillis then return false
 		return true
 
 	// Called deterministically from input.parseInputs when a RemoveUser event is parsed.

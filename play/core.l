@@ -122,12 +122,12 @@ internal transient skipInit unit core
 		if lastChecksumFrame >= firstChangedFrame then lastChecksumFrame = firstChangedFrame - 1
 
 	// A deterministic hash of the current roster (the player ids whose inputs feed the
-	// simulation). Players enter on their first parsed input record and leave through
-	// removeUserDeterministically, so every client on the same timeline computes the same
-	// value for the same frame
+	// simulation). Players enter on their first parsed input record and leave (or become
+	// Disconnected) through removeUserDeterministically, so every client on the same timeline
+	// computes the same value for the same frame
 	internal int rosterHash
 		int hash = 0
-		for input.players
+		for input.players if .state != Disconnected
 			hash = (hash * 31 + .id + 1) mod 1000000007
 		return hash
 
@@ -1013,8 +1013,9 @@ internal transient skipInit unit core
 	private int[] speculativeRewindPositions // Positions captured beyond certainty since the last rollback (see cleanupSpeculativeRewindEntries)
 	private RewindEntry[] rewindEntryPool  // Pruned/discarded entries, reused by later captures
 	private int rewindPrunedBelow    // Entries below this position were handed to the pool (monotone, aligned)
-	private int[] rewindScratchIds   // Reused by checkRewindMechanic to carry the hold flags across a restore
+	private int[] rewindScratchIds   // Reused by checkRewindMechanic to carry the roster and the hold flags across a restore
 	private bool[] rewindScratchHolds
+	private PlayerState[] rewindScratchStates
 
 	// Local sessions rewind too - they share the whole deterministic step machinery, only
 	// without the network layer on top. The history entries are serialized world state, so
@@ -1140,7 +1141,7 @@ internal transient skipInit unit core
 	// valid. The local player's records are final at write, so a local hold rewinds
 	// instantly; remote holds engage when their records arrive (~their claim lag). A removed
 	// player stops mattering at the removal cut: their claim freezes there, and past
-	// removedAfterFrame the Player has left input.players entirely
+	// removedAfterFrame the Player is Disconnected (holdingRewindKey released)
 	private bool anyPlayerHoldsRewindKey
 		for input.players
 			if .holdingRewindKey
@@ -1189,19 +1190,21 @@ internal transient skipInit unit core
 		if not rewindLogStarted and not system.fastForward
 			rewindLogStarted = true
 			log "#rewind Started at frame {frame} from playhead {input.rewindPlayhead}"
-		// The hold flags and the floor are properties of the PRESENT - the restore overwrites
-		// them with their historical values, so carry them across (reused scratch lists)
+		// The roster, the hold flags and the floor are properties of the PRESENT - the restore
+		// overwrites them with their historical values, so carry them across (reused scratch lists)
 		rewindScratchIds.clear
 		rewindScratchHolds.clear
+		rewindScratchStates.clear
 		for input.players
 			rewindScratchIds.add .id
 			rewindScratchHolds.add .holdingRewindKey
+			rewindScratchStates.add .state
 		int floorNow = input.rewindFloor
 		Snapshot.deserialize entry.bytes
 		input.refreshLocalPlayer
-		// Users who joined after the target vanish from the restored world - recreate them
-		// (and re-remove restored players whose removal cut lies below this frame)
-		input.ensureRewindRestoredPlayers frame
+		// Users who joined after the target vanish from the restored world - recreate them at
+		// their present index (and re-disconnect restored players removed since)
+		input.restorePresentRoster rewindScratchIds, rewindScratchStates
 		for input.players
 			.holdingRewindKey = false
 		for rewindScratchIds.length as i
