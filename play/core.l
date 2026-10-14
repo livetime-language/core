@@ -398,6 +398,18 @@ internal transient skipInit unit core
 		input.rewindFloor = input.rewindPlayhead + 1
 		lobby.inLobby = false
 		app??.start()
+		
+		// Modern Input
+		// When players click "Start" in the lobby or "Restart" in the menu, we clear all application data
+		// input.justJoinedPlayers needs to return all players again so the app can fill maintain a list of players
+		// Alternative 1: Each player write a new join event in the event stream 
+		// input.handleJoin frame, account
+		
+		// Alternative 2: Use a list
+		// input.justJoinedPlayers = input.players.map.id
+		
+		// Alternative 3: Use an int that indicated if the join has been handled
+		input.handledJoinedPlayersUpToFrame = -1
 	
 	// Steps forward when going to a frame in the future
 	// or replays from the beginning when going to a frame in the past

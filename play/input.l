@@ -103,10 +103,12 @@ internal transient class InternalUser
 	Vector2 pressPosition	// Pointer position of the last press, the pointer might have moved further in the same frame
 	Input[] allJustPressed, allJustReleased
 	string focus, prevFocus
+	int joinedAtFrame
 
 	reset
 		// Modern Input
 		clearEvent
+		joinedAtFrame = -1
 		for Input.items.length
 			pressedAtFrame[i] = -2
 			releasedAtFrame[i] = -1
@@ -1330,8 +1332,8 @@ skipInit global unit input
 					player.playerEmail = inputs.readString
 					string colorPreferencesString = inputs.readString
 					player.colorPreferences = colorPreferencesString.split(",").map.toInt
-					print "Player {userId} joined at frame {frame}", type:Reaction
-					app.onJoin??(userId)
+					print "#j Player {userId} joined at frame {frame}", type:Reaction
+					internalUser.joinedAtFrame = frame
 				else
 				if inputType == RemoveUser
 					int removeUserId = inputs.readInt
@@ -2694,3 +2696,14 @@ input
 			do()
 		finally
 			active = prevInputActive
+			
+	int handledJoinedPlayersUpToFrame = -1
+	global int[] justJoinedPlayers
+		int[] ids
+		for internalUsers
+			print "#j input.justJoinedPlayers {.id} {.joinedAtFrame} > {handledJoinedPlayersUpToFrame} {playersById[.id] != null}"
+			if .joinedAtFrame > handledJoinedPlayersUpToFrame and playersById[.id] != null
+				ids.add .id
+				print "#j input.justJoinedPlayers added to ids: {.id}"
+		handledJoinedPlayersUpToFrame = core.frame
+		return ids
