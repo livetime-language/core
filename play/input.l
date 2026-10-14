@@ -92,27 +92,9 @@ internal transient class InternalUser
 	int certainFrame
 	int prevCertainFrame
 	
-	// Modern Input
-	// These values are synced (guaranteed to be the same on all clients)
-	// For each input, we store the frame when it was pressed and the frame when it was released
-	// If the user presses and releases an input in the same frame, both input.justPressed and input.justReleased will return true and input.isPressed will return false
-	visible int[] pressedAtFrame, releasedAtFrame
-	// The frame in which the input was marked as handled (input.markAsHandled), justPressed returns false for the rest of that frame, justReleased for the release of that press
-	int[] handledAtFrame
-	Vector2 pointerPosition, scrollDelta
-	Vector2 pressPosition	// Pointer position of the last press, the pointer might have moved further in the same frame
+	// Per-step Modern Input events, refilled by every parse (the persistent state lives on the serialized Player)
+	Vector2 scrollDelta
 	Input[] allJustPressed, allJustReleased
-	string focus, prevFocus
-	int joinedAtFrame
-
-	reset
-		// Modern Input
-		clearEvent
-		joinedAtFrame = -1
-		for Input.items.length
-			pressedAtFrame[i] = -2
-			releasedAtFrame[i] = -1
-			handledAtFrame[i] = -1
 	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
@@ -134,7 +116,6 @@ internal transient class InternalUser
 		allJustPressed.clear
 		allJustReleased.clear
 		scrollDelta = {0,0}
-		prevFocus = focus
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -170,6 +151,10 @@ priority class Player
 	int	id
 	string	_id	// User account id
 	int[]	colorPreferences
+	// input.justJoinedPlayers already returned this player. Lives on the Player, not the InternalUser: every path that
+	// recreates a Player (core.restart's cloneBaseData, core.reset, a rejoin, a rewind restore) is exactly when the app must
+	// hear about it again, and being serialized, rollbacks and rewinds restore it together with the app state that recorded it
+	internal bool	joinReported
 	
 	internal Player cloneBaseData => {_id, playerLanguage, playerEmail, playerName, colorPreferences, id, playerIndex}
 	toString => playerName ? "{playerName} (Player {playerIndex})" : "Player {playerIndex}"
@@ -200,6 +185,26 @@ priority class Player
 	// correctly. As serialized state, the pin restores the flag and replays re-derive it
 	internal bool holdingRewindKey
 
+	// Modern Input state (justPressed, isPressed, justReleased, markAsHandled, getPressPosition, getFocus). Serialized for the same
+	// reason as holdingRewindKey: snapshots restore it, so a rollback replay never sees stamps left behind by the discarded
+	// speculative pass (they lived on the transient InternalUser before and forked the room). Only the inputs this player
+	// actually used are stored - a full table of all inputs tripled the snapshot size
+	internal InputState[] inputStates
+	internal Vector2 pressPosition	// Pointer position of the last press, the pointer might have moved further in the same frame
+	internal string focus, prevFocus
+
+	// The state of an input for reading: inputs this player never used share InputState.unused
+	internal InputState inputState: int inputIndex
+		for inputStates if .index == inputIndex then return .
+		return InputState.unused
+
+	// The state of an input for writing, stored on first use
+	internal InputState inputStateForWriting: int inputIndex
+		for inputStates if .index == inputIndex then return .
+		InputState state = {index:inputIndex}
+		inputStates.add state
+		return state
+
 	// The current player instance, equivalent to "this"
 	inline js Player me() this
 	
@@ -224,6 +229,17 @@ priority class Player
 	// 				downTouches.remove .
 	// 				.isDown = false
 				
+// The Modern Input state of one input of one player (see Player.inputStates)
+internal class InputState
+	// Never written: the state of every input a player never used (see Player.inputState)
+	transient global const InputState unused = {}
+	int index
+	// The frame the input was pressed and released; pressed and released in the same frame: justPressed and justReleased are true, isPressed is false
+	int pressedAtFrame = -2
+	int releasedAtFrame = -1
+	// The frame the input was marked as handled (input.markAsHandled): justPressed returns false for the rest of that frame, justReleased for the release of that press
+	int handledAtFrame = -1
+
 internal UserAccount
 	string _id
 	Language language
@@ -238,7 +254,7 @@ enum TouchPhase: Still, Down, Move, Up
 		
 enum TouchType: LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
 
-// A touch or a click
+// Deprecated
 Touch
 	int id
 	importance:4 Player by
@@ -253,6 +269,7 @@ Touch
 	
 	importance:4 markAsHandled() handled = true
 	
+// Deprecated
 internal transient ScrollEvent
 	immutable int userId
 	immutable Vector2 delta
@@ -262,6 +279,7 @@ internal transient ScrollEvent
 	
 	markAsHandled() handled = true
 	
+// Deprecated input
 enum KeyCode
 	None         =   0
 	Backspace    =   8
@@ -418,6 +436,7 @@ enum Cursor
 	Auto = "auto" // The cursor will be based on the current context, for example "text" when hovering text
 	None = "none" // No cursor is rendered
 	
+// Deprecated input
 internal DigitalButton
 	string name
 	int index
@@ -452,10 +471,13 @@ internal transient immutable InternalGamepad
 	ImmutableList<float> axes
 	ImmutableList<InternalGamepadButton> buttons
 	string id
-	
+
+// Deprecated input
 enum ControllerButton: None, Up, Right, Down, Left, A, B, X, Y, L, R, leftTrigger, rightTrigger, Select, Start, Menu
 	
 enum GamepadType: Keyboard, Xbox, PlayStation
+
+// Deprecated input
 internal Gamepad
 	Player by
 	const deadZone = .1
@@ -1145,6 +1167,7 @@ skipInit global unit input
 				removeRemovedPlayer userId, frame
 				player = null
 			player?.gamepad.startFrame
+			if player then player.prevFocus = player.focus
 			
 			while true
 				int nextFrame = inputs.canRead ? inputs.peekInt32 : int.maxValue
@@ -1218,6 +1241,7 @@ skipInit global unit input
 					internalUser.navigations.add inputs.readString
 				else
 				if inputType == Gamepad
+					// Deprecated input
 					Gamepad c = player.gamepad
 					
 					// Controller axix
@@ -1266,18 +1290,11 @@ skipInit global unit input
 					// Modern input
 					int bit = 1
 					for inputIndex to 16
-						// Users created mid-session (connected mode) start with sparse arrays:
-						// an unset releasedAtFrame reads undefined, every comparison against it
-						// is false, and the release transition could NEVER fire - the button
-						// stayed pressed forever (and stuck buttons were forwarded into the
-						// embedded app). Backfill the defaults of InternalUser.reset first
-						// (>= -2 is false for undefined, true for every initialized value)
-						if not (internalUser.pressedAtFrame[inputIndex] >= -2) then internalUser.pressedAtFrame[inputIndex] = -2
-						if not (internalUser.releasedAtFrame[inputIndex] >= -2) then internalUser.releasedAtFrame[inputIndex] = -1
-						if internalUser.pressedAtFrame[inputIndex] >= internalUser.releasedAtFrame[inputIndex]
-							if (buttons bitwiseAnd bit) == 0 then internalUser.releasedAtFrame[inputIndex] = core.frame
+						let state = player.inputState inputIndex
+						if state.pressedAtFrame >= state.releasedAtFrame
+							if (buttons bitwiseAnd bit) == 0 then state.releasedAtFrame = core.frame
 						else
-							if (buttons bitwiseAnd bit) != 0 then internalUser.pressedAtFrame[inputIndex] = core.frame
+							if (buttons bitwiseAnd bit) != 0 then player.inputStateForWriting(inputIndex).pressedAtFrame = core.frame
 						bit = bit shiftLeft 1
 				else
 				if inputType == String
@@ -1332,8 +1349,7 @@ skipInit global unit input
 					player.playerEmail = inputs.readString
 					string colorPreferencesString = inputs.readString
 					player.colorPreferences = colorPreferencesString.split(",").map.toInt
-					print "#j Player {userId} joined at frame {frame}", type:Reaction
-					internalUser.joinedAtFrame = frame
+					print "Player {userId} joined at frame {frame}", type:Reaction
 				else
 				if inputType == RemoveUser
 					int removeUserId = inputs.readInt
@@ -1387,6 +1403,7 @@ skipInit global unit input
 						TouchType type
 						bool isSmoothPosition
 						string message = null
+		// Deprecated input
 		let touch = player.touches.find.id == id
 		if touch
 			// Update the touch in player.touches
@@ -1417,7 +1434,7 @@ skipInit global unit input
 		internalUser.downTouches.add touch
 		print type:Touch message or "Click {referencePos} by {player}", input.isCertain
 
-		internalUser.focus = ""
+		player.focus = ""
 
 		// Call input handlers
 		// app.onTouchHover??(touch);
@@ -1429,13 +1446,12 @@ skipInit global unit input
 		// The Input items LeftMouseButton, MiddleMouseButton and RightMouseButton follow each other like TouchType (a finger and a pen are the left mouse button)
 		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
 		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = true
-		internalUser.pressedAtFrame[buttonIndex] = core.frame
+		player.inputStateForWriting(buttonIndex).pressedAtFrame = core.frame
 		
 		// Save when the parent was pressed (Pointer is the parent of LeftMouseButton, like "Shift" is the parent of "ShiftLeft")
 		let parent = Input.items[buttonIndex].parent
-			internalUser.pressedAtFrame[parent.index] = core.frame
-		internalUser.pointerPosition = referencePos
-		internalUser.pressPosition = referencePos
+			player.inputStateForWriting(parent.index).pressedAtFrame = core.frame
+		player.pressPosition = referencePos
 
 	internal touchMove: InternalUser internalUser
 	                    Player player
@@ -1443,6 +1459,7 @@ skipInit global unit input
 					    Vector2 referencePos
 					    TouchType type
 					    bool isSmoothPosition
+		// Deprecated input
 		let touch = player.touches.find.id == id
 		if touch
 			// Update the touch in player.touches
@@ -1467,7 +1484,6 @@ skipInit global unit input
 		// 	player.onTouchDrag??(touch);
 
 		// Modern Input
-		internalUser.pointerPosition = referencePos
 
 	internal touchUp: InternalUser internalUser
 	                  Player player
@@ -1475,6 +1491,7 @@ skipInit global unit input
 					  Vector2 referencePos
 					  TouchType type
 					  bool isSmoothPosition
+		// Deprecated input
 		let touch = player.touches.find.id == id
 		if touch
 			// Update the touch in player.touches
@@ -1506,18 +1523,18 @@ skipInit global unit input
 		// --- Modern Input ---
 		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
 		if buttonIndex == core.rewindKeyIndex then player.holdingRewindKey = false
-		internalUser.releasedAtFrame[buttonIndex] = core.frame
+		player.inputStateForWriting(buttonIndex).releasedAtFrame = core.frame
 		
 		// Save when the parent was released (Pointer is the parent of LeftMouseButton)
 		let parent = Input.items[buttonIndex].parent
-			internalUser.releasedAtFrame[parent.index] = core.frame
-		internalUser.pointerPosition = referencePos
+			player.inputStateForWriting(parent.index).releasedAtFrame = core.frame
 
 	internal scroll: InternalUser internalUser
 	                 Player player
 					 Vector2 delta
 					 bool isPinch
 					 Vector2 referencePosition
+		// Deprecated input
 		internalUser.wheelEvents.add {player.id, delta, isPinch, referencePosition}
 
 		// Call input handlers
@@ -1551,22 +1568,25 @@ skipInit global unit input
 			key = {type:Keyboard, code:key ? key.code : "", character}
 			
 		// Save when key was pressed if it's not already pressed (to cancel out OS key repeat and support custom repeat)
-		if internalUser.releasedAtFrame[keyIndex] >= internalUser.pressedAtFrame[keyIndex]
-			internalUser.pressedAtFrame[keyIndex] = core.frame
+		let state = player.inputStateForWriting keyIndex
+		if state.releasedAtFrame >= state.pressedAtFrame
+			state.pressedAtFrame = core.frame
 			internalUser.allJustPressed.add key
 			
 		// Save when the parent key was pressed if it's not already pressed (e.g. "Shift" is the parent of "ShiftLeft")
 		let parent = key?.parent
-			if internalUser.releasedAtFrame[parent.index] >= internalUser.pressedAtFrame[parent.index]
-				internalUser.pressedAtFrame[parent.index] = core.frame
+			let parentState = player.inputStateForWriting parent.index
+			if parentState.releasedAtFrame >= parentState.pressedAtFrame
+				parentState.pressedAtFrame = core.frame
 				internalUser.allJustPressed.add parent
 			
 			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
-				if internalUser.releasedAtFrame[Input.CmdOrCtrl.index] >= internalUser.pressedAtFrame[Input.CmdOrCtrl.index]
+				let cmdOrCtrlState = player.inputStateForWriting Input.CmdOrCtrl.index
+				if cmdOrCtrlState.releasedAtFrame >= cmdOrCtrlState.pressedAtFrame
 					internalUser.allJustPressed.add Input.CmdOrCtrl
-					internalUser.pressedAtFrame[Input.CmdOrCtrl.index] = core.frame
+					cmdOrCtrlState.pressedAtFrame = core.frame
 			
 		// let controllerButton = controllerButtonMap[key]
 		// 	InternalUser user = input.internalUsers[controllerButton.userId]
@@ -1588,18 +1608,18 @@ skipInit global unit input
 		Input key = Input.items[keyIndex]
 		
 		// Save when key was released
-		internalUser.releasedAtFrame[keyIndex] = core.frame
+		player.inputStateForWriting(keyIndex).releasedAtFrame = core.frame
 		internalUser.allJustReleased.add key
 		
 		// Save when the parent key was released (e.g. "Shift" is the parent of "ShiftLeft")
 		let parent = key?.parent
-			internalUser.releasedAtFrame[parent.index] = core.frame
+			player.inputStateForWriting(parent.index).releasedAtFrame = core.frame
 			internalUser.allJustReleased.add parent
 			
 			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
-				internalUser.releasedAtFrame[Input.CmdOrCtrl.index] = core.frame
+				player.inputStateForWriting(Input.CmdOrCtrl.index).releasedAtFrame = core.frame
 				internalUser.allJustReleased.add Input.CmdOrCtrl
 			
 		// let controllerButton = controllerButtonMap[key]
@@ -1813,7 +1833,7 @@ skipInit global unit input
 			if user.local then localPlayer = player
 			updatePlayers
 
-	// ---------------------------------------------- Touch Down ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Touch Down ----------------------------------------------
 	
 	// Do something when the player touches or clicks within a given area.
 	//
@@ -1951,7 +1971,7 @@ skipInit global unit input
 				if player.enableTouch or touch.type != Finger
 					do touch
 
-	// ---------------------------------------------- Touch Over ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Touch Over ----------------------------------------------
 	
 	// Do something when the mouse moves over a given area.
 	//
@@ -1994,7 +2014,7 @@ skipInit global unit input
 
 
 			
-	// ---------------------------------------------- Touch Move ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Touch Move ----------------------------------------------
 	
 	// Do something when a touch or click moves.
 	//
@@ -2052,7 +2072,7 @@ skipInit global unit input
 				for user.movingTouches
 					do .
 					
-	// ---------------------------------------------- Touch Up ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Touch Up ----------------------------------------------
 	
 	// Do something when a touch or click ends.
 	//
@@ -2157,7 +2177,7 @@ skipInit global unit input
 					if !touch.handled && (touch.position distanceTo pos) <= radius
 						this.cursor = cursor
 						
-	// ---------------------------------------------- Scroll ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Scroll ----------------------------------------------
 	
 	// Do something when a player scrolls with the touch pad or mouse wheel
 	global onScroll: implicit nocolon Player[] by = null // Only consider events by this player or list of players
@@ -2180,7 +2200,7 @@ skipInit global unit input
 					do .
 					if markAsHandled then .markAsHandled
 			
-	// ---------------------------------------------- Text Input ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Text Input ----------------------------------------------
 	
 	visible bool isTextInputActive = false
 	
@@ -2241,7 +2261,7 @@ skipInit global unit input
 			for internalUsers[.id].textInputs
 				do .
 				
-	// ---------------------------------------------- Keys ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Keys ----------------------------------------------
 	
 	// Do something when a player presses a key
 	global importance:0 onKeyDown: KeyCode modifier 
@@ -2332,7 +2352,7 @@ skipInit global unit input
 			return players.any.keysCurrentlyDown.includes key
 		return false
 		
-	// ---------------------------------------------- Navigate ----------------------------------------------
+	// ---------------------------------------------- Deprecated Input: Navigate ----------------------------------------------
 	
 	// Do something when the user navigates back or forward in the browser	
 	global onNavigate: implicit nocolon Player[] by = null // Only consider events by this player or list of players
@@ -2370,7 +2390,7 @@ enum InputButton
 
 enum InputType: Keyboard, Pointer, Gamepad
 
-class Input
+immutable class Input
 	InputType type
 	string code
 	string character
@@ -2560,18 +2580,18 @@ input
 	// keyboard and pointer, and their events land in their own stream (the old behavior forced
 	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
 	global bool justPressed: Input item, int player = 0
-		let user = internalUserBySyncedIndex[player]
-		if not active or not user or user.handledAtFrame[item.index] == core.frame then return false
+		let user = players[player]
+		if not active or not user then return false
+		let state = user.inputState item.index
+		if state.handledAtFrame == core.frame then return false
 
 		// Pressed this frame?
-		int pressedAtFrame = user.pressedAtFrame[item.index]
-		int framesSincePress = core.frame - pressedAtFrame
+		int framesSincePress = core.frame - state.pressedAtFrame
 		if framesSincePress == 0 then return true
 
 		// Repeating?
 		if keyRepeatEvery == 0 then return false
-		int releasedAtFrame = user.releasedAtFrame[item.index]
-		return pressedAtFrame > releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
+		return state.pressedAtFrame > state.releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
 
 	// Returns true the player has just clicked within a rectangle
 	global bool justPressed: Input item = Pointer
@@ -2594,7 +2614,7 @@ input
 
 	global bool justPressed: string keyCombination, int player = 0
 		if not active or not keyCombination then return false
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		if  not user then return false
 		let keyStrings = keyCombination.toLowerCase.split("+")
 		bool anyPressedThisFrame = false
@@ -2603,40 +2623,43 @@ input
 			if not name then return false
 				
 			let item = Input.items.find.name == name or .alternativeName == name
-			if not item or user.handledAtFrame[item.index] == core.frame then return false
+			if not item then return false
+			let state = user.inputState item.index
+			if state.handledAtFrame == core.frame then return false
 			
 			// Each key must be pressed this frame or held down, at least one key must be pressed this frame
-			let pressedAtFrame = user.pressedAtFrame[item.index]
-			if pressedAtFrame == core.frame	then anyPressedThisFrame = true
-			else if pressedAtFrame <= user.releasedAtFrame[item.index]	then return false
+			if state.pressedAtFrame == core.frame	then anyPressedThisFrame = true
+			else if state.pressedAtFrame <= state.releasedAtFrame	then return false
 			
 		return anyPressedThisFrame
 
 	// Returns true if the player is currently pressing the given button
 	// (false if it was pressed and released in the same frame, then only justPressed and justReleased are true)
 	global bool isPressed: Input item, int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		if not active or not user then return false
-		return user.pressedAtFrame[item.index] > user.releasedAtFrame[item.index]
+		let state = user.inputState item.index
+		return state.pressedAtFrame > state.releasedAtFrame
 
 	// Returns true if the player has just released the given button this frame (and it wasn't marked as handled since it was pressed, the release may come frames later)
 	global bool justReleased: Input item, int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		if not active or not user then return false
-		return user.releasedAtFrame[item.index] == core.frame and user.handledAtFrame[item.index] < user.pressedAtFrame[item.index]
+		let state = user.inputState item.index
+		return state.releasedAtFrame == core.frame and state.handledAtFrame < state.pressedAtFrame
 
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
 	// players' pointers are available and deterministic
 	global Vector2 getPointer: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		if not user then return {0,0}
 		if graphics.isTransforming then	return user.pointerPosition.getRelativeTo graphics.localMatrix
 		else	return user.pointerPosition
 
 	// Returns the position where the player last pressed the pointer. Use it with justPressed(Pointer): the pointer might have moved further in the same frame
 	global Vector2 getPressPosition: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		if not user then return {0,0}
 		if graphics.isTransforming then	return user.pressPosition.getRelativeTo graphics.localMatrix
 		else	return user.pressPosition
@@ -2659,17 +2682,17 @@ input
 
 	global string getFocus: int player = 0
 		player = 0
-		return internalUserBySyncedIndex[player].focus
+		return players[player].focus
 
 	global void setFocus: string value, int player = 0
 		player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		// if value != user.prevFocus then user.lostFocus = user.prevFocus
 		user.focus = value
 
 	global string getLostFocus: int player = 0
 		player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		return user.focus != user.prevFocus ? user.prevFocus : ""
 		// let lostFocus = user.lostFocus
 		// user.lostFocus = ""
@@ -2678,15 +2701,15 @@ input
 	// Marks the input and its parent (e.g. Pointer for LeftMouseButton) as handled for this frame, so justPressed returns false for them in the rest
 	// of the frame and justReleased for the release of the press, even when it comes frames later (isPressed is state, not an event, and stays unaffected). Call this when an overlay or a button consumed the press, so the elements drawn below or after it don't react to it as well
 	global markAsHandled: Input item, int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = players[player]
 		if not user then return
-		user.handledAtFrame[item.index] = core.frame
+		user.inputStateForWriting(item.index).handledAtFrame = core.frame
 		let parent = item.parent
-			user.handledAtFrame[parent.index] = core.frame
+			user.inputStateForWriting(parent.index).handledAtFrame = core.frame
 
 	// Returns true if the input was marked as handled this frame
 	bool isHandled: Input item, int player = 0
-		return internalUserBySyncedIndex[player]?.handledAtFrame[item.index] == core.frame
+		return players[player]?.inputState(item.index).handledAtFrame == core.frame
 		
 	// Runs do with the input switched off, e.g. to draw a page that fades out without its buttons and keys reacting
 	global withoutHandlingInput: void() do
@@ -2697,13 +2720,12 @@ input
 		finally
 			active = prevInputActive
 			
-	int handledJoinedPlayersUpToFrame = -1
+	// Returns the ids of the players that joined since the last call - each player exactly once, so call it from one place.
+	// After core.restart (Start in the lobby, Restart in the menu), it returns all players again: the app data was cleared
+	// and the restart recreates every Player (see Player.joinReported)
 	global int[] justJoinedPlayers
 		int[] ids
-		for internalUsers
-			print "#j input.justJoinedPlayers {.id} {.joinedAtFrame} > {handledJoinedPlayersUpToFrame} {playersById[.id] != null}"
-			if .joinedAtFrame > handledJoinedPlayersUpToFrame and playersById[.id] != null
-				ids.add .id
-				print "#j input.justJoinedPlayers added to ids: {.id}"
-		handledJoinedPlayersUpToFrame = core.frame
+		for players if not .joinReported
+			.joinReported = true
+			ids.add .id
 		return ids

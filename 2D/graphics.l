@@ -837,7 +837,17 @@ transient skipInit global unit graphics
 		float[] lineOffsets = null
 		float effectiveLineHeight
 		float offsetX, offsetY
-		
+
+		// Not drawn and not clickable (every replayed step, text visible to other players only): only the returned height matters.
+		// Without maxWidth and maxHeight it doesn't depend on the text width, so skip measuring every word like the single-line
+		// path below does. The layout makes one line per line break plus one for the text after the last break unless that is
+		// empty or only spaces - the height must be identical to the full layout, apps may store it in synced state
+		if not isVisible and onClick == null and not maxWidth and not maxHeight and text.includes("\n")
+			int lineCount = text.split("\n").length - 1
+			if text.substring(text.lastIndexOf("\n") + 1).replaceAll(" ", "") then lineCount++
+			effectiveLineHeight = lineHeight || fontSize*1.3
+			return lineCount * effectiveLineHeight - (effectiveLineHeight - fontSize * effectiveFont.actualHeightFactor)
+
 		if ((overflow == Wrap or overflow == WrapAndScale or overflow == WrapAndCutOff or overflow == WrapAndEllipsis or overflow == Ellipsis) and maxWidth)
 		or text.includes("\n")
 			if maxWidth == 0	then maxWidth = float.maxValue
