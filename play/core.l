@@ -517,6 +517,7 @@ internal transient skipInit unit core
 	// The traces are sliced to the used portion: the receiving side can transfer the fresh copy,
 	// and cloning a subarray view would serialize the whole preallocated buffer
 	js void sendOutputToEditor: int frame = core.frame
+		                        bool updateFrame = true
 		                        dynamic pixels = null
 		if(!system.isDebug) return;
 		let output = null;
@@ -532,7 +533,7 @@ internal transient skipInit unit core
 			core.sentTraceCount += traceCount;
 			_traceIndex = 0;
 		}
-		_sendToEditor({type:"frame", pixels, traces, traceCount, output, frame, frames:core.frames, playMode:system.playMode});
+		_sendToEditor({type:"frame", pixels, traces, traceCount, output, updateFrame, frame, frames:core.frames, playMode:system.playMode});
 
 	// Smooth out animations by only executing code when we received inputs from everybody
 	smooth: Player player
@@ -934,7 +935,7 @@ internal transient skipInit unit core
 
 			// One message per step with pixels, traces, output and frame state. The pixels are the
 			// live framebuffer (only included when this step drew): the editor bridge copies them
-			sendOutputToEditor pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen??.pixels : null)
+			sendOutputToEditor updateFrame:draw, pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen??.pixels : null)
 
 			// Cleanup
 			for input.internalUsers as user
