@@ -224,7 +224,6 @@ global transient skipInit unit system
 				catch
 					core.onError .
 				finally 
-					core.sendOutputToEditor frame:core.frame-1
 					updatePageIconAndTitle
 		catch
 			core.onError .
@@ -333,14 +332,12 @@ global transient skipInit unit system
 			core.stop
 		catch
 			core.onError .
-		finally
-			core.sendOutputToEditor
 
 	internal pause
 		playMode = Pause
 		gizmo.clear
 		updatePageIconAndTitle
-		core.sendOutputToEditor frame:core.frame-1
+		core.sendOutputToEditor
 		sounds.stop
 
 	internal record

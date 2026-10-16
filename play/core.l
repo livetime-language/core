@@ -449,8 +449,6 @@ internal transient skipInit unit core
 		finally
 			adjustStartTime
 			isPremiere = true
-			let output = codeChanged ? core.output : null
-			sendOutputToEditor frame:core.frame-1
 
 	runTest: dynamic testFunction, int id = -1, int targetFrame = -1, int interrruptAtOutputIndex = -1
 		isPremiere = false
@@ -514,10 +512,11 @@ internal transient skipInit unit core
 	// when a frame was drawn), the traces collected by the generated tracing code (cleared after
 	// sending), the new output lines since the last send (output itself is kept - it is indexed by
 	// the absolute outputIndex for goToFrame interrupts), and the frame/playMode state.
+	// The frame is the last processed frame (core.frame-1), the one goToFrame targets.
+	// Called only from tick and system.pause: every other path ends in one of the two.
 	// The traces are sliced to the used portion: the receiving side can transfer the fresh copy,
 	// and cloning a subarray view would serialize the whole preallocated buffer
-	js void sendOutputToEditor: int frame = core.frame
-		                        bool updateFrame = true
+	js void sendOutputToEditor: bool updateFrame = true
 		                        dynamic pixels = null
 		if(!system.isDebug) return;
 		let output = null;
@@ -533,7 +532,7 @@ internal transient skipInit unit core
 			core.sentTraceCount += traceCount;
 			_traceIndex = 0;
 		}
-		_sendToEditor({type:"frame", pixels, traces, traceCount, output, updateFrame, frame, frames:core.frames, playMode:system.playMode});
+		_sendToEditor({type:"frame", pixels, traces, traceCount, output, updateFrame, frame:core.frame-1, frames:core.frames, playMode:system.playMode});
 
 	// Smooth out animations by only executing code when we received inputs from everybody
 	smooth: Player player
@@ -2023,12 +2022,9 @@ internal transient skipInit unit core
 		errorMessage = error.stack
 		hasErrors = true
 		errorCount++
-		if(core.runningTest || system.isDebug) {
-			addOutput "exception|{errorMessage}||0"
-			sendOutputToEditor
-		} else {
-			core.log errorMessage
-		}
+		// The output is sent by system.pause below (sendOutputToEditor only sends in debug)
+		if core.runningTest or system.isDebug then addOutput "exception|{errorMessage}||0"
+		else core.log errorMessage
 		if system.isDebug
 			// Advance frame on error to ensure the current frame is replayed
 			frame++
