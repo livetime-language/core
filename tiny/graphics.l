@@ -133,7 +133,7 @@ immutable Color
 		green = value shiftRight 8 bitwiseAnd 0xff
 		blue = value shiftRight 16 bitwiseAnd 0xff
 		alpha = value shiftRight 24 bitwiseAnd 0xff
-
+		
 	string toHex => "#{red.toHex.padStart(2, "0")}{green.toHex.padStart(2, "0")}{blue.toHex.padStart(2, "0")}{alpha.toHex.padStart(2, "0")}"
 
 struct int
@@ -222,7 +222,11 @@ Screen
 			core.frame < core.frames or core.runningTest	then input.showPointersDuringPlayback
 			system.isDebug	then input.showPointersModeInEditor
 			default	then input.showPointersMode
-		if showPointersMode != None then input.players.each graphics.drawPointer i, showPointersMode
+		if showPointersMode != None
+			if core.firstUserControlsEverythingInDebug and isDebug
+				graphics.drawPointer user:0, showPointersMode
+			else
+				for input.players graphics.drawPointer i, showPointersMode
 				
 		// Embedded (webworker) and headless (node test runner) builds have no canvas to draw to
 		if system.fastForward or system.isEmbedded or not context then return
