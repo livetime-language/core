@@ -269,6 +269,28 @@ priority class Player
 	// The current player instance, equivalent to "this"
 	inline js Player me() this
 	
+	bool justPressed: Input item
+		let state = inputState item.index
+		if state.handledAtFrame == core.frame then return false
+
+		// Pressed this frame?
+		int framesSincePress = core.frame - state.pressedAtFrame
+		if framesSincePress == 0 then return true
+
+		// Repeating?
+		if input.keyRepeatEvery == 0 then return false
+		return state.pressedAtFrame > state.releasedAtFrame and framesSincePress >= input.keyRepeatAfter and (framesSincePress - input.keyRepeatAfter) mod input.keyRepeatEvery == 0
+
+	bool justPressed: Input item = Pointer
+	                  float posX
+					  float posY
+		              float sizeX
+					  float sizeY
+		bool pressed = justPressed item
+		if not pressed then return false
+		let pointer = graphics.isTransforming ? pressPosition.getRelativeTo graphics.localMatrix : pressPosition	
+		return pressed and pointer.x >= posX and pointer.x < posX + sizeX
+			           and pointer.y >= posY and pointer.y < posY + sizeY
 	
 	// Evaluate: Set isDown directly in input.touchDown instead of in player.postprocessEvents #easier-to-reason-about #evaluate
 	// Called in core.step at the end of each step
@@ -1593,11 +1615,10 @@ skipInit global unit input
 		// Log
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.startPosition
-			let playerVariable = "players[{player.playerIndex}]"
 			if length < 8
-				core.addOutput "code|click {touch.startPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|click {touch.startPosition} user:{player.playerIndex}|{touch.startFrame}|{core.frame}"
 			else
-				core.addOutput "code|drag {touch.startPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|drag {touch.startPosition} to {referencePos} user:{player.playerIndex}|{touch.startFrame}|{core.frame}"
 
 		// --- Modern Input ---
 		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
@@ -2557,42 +2578,31 @@ input
 		keyRepeatAfter = after
 		keyRepeatEvery = every
 
-	// Returns true if the player has just pressed the given button this frame.
-	// player is honored for EVERY input type: in a multi-user session each user has their own
-	// keyboard and pointer, and their events land in their own stream (the old behavior forced
-	// player 0 for non-gamepad items, which made every other user's keyboard invisible)
-	global bool justPressed: Input item, int player = 0
-		let user = players[player]
-		if not active or not user then return false
-		let state = user.inputState item.index
-		if state.handledAtFrame == core.frame then return false
-
-		// Pressed this frame?
-		int framesSincePress = core.frame - state.pressedAtFrame
-		if framesSincePress == 0 then return true
-
-		// Repeating?
-		if keyRepeatEvery == 0 then return false
-		return state.pressedAtFrame > state.releasedAtFrame and framesSincePress >= keyRepeatAfter and (framesSincePress - keyRepeatAfter) mod keyRepeatEvery == 0
-
+	// Returns true if the player has just pressed the given button this frame
+	global bool justPressed: Input item, int user = -1
+		if not active or user >= players.length then return false
+		if user < 0
+			return players.any.justPressed item
+		else
+			return players[core.firstUserControlsEverythingInDebug and isDebug ? 0 : user].justPressed item
+					
 	// Returns true the player has just clicked within a rectangle
 	global bool justPressed: Input item = Pointer
-							 int player = 0
+							 int user = 0
 	                         Vector2 pos
 		                     Vector2 size
 						     HorizontalAlignment align = Center
 						     VerticalAlignment valign = Middle	
 						     bool showClickableArea = false
-		bool pressed = justPressed item, player
-		if not pressed and showClickableArea then return false
-		
-		let pointer = getPressPosition player
+		if not active or user >= players.length then return false
 		let posX = align  == Center ? pos.x-size.x*.5 : align == Left ? pos.x : pos.x-size.x
 		let posY = valign == Middle ? pos.y-size.y*.5 : valign == Top ? pos.y : pos.y-size.y
-		
-		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, color:#ff000080		
-		return pressed and pointer.x >= posX and pointer.x < posX + size.x
-			           and pointer.y >= posY and pointer.y < posY + size.y
+		if showClickableArea then drawRectangle pos:{posX, posY}, size:size, color:#ff000080
+			
+		if user < 0
+			return players.any.justPressed item, posX, posY, size.x, size.y
+		else
+			return players[core.firstUserControlsEverythingInDebug and isDebug ? 0 : user].justPressed item
 
 	global bool justPressed: string keyCombination, int player = 0
 		if not active or not keyCombination then return false
@@ -2633,11 +2643,10 @@ input
 	// Returns the current position of the player's pointer, which can be the mouse cursor, a touch or a pen.
 	// player is the playerIndex; pointer positions are part of the synced input stream, so remote
 	// players' pointers are available and deterministic
-	global Vector2 getPointer: int player = 0
-		let user = players[player]
-		if not user then return {0,0}
-		if graphics.isTransforming then	return user.pointerPosition.getRelativeTo graphics.localMatrix
-		else	return user.pointerPosition
+	global Vector2 getPointer: int user = 0
+		let syncedUser = players[core.firstUserControlsEverythingInDebug and isDebug ? 0 : user]
+		if not syncedUser then return {0,0}
+		return graphics.isTransforming ? syncedUser.pointerPosition.getRelativeTo graphics.localMatrix : syncedUser.pointerPosition
 
 	// Returns the position where the player last pressed the pointer. Use it with justPressed(Pointer): the pointer might have moved further in the same frame
 	global Vector2 getPressPosition: int player = 0

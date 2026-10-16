@@ -215,6 +215,13 @@ Screen
 		for len target[.] = 0xff000000
 			
 	finishFrame
+		// Draw pointers
+		ShowPointersMode showPointersMode = switch
+			core.frame < core.frames or core.runningTest	then input.showPointersDuringPlayback
+			system.isDebug	then input.showPointersModeInEditor
+			default	then input.showPointersMode
+		if showPointersMode != None then input.players.each graphics.drawPointer i, showPointersMode
+				
 		// Embedded (webworker) and headless (node test runner) builds have no canvas to draw to
 		if system.fastForward or system.isEmbedded or not context then return
 		context.putImageData(pixelData, 0, 0)
@@ -276,6 +283,7 @@ transient global skipInit graphics
 
 	int[] tiles
 	TileCollection[] tileCollections
+	Sprite pointerIcon
 
 	init
 		colorByLetter = {}
@@ -288,6 +296,16 @@ transient global skipInit graphics
 		screen = {}
 		screens = [screen]
 		font = fonts.monogram
+		pointerIcon = {[
+			"w       "
+			"ww      "
+			"www     "
+			"wwww    "
+			"ww      "
+			"  w     "
+			"        "
+			"        "
+		]}	
 
 	setup
 		initHandlers
@@ -827,6 +845,17 @@ transient global skipInit graphics
 		screen.clipY1 = 0
 		screen.clipX2 = screen.size.x.floor
 		screen.clipY2 = screen.size.y.floor
+		
+	drawPointer: int user = 0
+		         Color color = null
+		         ShowPointersMode mode = Remote // Choose whether you want to draw the pointers for local players, remote players or both
+		let player = input.players[user]
+		if mode == LocalAndRemote or mode == WhenDown
+		or (player.id == input.localUser.id and mode == Local)
+		or (player.id != input.localUser.id and mode == Remote)
+			let pos = getPointer(user)
+			if mode != WhenDown or isPressed Pointer user
+				drawSprite pointerIcon, pos:getPointer(user), replaceColor:White with color or defaultColors[user]
 
 enum SpriteType: None, Object, Character, Tile
 enum CollisionType: None, Solid, Hazard, OneWayPlatform
