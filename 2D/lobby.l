@@ -53,12 +53,15 @@ unit lobby
 		inLobby = true
 		showNameIndex = 1
 		editNames = false
-		input.removeDisconnectedPlayers
 		input.players.each.isReadyInLobby = false
 		sounds.stop
 		
 	int counter
 	
+	// The players shown in the lobby: players that left wait in input.players as Disconnected until
+	// core.restart (the lobby's start) drops them
+	Player[] lobbyPlayers => input.players.filter.state != Disconnected
+
 	tick
 		tickSettings
 		drawText "Version:{system.buildVersion}", size:20, pos:{-940, 520}, align:Left
@@ -90,10 +93,10 @@ unit lobby
 				
 			if not input.host then return
 			if key == Right
-				showName input.players[showNameIndex++ mod input.players.length]
+				showName lobbyPlayers[showNameIndex++ mod lobbyPlayers.length]
 			else
 			if key == Tab and cmd
-				showNameIndex = (showNameIndex+1) mod input.players.length
+				showNameIndex = (showNameIndex+1) mod lobbyPlayers.length
 			else
 			if key == Enter or key == Tab or key == Right
 				switchFieldFocus 1
@@ -101,18 +104,19 @@ unit lobby
 			if key == Left
 				switchFieldFocus -1
 			
-		int count = input.players.length
+		let shown = lobbyPlayers
+		int count = shown.length
 			float videoWidth = count<2 ? 900.0 : 1920/count
 			float offset = -videoWidth*(count-1)/2
 			float halfVideoHeight = videoWidth*3/8
 			
-			for input.players as player, playerIndex
-				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
+			for shown as player, playerIndex
+				Vector2 pos = {offset+videoWidth*playerIndex, 0}
 				onTouchDown pos:pos size:{videoWidth, videoWidth*3/4}
 					cyclePlayer player
 					
-			for input.players as player, playerIndex
-				Vector2 pos = {offset+videoWidth*.playerIndex, 0}
+			for shown as player, playerIndex
+				Vector2 pos = {offset+videoWidth*playerIndex, 0}
 				drawVideo ., pos, videoWidth
 				
 				// Start button
@@ -122,10 +126,6 @@ unit lobby
 					// input.playersById[touch.by.id].isReadyInLobby = true
 					touch.by.isReadyInLobby = true
 					
-				if input.players.length.withinInclusively(system.supportedUserCount) and input.players.all(.isReadyInLobby)
-					fields.clear
-					restart
-						
 				Vector2 closePos = pos+{videoWidth/2-15,-halfVideoHeight-25}
 				let internalUser = input.internalUsers[player.id]
 				let state = internalUser?.connectionState
@@ -142,7 +142,7 @@ unit lobby
 				
 				let field = fields.find.player == player
 					// Set field position
-					field.position = pos + {0, -halfVideoHeight-(input.players.length<=2 ? 85 : 120)}
+					field.position = pos + {0, -halfVideoHeight-(count<=2 ? 85 : 120)}
 					if field.effect then field.effect.position = field.position + {0,-190}
 					if field.particleSystem then field.particleSystem.position = field.position
 						
@@ -156,6 +156,10 @@ unit lobby
 						// Circle indicating the first player name to show
 						if showNameIndex == playerIndex
 							drawCircle field.position+{0,60}, size:20, visibleFor:input.host
+
+			if count.withinInclusively(system.supportedUserCount) and shown.all(.isReadyInLobby)
+				fields.clear
+				restart
 
 		// For testing, display to coordinates when we click the screen
 		if core.drawPointsForTesting
@@ -178,7 +182,7 @@ unit lobby
 		fields.clear
 		if not editNames
 			editNames = true
-			input.players.each createField ., visibleFor:input.host
+			lobbyPlayers.each createField ., visibleFor:input.host
 			fields[0].focus
 		else
 			editNames = false
@@ -215,8 +219,6 @@ unit lobby
 	
 	cyclePlayer: Player player
 		watch "Cycle color {player.playerIndex}"
-		input.players.moveToBack player
-		input.updatePlayers
 		player.colorPreferences = [player.playerIndex]
 	
 	tickSettings

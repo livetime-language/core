@@ -282,7 +282,8 @@ internal transient skipInit unit core
 			.startInputFrame frame
 		
 	// Keep inputs, call init functions, create the local players, reset read positions and start app
-	// This is called on startup, after every code change and when going backwards in the timeline
+	// This is called on startup, after every code change and when going backwards in the timeline.
+	// It rebuilds the world from frame 0, players included: the replay re-adds them as their records parse
 	reset
 		outputIndex = 0
 		addOutput "start"
@@ -341,9 +342,7 @@ internal transient skipInit unit core
 			// We always recreating players, because developers might have added fields to Player or Touch
 			// By the time we call startApp, all players need to exist
 			for input.internalUsers as internalUser
-				Player user = {id:.id, playerIndex:i}
-				input.playersById[.id] = user
-				input.players.add user
+				input.addPlayer internalUser
 				
 			// Set local user
 			let localUserId = input.localUser?.id < input.internalUsers.length ? input.localUser.id : 0
@@ -374,8 +373,12 @@ internal transient skipInit unit core
 		let prevLanguage = Loca.language
 		initAll
 		Loca.setLanguage prevLanguage
+		// The only place where players leave input.players: right before app.start, the players that
+		// left (Disconnected) are dropped, everybody else keeps their order and is re-indexed by
+		// updatePlayers. Between two restarts the list only grows, so every playerIndex stays constant
 		Player[] newPlayers
-		for input.players
+		input.playersById.clear
+		for input.players if .state != Disconnected
 			Player user = .cloneBaseData
 			input.playersById[.id] = user
 			newPlayers.add user

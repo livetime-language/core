@@ -11,5 +11,5 @@ unit lobby
 		// of this frame passes it, in lockstep mode every stepped frame is certain - either way
 		// every client leaves the lobby at the same deterministic frame. Players joining later
 		// drop into the running app when their JoinUser event parses
-		if input.players
+		if input.players.any.state != Disconnected
 			core.restart

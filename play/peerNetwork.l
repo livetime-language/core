@@ -903,18 +903,16 @@ internal transient skipInit unit PeerNetwork
 	// than that user - ourselves if every lower-id user has been silent for reconnectNotifyMillis
 	// too, so a silent host is reported by the next user instead of waiting removalGraceMillis
 	// like the removal host election (amHost). Clients that briefly disagree on the reporter may
-	// both write: the events are idempotent and apply in the deterministic stream order. A report
-	// is repeated after 3 s while the parsed state still disagrees (our own event may not have
-	// parsed yet, another reporter may have reported the opposite)
+	// both write: the events are idempotent and apply in the deterministic stream order. At most
+	// one report per user every 3 s: while the parsed state still disagrees (our own event may not
+	// have parsed yet, another reporter may have reported the opposite), the report is repeated
 	private reportConnectionState: InternalUser user, float now
 		if restoring or core.inputRecordingPaused then return
 		let player = input.playersById[user.id]
 		if not player or player.state == Disconnected then return
 		PlayerState observed = now > user.lastIncomingMessageTime + reconnectNotifyMillis ? TryingToReconnect : Connected
 		if observed == player.state then return
-		if observed == user.reportedConnectionState and now < user.reportedConnectionStateTime + 3000 then return
-		if not isConnectionReporterFor(user, now) then return
-		user.reportedConnectionState = observed
+		if now < user.reportedConnectionStateTime + 3000 or not isConnectionReporterFor(user, now) then return
 		user.reportedConnectionStateTime = now
 		core.log "#peer <{user.id}> Reporting {observed}"
 		input.handlePlayerConnection user.id, observed
@@ -1951,7 +1949,7 @@ internal transient skipInit unit PeerNetwork
 		// apply a peer's lower cut through the same idempotent/fork-safe path as a parsed event.
 		if removedAfterFrame < streamUser.removedAfterFrame
 			core.log "#stream <{peer.id}> User {streamUserId}'s stream carries a removal cut at frame {removedAfterFrame}"
-			input.removeUserDeterministically streamUserId, removedAfterFrame, core.frame
+			input.removeUserDeterministically streamUserId, removedAfterFrame
 
 		let savedReadPos = buffer.readPos
 		int length = buffer.readInt
