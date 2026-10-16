@@ -348,7 +348,6 @@ internal transient skipInit unit core
 			let localUserId = input.localUser?.id < input.internalUsers.length ? input.localUser.id : 0
 			input.localUser = input.internalUsers[localUserId]
 			input.localPlayer = input.playersById[localUserId]
-			input.updatePlayers
 			account = {}
 			
 		// Reset read pos to replay inputs from the beginning
@@ -374,20 +373,20 @@ internal transient skipInit unit core
 		initAll
 		Loca.setLanguage prevLanguage
 		// The only place where players leave input.players: right before app.start, the players that
-		// left (Disconnected) are dropped, everybody else keeps their order and is re-indexed by
-		// updatePlayers. Between two restarts the list only grows, so every playerIndex stays constant
+		// left (Disconnected) are dropped, everybody else keeps their order and is re-indexed.
+		// Between two restarts the list only grows, so every playerIndex stays constant
 		Player[] newPlayers
 		input.playersById.clear
 		for input.players if .state != Disconnected
-			Player user = .cloneBaseData
-			input.playersById[.id] = user
-			newPlayers.add user
+			Player player = .cloneBaseData
+			player.setIndex newPlayers.length
+			input.playersById[.id] = player
+			newPlayers.add player
 		input.players = newPlayers
 		let localUserId = input.localUser?.id < input.internalUsers.length ? input.localUser.id : 0
 		input.localUser = input.internalUsers[localUserId]
 		input.localPlayer = input.playersById[localUserId]
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
-		input.updatePlayers
 		// Shared rewind: a rewind must never cross a restart back into the previous game or
 		// the lobby - the floor jumps past the current playhead, making every older history
 		// entry unreachable (which also shields them from the _constCache rebuild in initAll:
@@ -2234,7 +2233,7 @@ skipInit transient unit statistics
 			gameId: core.gameId
 			roomId: core.roomId
 			userId
-			userIndex: input.localUser.syncedIndex
+			userIndex: input.localPlayer ? input.localPlayer.playerIndex : 0
 			userEmail: user.email
 			version: system.buildVersion
 			staging: system.isStaging

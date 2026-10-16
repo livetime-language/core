@@ -1,7 +1,6 @@
 // The internal state of a user that isn't synced and shouldn't be accessed by the app
 internal transient class InternalUser
 	int id	// connection id:	might be different on each client.	Assigned when a user connects, stays the same when reconnecting.
-	int syncedIndex	// player.playerIndex:	the same on all clients.	Assigned deterministically in updatePlayers.
 	bool local	// Is this the local user?
 	int connectionId	// The connectionId increases with every connection, even if the same user reconnects
 	string _id	// User account id (in the server database)
@@ -161,7 +160,56 @@ priority class Player
 	// PlayerConnection events (Connected, TryingToReconnect) and the removal cut (Disconnected) in parseInputs
 	PlayerState	state
 
-	internal Player cloneBaseData => {_id, playerLanguage, playerEmail, playerName, colorPreferences, id, playerIndex, state}
+	internal Player cloneBaseData => {_id, playerLanguage, playerEmail, playerName, colorPreferences, id, state}
+
+	// Sets everything derived from the position in input.players. Called exactly when the position is
+	// decided: when the player is appended (input.addPlayer) and when core.restart compacts the list
+	internal setIndex: int index
+		playerIndex = index
+		// More players than palette entries must wrap, not read out of bounds: an undefined
+		// playerColor throws in the draw path, and that caught error used to poison this
+		// client's replays (churn desync, seed 339031744)
+		playerColor = graphics.defaultColors[index mod graphics.defaultColors.length]
+		playerDarkColor = graphics.darkDefaultColors[index mod graphics.darkDefaultColors.length]
+		assignKeyboardGamepad
+
+	// Deprecated input: the names of the keys that drive this player's gamepad from the keyboard.
+	// Locally (several players on one keyboard) they depend on the player index, online every
+	// player uses the arrow keys
+	private assignKeyboardGamepad
+		Gamepad c = gamepad
+		if c.type != Keyboard then return
+		if core.mode == Local and not core.simulateConnection
+			if playerIndex == 0
+				c.up.assign    "↑"	Up
+				c.right.assign "→"	Right
+				c.down.assign  "↓"	Down
+				c.left.assign  "←"	Left
+				c.A.assign     "Space"	Space
+				c.B.assign     "Meta"	LeftMetaKey
+			else
+			if playerIndex == 1
+				c.up.assign    "W"	W
+				c.right.assign "D"	D
+				c.down.assign  "S"	S
+				c.left.assign  "A"	A
+				c.A.assign     "F"	F
+				c.B.assign     "G"	G
+			else
+			if playerIndex == 2
+				c.up.assign    "I"	I
+				c.right.assign "L"	L
+				c.down.assign  "K"	K
+				c.left.assign  "J"	J
+				c.A.assign     "O"	O
+				c.B.assign     "P"	P
+		else
+			c.up.assign    "↑"	Up
+			c.right.assign "→"	Right
+			c.down.assign  "↓"	Down
+			c.left.assign  "←"	Left
+			c.A.assign     "Shift"	Shift
+			c.B.assign     "Control"	Ctrl
 
 	// The player was removed from the game: their stream has ended, so release everything they
 	// still held - a held key must not stay pressed forever. Idempotent
@@ -477,10 +525,6 @@ internal DigitalButton
 		wasPreviouslyPressed = isPressed
 		isPressed = false
 		
-internal transient immutable struct ControllerButtonPlayerAndIndex
-	int userId
-	int buttonIndex
-	
 internal transient immutable InternalGamepadButton
 	bool pressed, touched
 	float value
@@ -557,11 +601,9 @@ internal transient PendingObjectRecord
 // Collect user input
 skipInit global unit input
 	transient visible InternalUser[] internalUsers	// Internal user by id, which might be different on each client
-	transient visible InternalUser[] internalUserBySyncedIndex	// Internal user by synced index, which is the same on all clients
 	transient InternalUser localUser
 	transient internal Player localPlayer
 	transient bool isCertain
-	transient ControllerButtonPlayerAndIndex[KeyCode] controllerButtonMap
 	transient PendingObjectRecord[] pendingObjectRecords
 	
 	// A list of all players
@@ -1227,7 +1269,6 @@ skipInit global unit input
 				if not player
 					if core.verbose and not internalUser.local then core.log "<{internalUser.id}> Received first message from new user"
 					player = addPlayer internalUser
-					updatePlayers
 				
 				let value = inputs.readUnsignedInt16
 				InputEventType inputType = cast(value mod 32)
@@ -1354,26 +1395,24 @@ skipInit global unit input
 				else
 				if inputType == SetState
 					// Set state
+					let previousIds = players.map.id
 					core.snapshotBuffer.reset
 					inputs.readBuffer core.snapshotBuffer
 					Snapshot.deserialize core.snapshotBuffer
 					math.recreateRandomValues
 					
-					// Match users
+					// Match users: by name, else the user that had the same player index, else any
 					playersById.clear
-					internalUserBySyncedIndex.clear
 					let availableUsers = clone input.internalUsers
 					for p in players
 						let user = availableUsers.popWhere.name == p.playerName
-						if not user then user = availableUsers.popWhere.syncedIndex == p.playerIndex
-						if not user then availableUsers.pop
+						if not user then user = availableUsers.popWhere.id == previousIds[p.playerIndex]
+						if not user then user = availableUsers.pop
 						p.id = user.id
 						
 						user._id = p._id
-						user.syncedIndex = p.playerIndex
 						user.name = p.playerName
 						playersById[p.id] = p
-						internalUserBySyncedIndex[user.syncedIndex] = user
 					refreshLocalPlayer
 
 				else
@@ -1627,11 +1666,6 @@ skipInit global unit input
 				if cmdOrCtrlState.releasedAtFrame >= cmdOrCtrlState.pressedAtFrame
 					internalUser.allJustPressed.add Input.CmdOrCtrl
 					cmdOrCtrlState.pressedAtFrame = core.frame
-			
-		// let controllerButton = controllerButtonMap[key]
-		// 	InternalUser user = input.internalUsers[controllerButton.userId]
-		// 	user.justPressed[controllerButton.buttonIndex] = true
-		// 	user.isPressed[controllerButton.buttonIndex] = true
 
 	internal keyUp: InternalUser internalUser
 	                Player player
@@ -1661,89 +1695,7 @@ skipInit global unit input
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				player.inputStateForWriting(Input.CmdOrCtrl.index).releasedAtFrame = core.frame
 				internalUser.allJustReleased.add Input.CmdOrCtrl
-			
-		// let controllerButton = controllerButtonMap[key]
-		// 	InternalUser user = input.internalUsers[controllerButton.userId]
-		// 	user.justReleased[controllerButton.buttonIndex] = true
-		// 	user.isPressed[controllerButton.buttonIndex] = false		
 						
-	// Recomputes everything derived from the position in input.players (index, colors, synced index).
-	// The list is never reordered, only appended to (addPlayer) and compacted by core.restart
-	internal updatePlayers
-		internalUserBySyncedIndex.clear
-		for players
-			.playerIndex = i
-			// More players than palette entries must wrap, not read out of bounds: an undefined
-			// playerColor throws in the draw path, and that caught error used to poison this
-			// client's replays (churn desync, seed 339031744 - a removed user's arriving stream
-			// transiently resurrects their player, so the count can exceed the palette)
-			.playerColor = graphics.defaultColors[i mod graphics.defaultColors.length]
-			.playerDarkColor = graphics.darkDefaultColors[i mod graphics.darkDefaultColors.length]
-			
-			let internalUser = internalUsers[.id]
-			internalUser.syncedIndex = i
-			internalUserBySyncedIndex[.playerIndex] = internalUser
-			
-		if core.mode == Local and not core.simulateConnection
-			if players.length >= 1
-				Gamepad c = players[0].gamepad
-				if c.type == Keyboard
-					c.up.assign    "↑"	Up
-					c.right.assign "→"	Right
-					c.down.assign  "↓"	Down
-					c.left.assign  "←"	Left
-					c.A.assign     "Space"	Space
-					c.B.assign     "Meta"	LeftMetaKey
-			
-			if players.length >= 2
-				Gamepad c = players[1].gamepad
-				if c.type == Keyboard
-					c.up.assign    "W"	W
-					c.right.assign "D"	D
-					c.down.assign  "S"	S
-					c.left.assign  "A"	A
-					c.A.assign     "F"	F
-					c.B.assign     "G"	G
-			
-			if players.length >= 3
-				Gamepad c = players[2].gamepad
-				if c.type == Keyboard
-					c.up.assign    "I"	I
-					c.right.assign "L"	L
-					c.down.assign  "K"	K
-					c.left.assign  "J"	J
-					c.A.assign     "O"	O
-					c.B.assign     "P"	P
-			
-			controllerButtonMap.clear
-			for players as player
-				player.controllerKeyDownFrame.clear
-				for .gamepad.buttons
-					controllerButtonMap[.key] = {userId:player.id, buttonIndex:i}
-					player.controllerKeyDownFrame.add 0
-		else
-			controllerButtonMap.clear
-			for players
-				Gamepad c = .gamepad
-				if c.type == Keyboard
-					c.up.assign    "↑"	Up
-					c.right.assign "→"	Right
-					c.down.assign  "↓"	Down
-					c.left.assign  "←"	Left
-					c.A.assign     "Shift"	Shift
-					c.B.assign     "Control"	Ctrl
-			
-			controllerButtonMap.clear
-			// TODO: Research why this is sometimes called before we have a local player
-			if localPlayer
-				for localPlayer.gamepad.buttons
-					controllerButtonMap[.key] = {userId:localPlayer.id, buttonIndex:i}
-				
-			controllerButtonMap[W] = {userId:localUser.id, buttonIndex:1}
-			controllerButtonMap[D] = {userId:localUser.id, buttonIndex:2}
-			controllerButtonMap[S] = {userId:localUser.id, buttonIndex:3}
-			controllerButtonMap[A] = {userId:localUser.id, buttonIndex:4}
-			
 	private getTargetedPlayers: Player[] by
 		return by and by.length > 0 and by[0] and not core.everybodyCanClickForEverybody ? by : players
 		
@@ -1831,9 +1783,10 @@ skipInit global unit input
 		core.rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s removal cut {lastFrame} is below the snapshot pin {core.snapshotFrame}"
 
 	// The only way a Player enters input.players: appended at the end, so the index of every other
-	// player stays the same. Callers run updatePlayers afterwards (index, colors, synced index)
+	// player stays the same
 	internal Player addPlayer: InternalUser user
-		Player player = {id:user.id, playerIndex:players.length}
+		Player player = {id:user.id}
+		player.setIndex players.length
 		players.add player
 		playersById[user.id] = player
 		if user.local then localPlayer = player
@@ -1861,7 +1814,6 @@ skipInit global unit input
 				player.playerName = user.name
 			if states[i] == Disconnected then player.disconnect
 			else player.state = states[i]
-		updatePlayers
 
 	// ---------------------------------------------- Deprecated Input: Touch Down ----------------------------------------------
 	
@@ -2694,19 +2646,24 @@ input
 		if graphics.isTransforming then	return user.pressPosition.getRelativeTo graphics.localMatrix
 		else	return user.pressPosition
 
+	// The InternalUser of the player at this index (null if there is none)
+	private InternalUser internalUserAt: int playerIndex
+		let player = players[playerIndex]
+		return player ? internalUsers[player.id] : null
+
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = internalUserAt player
 		if not active or not user then return {0,0}
 		return user.scrollDelta
 
 	global Input[] allJustPressed: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = internalUserAt player
 		if not active or not user then return []
 		return user.allJustPressed
 
 	global Input[] allJustReleased: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = internalUserAt player
 		if not active or not user then return []
 		return user.allJustReleased
 
