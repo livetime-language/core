@@ -2093,14 +2093,14 @@ global transient skipInit unit system
 		                  void() drawDebugInfo = null	// A function that will be called to draw debug information.
 		                  SourceCodeLocation location
 		if((core.runningTest || system.isDebug) && location) {
-			if(color) console.log(`%c${text}`, `color: ${color.hex}`)
+			if(color) console.log(`%c${text}`, `color: ${color.toHex()}`)
 			else      console.log(text)
 			if(drawDebugInfo != null && core.outputIndex == core.interrruptAtOutputIndex) {
 				graphics.isDrawingDebugInfo = true
 				drawDebugInfo()
 				graphics.isDrawingDebugInfo = false
 			}
-			core.addOutput(`${type}|${text.replaceAll("\n", "\\n")}|${location.file}|${location.start}|${color ? color.hex : ""}`)
+			core.addOutput(`${type}|${text.replaceAll("\n", "\\n")}|${location.file}|${location.start}|${color ? color.toHex() : ""}`)
 		} else {
 			core.log(text, color);
 		}

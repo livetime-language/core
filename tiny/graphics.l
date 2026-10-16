@@ -134,6 +134,8 @@ immutable Color
 		blue = value shiftRight 16 bitwiseAnd 0xff
 		alpha = value shiftRight 24 bitwiseAnd 0xff
 
+	string toHex => "#{red.toHex.padStart(2, "0")}{green.toHex.padStart(2, "0")}{blue.toHex.padStart(2, "0")}{alpha.toHex.padStart(2, "0")}"
+
 struct int
 	inline Color toColor => new Color(value:this)
 		
