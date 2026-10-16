@@ -6,10 +6,11 @@ tests
 	importance:5
 	void click: Vector2 pos	// The screen position to click
 		        TouchType with = LeftMouseButton	// LeftMouseButton, MiddleMouseButton, RightMouseButton, Finger, Pen
-	            nocolon Player by = input.players[0]	// The player to click
-		let internalUser = input.internalUsers[by.id]
-		input.touchDown internalUser, player:by, id:0, referencePos:pos, type:with, isSmoothPosition:true
-		input.touchUp internalUser, player:by, id:0, referencePos:pos, type:with, isSmoothPosition:true
+	            int user = 0	// The player to click
+		let player = input.players[user]
+		let internalUser = input.internalUsers[player.id]
+		input.touchDown internalUser, player, id:0, referencePos:pos, type:with, isSmoothPosition:true
+		input.touchUp internalUser, player, id:0, referencePos:pos, type:with, isSmoothPosition:true
 		tick
 
 	// Simulate a drag by a given player.

@@ -1514,11 +1514,10 @@ skipInit global unit input
 		// Log
 		if player == input.localPlayer
 			let length = referencePos distanceTo touch.startPosition
-			let playerVariable = "players[{player.playerIndex}]"
-			if length < 8
-				core.addOutput "code|click {touch.startPosition} by {playerVariable}|{touch.startFrame}|{core.frame}"
+						if length < 8
+				core.addOutput "code|click {touch.startPosition} user:{player.playerIndex}|{touch.startFrame}|{core.frame}"
 			else
-				core.addOutput "code|drag {touch.startPosition} to {referencePos} by {playerVariable}|{touch.startFrame}|{core.frame}"
+				core.addOutput "code|drag {touch.startPosition} to {referencePos} user:{player.playerIndex}|{touch.startFrame}|{core.frame}"
 
 		// --- Modern Input ---
 		int buttonIndex = Input.LeftMouseButton.index + (type <= RightMouseButton ? cast type : 0)
