@@ -354,7 +354,7 @@ internal transient skipInit unit core
 		// Reset read pos to replay inputs from the beginning
 		for input.internalUsers if .
 			.inputs.readPos = 0
-			.clearEvent
+		input.clearEvents
 			
 		graphics.startFrame
 		if !startInLobby and not testLobby
@@ -440,8 +440,7 @@ internal transient skipInit unit core
 			// If we interrupted in the middle of a tick, we draw the current state without events and animations
 			if frame <= targetFrame
 				system.fastForward = false
-				for input.internalUsers as user
-					user?.clearEvent
+				input.clearEvents
 				fx??.clear()
 				tick draw:true
 
@@ -471,8 +470,7 @@ internal transient skipInit unit core
 			// We don't draw in the test function since we don't know when we are on the final frame
 			if not system.isHeadless
 				system.fastForward = false
-				for input.internalUsers as user
-					user?.clearEvent
+				input.clearEvents
 				fx??.clear()
 				tick draw:true
 				graphics.finishDrawingDebugInfo
@@ -939,8 +937,7 @@ internal transient skipInit unit core
 			sendOutputToEditor updateFrame:draw, pixels:(draw and system.isEmbedded and not system.waitingForInitialData ? graphics.screen??.pixels : null)
 
 			// Cleanup
-			for input.internalUsers as user
-				user?.clearEvent
+			input.clearEvents
 
 			// Evaluate: Set isDown directly in input.touchDown instead of in player.postprocessEvents #easier-to-reason-about #evaluate
 			// players.each.postprocessEvents
@@ -1204,7 +1201,6 @@ internal transient skipInit unit core
 			rewindScratchStates.add .state
 		int floorNow = input.rewindFloor
 		Snapshot.deserialize entry.bytes
-		input.refreshLocalPlayer
 		// Users who joined after the target vanish from the restored world - recreate them at
 		// their present index (and re-disconnect restored players removed since)
 		input.restorePresentRoster rewindScratchIds, rewindScratchStates
@@ -1217,9 +1213,8 @@ internal transient skipInit unit core
 		input.rewindFloor = floorNow
 		isRewinding = true
 		// This frame's parsed events must not fire into the restored past - nobody can act
-		// while time rewinds. clearEvent keeps isPressed, so held keys stay held
-		for input.internalUsers as user
-			user?.clearEvent
+		// while time rewinds. clearEvents keeps isPressed, so held keys stay held
+		input.clearEvents
 		return true
 
 	// Arrival tracking for the rollback replay: rewind+replay only runs when something that can
@@ -1419,7 +1414,6 @@ internal transient skipInit unit core
 		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
-			input.refreshLocalPlayer
 
 			// Users discovered AFTER this snapshot was saved have no stored readPos: reset them
 			// to 0 so the replay re-parses their whole stream. Keeping the live readPos silently
@@ -2049,7 +2043,12 @@ internal transient unit Snapshot
 	private bool autoSaveAtEndOfStep
 	
 	inline js string serialize(Buffer buffer) serialize_internal(buffer)
-	inline js void deserialize(Buffer buffer) deserialize_internal(buffer)
+	inline js void deserializeGraph(Buffer buffer) deserialize_internal(buffer)
+
+	// Every restore also re-derives the transient state that points into the restored graph (see input.onRestore)
+	deserialize: Buffer buffer
+		deserializeGraph buffer
+		input.onRestore
 	inline js string serializeLog() _serializeLog
 		
 	js string toString: object value

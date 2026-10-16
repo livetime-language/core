@@ -1,3 +1,4 @@
+// Always use Modern Input. Deprecated Input will be removed soon.
 // The internal state of a user that isn't synced and shouldn't be accessed by the app
 internal transient class InternalUser
 	int id	// connection id:	might be different on each client.	Assigned when a user connects, stays the same when reconnecting.
@@ -92,10 +93,6 @@ internal transient class InternalUser
 	int certainFrame
 	int prevCertainFrame
 	
-	// Per-step Modern Input events, refilled by every parse (the persistent state lives on the serialized Player)
-	Vector2 scrollDelta
-	Input[] allJustPressed, allJustReleased
-	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
 		inputFrame = index
@@ -111,11 +108,6 @@ internal transient class InternalUser
 		upKeys.clear
 		pressedKeys.clear
 		navigations.clear
-
-		// Modern Input
-		allJustPressed.clear
-		allJustReleased.clear
-		scrollDelta = {0,0}
 		
 	collectStatistics: int frame
 		int ahead = frame - inputFrame
@@ -253,6 +245,18 @@ priority class Player
 	internal InputState[] inputStates
 	internal Vector2 pressPosition	// Pointer position of the last press, the pointer might have moved further in the same frame
 	internal string focus, prevFocus
+
+	// Modern Input events of the current step (getScrollDelta, allJustPressed, allJustReleased). Transient: the parse refills
+	// them every step, so a rollback replay re-derives them like the rest of the step
+	transient internal Vector2 scrollDelta
+	transient internal Input[] allJustPressed, allJustReleased
+
+	// Freshly deserialized players skip the constructor and have no event fields yet (see input.onRestore), so this assigns
+	// new objects - in LiveTime, assigning a struct copies into the existing Vector2
+	internal js void clearEvents
+		this.scrollDelta = new Vector2(0, 0, null)
+		this.allJustPressed = []
+		this.allJustReleased = []
 
 	// The state of an input for reading: inputs this player never used share InputState.unused
 	internal InputState inputState: int inputIndex
@@ -1133,6 +1137,13 @@ skipInit global unit input
 			let player = playersById[localUser.id]
 			if player then localPlayer = player
 
+	// Called after every deserialize (Snapshot.deserialize). Freshly deserialized players skip the constructor, so their
+	// transient fields are missing: clearEvents creates them. Restores happen before a step's parse, so no events are lost
+	internal onRestore
+		refreshLocalPlayer
+		for players
+			.clearEvents
+
 	// Write a RemoveUser event into our own input stream: the removal of a player becomes part
 	// of the deterministic timeline and is applied by every client when the event is parsed.
 	// lastFrame is the last frame of the removed user's stream that still counts - the host
@@ -1246,6 +1257,13 @@ skipInit global unit input
 		inputs.writeFloat32 0
 		inputs.writeUnsignedInt16 0
 
+	// Clears the events of the current step: the deprecated event lists of each user and the Modern Input events of each player
+	internal clearEvents
+		for internalUsers if .
+			.clearEvent
+		for players
+			.clearEvents
+
 	internal parseInputs: int frame
 		// The rewind key, resolved for this parse pass (see Player.holdingRewindKey):
 		// rewindKeyBit is its button bit in Gamepad records (0 = not a gamepad key),
@@ -1253,11 +1271,11 @@ skipInit global unit input
 		// events (-1 = rewind disabled). Together they cover every key isPressed supports
 		core.rewindKeyBit = system.enableRewind and system.rewindInput and system.rewindInput.type == Gamepad and system.rewindInput.index < 16 ? 1 shiftLeft system.rewindInput.index : 0
 		core.rewindKeyIndex = system.enableRewind and system.rewindInput ? system.rewindInput.index : -1
+		// Events are normally cleared at the end of core.tick, but when an exception aborts
+		// the step after parsing, stale events survive in these transient lists. Clear them
+		// here so a frame that is stepped again after a rewind can't apply an event twice.
+		clearEvents
 		for internalUsers as internalUser if internalUser
-			// Events are normally cleared at the end of core.tick, but when an exception aborts
-			// the step after parsing, stale events survive in these transient lists. Clear them
-			// here so a frame that is stepped again after a rewind can't apply an event twice.
-			internalUser.clearEvent
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
@@ -1642,7 +1660,7 @@ skipInit global unit input
 		// player.onScroll??(delta, isPinch, referencePosition)
 
 		// Modern Input
-		internalUser.scrollDelta += delta
+		player.scrollDelta += delta
 
 	internal keyDown: InternalUser internalUser
 	                  Player player
@@ -1671,21 +1689,21 @@ skipInit global unit input
 		let state = player.inputStateForWriting keyIndex
 		if state.releasedAtFrame >= state.pressedAtFrame
 			state.pressedAtFrame = core.frame
-			internalUser.allJustPressed.add key
+			player.allJustPressed.add key
 			
 		// Save when the parent key was pressed if it's not already pressed (e.g. "Shift" is the parent of "ShiftLeft")
 		let parent = key?.parent
 			let parentState = player.inputStateForWriting parent.index
 			if parentState.releasedAtFrame >= parentState.pressedAtFrame
 				parentState.pressedAtFrame = core.frame
-				internalUser.allJustPressed.add parent
+				player.allJustPressed.add parent
 			
 			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				let cmdOrCtrlState = player.inputStateForWriting Input.CmdOrCtrl.index
 				if cmdOrCtrlState.releasedAtFrame >= cmdOrCtrlState.pressedAtFrame
-					internalUser.allJustPressed.add Input.CmdOrCtrl
+					player.allJustPressed.add Input.CmdOrCtrl
 					cmdOrCtrlState.pressedAtFrame = core.frame
 
 	internal keyUp: InternalUser internalUser
@@ -1704,18 +1722,18 @@ skipInit global unit input
 		
 		// Save when key was released
 		player.inputStateForWriting(keyIndex).releasedAtFrame = core.frame
-		internalUser.allJustReleased.add key
+		player.allJustReleased.add key
 		
 		// Save when the parent key was released (e.g. "Shift" is the parent of "ShiftLeft")
 		let parent = key?.parent
 			player.inputStateForWriting(parent.index).releasedAtFrame = core.frame
-			internalUser.allJustReleased.add parent
+			player.allJustReleased.add parent
 			
 			// CmdOrCtrl is cmd on a mac and ctrl on other platforms
 			bool isAppleKeyboard = system.os == Mac or system.os == iOS
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				player.inputStateForWriting(Input.CmdOrCtrl.index).releasedAtFrame = core.frame
-				internalUser.allJustReleased.add Input.CmdOrCtrl
+				player.allJustReleased.add Input.CmdOrCtrl
 						
 	private getTargetedPlayers: Player[] by
 		return by and by.length > 0 and by[0] and not core.everybodyCanClickForEverybody ? by : players
@@ -2655,24 +2673,19 @@ input
 		if graphics.isTransforming then	return user.pressPosition.getRelativeTo graphics.localMatrix
 		else	return user.pressPosition
 
-	// The InternalUser of the player at this index (null if there is none)
-	private InternalUser internalUserAt: int playerIndex
-		let player = players[playerIndex]
-		return player ? internalUsers[player.id] : null
-
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
-		let user = internalUserAt player
+		let user = players[player]
 		if not active or not user then return {0,0}
 		return user.scrollDelta
 
 	global Input[] allJustPressed: int player = 0
-		let user = internalUserAt player
+		let user = players[player]
 		if not active or not user then return []
 		return user.allJustPressed
 
 	global Input[] allJustReleased: int player = 0
-		let user = internalUserAt player
+		let user = players[player]
 		if not active or not user then return []
 		return user.allJustReleased
 
