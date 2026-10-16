@@ -42,6 +42,7 @@ internal transient skipInit unit core
 	float sendStatisticsEvery = 2 minutes
 	bool muteInvisibleUsers = false
 	bool testLobby = false                // Start in the lobby for testing
+	bool firstUserControlsEverythingInDebug = false
 	
 	bool enableVideoForStaging = true
 	bool enableAudioForStaging = false
