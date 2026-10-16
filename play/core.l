@@ -123,12 +123,12 @@ internal transient skipInit unit core
 		if lastChecksumFrame >= firstChangedFrame then lastChecksumFrame = firstChangedFrame - 1
 
 	// A deterministic hash of the current roster (the player ids whose inputs feed the
-	// simulation). Players enter on their first parsed input record and leave through
-	// removeUserDeterministically, so every client on the same timeline computes the same
-	// value for the same frame
+	// simulation). Players enter on their first parsed input record and leave (or become
+	// Disconnected) through removeUserDeterministically, so every client on the same timeline
+	// computes the same value for the same frame
 	internal int rosterHash
 		int hash = 0
-		for input.players
+		for input.players if .state != Disconnected
 			hash = (hash * 31 + .id + 1) mod 1000000007
 		return hash
 
@@ -283,7 +283,8 @@ internal transient skipInit unit core
 			.startInputFrame frame
 		
 	// Keep inputs, call init functions, create the local players, reset read positions and start app
-	// This is called on startup, after every code change and when going backwards in the timeline
+	// This is called on startup, after every code change and when going backwards in the timeline.
+	// It rebuilds the world from frame 0, players included: the replay re-adds them as their records parse
 	reset
 		outputIndex = 0
 		addOutput "start"
@@ -342,15 +343,12 @@ internal transient skipInit unit core
 			// We always recreating players, because developers might have added fields to Player or Touch
 			// By the time we call startApp, all players need to exist
 			for input.internalUsers as internalUser
-				Player user = {id:.id, playerIndex:i}
-				input.playersById[.id] = user
-				input.players.add user
+				input.addPlayer internalUser
 				
 			// Set local user
 			let localUserId = input.localUser?.id < input.internalUsers.length ? input.localUser.id : 0
 			input.localUser = input.internalUsers[localUserId]
 			input.localPlayer = input.playersById[localUserId]
-			input.updatePlayers
 			account = {}
 			
 		// Reset read pos to replay inputs from the beginning
@@ -375,17 +373,21 @@ internal transient skipInit unit core
 		let prevLanguage = Loca.language
 		initAll
 		Loca.setLanguage prevLanguage
+		// The only place where players leave input.players: right before app.start, the players that
+		// left (Disconnected) are dropped, everybody else keeps their order and is re-indexed.
+		// Between two restarts the list only grows, so every playerIndex stays constant
 		Player[] newPlayers
-		for input.players
-			Player user = .cloneBaseData
-			input.playersById[.id] = user
-			newPlayers.add user
+		input.playersById.clear
+		for input.players if .state != Disconnected
+			Player player = .cloneBaseData
+			player.setIndex newPlayers.length
+			input.playersById[.id] = player
+			newPlayers.add player
 		input.players = newPlayers
 		let localUserId = input.localUser?.id < input.internalUsers.length ? input.localUser.id : 0
 		input.localUser = input.internalUsers[localUserId]
 		input.localPlayer = input.playersById[localUserId]
 		input.host = hostPlayerId != -1 ? input.playersById[hostPlayerId] : null
-		input.updatePlayers
 		// Shared rewind: a rewind must never cross a restart back into the previous game or
 		// the lobby - the floor jumps past the current playhead, making every older history
 		// entry unreachable (which also shields them from the _constCache rebuild in initAll:
@@ -1014,8 +1016,9 @@ internal transient skipInit unit core
 	private int[] speculativeRewindPositions // Positions captured beyond certainty since the last rollback (see cleanupSpeculativeRewindEntries)
 	private RewindEntry[] rewindEntryPool  // Pruned/discarded entries, reused by later captures
 	private int rewindPrunedBelow    // Entries below this position were handed to the pool (monotone, aligned)
-	private int[] rewindScratchIds   // Reused by checkRewindMechanic to carry the hold flags across a restore
+	private int[] rewindScratchIds   // Reused by checkRewindMechanic to carry the roster and the hold flags across a restore
 	private bool[] rewindScratchHolds
+	private PlayerState[] rewindScratchStates
 
 	// Local sessions rewind too - they share the whole deterministic step machinery, only
 	// without the network layer on top. The history entries are serialized world state, so
@@ -1141,7 +1144,7 @@ internal transient skipInit unit core
 	// valid. The local player's records are final at write, so a local hold rewinds
 	// instantly; remote holds engage when their records arrive (~their claim lag). A removed
 	// player stops mattering at the removal cut: their claim freezes there, and past
-	// removedAfterFrame the Player has left input.players entirely
+	// removedAfterFrame the Player is Disconnected (holdingRewindKey released)
 	private bool anyPlayerHoldsRewindKey
 		for input.players
 			if .holdingRewindKey
@@ -1190,19 +1193,21 @@ internal transient skipInit unit core
 		if not rewindLogStarted and not system.fastForward
 			rewindLogStarted = true
 			log "#rewind Started at frame {frame} from playhead {input.rewindPlayhead}"
-		// The hold flags and the floor are properties of the PRESENT - the restore overwrites
-		// them with their historical values, so carry them across (reused scratch lists)
+		// The roster, the hold flags and the floor are properties of the PRESENT - the restore
+		// overwrites them with their historical values, so carry them across (reused scratch lists)
 		rewindScratchIds.clear
 		rewindScratchHolds.clear
+		rewindScratchStates.clear
 		for input.players
 			rewindScratchIds.add .id
 			rewindScratchHolds.add .holdingRewindKey
+			rewindScratchStates.add .state
 		int floorNow = input.rewindFloor
 		Snapshot.deserialize entry.bytes
 		input.refreshLocalPlayer
-		// Users who joined after the target vanish from the restored world - recreate them
-		// (and re-remove restored players whose removal cut lies below this frame)
-		input.ensureRewindRestoredPlayers frame
+		// Users who joined after the target vanish from the restored world - recreate them at
+		// their present index (and re-disconnect restored players removed since)
+		input.restorePresentRoster rewindScratchIds, rewindScratchStates
 		for input.players
 			.holdingRewindKey = false
 		for rewindScratchIds.length as i
@@ -2226,7 +2231,7 @@ skipInit transient unit statistics
 			gameId: core.gameId
 			roomId: core.roomId
 			userId
-			userIndex: input.localUser.syncedIndex
+			userIndex: input.localPlayer ? input.localPlayer.playerIndex : 0
 			userEmail: user.email
 			version: system.buildVersion
 			staging: system.isStaging

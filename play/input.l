@@ -1,7 +1,6 @@
 // The internal state of a user that isn't synced and shouldn't be accessed by the app
 internal transient class InternalUser
 	int id	// connection id:	might be different on each client.	Assigned when a user connects, stays the same when reconnecting.
-	int syncedIndex	// player.playerIndex:	the same on all clients.	Assigned deterministically in updatePlayers.
 	bool local	// Is this the local user?
 	int connectionId	// The connectionId increases with every connection, even if the same user reconnects
 	string _id	// User account id (in the server database)
@@ -72,6 +71,7 @@ internal transient class InternalUser
 	bool hidden                    // The user's tab is hidden: it is throttled and may fall silent, tolerate a longer silence (F6, see PeerNetwork.tick)
 	bool leaving                   // The user's page is closing or navigating away: don't burn reconnect attempts; cleared by any incoming message (F6)
 	bool reconnectNotified         // app.onTryingToReconnectTo was called for the current silence (cleared by any incoming message)
+	float reportedConnectionStateTime // When we last wrote a PlayerConnection event about this user (see PeerNetwork.reportConnectionState)
 	bool presentOnServer           // The server listed this user as currently connected in the JoinResponse
 	dynamic logConnectionTypeTimer // Pending connection-type report, cancelled when the connection is recreated (F30, see PeerNetwork.logConnectionType)
 
@@ -155,8 +155,69 @@ priority class Player
 	// recreates a Player (core.restart's cloneBaseData, core.reset, a rejoin, a rewind restore) is exactly when the app must
 	// hear about it again, and being serialized, rollbacks and rewinds restore it together with the app state that recorded it
 	internal bool	joinReported
-	
-	internal Player cloneBaseData => {_id, playerLanguage, playerEmail, playerName, colorPreferences, id, playerIndex}
+	// Players are only removed from input.players by core.restart (right before app.start), so playerIndex stays constant
+	// while a game runs. A player that left stays in the list as Disconnected until then. Deterministic: changed only by
+	// PlayerConnection events (Connected, TryingToReconnect) and the removal cut (Disconnected) in parseInputs
+	PlayerState	state
+
+	internal Player cloneBaseData => {_id, playerLanguage, playerEmail, playerName, colorPreferences, id, state}
+
+	// Sets everything derived from the position in input.players. Called exactly when the position is
+	// decided: when the player is appended (input.addPlayer) and when core.restart compacts the list
+	internal setIndex: int index
+		playerIndex = index
+		// More players than palette entries must wrap, not read out of bounds: an undefined
+		// playerColor throws in the draw path, and that caught error used to poison this
+		// client's replays (churn desync, seed 339031744)
+		playerColor = graphics.defaultColors[index mod graphics.defaultColors.length]
+		playerDarkColor = graphics.darkDefaultColors[index mod graphics.darkDefaultColors.length]
+		assignKeyboardGamepad
+
+	// Deprecated input: the names of the keys that drive this player's gamepad from the keyboard.
+	// Locally (several players on one keyboard) they depend on the player index, online every
+	// player uses the arrow keys
+	private assignKeyboardGamepad
+		Gamepad c = gamepad
+		if c.type != Keyboard then return
+		if core.mode == Local and not core.simulateConnection
+			if playerIndex == 0
+				c.up.assign    "↑"	Up
+				c.right.assign "→"	Right
+				c.down.assign  "↓"	Down
+				c.left.assign  "←"	Left
+				c.A.assign     "Space"	Space
+				c.B.assign     "Meta"	LeftMetaKey
+			else
+			if playerIndex == 1
+				c.up.assign    "W"	W
+				c.right.assign "D"	D
+				c.down.assign  "S"	S
+				c.left.assign  "A"	A
+				c.A.assign     "F"	F
+				c.B.assign     "G"	G
+			else
+			if playerIndex == 2
+				c.up.assign    "I"	I
+				c.right.assign "L"	L
+				c.down.assign  "K"	K
+				c.left.assign  "J"	J
+				c.A.assign     "O"	O
+				c.B.assign     "P"	P
+		else
+			c.up.assign    "↑"	Up
+			c.right.assign "→"	Right
+			c.down.assign  "↓"	Down
+			c.left.assign  "←"	Left
+			c.A.assign     "Shift"	Shift
+			c.B.assign     "Control"	Ctrl
+
+	// The player was removed from the game: their stream has ended, so release everything they
+	// still held - a held key must not stay pressed forever. Idempotent
+	internal disconnect
+		state = Disconnected
+		for inputStates if .pressedAtFrame > .releasedAtFrame then .releasedAtFrame = core.frame
+		keysCurrentlyDown.clear
+		holdingRewindKey = false
 	toString => playerName ? "{playerName} (Player {playerIndex})" : "Player {playerIndex}"
 	highlightPerspectiveColor => input.showPerspectiveOf == null or input.showPerspectiveOf == this ? this.playerColor : this.playerDarkColor
 	
@@ -269,7 +330,12 @@ internal UserAccount
 	string name
 	string colorPreferences
 	
-enum InputEventType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object, RemoveUser
+enum InputEventType: None, TouchDown, TouchMove, TouchUp, Scroll, KeyDown, KeyUp, TextInput, Stick, Trigger, Grip, ButtonDown, ButtonUp, ControllerTransform, HeadTransform, DeviceRotation, Join, SetState, Navigate, Gamepad, String, Json, Object, RemoveUser, PlayerConnection
+
+// Connected: the player's inputs arrive normally
+// TryingToReconnect: the player has been silent for a few seconds and may come back (see PeerNetwork.reportConnectionState)
+// Disconnected: the player was removed from the game - final, a returning user rejoins as a new player
+enum PlayerState: Connected, TryingToReconnect, Disconnected
 		
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up
@@ -481,10 +547,6 @@ internal DigitalButton
 		wasPreviouslyPressed = isPressed
 		isPressed = false
 		
-internal transient immutable struct ControllerButtonPlayerAndIndex
-	int userId
-	int buttonIndex
-	
 internal transient immutable InternalGamepadButton
 	bool pressed, touched
 	float value
@@ -561,11 +623,9 @@ internal transient PendingObjectRecord
 // Collect user input
 skipInit global unit input
 	transient visible InternalUser[] internalUsers	// Internal user by id, which might be different on each client
-	transient visible InternalUser[] internalUserBySyncedIndex	// Internal user by synced index, which is the same on all clients
 	transient InternalUser localUser
 	transient internal Player localPlayer
 	transient bool isCertain
-	transient ControllerButtonPlayerAndIndex[KeyCode] controllerButtonMap
 	transient PendingObjectRecord[] pendingObjectRecords
 	
 	// A list of all players
@@ -1090,8 +1150,27 @@ skipInit global unit input
 		// removal out-of-band now (the safe-rule in removeUserDeterministically decides, the
 		// later parse re-applies idempotently); everyone else receives the same metadata
 		// through the stall stream-fetch answers (see PeerNetwork.tick / onStreamData)
-		if not system.enableRollback then removeUserDeterministically userId, lastFrame, core.frame
-		
+		if not system.enableRollback then removeUserDeterministically userId, lastFrame
+
+	// Write a PlayerConnection event into our own input stream: every client sets Player.state of
+	// that user when the event is parsed (see PeerNetwork.reportConnectionState). Unlike RemoveUser,
+	// it respects the recording gates - the reporter simply repeats it later
+	internal handlePlayerConnection: int userId, PlayerState state
+		if core.mode == None || !localUser || !localUser.collectInputs || core.inputRecordingPaused then return
+		let inputs = localUser.inputs
+		inputs.writeInt32 localUser.inputFrame
+		inputs.writeInt16 cast InputEventType.PlayerConnection
+		inputs.writeInt userId
+		inputs.writeInt8 cast state
+
+	// A parsed PlayerConnection event. Disconnected is final: only a removal sets it, and a
+	// late report about a removed player must not revive them
+	private setPlayerConnectionState: int userId, PlayerState state, int frame
+		let player = playersById[userId]
+		if not player or state == Disconnected or player.state == Disconnected or player.state == state then return
+		player.state = state
+		print "{player} is now {state} at frame {frame}", type:Reaction
+
 	// Returns a "GamepadList" (which doesn't have the functions of a LiveTime list)
 	private inline js InternalGamepad[] getGamepads() navigator.getGamepads()
 	
@@ -1182,12 +1261,14 @@ skipInit global unit input
 			let inputs = internalUser.inputs
 			let userId = internalUser.id
 			let player = playersById[userId]
-			// A removed user's Player leaves the game at the first frame past removedAfterFrame:
-			// all their records have been parsed by then, so the recreate-on-first-record path
-			// below can't resurrect them (see removeUserDeterministically)
-			if player and internalUser.removed and frame > internalUser.removedAfterFrame
-				removeRemovedPlayer userId, frame
-				player = null
+			// A removed user's Player becomes Disconnected at the first frame past removedAfterFrame:
+			// their stream has deterministically ended there (see the cut below). The Player stays in
+			// input.players - only core.restart drops it - so it can never be recreated as a new
+			// Player either. After a room clock reset the RemoveUser event can even parse BEFORE
+			// removedAfterFrame (lifecycle seed 167873016) - the user keeps playing until the cut
+			if player and internalUser.removed and frame > internalUser.removedAfterFrame and player.state != Disconnected
+				player.disconnect
+				print "{player} disconnected at frame {frame}", type:Reaction
 			player?.gamepad.startFrame
 			if player then player.prevFocus = player.focus
 			
@@ -1204,17 +1285,12 @@ skipInit global unit input
 				if internalUser.removed and nextFrame > internalUser.removedAfterFrame then break
 				inputs.readPos += 4
 				
-				// We create the player as soon as we receive the first input from that player,
-				// which is typically the "Join" message that is sent in "startConnected",
-				// but could also be a player reconnecting that was previously kicked out
+				// We create the player when we parse their first record, which is typically the
+				// "Join" message that is sent in "startConnected". A removed player is never recreated:
+				// they stay Disconnected, and a returning user rejoins with a new id
 				if not player
 					if core.verbose and not internalUser.local then core.log "<{internalUser.id}> Received first message from new user"
-					
-					players.add player = {id:userId, playerIndex:players.length}
-					playersById[userId] = player
-					internalUserBySyncedIndex[player.playerIndex] = internalUser
-					if internalUser.local then localPlayer = player
-					updatePlayers
+					player = addPlayer internalUser
 				
 				let value = inputs.readUnsignedInt16
 				InputEventType inputType = cast(value mod 32)
@@ -1341,26 +1417,24 @@ skipInit global unit input
 				else
 				if inputType == SetState
 					// Set state
+					let previousIds = players.map.id
 					core.snapshotBuffer.reset
 					inputs.readBuffer core.snapshotBuffer
 					Snapshot.deserialize core.snapshotBuffer
 					math.recreateRandomValues
 					
-					// Match users
+					// Match users: by name, else the user that had the same player index, else any
 					playersById.clear
-					internalUserBySyncedIndex.clear
 					let availableUsers = clone input.internalUsers
 					for p in players
 						let user = availableUsers.popWhere.name == p.playerName
-						if not user then user = availableUsers.popWhere.syncedIndex == p.playerIndex
-						if not user then availableUsers.pop
+						if not user then user = availableUsers.popWhere.id == previousIds[p.playerIndex]
+						if not user then user = availableUsers.pop
 						p.id = user.id
 						
 						user._id = p._id
-						user.syncedIndex = p.playerIndex
 						user.name = p.playerName
 						playersById[p.id] = p
-						internalUserBySyncedIndex[user.syncedIndex] = user
 					refreshLocalPlayer
 
 				else
@@ -1376,8 +1450,13 @@ skipInit global unit input
 				if inputType == RemoveUser
 					int removeUserId = inputs.readInt
 					int lastFrame = inputs.readInt
-					removeUserDeterministically removeUserId, lastFrame, frame, fromParse:true
-	
+					removeUserDeterministically removeUserId, lastFrame, fromParse:true
+				else
+				if inputType == PlayerConnection
+					int stateUserId = inputs.readInt
+					PlayerState state = cast inputs.readInt8
+					setPlayerConnectionState stateUserId, state, frame
+
 		// for players
 		// 	let internalUser = internalUsers[.id]
 		// 	if frame <= internalUser.inputFrame
@@ -1608,11 +1687,6 @@ skipInit global unit input
 				if cmdOrCtrlState.releasedAtFrame >= cmdOrCtrlState.pressedAtFrame
 					internalUser.allJustPressed.add Input.CmdOrCtrl
 					cmdOrCtrlState.pressedAtFrame = core.frame
-			
-		// let controllerButton = controllerButtonMap[key]
-		// 	InternalUser user = input.internalUsers[controllerButton.userId]
-		// 	user.justPressed[controllerButton.buttonIndex] = true
-		// 	user.isPressed[controllerButton.buttonIndex] = true
 
 	internal keyUp: InternalUser internalUser
 	                Player player
@@ -1642,93 +1716,14 @@ skipInit global unit input
 			if (isAppleKeyboard and parent == Meta) or (not isAppleKeyboard and parent == Ctrl)
 				player.inputStateForWriting(Input.CmdOrCtrl.index).releasedAtFrame = core.frame
 				internalUser.allJustReleased.add Input.CmdOrCtrl
-			
-		// let controllerButton = controllerButtonMap[key]
-		// 	InternalUser user = input.internalUsers[controllerButton.userId]
-		// 	user.justReleased[controllerButton.buttonIndex] = true
-		// 	user.isPressed[controllerButton.buttonIndex] = false		
 						
-	internal updatePlayers
-		players.sortBy.id
-		for players
-			.playerIndex = i
-			// More players than palette entries must wrap, not read out of bounds: an undefined
-			// playerColor throws in the draw path, and that caught error used to poison this
-			// client's replays (churn desync, seed 339031744 - a removed user's arriving stream
-			// transiently resurrects their player, so the count can exceed the palette)
-			.playerColor = graphics.defaultColors[i mod graphics.defaultColors.length]
-			.playerDarkColor = graphics.darkDefaultColors[i mod graphics.darkDefaultColors.length]
-			
-			let internalUser = internalUsers[.id]
-			internalUser.syncedIndex = i
-			internalUserBySyncedIndex[.playerIndex] = internalUser
-			
-		if core.mode == Local and not core.simulateConnection
-			if players.length >= 1
-				Gamepad c = players[0].gamepad
-				if c.type == Keyboard
-					c.up.assign    "↑"	Up
-					c.right.assign "→"	Right
-					c.down.assign  "↓"	Down
-					c.left.assign  "←"	Left
-					c.A.assign     "Space"	Space
-					c.B.assign     "Meta"	LeftMetaKey
-			
-			if players.length >= 2
-				Gamepad c = players[1].gamepad
-				if c.type == Keyboard
-					c.up.assign    "W"	W
-					c.right.assign "D"	D
-					c.down.assign  "S"	S
-					c.left.assign  "A"	A
-					c.A.assign     "F"	F
-					c.B.assign     "G"	G
-			
-			if players.length >= 3
-				Gamepad c = players[2].gamepad
-				if c.type == Keyboard
-					c.up.assign    "I"	I
-					c.right.assign "L"	L
-					c.down.assign  "K"	K
-					c.left.assign  "J"	J
-					c.A.assign     "O"	O
-					c.B.assign     "P"	P
-			
-			controllerButtonMap.clear
-			for players as player
-				player.controllerKeyDownFrame.clear
-				for .gamepad.buttons
-					controllerButtonMap[.key] = {userId:player.id, buttonIndex:i}
-					player.controllerKeyDownFrame.add 0
-		else
-			controllerButtonMap.clear
-			for players
-				Gamepad c = .gamepad
-				if c.type == Keyboard
-					c.up.assign    "↑"	Up
-					c.right.assign "→"	Right
-					c.down.assign  "↓"	Down
-					c.left.assign  "←"	Left
-					c.A.assign     "Shift"	Shift
-					c.B.assign     "Control"	Ctrl
-			
-			controllerButtonMap.clear
-			// TODO: Research why this is sometimes called before we have a local player
-			if localPlayer
-				for localPlayer.gamepad.buttons
-					controllerButtonMap[.key] = {userId:localPlayer.id, buttonIndex:i}
-				
-			controllerButtonMap[W] = {userId:localUser.id, buttonIndex:1}
-			controllerButtonMap[D] = {userId:localUser.id, buttonIndex:2}
-			controllerButtonMap[S] = {userId:localUser.id, buttonIndex:3}
-			controllerButtonMap[A] = {userId:localUser.id, buttonIndex:4}
-			
 	private getTargetedPlayers: Player[] by
 		return by and by.length > 0 and by[0] and not core.everybodyCanClickForEverybody ? by : players
 		
 
 	// Remove a player deterministically: writes a RemoveUser event into the local input stream,
-	// so the same player is removed at the same frame on all clients
+	// so the same player becomes Disconnected at the same frame on all clients (it stays in
+	// input.players until the next core.restart)
 	removePlayer: Player player
 		if not player then return
 		let user = internalUsers[player.id]
@@ -1737,11 +1732,11 @@ skipInit global unit input
 
 	// Applies a parsed RemoveUser event. Runs during live play and again during replays after a
 	// rewind, so everything here must be idempotent. The InternalUser and its input bytes are kept
-	// (snapshots and replays reference them), only the Player leaves the game.
+	// (snapshots and replays reference them). The Player becomes Disconnected in parseInputs.
 	// Also called OUT-OF-BAND (fromParse false) from stream metadata (PeerNetwork.onStreamData)
 	// and from the event writer (handleRemoveUser in lockstep) - rollback replays make any
 	// application time safe, lockstep guards it with the safe-rule below
-	internal removeUserDeterministically: int removeUserId, int lastFrame, int atFrame, bool fromParse = false
+	internal removeUserDeterministically: int removeUserId, int lastFrame, bool fromParse = false
 		let user = internalUsers[removeUserId]
 		if not user then return
 		// Lockstep (no rollback): an out-of-band cut below records we already APPLIED cannot
@@ -1786,14 +1781,6 @@ skipInit global unit input
 			core.markRemoteChange 0
 			print "Removal of player {removeUserId} amended: their inputs now count up to frame {lastFrame}", type:Reaction
 			checkRemovalCutBelowPin user, lastFrame
-		// The Player only leaves once the removed user's stream has deterministically ended. After
-		// a room clock reset the RemoveUser event can land at a frame BEFORE removedAfterFrame (the
-		// event is re-based onto the reset timeline, the removed user's old stream stamps are not):
-		// removing the Player here while their records are still being parsed would resurrect them
-		// as a fresh Player in parseInputs - a permanent ghost no removal ever cleans up again
-		// (lifecycle seed 167873016). parseInputs removes the Player once frame > removedAfterFrame
-		if atFrame > lastFrame
-			removeRemovedPlayer removeUserId, atFrame
 
 	// A removal cut below inputs we already applied AND below the pinned snapshot - the only
 	// valid rewind root - means our certified timeline includes inputs the removal just
@@ -1816,43 +1803,38 @@ skipInit global unit input
 		core.log "#fork <{user.id}> Removal cut {lastFrame} lies below their applied claim {user.inputFrame} and the snapshot pin {core.snapshotFrame}: our timeline may include discarded inputs -> rebuilding from the mesh"
 		core.rebuildPending = PeerNetwork.forkRecoveryReload "user {user.id}'s removal cut {lastFrame} is below the snapshot pin {core.snapshotFrame}"
 
-	// The deterministic end of a removal: the Player leaves the game. Called when the parse frame
-	// is past removedAfterFrame, so no records of the removed user can still follow. Idempotent -
-	// replays after a rewind run it again
-	private removeRemovedPlayer: int removeUserId, int atFrame
-		let player = playersById[removeUserId]
-		if not player then return
-		players.remove player
-		playersById[removeUserId] = null
-		internalUserBySyncedIndex[player.playerIndex] = null
-		updatePlayers
-		print "Player {removeUserId} removed at frame {atFrame}", type:Reaction
+	// The only way a Player enters input.players: appended at the end, so the index of every other
+	// player stays the same
+	internal Player addPlayer: InternalUser user
+		Player player = {id:user.id}
+		player.setIndex players.length
+		players.add player
+		playersById[user.id] = player
+		if user.local then localPlayer = player
+		return player
 
 	// A rewind pop (core.checkRewindMechanic) restores the world as it was at an older
-	// position - including its players list. Users who joined AFTER that position vanish from
-	// the restored world, but their records were already consumed (the mechanic never rewinds
-	// readPos), so parseInputs' recreate-on-first-record path only brings them back when they
-	// act again - and the Join record that carried their name never re-parses. Recreate them
-	// right after the restore instead, from the identity the transient InternalUser keeps
-	// (set at Join parse). The mirror case: the restored world can resurrect a Player whose
-	// user was removed at a cut below the current frame - remove them again immediately.
-	// Deterministic: readPos progress, the InternalUser identity fields and the removal cuts
-	// are the same on every client at the same claims, and rollback replays re-execute this
-	internal ensureRewindRestoredPlayers: int frame
-		for internalUsers as user if user
-			if user.inputs.readPos == 0 then continue // Never parsed a record - no player existed live either
-			if user.removed and frame > user.removedAfterFrame
-				removeRemovedPlayer user.id, frame
-				continue
-			if playersById[user.id] then continue
-			Player player = {id:user.id, playerIndex:players.length}
-			player._id = user._id
-			player.playerName = user.name
-			players.add player
-			playersById[user.id] = player
-			internalUserBySyncedIndex[player.playerIndex] = user
-			if user.local then localPlayer = player
-			updatePlayers
+	// position - including its players list. But the roster is a property of the PRESENT:
+	// users who joined after that position vanish from the restored world, their records were
+	// already consumed (the mechanic never rewinds readPos), and the Join record that carried
+	// their name never re-parses. Restore the present roster right after the restore instead:
+	// the restored list is a prefix of the present one (players are only appended, and the
+	// rewind floor never crosses a restart), so re-appending the missing ids in present order
+	// gives every player its present index. The present states are carried too (a restored
+	// player may be Connected although they were removed in the meantime). Recreated players
+	// take their identity from the transient InternalUser (set at Join parse). Deterministic:
+	// the present roster is the same on every client at the same claims, and rollback replays
+	// re-execute this
+	internal restorePresentRoster: int[] ids, PlayerState[] states
+		for ids.length as i
+			let player = playersById[ids[i]]
+			if not player
+				let user = internalUsers[ids[i]]
+				player = addPlayer user
+				player._id = user._id
+				player.playerName = user.name
+			if states[i] == Disconnected then player.disconnect
+			else player.state = states[i]
 
 	// ---------------------------------------------- Deprecated Input: Touch Down ----------------------------------------------
 	
@@ -2673,19 +2655,24 @@ input
 		if graphics.isTransforming then	return user.pressPosition.getRelativeTo graphics.localMatrix
 		else	return user.pressPosition
 
+	// The InternalUser of the player at this index (null if there is none)
+	private InternalUser internalUserAt: int playerIndex
+		let player = players[playerIndex]
+		return player ? internalUsers[player.id] : null
+
 	// Returns the current scroll delta of the player's input device. player is the playerIndex
 	global Vector2 getScrollDelta: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = internalUserAt player
 		if not active or not user then return {0,0}
 		return user.scrollDelta
 
 	global Input[] allJustPressed: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = internalUserAt player
 		if not active or not user then return []
 		return user.allJustPressed
 
 	global Input[] allJustReleased: int player = 0
-		let user = internalUserBySyncedIndex[player]
+		let user = internalUserAt player
 		if not active or not user then return []
 		return user.allJustReleased
 
