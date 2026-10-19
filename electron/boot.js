@@ -38,6 +38,12 @@ app.on('ready', function() {
 	remoteMain.enable(mainWindow.webContents);
 	mainWindow.setMenu(null);
 
+	// Electron has no Bluetooth device chooser: navigator.bluetooth.requestDevice gets the first matching device
+	mainWindow.webContents.on('select-bluetooth-device', (event, devices, callback) => {
+		event.preventDefault();
+		if(devices.length) callback(devices[0].deviceId);
+	});
+
 	if(isDebug)	{mainWindow.loadURL('http://localhost:8080');}
 	else	{mainWindow.loadURL('file://' + __dirname + '/index.html');  mainWindow.setFullScreen(false); }
 
