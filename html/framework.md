@@ -16,9 +16,4 @@
 		button "Increment counter", onClick:counter++; refresh	// Call refresh to re-render the html after you changed any data
 		button "Submit name", onClick:http.post "/api/name", body:{name}; refresh	// Button
 		div width:"calc(100% - 16px)"	// You can use a css string instead of a number. Always specify units is css
-	js void navigateTo: string url	// Use js keyword to write function body in JavaScript for low-level interop. Return type is required.
-		location.href = url;	// JavaScript code. Do not use nested functions.
-
-# HTML Framework
-Elements that are grouped together visually should be in the same function.
 
