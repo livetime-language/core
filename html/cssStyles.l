@@ -511,6 +511,7 @@ importance:5 dynamic Style
 	string animationName // A name for the @keyframes animation
 	string animationTimingFunction // The speed curve of the animation
 	string animationPlayState // Whether the animation is running or paused
+	string appearance // "none" removes the platform-native look of form controls
 	string background // All the background properties in one declaration
 	string backgroundAttachment // Whether a background-image is fixed or scrolls with the page
 	// The background-color of an element. You can use a color literal to define a color, e.g. backgroundColor:#ff0000

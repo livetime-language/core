@@ -598,6 +598,31 @@ global static class html
 		element.oninput = model = element.value; element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden; changeHandler
 		if focused or focusTabIndex == attributes.tabIndex then element.focus
 
+	// Render a date and time picker (day, month, year, hour, minute) in the draw function.
+	// It shows the model in the user's locale, or the placeholder if the model is null. Clicking it opens the native
+	// picker of the platform: a popup in Chrome and Electron, a dialog on Android, wheels on iOS.
+	// The model variable you pass in will be updated when the user picks a date and time, and set to null when the user clears it.
+	importance:4
+	global inline void dateTimeField: Date model                      // The variable that holds the value. This will be updated when the user picks a date and time
+		                              string placeholder = ""           // Shown while the model is null
+		                              expand Attributes attributes = {} // The attributes of the HTML element
+		                              expand Style style = null         // The css style of the HTML element
+		                              SourceCodeLocation location
+		stored void() changeHandler = currentChangeHandler
+		let element = div attributes, style, location
+			div model ? "{model.dayMonthYearString} {model.hourMinuteString}" : placeholder, whiteSpace:noWrap, opacity:model ? 1 : 0.5
+			// An invisible native input on top, because iOS opens the picker only for a tap on the input itself
+			let input = div tag:"input", data:{type:"datetime-local"}, position:absolute, inset:{0,0,0,0}, width:100%, height:100%, margin:0, padding:0, border:none, opacity:0, appearance:"none", fontSize:16, cursor:pointer
+			string value = model ? "{model.year}-{model.twoDigitMonth}-{model.twoDigitDay}T{model.twoDigitHour}:{model.twoDigitMinute}" : ""
+			if input.value != value then input.value = value
+			input.oninput = model = input.value ? Date.fromString(input.value) : null; changeHandler; refresh
+			input.onclick = showPickerForMouse input
+		element.style.position = relative
+
+	// With a mouse, a click on a date input only focuses one of its fields, while a tap opens the picker
+	private js void showPickerForMouse: HTMLElement input
+		if(matchMedia("(pointer: fine)").matches) input.showPicker?.();
+
 	// ---------------------------------------- Canvas ----------------------------------------
 	
 	dynamic currentContext
