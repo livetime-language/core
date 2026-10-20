@@ -11,6 +11,7 @@
 			div "Save", fontSize:64, color:white	// Values are in pixels if no unit is given
 		onClick:	// Click listener for row
 			print "Saving", type:Action	// Print types: Action, Reaction, Info, Warning, Error
+			navigateTo url:"/save"	// Always use labels unless the argument's purpose is obvious
 		div "Counter: {counter}"	// String interpolation
 		button "Increment counter", onClick:counter++; refresh	// Call refresh to re-render the html after you changed any data
 		button "Submit name", onClick:http.post "/api/name", body:{name}; refresh	// Button

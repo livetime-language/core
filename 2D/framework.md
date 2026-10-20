@@ -8,7 +8,7 @@
 	move: Player p, Vector2 delta = {0,0}	// Define a function that takes a Player and an optional Vector2 as parameters
 		p.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
 	tick	// app.tick is called every frame (30 times per second by default)
-		move player, delta:{1,0}	// You don't need parenthesis when calling a function that doesn't return anything
+		move player, delta:{1,0}	// Always use labels unless the argument's purpose is obvious
 		if justPressed(Pointer, player:0)	// Check if player 0 just pressed the left mouse button this frame
 			print "Player 0 clicked at {getPointer(player:0)}"	// Pointer position of player 0 (mouse, touch or pen)
 		if justPressed(A, player:1) then print "Player 1 pressed A"	// Available inputs: Up, Down, Left, Right, A, B, X, Y, Start, Select, Pointer, RightMouseButton
