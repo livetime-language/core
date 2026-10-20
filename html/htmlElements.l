@@ -541,17 +541,25 @@ global static class html
 		                             expand Attributes attributes = {}          // The attributes of the HTML element
 		                             expand Style style = null                  // The css style of the HTML element
 		                             dynamic data = {}                          // The data attributes of the element
-		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
+		                             bool editable = true
+									 bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
+		if element.style.outline.toString() == "" then element.style.outline = none		
 		if model != element.innerText then element.innerText = model
-		element.contentEditable = "plaintext-only"
-		let prevModel = model
-		if updateWithEveryKeystroke
-			element.oninput = model = element.innerText; onChanged(model); changeHandler
-		else         
-			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		if editable
+			element.contentEditable = "plaintext-only"
+			let prevModel = model
+			if updateWithEveryKeystroke
+				element.oninput = model = element.innerText; onChanged(model); changeHandler
+			else         
+				element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		else
+			element.contentEditable = "false"
+			element.oninput = null
+			element.onblur = null
+			
 		if focusTabIndex == tabIndex
 			system.delay 100
 				element.focus
@@ -566,18 +574,26 @@ global static class html
 		                             expand Attributes attributes = {}          // The attributes of the HTML element
 		                             expand Style style = null                  // The css style of the HTML element
 		                             dynamic data = {}                          // The data attributes of the element
+		                             bool editable = true
 		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
+		if element.style.outline.toString() == "" then element.style.outline = none		
 		if model != element.innerText then element.innerText = model
 		element.onclick = onClick
-		element.contentEditable = "plaintext-only"
-		let prevModel = model
-		if updateWithEveryKeystroke
-			element.oninput = model = element.innerText; onChanged(model); changeHandler
-		else         
-			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		if editable
+			element.contentEditable = "plaintext-only"
+			let prevModel = model
+			if updateWithEveryKeystroke
+				element.oninput = model = element.innerText; onChanged(model); changeHandler
+			else         
+				element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		else
+			element.contentEditable = "false"
+			element.oninput = null
+			element.onblur = null
+		
 		if focusTabIndex == tabIndex
 			system.delay 100
 				element.focus
