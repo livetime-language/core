@@ -538,6 +538,7 @@ global static class html
 	global inline void editableText: string model = ""                          // The variable that holds the value. This will be updated when the user changed the text
 		                             inline void(string value) onChanged = null // Called after the model changed
 		                             int tabIndex = -1
+									 bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
 		                             expand Attributes attributes = {}          // The attributes of the HTML element
 		                             expand Style style = null                  // The css style of the HTML element
 		                             dynamic data = {}                          // The data attributes of the element
@@ -545,9 +546,9 @@ global static class html
 									 bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
-		let element = div attributes, style, data, location
+		let element = div text:model, attributes, style, data, focusInitially, location
 		if element.style.outline.toString() == "" then element.style.outline = none		
-		if model != element.innerText then element.innerText = model
+		// if model != element.innerText then element.innerText = model
 		if editable
 			element.contentEditable = "plaintext-only"
 			let prevModel = model
@@ -604,6 +605,7 @@ global static class html
 							   void(float value) onChanged = null	// Called after the model changed
 							   void() onClick = null	// Called when the float is clicked
 							   int tabIndex = -1	// Focus input if focusTabIndex == tabIndex
+							   bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
 							   expand Attributes attributes = {}	// The attributes of the HTML element
 							   expand Style style = null	// The css style of the HTML element
 							   dynamic data = {}	// The data attributes of the element
@@ -611,17 +613,19 @@ global static class html
 							   bool updateWithEveryKeystroke = false	// Should onChange be called with every keystroke?
 							   SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
-		let element = div attributes, style, data, location
+		let element = div attributes, style, data, focusInitially, location
 		if element.style.outline.toString() == "" then element.style.outline = none
-		element.innerText = model.value.format(minFractionDigits, maxFractionDigits)
+		string text = model.value ? model.value.format(minFractionDigits, maxFractionDigits) : ""
+		if text != element.innerHTML then element.innerText = text
 		element.onclick = onClick
 		if editable
 			element.contentEditable = "plaintext-only"
+			// Number keyboard on mobile, whose decimal separator is a comma in some locales
+			element.inputMode = "decimal"
 			let prevModel = model.value
 			if updateWithEveryKeystroke
-				element.oninput = model = element.innerText.toFloat; onChanged(model.value); changeHandler
-			else         
-				element.onblur = model = element.innerText.toFloat; if model.value != prevModel then onChanged(model.value); changeHandler
+				element.oninput = model = element.innerText.replaceAll(",", ".").toFloat or 0; onChanged(model.value); changeHandler; refresh
+			element.onblur = model = element.innerText.replaceAll(",", ".").toFloat or 0; element.innerText = model.value.format(minFractionDigits, maxFractionDigits); if model.value != prevModel then onChanged(model.value); changeHandler; refresh
 		else
 			element.contentEditable = "false"
 			element.oninput = null

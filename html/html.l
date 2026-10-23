@@ -63,6 +63,7 @@ dynamic HTMLElement
 	inline js void select() this.select()
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
 	inline js void focus() this.focus()
+	inline js void blur() this.blur()
 	inline js void scrollToBottom() this.scrollTo(0, this.scrollHeight)
 	inline js void scrollTo(dynamic options) this.scrollTo(options) // e.g. {top:0, behavior:"instant"}
 	inline js void scrollIntoView(dynamic options = {}) this.scrollIntoView(options)

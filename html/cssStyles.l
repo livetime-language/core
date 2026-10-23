@@ -707,6 +707,7 @@ importance:5 dynamic Style
 	string resize // Whether or not an element is resizable by the user
 	implicit Dimension right // The right position of a positioned element
 	string scrollBehavior // Specifies whether to smoothly animate the scroll position when a link is clicked
+	implicit Dimension scrollMarginTop // The space above the element when it is scrolled into view
 	string scrollbarWidth // The width of the scrollbar: auto, thin or none (still scrollable)
 	string tableLayout // The way to lay out table cells, rows, and columns
 	string tabSize // The length of the tab-character
