@@ -597,6 +597,40 @@ global static class html
 		if focusTabIndex == tabIndex
 			system.delay 100
 				element.focus
+				
+	global void editableFloat: Reference<float> model	// The variable that holds the value. This will be updated when the user changed the text
+							   int minFractionDigits = 0	// Min fraction digits to display
+							   int maxFractionDigits = 2	// Max fraction digits to display
+							   void(float value) onChanged = null	// Called after the model changed
+							   void() onClick = null	// Called when the float is clicked
+							   int tabIndex = -1	// Focus input if focusTabIndex == tabIndex
+							   expand Attributes attributes = {}	// The attributes of the HTML element
+							   expand Style style = null	// The css style of the HTML element
+							   dynamic data = {}	// The data attributes of the element
+							   bool editable = true	// Can the float be edited?
+							   bool updateWithEveryKeystroke = false	// Should onChange be called with every keystroke?
+							   SourceCodeLocation location
+		stored void() changeHandler = currentChangeHandler
+		let element = div attributes, style, data, location
+		if element.style.outline.toString() == "" then element.style.outline = none
+		element.innerText = model.value.format(minFractionDigits, maxFractionDigits)
+		element.onclick = onClick
+		if editable
+			element.contentEditable = "plaintext-only"
+			let prevModel = model.value
+			if updateWithEveryKeystroke
+				element.oninput = model = element.innerText.toFloat; onChanged(model.value); changeHandler
+			else         
+				element.onblur = model = element.innerText.toFloat; if model.value != prevModel then onChanged(model.value); changeHandler
+		else
+			element.contentEditable = "false"
+			element.oninput = null
+			element.onblur = null
+		
+		if focusTabIndex == tabIndex
+			system.delay 100
+				element.focus
+
 
 	// Render a html textarea element in the draw function.
 	// The model variable you pass in will be updated automatically after every keystroke.
