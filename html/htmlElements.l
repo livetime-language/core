@@ -620,8 +620,10 @@ global static class html
 		element.onclick = onClick
 		if editable
 			element.contentEditable = "plaintext-only"
-			// Number keyboard on mobile, whose decimal separator is a comma in some locales
+			// Number keyboard on mobile, whose decimal separator is a comma in some locales. Its action key sends Enter
+			// (Android shows "Next" and moves the focus to the next editable element without one)
 			element.inputMode = "decimal"
+			element.enterKeyHint = "done"
 			let prevModel = model.value
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText.replaceAll(",", ".").toFloat or 0; onChanged(model.value); changeHandler; refresh
