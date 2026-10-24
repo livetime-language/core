@@ -538,20 +538,29 @@ global static class html
 	global inline void editableText: string model = ""                          // The variable that holds the value. This will be updated when the user changed the text
 		                             inline void(string value) onChanged = null // Called after the model changed
 		                             int tabIndex = -1
+									 bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
 		                             expand Attributes attributes = {}          // The attributes of the HTML element
 		                             expand Style style = null                  // The css style of the HTML element
 		                             dynamic data = {}                          // The data attributes of the element
-		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
+		                             bool editable = true
+									 bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
-		let element = div attributes, style, data, location
-		if model != element.innerText then element.innerText = model
-		element.contentEditable = "plaintext-only"
-		let prevModel = model
-		if updateWithEveryKeystroke
-			element.oninput = model = element.innerText; onChanged(model); changeHandler
-		else         
-			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		let element = div text:model, attributes, style, data, focusInitially, location
+		if element.style.outline.toString() == "" then element.style.outline = none		
+		// if model != element.innerText then element.innerText = model
+		if editable
+			element.contentEditable = "plaintext-only"
+			let prevModel = model
+			if updateWithEveryKeystroke
+				element.oninput = model = element.innerText; onChanged(model); changeHandler
+			else         
+				element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		else
+			element.contentEditable = "false"
+			element.oninput = null
+			element.onblur = null
+			
 		if focusTabIndex == tabIndex
 			system.delay 100
 				element.focus
@@ -566,21 +575,68 @@ global static class html
 		                             expand Attributes attributes = {}          // The attributes of the HTML element
 		                             expand Style style = null                  // The css style of the HTML element
 		                             dynamic data = {}                          // The data attributes of the element
+		                             bool editable = true
 		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
+		if element.style.outline.toString() == "" then element.style.outline = none		
 		if model != element.innerText then element.innerText = model
 		element.onclick = onClick
-		element.contentEditable = "plaintext-only"
-		let prevModel = model
-		if updateWithEveryKeystroke
-			element.oninput = model = element.innerText; onChanged(model); changeHandler
-		else         
-			element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		if editable
+			element.contentEditable = "plaintext-only"
+			let prevModel = model
+			if updateWithEveryKeystroke
+				element.oninput = model = element.innerText; onChanged(model); changeHandler
+			else         
+				element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+		else
+			element.contentEditable = "false"
+			element.oninput = null
+			element.onblur = null
+		
 		if focusTabIndex == tabIndex
 			system.delay 100
 				element.focus
+				
+	global void editableFloat: Reference<float> model	// The variable that holds the value. This will be updated when the user changed the text
+							   int minFractionDigits = 0	// Min fraction digits to display
+							   int maxFractionDigits = 2	// Max fraction digits to display
+							   void(float value) onChanged = null	// Called after the model changed
+							   void() onClick = null	// Called when the float is clicked
+							   int tabIndex = -1	// Focus input if focusTabIndex == tabIndex
+							   bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
+							   expand Attributes attributes = {}	// The attributes of the HTML element
+							   expand Style style = null	// The css style of the HTML element
+							   dynamic data = {}	// The data attributes of the element
+							   bool editable = true	// Can the float be edited?
+							   bool updateWithEveryKeystroke = false	// Should onChange be called with every keystroke?
+							   SourceCodeLocation location
+		stored void() changeHandler = currentChangeHandler
+		let element = div attributes, style, data, focusInitially, location
+		if element.style.outline.toString() == "" then element.style.outline = none
+		string text = model.value ? model.value.format(minFractionDigits, maxFractionDigits) : ""
+		if text != element.innerHTML then element.innerText = text
+		element.onclick = onClick
+		if editable
+			element.contentEditable = "plaintext-only"
+			// Number keyboard on mobile, whose decimal separator is a comma in some locales. Its action key sends Enter
+			// (Android shows "Next" and moves the focus to the next editable element without one)
+			element.inputMode = "decimal"
+			element.enterKeyHint = "done"
+			let prevModel = model.value
+			if updateWithEveryKeystroke
+				element.oninput = model = element.innerText.replaceAll(",", ".").toFloat or 0; onChanged(model.value); changeHandler; refresh
+			element.onblur = model = element.innerText.replaceAll(",", ".").toFloat or 0; element.innerText = model.value.format(minFractionDigits, maxFractionDigits); if model.value != prevModel then onChanged(model.value); changeHandler; refresh
+		else
+			element.contentEditable = "false"
+			element.oninput = null
+			element.onblur = null
+		
+		if focusTabIndex == tabIndex
+			system.delay 100
+				element.focus
+
 
 	// Render a html textarea element in the draw function.
 	// The model variable you pass in will be updated automatically after every keystroke.
@@ -597,6 +653,31 @@ global static class html
 		element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden
 		element.oninput = model = element.value; element.style.overflow = scroll; element.style.height = 1px; element.style.height = element.scrollHeight px; element.style.overflow = hidden; changeHandler
 		if focused or focusTabIndex == attributes.tabIndex then element.focus
+
+	// Render a date and time picker (day, month, year, hour, minute) in the draw function.
+	// It shows the model in the user's locale, or the placeholder if the model is null. Clicking it opens the native
+	// picker of the platform: a popup in Chrome and Electron, a dialog on Android, wheels on iOS.
+	// The model variable you pass in will be updated when the user picks a date and time, and set to null when the user clears it.
+	importance:4
+	global inline void dateTimeField: Date model                      // The variable that holds the value. This will be updated when the user picks a date and time
+		                              string placeholder = ""           // Shown while the model is null
+		                              expand Attributes attributes = {} // The attributes of the HTML element
+		                              expand Style style = null         // The css style of the HTML element
+		                              SourceCodeLocation location
+		stored void() changeHandler = currentChangeHandler
+		let element = div attributes, style, location
+			div model ? "{model.dayMonthYearString} {model.hourMinuteString}" : placeholder, whiteSpace:noWrap, opacity:model ? 1 : 0.5
+			// An invisible native input on top, because iOS opens the picker only for a tap on the input itself
+			let input = div tag:"input", data:{type:"datetime-local"}, position:absolute, inset:{0,0,0,0}, width:100%, height:100%, margin:0, padding:0, border:none, opacity:0, appearance:"none", fontSize:16, cursor:pointer
+			string value = model ? "{model.year}-{model.twoDigitMonth}-{model.twoDigitDay}T{model.twoDigitHour}:{model.twoDigitMinute}" : ""
+			if input.value != value then input.value = value
+			input.oninput = model = input.value ? Date.fromString(input.value) : null; changeHandler; refresh
+			input.onclick = showPickerForMouse input
+		element.style.position = relative
+
+	// With a mouse, a click on a date input only focuses one of its fields, while a tap opens the picker
+	private js void showPickerForMouse: HTMLElement input
+		if(matchMedia("(pointer: fine)").matches) input.showPicker?.();
 
 	// ---------------------------------------- Canvas ----------------------------------------
 	

@@ -2,7 +2,7 @@
 	move: Player player, Vector2 delta = {0,0}	// Define a function that takes a Player and an optional Vector2 as parameters
 		player.pos += delta	// Available Vector2 operators: +, -, *, /, +=, -=, *=, /=, ==, !=, >, <, >=, <=
 	tick	// app.tick is called every frame (30 times per second by default)
-		move currentPlayer, delta:{1,0}	// You don't need parenthesis when calling a function that doesn't return anything
+		move currentPlayer, delta:{1,0}	// Always use labels unless the argument's purpose is obvious
 		setPixel pos:screenSize/2, color:LightGray	// Set pixel in the middle of the screen, screenSize is 224x168 pixels by default
 		drawText "Hello World", pos:{x,y}, color:DarkGray	// Draw text, each character is 6x10 pixels by default
 		drawRectangle pos:{x,y}, size:{8,8}, color:Red, outlineColor:Green	// Draw rectangle, leave out color for no fill, leave out outlineColor for no outline

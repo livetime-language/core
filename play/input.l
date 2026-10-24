@@ -2642,7 +2642,7 @@ input
 		if user < 0
 			return players.any.justPressed item, posX, posY, size.x, size.y
 		else
-			return players[core.firstUserControlsEverythingInDebug and isDebug ? 0 : user].justPressed item
+			return players[core.firstUserControlsEverythingInDebug and isDebug ? 0 : user].justPressed item, posX, posY, size.x, size.y
 
 	global bool justPressed: string keyCombination, int player = 0
 		if not active or not keyCombination then return false
