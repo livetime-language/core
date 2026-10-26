@@ -92,6 +92,10 @@ internal transient class InternalUser
 	
 	int certainFrame
 	int prevCertainFrame
+	// The index in navigator.getGamepads of the gamepad this user plays with (see input.updateGamepad).
+	// -1: no gamepad. -2: unknown, a new session - our stream may still end with buttons a previous
+	// session held, so a neutral record is written unless a gamepad is found right away
+	int gamepadIndex = -2
 	
 	startInputFrame: int index
 		lastTouchMoveIndex.clear
@@ -1198,11 +1202,44 @@ skipInit global unit input
 		// pending, like the DOM input handlers
 		if PeerNetwork.holdingConfirmationPending then return
 		let gamepads = getGamepads
-		InternalGamepad gp = gamepads?.find . != null
-		if not gp
-			checkReleaseRewindKeyWithoutGamepad
-			return
-			
+		// Online, this client only records the local user. Locally, every user plays on this
+		// device and gets a gamepad of their own
+		if isOnlineMultiplayer
+			if localUser then updateGamepad localUser, gamepads
+		else
+			for internalUsers if .
+				updateGamepad ., gamepads
+
+	// Records the state of the user's gamepad. A user without a gamepad, or whose gamepad became
+	// unavailable, gets the first free one. When none is left, the gamepad's per-frame records
+	// simply stop - buttons held at that moment (the rewind key: the whole room keeps rewinding)
+	// would stay pressed forever on every client. So we append one neutral record: every client
+	// (this one included) releases everything deterministically when parsing it
+	private updateGamepad: InternalUser internalUser, InternalGamepad[] gamepads
+		if not internalUser.collectInputs then return
+		int index = internalUser.gamepadIndex
+		if index < 0 or not gamepads or not gamepads[index]
+			int prevIndex = index
+			index = findFreeGamepad internalUser, gamepads
+			internalUser.gamepadIndex = index
+			if index == -1
+				if prevIndex != -1 then writeGamepad internalUser, 0, 0, 0
+				return
+		handleGamepad internalUser, gamepads[index]
+
+	// The index of the first connected gamepad no other user plays with (-1: none)
+	private int findFreeGamepad: InternalUser internalUser, InternalGamepad[] gamepads
+		if not gamepads then return -1
+		for gamepads.length as index
+			if not gamepads[index] then continue
+			bool used = false
+			if not isOnlineMultiplayer
+				for internalUsers as other
+					if other and other != internalUser and other.gamepadIndex == index then used = true
+			if not used then return index
+		return -1
+
+	internal handleGamepad: InternalUser internalUser, InternalGamepad gp
 		let isPlayStation = gp.id.includes("54c") or gp.id.includes("810")
 		
 		// Controller axis
@@ -1210,52 +1247,37 @@ skipInit global unit input
 		let leftStickX = axes[0]
 		let leftStickY = axes[1]
 		
-		// Controller buttons
-		let buttons = (gp.buttons[ 0].pressed ?     1:0) // A
-		            + (gp.buttons[ 1].pressed ?     2:0) // B
-		            + (gp.buttons[ 2].pressed ?     4:0) // X
-		            + (gp.buttons[ 3].pressed ?     8:0) // Y
-		
-		            + (gp.buttons[ 4].pressed ?    16:0) // L1
-		            + (gp.buttons[ 5].pressed ?    32:0) // R1
-		            + (gp.buttons[ 6].pressed ?    64:0) // L2
-		            + (gp.buttons[ 7].pressed ?   128:0) // R2
+		// Controller buttons		
+		let buttons = (gp.buttons[ 0]?.pressed ?     1:0) // A
+					+ (gp.buttons[ 1]?.pressed ?     2:0) // B
+					+ (gp.buttons[ 2]?.pressed ?     4:0) // X
+					+ (gp.buttons[ 3]?.pressed ?     8:0) // Y
+					+ (gp.buttons[ 4]?.pressed ?    16:0) // L1
+					+ (gp.buttons[ 5]?.pressed ?    32:0) // R1
+					+ (gp.buttons[ 6]?.pressed ?    64:0) // L2
+					+ (gp.buttons[ 7]?.pressed ?   128:0) // R2
+					+ (gp.buttons[ 8]?.pressed ?   256:0) // Select
+					+ (gp.buttons[ 9]?.pressed ?   512:0) // Start
+					+ (gp.buttons[10]?.pressed ?  1024:0) // Left Stick Button
+					+ (gp.buttons[11]?.pressed ?  2048:0) // Right Stick Button
+					+ (gp.buttons[12]?.pressed ?  4096:0) // Up
+					+ (gp.buttons[13]?.pressed ?  8192:0) // Down	
+					+ (gp.buttons[14]?.pressed ? 16384:0) // Left
+					+ (gp.buttons[15]?.pressed ? 32768:0) // Right
 
-		            + (gp.buttons[ 8].pressed ?   256:0) // Select
-		            + (gp.buttons[ 9].pressed ?   512:0) // Start
-		
-		            + (gp.buttons[10].pressed ?  1024:0) // Left Stick Button
-		            + (gp.buttons[11].pressed ?  2048:0) // Right Stick Button
-
-		            + (gp.buttons[12].pressed ?  4096:0) // Up
-		            + (gp.buttons[13].pressed ?  8192:0) // Down	
-		            + (gp.buttons[14].pressed ? 16384:0) // Left
-		            + (gp.buttons[15].pressed ? 32768:0) // Right
-
-		            // + (isPlayStation          ? 16384:0)
-
+					// + (isPlayStation          ? 16384:0)
+					
 		// Write to event stream
-		let inputs = localUser.inputs
-		inputs.writeInt32 localUser.inputFrame
-		inputs.writeInt16 cast InputEventType.Gamepad
-		inputs.writeFloat32 math.abs(leftStickX) > Gamepad.deadZone ? leftStickX : 0
-		inputs.writeFloat32 math.abs(leftStickY) > Gamepad.deadZone ? leftStickY : 0
-		inputs.writeUnsignedInt16 buttons
+		writeGamepad internalUser, math.abs(leftStickX) > Gamepad.deadZone ? leftStickX : 0, math.abs(leftStickY) > Gamepad.deadZone ? leftStickY : 0, buttons
 
-	// A gamepad that vanishes mid-hold would leave the rewind key held forever: its per-frame
-	// records simply stop, so no release ever reaches the other clients and the whole room
-	// keeps rewinding. The local client owns its input stream, so it appends one neutral
-	// Gamepad record - every client (this one included) then releases deterministically when
-	// parsing it. Called from updateGamepads when no usable gamepad is connected; stops
-	// repeating as soon as the record has parsed and cleared the flag (the next frame)
-	private checkReleaseRewindKeyWithoutGamepad
-		if core.rewindKeyBit == 0 or not localPlayer or not localPlayer.holdingRewindKey then return
-		let inputs = localUser.inputs
-		inputs.writeInt32 localUser.inputFrame
+	// Appends a Gamepad record to the user's input stream
+	private writeGamepad: InternalUser internalUser, float leftStickX, float leftStickY, int buttons
+		let inputs = internalUser.inputs
+		inputs.writeInt32 internalUser.inputFrame
 		inputs.writeInt16 cast InputEventType.Gamepad
-		inputs.writeFloat32 0
-		inputs.writeFloat32 0
-		inputs.writeUnsignedInt16 0
+		inputs.writeFloat32 leftStickX
+		inputs.writeFloat32 leftStickY
+		inputs.writeUnsignedInt16 buttons
 
 	// Clears the events of the current step: the deprecated event lists of each user and the Modern Input events of each player
 	internal clearEvents
@@ -1369,7 +1391,7 @@ skipInit global unit input
 
 					// Gamepad records carry the rewind key's hold state absolutely, once per
 					// frame - a vanishing gamepad is released by the neutral record appended
-					// in checkReleaseRewindKeyWithoutGamepad
+					// in updateGamepad
 					if core.rewindKeyBit != 0 then player.holdingRewindKey = (buttons bitwiseAnd core.rewindKeyBit) != 0
 
 					c.A.isPressed	= (buttons bitwiseAnd 1) != 0
