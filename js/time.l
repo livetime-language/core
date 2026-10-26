@@ -98,7 +98,7 @@ js(Intl.DateTimeFormat) class DateTimeFormat
 		new Intl.DateTimeFormat(Loca.locale, options)
 
 	inline js string format: TimeString timeString
-		this.format(new Date(timeString))
+		this.format(new Date(timeString.replace(" ", "T")))
 
 	inline js string format: Date date
 		this.format(date)
@@ -210,6 +210,9 @@ struct float
 
 class string
 	implicit inline TimeString toTimeString() this
+	
+class Date
+	implicit inline js TimeString toTimeString() (this).toISOString().replace("T", " ")
 
 // A string representation of a date and time in the form PocketBase stores it, for example "2000-12-31 17:30:00.000Z":
 // ISO 8601 with a space instead of the "T". PocketBase keeps date fields as text in this form and binds a filter literal as a
@@ -223,6 +226,7 @@ string TimeString
 	static TimeString realtime => fromTime(Time.realtime)
 	
 	static inline js TimeString fromTime(float value) new Date(value).toISOString().replace("T", " ")
+	static inline js TimeString fromDate(Date value) (value).toISOString().replace("T", " ")
 	
 	inline js bool toBool => this
 	inline string toString() this
@@ -241,62 +245,62 @@ string TimeString
 	
 	// (31.12.)
 	inline string dayMonthString
-		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(new Date(this))
+		(dayMonthFormat?.locale == Loca.locale ? dayMonthFormat : (dayMonthFormat = {options:{day:twoDigit, month:twoDigit}})).format(this)
 	private static DateTimeFormat dayMonthFormat
 		
 	// (31.12.2000)
 	inline string dayMonthYearString
-		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(new Date(this))
+		(dayMonthYearFormat?.locale == Loca.locale ? dayMonthYearFormat : (dayMonthYearFormat = {options:{day:twoDigit, month:twoDigit, year:numeric}})).format(this)
 	private static DateTimeFormat dayMonthYearFormat
 		
 	// (31 December 2000)
 	inline string dayMonthNameYearString
-		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(new Date(this))
+		(dayMonthNameYearFormat?.locale == Loca.locale ? dayMonthNameYearFormat : (dayMonthNameYearFormat = {options:{day:numeric, month:long, year:numeric}})).format(this)
 	private static DateTimeFormat dayMonthNameYearFormat
 		
 	// (31 Dec)
 	inline string dayShortMonthNameString
-		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(new Date(this))
+		(dayShortMonthNameFormat?.locale == Loca.locale ? dayShortMonthNameFormat : (dayShortMonthNameFormat = {options:{day:numeric, month:short}})).format(this)
 	private static DateTimeFormat dayShortMonthNameFormat
 
 	// (31 Dec 00)
 	inline string dayShortMonthNameShortYearString
-		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(new Date(this))
+		(dayShortMonthNameShortYearFormat?.locale == Loca.locale ? dayShortMonthNameShortYearFormat : (dayShortMonthNameShortYearFormat = {options:{day:numeric, month:short, year:twoDigit}})).format(this)
 	private static DateTimeFormat dayShortMonthNameShortYearFormat
 		
 	// (Thursday, 31 December 2000)
 	inline string dayOfWeekDayMonthNameYearString
-		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(new Date(this))
+		(dayOfWeekDayMonthNameYearFormat?.locale == Loca.locale ? dayOfWeekDayMonthNameYearFormat : (dayOfWeekDayMonthNameYearFormat = {options:{weekday:long, day:numeric, month:long, year:numeric}})).format(this)
 	private static DateTimeFormat dayOfWeekDayMonthNameYearFormat
 		
 	// (Monday, December 31)
 	inline string dayOfWeekDayMonthString
-		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(new Date(this))
+		(dayOfWeekDayMonthFormat?.locale == Loca.locale ? dayOfWeekDayMonthFormat : (dayOfWeekDayMonthFormat = {options:{weekday:long, month:long, day:numeric}})).format(this)
 	private static DateTimeFormat dayOfWeekDayMonthFormat
 		
 	// (Monday)
 	inline string dayOfWeekString
-		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(new Date(this))
+		(dayOfWeekFormat?.locale == Loca.locale ? dayOfWeekFormat : (dayOfWeekFormat = {options:{weekday:long}})).format(this)
 	private static DateTimeFormat dayOfWeekFormat
 		
 	// (Mon)
 	inline string dayOfWeekShortString
-		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(new Date(this))
+		(dayOfWeekShortFormat?.locale == Loca.locale ? dayOfWeekShortFormat : (dayOfWeekShortFormat = {options:{weekday:short}})).format(this)
 	private static DateTimeFormat dayOfWeekShortFormat
 		
 	// (12:59 pm)
 	inline string hourMinuteString
-		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(new Date(this))
+		(hourMinuteFormat?.locale == Loca.locale ? hourMinuteFormat : (hourMinuteFormat = {options:{hour:numeric, minute:twoDigit}})).format(this)
 	private static DateTimeFormat hourMinuteFormat
 		
 	// (Monday, December 31 at 12:59 pm)
 	inline string dayOfWeekDayMonthAtHourMinuteString
-		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
+		(dayOfWeekDayMonthAtHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthAtHourMinuteFormat : (dayOfWeekDayMonthAtHourMinuteFormat = {options:{weekday:long, month:long, day:numeric, hour:numeric, minute:twoDigit}})).format(this)
 	private static DateTimeFormat dayOfWeekDayMonthAtHourMinuteFormat
 		
 	// (Monday, 31 December 2000, 12:59 pm)
 	inline string dayOfWeekDayMonthYearHourMinuteString
-		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(new Date(this))
+		(dayOfWeekDayMonthYearHourMinuteFormat?.locale == Loca.locale ? dayOfWeekDayMonthYearHourMinuteFormat : (dayOfWeekDayMonthYearHourMinuteFormat = {options:{weekday:long, day:numeric, month:long, year:numeric, hour:numeric, minute:twoDigit}})).format(this)
 	private static DateTimeFormat dayOfWeekDayMonthYearHourMinuteFormat
 	
 // Represents a point in time using the JavaScript Date class.
