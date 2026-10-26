@@ -287,7 +287,10 @@ DatabaseTable<T>
 		else
 			if not dynamicItem.id then dynamicItem.id = backend.newId
 			backend.pocketbaseOrBatch.collection(this.name).create(item)
-		items.ensure item
+			
+		dynamic[] dynamicList = items
+		if dynamicList.none.id == dynamicItem.id
+			items.add item
 
 	// If the item has a valid id member variable, update the item, otherwise add it to the database table
 	importance:3
@@ -466,7 +469,7 @@ DatabaseTable<T>
 		backend.pocketbase.collection(this.name).subscribe("*", e => {
 			console.log("subscribe", e.action, e.record);
 			if(e.action == "create") {
-				this.items.push(e.record);
+					this.items.push(e.record);
 			} else if(e.action == "update") {
 				let item = this.items.find(i => i.id == e.record.id);
 				if(item) {
