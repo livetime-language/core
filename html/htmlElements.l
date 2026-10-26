@@ -602,7 +602,9 @@ global static class html
 	global void editableFloat: Reference<float> model	// The variable that holds the value. This will be updated when the user changed the text
 							   int minFractionDigits = 0	// Min fraction digits to display
 							   int maxFractionDigits = 2	// Max fraction digits to display
+bool showZero = true	// If false, the field will be empty if the model is zero
 							   void(float value) onChanged = null	// Called after the model changed
+void(float value) onEnter = null	// Called when the user presses enter
 							   void() onClick = null	// Called when the float is clicked
 							   int tabIndex = -1	// Focus input if focusTabIndex == tabIndex
 							   bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
@@ -615,9 +617,8 @@ global static class html
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, focusInitially, location
 		if element.style.outline.toString() == "" then element.style.outline = none
-		string text = model.value ? model.value.format(minFractionDigits, maxFractionDigits) : ""
-		if text != element.innerHTML then element.innerText = text
-		element.onclick = onClick
+		if html.activeElement != element then element.innerText = model.value != 0 or showZero ? model.value.format(minFractionDigits, maxFractionDigits) : ""
+				element.onclick = onClick
 		if editable
 			element.contentEditable = "plaintext-only"
 			// Number keyboard on mobile, whose decimal separator is a comma in some locales. Its action key sends Enter
@@ -627,7 +628,8 @@ global static class html
 			let prevModel = model.value
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText.replaceAll(",", ".").toFloat or 0; onChanged(model.value); changeHandler; refresh
-			element.onblur = model = element.innerText.replaceAll(",", ".").toFloat or 0; element.innerText = model.value.format(minFractionDigits, maxFractionDigits); if model.value != prevModel then onChanged(model.value); changeHandler; refresh
+			element.onblur = model = element.innerText.replaceAll(",", ".").toFloat or 0; element.innerText = model.value != 0 or showZero ? model.value.format(minFractionDigits, maxFractionDigits) : ""; if model.value != prevModel then onChanged(model.value); changeHandler; refresh
+element.onkeydown = if ev.keyCode == 13 then ev.preventDefault(); element.blur(); if onEnter != null then onEnter(model.value)
 		else
 			element.contentEditable = "false"
 			element.oninput = null
