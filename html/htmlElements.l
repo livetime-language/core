@@ -545,11 +545,17 @@ global static class html
 		                             dynamic data = {}                          // The data attributes of the element
 		                             bool editable = true
 									 bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
+									 bool selectOnFocus = false                 // Select all text when the element gets focus, so typing replaces it
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div text:model, attributes, style, data, focusInitially, location
-		if element.style.outline.toString() == "" then element.style.outline = none		
+		if element.style.outline.toString() == "" then element.style.outline = none
 		// if model != element.innerText then element.innerText = model
+		if selectOnFocus
+			// A click places the cursor after the focus event, so the click that focused the element selects again
+			element.onfocus = element.selectContents; attributes.onFocus(.)
+			element.onpointerdown = element.focusedBeforeClick = html.activeElement == element
+			element.onclick = if not element.focusedBeforeClick then element.selectContents
 		if editable
 			element.contentEditable = "plaintext-only"
 			let prevModel = model
@@ -578,12 +584,17 @@ global static class html
 		                             dynamic data = {}                          // The data attributes of the element
 		                             bool editable = true
 		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
+		                             bool selectOnFocus = true                  // Select all text when the element gets focus, so typing replaces it
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
-		if element.style.outline.toString() == "" then element.style.outline = none		
+		if element.style.outline.toString() == "" then element.style.outline = none
 		if model != element.innerText then element.innerText = model
-		element.onclick = onClick
+		element.onclick = onClick(); if selectOnFocus and not element.focusedBeforeClick then element.selectContents
+		if selectOnFocus
+			// A click places the cursor after the focus event, so the click that focused the element selects again
+			element.onfocus = element.selectContents; attributes.onFocus(.)
+			element.onpointerdown = element.focusedBeforeClick = html.activeElement == element
 		if editable
 			element.contentEditable = "plaintext-only"
 			let prevModel = model
@@ -614,12 +625,17 @@ global static class html
 							   dynamic data = {}	// The data attributes of the element
 							   bool editable = true	// Can the float be edited?
 							   bool updateWithEveryKeystroke = false	// Should onChange be called with every keystroke?
+							   bool selectOnFocus = true	// Select all text when the element gets focus, so typing replaces it
 							   SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, focusInitially, location
 		if element.style.outline.toString() == "" then element.style.outline = none
 		if html.activeElement != element then element.innerText = model.value != 0 or showZero ? model.value.format(minFractionDigits, maxFractionDigits) : ""
-		element.onclick = onClick
+		element.onclick = onClick(); if selectOnFocus and not element.focusedBeforeClick then element.selectContents
+		if selectOnFocus
+			// A click places the cursor after the focus event, so the click that focused the element selects again
+			element.onfocus = element.selectContents; attributes.onFocus(.)
+			element.onpointerdown = element.focusedBeforeClick = html.activeElement == element
 		if editable
 			element.contentEditable = "plaintext-only"
 			// Number keyboard on mobile, whose decimal separator is a comma in some locales. Its action key sends Enter
