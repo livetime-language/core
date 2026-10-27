@@ -24,7 +24,7 @@ enum SendInputsMode: None, Peer, Server
 // prediction - predicted entries are discarded on a rollback below them, exactly like the
 // predicted world state itself (see core.cleanupSpeculativeRewindEntries)
 internal transient RewindEntry
-	Buffer bytes = {}
+	BinaryBuffer bytes = {}
 	int captureFrame
 
 internal transient skipInit unit core
@@ -950,12 +950,12 @@ internal transient skipInit unit core
 	js void appTick() if(app.tick) app.tick();
 	js string appDebugString() (app.debugString || "")
 		
-	private Buffer snapshot = {}
-	private Buffer secondSnapshotForTesting = {}
+	private BinaryBuffer snapshot = {}
+	private BinaryBuffer secondSnapshotForTesting = {}
 	internal int snapshotFrame = -1 // The pinned snapshot's frame: the only valid rewind root (read by input.removeUserDeterministically's fork check)
 	private int nextSnapshotFrame = -1
 	
-	private Buffer[] milestones
+	private BinaryBuffer[] milestones
 
 	// --- Shared rewind (system.rewindInput) ---------------------------------------------------
 	// While any player holds system.rewindInput, every client steps the world state BACKWARD
@@ -1410,7 +1410,7 @@ internal transient skipInit unit core
 		else
 			replay rewindFrame to replayToFrame
 
-	private rewind: Buffer snapshot
+	private rewind: BinaryBuffer snapshot
 		restoreTime = PlainDate.measure
 			snapshot.rewind
 			Snapshot.deserialize snapshot
@@ -1452,7 +1452,7 @@ internal transient skipInit unit core
 		// only frames whose inputs are final are ever stepped
 		if not system.enableRollback then return
 		if enabledMilestones and input.isCertain and frame > 0 and frame mod milestoneInterval == 0
-			Buffer buffer = {}
+			BinaryBuffer buffer = {}
 			saveState buffer
 			int milestoneIndex = math.floor(frame / milestoneInterval) - 1
 			milestones[milestoneIndex] = buffer
@@ -1484,7 +1484,7 @@ internal transient skipInit unit core
 			
 	string[] serializeLogs
 			
-	private saveState: Buffer snapshot
+	private saveState: BinaryBuffer snapshot
 		snapshot.reset
 		saveTime = PlainDate.measure
 			Snapshot.serialize snapshot
@@ -1545,8 +1545,8 @@ internal transient skipInit unit core
 	adjustStartTimeIfNeeded
 		if system.playMode < Play then adjustStartTime
 			
-	Buffer snapshotBuffer = {}
-	Buffer eventStreamSnapshotBuffer = {}
+	BinaryBuffer snapshotBuffer = {}
+	BinaryBuffer eventStreamSnapshotBuffer = {}
 		
 	saveEventStreamAndLogs
 		if input.isCertain
@@ -1559,7 +1559,7 @@ internal transient skipInit unit core
 		file.saveText "{input.localUser.id} {system.appName} {Date.realtime.isoString} v{system.buildVersion}.csv", logs
 			
 	saveEventStream
-		Buffer buffer = {}
+		BinaryBuffer buffer = {}
 		buffer.writeInt eventStreamVersion
 
 		eventStreamSnapshotBuffer.reset
@@ -1751,7 +1751,7 @@ internal transient skipInit unit core
 			return
 		file.openBinary
 			int version = buffer.readInt
-			Buffer finalSnapshot = {}
+			BinaryBuffer finalSnapshot = {}
 			buffer.readBuffer finalSnapshot
 			input.handleSetState finalSnapshot
 						
@@ -1762,7 +1762,7 @@ internal transient skipInit unit core
 			int version = buffer.readInt
 			
 			if version >= 2
-				Buffer finalSnapshot = {}
+				BinaryBuffer finalSnapshot = {}
 				buffer.readBuffer finalSnapshot
 			
 			int targetFrame = buffer.readInt
@@ -1785,7 +1785,7 @@ internal transient skipInit unit core
 				milestones.clear
 				let milestoneCount = buffer.readInt
 				for milestoneCount
-					Buffer milestone = {}
+					BinaryBuffer milestone = {}
 					buffer.readBuffer milestone
 					milestones.add milestone
 				
@@ -2036,45 +2036,45 @@ internal transient unit Snapshot
 	int autoSaveCount
 	int lastSnapshotSize
 	
-	Buffer snapshots = {}
+	BinaryBuffer snapshots = {}
 	int[] snapshotStarts
 	int snapshotEvery = 100
 	
 	private bool autoSaveAtEndOfStep
 	
-	inline js string serialize(Buffer buffer) serialize_internal(buffer)
-	inline js void deserializeGraph(Buffer buffer) deserialize_internal(buffer)
+	inline js string serialize(BinaryBuffer buffer) serialize_internal(buffer)
+	inline js void deserializeGraph(BinaryBuffer buffer) deserialize_internal(buffer)
 
 	// Every restore also re-derives the transient state that points into the restored graph (see input.onRestore)
-	deserialize: Buffer buffer
+	deserialize: BinaryBuffer buffer
 		deserializeGraph buffer
 		input.onRestore
 	inline js string serializeLog() _serializeLog
 		
 	js string toString: object value
-		let buffer = new Buffer(null, 1024, 0, 0);
+		let buffer = new BinaryBuffer(null, 1024, 0, 0);
 		setup_serialize();
 		value.serialize_external(buffer);
 		return btoa(String.fromCharCode(...new Uint8Array(buffer.buffer, 0, buffer.writePos)));	
 		
 	js void fromString: object value, string base64String
 		let bytes = Uint8Array.from(atob(base64String), c => c.charCodeAt(0))
-		let buffer = new Buffer(bytes.buffer,0,0,0);
+		let buffer = new BinaryBuffer(bytes.buffer,0,0,0);
 		setup_deserialize();
 		value.deserialize_external(buffer);
 		
 	js void fromBase64: object value, string base64String
 		let bytes = Uint8Array.from(atob(base64String), c => c.charCodeAt(0))
-		let buffer = new Buffer(bytes.buffer,0,0,0);
+		let buffer = new BinaryBuffer(bytes.buffer,0,0,0);
 		setup_deserialize();
 		value.deserialize_internal(buffer);
 				
-	Buffer save
-		Buffer buffer = {}
+	BinaryBuffer save
+		BinaryBuffer buffer = {}
 		serialize(buffer)
 		return buffer
 		
-	restore: Buffer buffer
+	restore: BinaryBuffer buffer
 		deserialize(buffer)
 		
 	autoSave() autoSaveAtEndOfStep = true

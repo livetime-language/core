@@ -153,7 +153,7 @@ unit file
 		element.click();
 		document.body.removeChild(element);
 		
-	js void saveBinary: string filename, Buffer buffer
+	js void saveBinary: string filename, BinaryBuffer buffer
 		if(!core.isPremiere) return
 		var binary = "";
 		var bytes = new Uint8Array(buffer.buffer);
@@ -172,7 +172,7 @@ unit file
 		element.click();
 		document.body.removeChild(element);
 		
-	js void openBinary: void(Buffer buffer) then, void(string error) else = null
+	js void openBinary: void(BinaryBuffer buffer) then, void(string error) else = null
 		fileInput = document.createElement("input")
 		fileInput.type = "file"
 		fileInput.style.display = "none"
@@ -184,7 +184,7 @@ unit file
 			}
 			var reader = new FileReader();
 			reader.onload = function(e) {
-				let buffer = new Buffer(e.target.result, 0, 0, 0);
+				let buffer = new BinaryBuffer(e.target.result, 0, 0, 0);
 				document.body.removeChild(fileInput);
 				then(buffer);
 			}
@@ -415,7 +415,7 @@ internal transient skipInit unit IndexedDB
 			else?.()
 		}
 				
-	js void openBuffer: string storeName, string id, void(Buffer buffer) then, void() else = null
+	js void openBuffer: string storeName, string id, void(BinaryBuffer buffer) then, void() else = null
 		try {
 			let trans = IndexedDB.db.transaction(storeName, "readonly")
 			let req = trans.objectStore(IndexedDB.storeName).get(id)
@@ -423,7 +423,7 @@ internal transient skipInit unit IndexedDB
 				let result = req.result
 				if(result) {
 					let arrayBuffer = await result.data.arrayBuffer()
-					let buffer = new Buffer(arrayBuffer, 0, 0, 0)
+					let buffer = new BinaryBuffer(arrayBuffer, 0, 0, 0)
 					then(buffer)
 				} @else {
 					else?.()
@@ -453,7 +453,7 @@ internal transient skipInit unit IndexedDB
 			else?.()
 		}
 		
-	js void saveBuffer: string storeName, string id, Buffer buffer, void() then = null, void() else = null
+	js void saveBuffer: string storeName, string id, BinaryBuffer buffer, void() then = null, void() else = null
 		try {
 			let trans = IndexedDB.db.transaction(storeName, "readwrite")
 			trans.onerror = e => {

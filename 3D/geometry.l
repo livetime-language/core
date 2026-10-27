@@ -1538,11 +1538,11 @@ struct Vector2
 	cross: Vector2 value // The value to calculate the cross procut with
 		return x*value.y - y*value.x
 		
-	serialize: Buffer buffer
+	serialize: BinaryBuffer buffer
 		buffer.writeFloat64(x)
 		buffer.writeFloat64(y)
 		
-	deserialize: Buffer buffer
+	deserialize: BinaryBuffer buffer
 		x = buffer.readFloat64
 		y = buffer.readFloat64
 				

@@ -255,7 +255,7 @@ unit websocket
 		                          void() onStart
 		                          void(Connection connection) onOpen
 		                          void(Connection connection, int errorCode) onClose
-		                          void(Connection connection, Buffer buffer) onMessage = null
+		                          void(Connection connection, BinaryBuffer buffer) onMessage = null
 		                          void(Connection connection, string message) onStringMessage = null
 		const uWS = require('uWebSockets.js')
 		const app =  process.platform == "win32" || process.platform == "darwin" || !keyPath || !certPath ? uWS.App() :
@@ -273,7 +273,7 @@ unit websocket
 			},
 			message: (ws, message, isBinary) => {
 				if (isBinary) {
-					onMessage(ws, new Buffer(message, 0, 0, 0))
+					onMessage(ws, new BinaryBuffer(message, 0, 0, 0))
 				}
 				else {
 					onStringMessage(ws, new TextDecoder("utf-8").decode(message));
@@ -312,7 +312,7 @@ class WebsocketHttpResponse
 		this.end()
 		
 class Connection
-	inline js bool send(Buffer buffer) this.send(buffer.toByteArray(), /*isBinary*/true, /*compress*/false)
+	inline js bool send(BinaryBuffer buffer) this.send(buffer.toByteArray(), /*isBinary*/true, /*compress*/false)
 	inline js bool sendJson(dynamic data) this.send(new TextEncoder("utf-8").encode(JSON.stringify(data)))
 	inline js int bufferedAmount() this.getBufferedAmount()
 	inline js object data => this.data

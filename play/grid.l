@@ -153,11 +153,11 @@ global transient skipInit unit system
 		for(let _size=subject.size, _y=0, _items=subject.items; _y<_size.y; ++_y) for(let _x=0; _x<_size.x; ++_x) do(_items[_y*_size.x + _x], new IntVector2(_x,_y), _y*_size.x + _x)
 		
 struct Vector2
-	serialize: Buffer buffer
+	serialize: BinaryBuffer buffer
 		buffer.writeFloat64(x)
 		buffer.writeFloat64(y)
 		
-	deserialize: Buffer buffer
+	deserialize: BinaryBuffer buffer
 		x = buffer.readFloat64
 		y = buffer.readFloat64
 	

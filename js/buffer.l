@@ -1,4 +1,4 @@
-internal transient class Buffer
+internal transient class BinaryBuffer
 	js void writeInt: int value
 		if(value <= -2147483647 || value >= 2147483647)
 			throw new Error("Value out of integer range: "+value)
@@ -173,7 +173,7 @@ internal transient class Buffer
 			this.expandBuffer(this.writePos+maxSize+4)
 			
 		var array = new Uint8Array(this.buffer, this.writePos+4, maxSize)
-		var result = Buffer.textEncoder.encodeInto(value, array)
+		var result = BinaryBuffer.textEncoder.encodeInto(value, array)
 		var size = result.written
 		this.dataView.setInt32(this.writePos, size)
 		this.writePos += size + 4
@@ -183,7 +183,7 @@ internal transient class Buffer
 		this.readPos += 4
 		var array = new Uint8Array(this.buffer, this.readPos, size)
 		this.readPos += size
-		return Buffer.textDecoder.decode(array)
+		return BinaryBuffer.textDecoder.decode(array)
 			
 	inline js void setInt16: int index, int value
 		this.dataView.setInt16(index, value)
@@ -257,10 +257,10 @@ internal transient class Buffer
 		this.dataView.setInt8(this.writePos, value ? 1 : 0)
 		this.writePos += 1
 		
-	void writeBuffer: Buffer source
+	void writeBuffer: BinaryBuffer source
 		writeBuffer source, 0, source.writePos
 	
-	js void writeBuffer: Buffer source
+	js void writeBuffer: BinaryBuffer source
 		                 int start
 		                 int length
 		// Expand if neccessary
@@ -287,7 +287,7 @@ internal transient class Buffer
 		this.bytes.set(new Uint8Array(sourceArrayBuffer), this.writePos)
 		this.writePos += length
 		
-	js void copyFromBuffer: Buffer source
+	js void copyFromBuffer: BinaryBuffer source
 		let length = source.writePos
 		
 		// Expand if neccessary
@@ -298,7 +298,7 @@ internal transient class Buffer
 		this.bytes.set(source.bytes.subarray(0, length), this.writePos)
 		this.writePos += length
 		
-	js void set: Buffer source
+	js void set: BinaryBuffer source
 		let length = source.writePos
 		
 		// Expand if neccessary
@@ -349,7 +349,7 @@ internal transient class Buffer
 		
 	// Compares the length-prefixed chunk at the current readPos with `other` at otherStart,
 	// over the overlap below other.writePos. Peeks only: readPos is left unchanged
-	js bool chunkMatches: Buffer other
+	js bool chunkMatches: BinaryBuffer other
 		                  int otherStart = 0
 		let savedReadPos = this.readPos
 		let length = this.readInt()
@@ -365,7 +365,7 @@ internal transient class Buffer
 		this.readPos = savedReadPos
 		return matches
 
-	js int readBuffer: Buffer writeBuffer
+	js int readBuffer: BinaryBuffer writeBuffer
 		               int writeStart = 0
 		// Read length
 		let length = this.readInt()
@@ -401,7 +401,7 @@ internal transient class Buffer
 	init
 		setupTextEncoder
 	
-	Buffer: object buffer = null
+	BinaryBuffer: object buffer = null
 		    int size = 1024
 		setup(size)
 		
@@ -412,8 +412,8 @@ internal transient class Buffer
 		this.bytes = new Uint8Array(this.buffer)
 		
 	private static js void setupTextEncoder
-		Buffer.textEncoder = new TextEncoder
-		Buffer.textDecoder = new TextDecoder
+		BinaryBuffer.textEncoder = new TextEncoder
+		BinaryBuffer.textDecoder = new TextDecoder
 		
 	canRead => readPos < writePos
 	
@@ -440,7 +440,7 @@ internal transient class Buffer
 		this.bytes = newBytes
 		this.dataView = new DataView(newBuffer)
 		
-	js bool == Buffer value
+	js bool == BinaryBuffer value
 		let length = this.writePos
 		if(length != value.writePos) return false;
 		// Compare 4 bytes at a time (both buffers start word-aligned), then the byte tail
@@ -455,7 +455,7 @@ internal transient class Buffer
 		}
 		return true;
 		
-	js bool != Buffer value
+	js bool != BinaryBuffer value
 		let length = this.writePos
 		if(length != value.writePos) return true;
 		let words = length >> 2
