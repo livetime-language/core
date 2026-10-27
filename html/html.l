@@ -55,12 +55,14 @@ dynamic HTMLElement
 	string key
 	bool used
 	bool scrolledIntoView
+	bool focusedBeforeClick
 		
 	inline js HTMLElement remove() this.remove()
 	inline js void appendChild(HTMLElement element) this.appendChild(element)
 	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode)
 	inline js void setSelectionRange(int from, int to) this.setSelectionRange(from, to)
 	inline js void select() this.select()
+	inline js void selectContents() getSelection().selectAllChildren(this)
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
 	inline js void focus() this.focus()
 	inline js void blur() this.blur()
