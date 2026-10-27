@@ -12,7 +12,7 @@ internal transient class InternalUser
 	int inputFrame = -1         // We received all inputs from this player up to and including this frame (their claim)
 	int receivedMyInputsUpToPos // We received all inputs from this player up to this pos
 	int[] lastTouchMoveIndex
-	Buffer inputs = {}          // The stream of inputs of this user
+	BinaryBuffer inputs = {}          // The stream of inputs of this user
 	int storedInputsUpTo        // This user's stream is persisted to IndexedDB up to this pos (see core.storeInputsToDB)
 	int storedClaim = -1        // The claim persisted in this user's IndexedDB meta row (see core.storeInputsToDB)
 	int sentInputsUpToPos       // Local user only: our stream bytes below this pos may already be on the wire and must never be mutated in place (see the TouchMove patch guard in input.handleTouchEvent)
@@ -1058,7 +1058,7 @@ skipInit global unit input
 
 		return readPos
 
-	internal handleSetState: Buffer buffer
+	internal handleSetState: BinaryBuffer buffer
 		let inputs = localUser.inputs
 		inputs.writeInt32 localUser.inputFrame
 		inputs.writeUnsignedInt16 cast InputEventType.SetState

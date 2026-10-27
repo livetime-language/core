@@ -60,7 +60,7 @@ internal transient skipInit unit ServerNetwork
 	// start time from a client's stored value or its measured elapsed - at most seconds off
 	const float roomClockResetMillis = 10000
 	private object socket
-	private Buffer sendBuffer = {}
+	private BinaryBuffer sendBuffer = {}
 	int nextConnectionId = 1
 	bool connected
 	bool joined              // We received a JoinResponse over the current or an earlier connection
@@ -175,7 +175,7 @@ internal transient skipInit unit ServerNetwork
 			ServerNetwork.connected = false;
 		}
 		ServerNetwork.socket.onmessage = ev => {
-			ServerNetwork.onMessageFromServer(new Buffer(ev.data, 0, 0, 0));
+			ServerNetwork.onMessageFromServer(new BinaryBuffer(ev.data, 0, 0, 0));
 		}
 
 	// The hostname of the signaling server that accepted us - the TURN server lives on the same machine
@@ -206,7 +206,7 @@ internal transient skipInit unit ServerNetwork
 	js int bufferedAmount
 		return ServerNetwork.socket ? ServerNetwork.socket.bufferedAmount : 0
 
-	private js int send: Buffer buffer
+	private js int send: BinaryBuffer buffer
 		try {
 			if(!ServerNetwork.socket || ServerNetwork.socket.readyState != 1) return 0
 			let data = buffer.toByteArray()
@@ -217,7 +217,7 @@ internal transient skipInit unit ServerNetwork
 			return 0
 		}
 
-	private onMessageFromServer: Buffer buffer
+	private onMessageFromServer: BinaryBuffer buffer
 		try
 			int typeValue = buffer.readInt8
 			if typeValue == cast ServerMessageType.JoinResponse	then onJoinResponse buffer; else
@@ -273,7 +273,7 @@ internal transient skipInit unit ServerNetwork
 	// player rejoins on the current build without doing anything themselves
 	private bool versionReloadPending
 
-	private onProtocolMismatch: Buffer buffer
+	private onProtocolMismatch: BinaryBuffer buffer
 		int serverProtocol = buffer.readInt16
 		core.log "#server Join refused: we speak protocol {protocolVersion}, the server speaks {serverProtocol} -> reloading to fetch the current build"
 		// The Join resend loop keeps firing until the reload happens - count the reload only once
@@ -306,14 +306,14 @@ internal transient skipInit unit ServerNetwork
 	// held it, and that player returned with recovery info proving prior ownership (see the
 	// provisional arbitration in server/hub.go handleJoin). Our identity is void - wipe it and
 	// rejoin as a brand-new player, exactly like a peer-level removal notice
-	private onIdentityReassigned: Buffer buffer
+	private onIdentityReassigned: BinaryBuffer buffer
 		int reassignedId = buffer.readInt32
 		core.log "#server Our user id {reassignedId} was reassigned to its original owner -> rejoining as a new player"
 		PeerNetwork.onRemovedNotice
 
 	bool alreadyJoinedBefore
 
-	private onJoinResponse: Buffer buffer
+	private onJoinResponse: BinaryBuffer buffer
 		try
 			// Read the fields in the exact order the server writes them in server/main.go
 			int roomId = cast buffer.readFloat64
@@ -507,7 +507,7 @@ internal transient skipInit unit ServerNetwork
 	// Accepted pongs in a row whose start-time estimate was far off core.startTime (clock-step suspicion)
 	private int driftedPongs
 
-	private onPong: Buffer buffer
+	private onPong: BinaryBuffer buffer
 		float now = core.currentTime
 		float timeSinceStart = buffer.readFloat64
 		float pingTime = buffer.readFloat64
@@ -564,7 +564,7 @@ internal transient skipInit unit ServerNetwork
 
 	// Wrap a peer message so the server forwards it to the receiver - the fallback transport
 	// whenever the data channel to that peer is not open
-	relay: int receiverId, Buffer message
+	relay: int receiverId, BinaryBuffer message
 		if not connected then return
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast ServerMessageType.Relay
@@ -572,7 +572,7 @@ internal transient skipInit unit ServerNetwork
 		sendBuffer.copyFromBuffer message
 		send sendBuffer
 
-	private onRelay: Buffer buffer
+	private onRelay: BinaryBuffer buffer
 		let senderId = buffer.readInt32
 		if senderId == input.localUser.id then return
 		let sender = getOrCreateUser senderId
@@ -590,7 +590,7 @@ internal transient skipInit unit PeerNetwork
 	private object mediaSetupPromise
 	private bool mediaSetupTimedOut // The media setup outlived its timeout; peer connections no longer wait for it (see whenLocalMediaSettled)
 	private bool retryingMedia
-	Buffer sendBuffer = {}
+	BinaryBuffer sendBuffer = {}
 
 	// TURN credentials for the embedded TURN server in the Go executable. The server mints an
 	// ephemeral, expiring pair into every JoinResponse (see server/turnauth.go) and rejoins
@@ -951,7 +951,7 @@ internal transient skipInit unit PeerNetwork
 	// Deterministic arbitration instead: the side with more living users wins, ties go to the side
 	// with the lowest living user id (then to the lower sender id) - both sides compute the same
 	// winner from the same numbers, so exactly one side complies and rejoins fresh
-	private onRemovedMessage: InternalUser sender, Buffer buffer
+	private onRemovedMessage: InternalUser sender, BinaryBuffer buffer
 		int senderLivingCount = buffer.readInt
 		int senderLowestLivingId = buffer.readInt
 		if sender.removed and input.localUser
@@ -1326,7 +1326,7 @@ internal transient skipInit unit PeerNetwork
 		}
 		dataChannel.onmessage = e => {
 			user.lastIncomingChannelTime = user.lastChannelMessageTime = Math.round(performance.timeOrigin + performance.now());
-			PeerNetwork.onPeerMessage(user, new Buffer(e.data, 0, 0, 0), false);
+			PeerNetwork.onPeerMessage(user, new BinaryBuffer(e.data, 0, 0, 0), false);
 		}
 
 	onConnected: InternalUser user
@@ -1536,7 +1536,7 @@ internal transient skipInit unit PeerNetwork
 	// Send a peer message: over the data channel when it is open, otherwise wrapped in a server
 	// Relay. Every peer message works on both transports, so signaling outages and P2P outages
 	// mask each other - only when both are down at the same time is the peer unreachable
-	private int send: InternalUser user, Buffer buffer
+	private int send: InternalUser user, BinaryBuffer buffer
 		if hasOpenChannel user
 			int sentBytes = sendOnChannel user, buffer
 			// An "open" channel can be silently dead (a dying router or NAT eats the packets but
@@ -1557,7 +1557,7 @@ internal transient skipInit unit PeerNetwork
 		let now = core.currentTime
 		return now > user.lastChannelMessageTime + channelSuspectMillis or now > user.lastAckProgressTime + channelSuspectMillis
 
-	private js int sendOnChannel: InternalUser user, Buffer buffer
+	private js int sendOnChannel: InternalUser user, BinaryBuffer buffer
 		try {
 			let data = buffer.toByteArray()
 			let channel = user.dataChannels[0]
@@ -1571,13 +1571,13 @@ internal transient skipInit unit PeerNetwork
 
 	// A crashing handler must never take down the message pump, and the exception must reach the
 	// saved logs (uncaught exceptions in data channel callbacks only reach the browser console)
-	internal onPeerMessage: InternalUser user, Buffer buffer, bool viaServer
+	internal onPeerMessage: InternalUser user, BinaryBuffer buffer, bool viaServer
 		try
 			handlePeerMessage user, buffer, viaServer
 		catch
 			core.log "#error <{user.id}> Failed to handle peer message via {viaServer ? "server relay" : "data channel"} ({buffer.writePos} bytes): {error.stack}"
 
-	private handlePeerMessage: InternalUser user, Buffer buffer, bool viaServer
+	private handlePeerMessage: InternalUser user, BinaryBuffer buffer, bool viaServer
 		user.lastIncomingMessageTime = core.currentTime
 		// Only a data channel message proves the P2P link. A relayed message must not reset the
 		// channel-silence counter: the answerer takeover (see tick) exists exactly for a peer that
@@ -1697,7 +1697,7 @@ internal transient skipInit unit PeerNetwork
 
 			if core.verbose and length > 0 then core.log "[{claim}] <{receiver.id}> #send -->> sending {length} bytes, from {startPos} to {startPos + length} of {inputs.writePos}{viaChannel ? "" : " via server"}"
 
-	private onTick: InternalUser sender, Buffer buffer
+	private onTick: InternalUser sender, BinaryBuffer buffer
 		let epoch = buffer.readInt                          // The epoch of the sender's stream, changes when the sender restarts with a fresh session
 		let epochStartPos = buffer.readInt                  // The sender's bytes below this pos are history restored from before this epoch
 		let claim = buffer.readInt                          // The sender sent inputs up to and including this frame
@@ -1877,7 +1877,7 @@ internal transient skipInit unit PeerNetwork
 	// A peer asks for a user's input stream as we stored it, starting at fromPos.
 	// The answer always reports the total length and the claim, even when there are no new bytes,
 	// so the requester learns how much exists. Rate-limited per requesting peer
-	private onStreamRequest: InternalUser requester, Buffer buffer
+	private onStreamRequest: InternalUser requester, BinaryBuffer buffer
 		int streamUserId = buffer.readInt
 		int fromPos = buffer.readInt
 
@@ -1928,7 +1928,7 @@ internal transient skipInit unit PeerNetwork
 		if streamUser and streamUser.local and streamUser.sentInputsUpToPos < fromPos + length
 			streamUser.sentInputsUpToPos = fromPos + length
 
-	private onStreamData: InternalUser peer, Buffer buffer
+	private onStreamData: InternalUser peer, BinaryBuffer buffer
 		int streamUserId = buffer.readInt
 		int totalLength = buffer.readInt
 		int claim = buffer.readInt
@@ -2122,7 +2122,7 @@ internal transient skipInit unit PeerNetwork
 	// Bytes are append-only: we may only adopt a longer history while our stream is still exactly
 	// the restored prefix - once we appended our own new inputs, nothing below writePos may change
 	// any more (our snapshots and the other peers already reference it)
-	private onOwnHistory: InternalUser peer, Buffer buffer, int totalLength, int claim, int startPos
+	private onOwnHistory: InternalUser peer, BinaryBuffer buffer, int totalLength, int claim, int startPos
 		let savedReadPos = buffer.readPos
 		let length = buffer.readInt
 		buffer.readPos = savedReadPos
@@ -2190,14 +2190,14 @@ internal transient skipInit unit PeerNetwork
 				sendBuffer.writeFloat64 core.currentTime
 				send ., sendBuffer
 
-	private onPing: InternalUser user, Buffer buffer
+	private onPing: InternalUser user, BinaryBuffer buffer
 		float pingTime = buffer.readFloat64
 		sendBuffer.reset
 		sendBuffer.writeInt8 cast PeerMessageType.Pong
 		sendBuffer.writeFloat64 pingTime
 		send user, sendBuffer
 
-	private onPong: InternalUser user, Buffer buffer
+	private onPong: InternalUser user, BinaryBuffer buffer
 		float now = core.currentTime
 		float pingTime = buffer.readFloat64
 		float pingPongTime = now - pingTime
@@ -2287,11 +2287,11 @@ internal transient skipInit unit PeerNetwork
 				sendBuffer.writeInt8 cast PeerMessageType.Leaving
 				send ., sendBuffer
 
-	private onStatus: InternalUser user, Buffer buffer
+	private onStatus: InternalUser user, BinaryBuffer buffer
 		user.hidden = buffer.readBool
 		core.log "#background <{user.id}> is now {user.hidden ? "hidden" : "visible"}"
 
-	private onLeaving: InternalUser user, Buffer buffer
+	private onLeaving: InternalUser user, BinaryBuffer buffer
 		user.leaving = true
 		core.log "#background <{user.id}> is leaving"
 
