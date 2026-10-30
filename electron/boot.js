@@ -20,7 +20,7 @@ app.on('ready', function() {
 	mainWindow = new BrowserWindow({
 		width:	780,
 		height:	585,
-		icon:	'icon-v1.png', 
+		icon:	__dirname + '/icon-v1.png',
 		acceptFirstMouse:	true,
 		show:	true,
 		titleBarStyle:	isDebug ? "default" : "hiddenInset",
