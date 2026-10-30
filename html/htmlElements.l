@@ -546,6 +546,7 @@ global static class html
 		                             bool editable = true
 									 bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 									 bool selectOnFocus = false                 // Select all text when the element gets focus, so typing replaces it
+									 bool trimOnBlur = true                     // Remove leading and trailing whitespace when the element loses focus
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div text:model, attributes, style, data, focusInitially, location
@@ -562,7 +563,7 @@ global static class html
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText; onChanged(model); changeHandler
 			else         
-				element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model != prevModel then onChanged(model); changeHandler
 		else
 			element.contentEditable = "false"
 			element.oninput = null
@@ -585,6 +586,7 @@ global static class html
 		                             bool editable = true
 		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
 		                             bool selectOnFocus = true                  // Select all text when the element gets focus, so typing replaces it
+		                             bool trimOnBlur = true                     // Remove leading and trailing whitespace when the element loses focus
 		                             SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
 		let element = div attributes, style, data, location
@@ -601,7 +603,7 @@ global static class html
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText; onChanged(model); changeHandler
 			else         
-				element.onblur = model = element.innerText; if model != prevModel then onChanged(model); changeHandler
+				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model != prevModel then onChanged(model); changeHandler
 		else
 			element.contentEditable = "false"
 			element.oninput = null
