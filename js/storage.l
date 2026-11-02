@@ -83,7 +83,9 @@ transient storage
 	// Show a dialog to pick a file to open, returns null if canceled
 	// The file can be passed to readBinaryFile and writeBinaryFile, getFileName returns its name. It is
 	// Electron: an absolute path, Web: a FileSystemFileHandle or a File where the File System API is not available (Firefox, Safari, Capacitor)
-	async js async dynamic showOpenFilePicker: string description, string mimeType, string[] extensions
+	async js async dynamic showOpenFilePicker: string description
+		                                       string mimeType
+											   string[] extensions
 		if(_global.core && !_global.core.isPremiere) return null;
 		if (typeof require === "function") {
 			try {
@@ -109,7 +111,10 @@ transient storage
 	// Show a dialog to pick where to save a file, returns null if canceled
 	// Electron: an absolute path, Web: a FileSystemFileHandle, or an empty Blob named like the suggested name if the File System API is not available,
 	// writeBinaryFile downloads it then (Firefox, Safari). Capacitor has no dialog, it returns the suggested name, a path relative to basePathOrHandle
-	async js async dynamic showSaveFilePicker: string suggestedName, string description, string mimeType, string[] extensions
+	async js async dynamic showSaveFilePicker: string suggestedName
+		                                       string description
+											   string mimeType
+											   string[] extensions
 		if(_global.core && !_global.core.isPremiere) return null;
 		if (typeof require === "function") {
 			try {
@@ -310,18 +315,20 @@ transient storage
 
 	// Delete the file at relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null
 	async js async void deleteFile: string path
-		switch (this.backend(this.basePathOrHandle)) {
+		                            BasePathType basePath = Custom
+		const base = await this.resolveBase(basePath);
+		switch (this.backend(base)) {
 			case "capacitor":
-				try { await Capacitor.Plugins.Filesystem.deleteFile({path: this.joinPath(path, this.basePathOrHandle)}); } catch (e) {}
+				try { await Capacitor.Plugins.Filesystem.deleteFile({path: this.joinPath(path, base)}); } catch (e) {}
 				return;
 			case "node":
-				try { await this.nodeModule("fs").promises.unlink(this.joinPath(path, this.basePathOrHandle)); } catch (e) {}
+				try { await this.nodeModule("fs").promises.unlink(this.joinPath(path, base)); } catch (e) {}
 				return;
 			case "fsapi": {
 				try {
 					const parts = path.split("/").filter(p => p.length);
 					const name = parts.pop();
-					let dir = this.basePathOrHandle;
+					let dir = base;
 					for (const part of parts) dir = await dir.getDirectoryHandle(part);
 					await dir.removeEntry(name);
 				} catch (e) {}
@@ -340,18 +347,20 @@ transient storage
 
 	// Return a list of DirEntry objects for relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null
 	async js async DirEntry[] readDirectory: string path
-		switch (this.backend(this.basePathOrHandle)) {
+		                                     BasePathType basePath = Custom
+		const base = await this.resolveBase(basePath);
+		switch (this.backend(base)) {
 			case "capacitor": {
-				const result = await Capacitor.Plugins.Filesystem.readdir({path: this.joinPath(path, this.basePathOrHandle)});
+				const result = await Capacitor.Plugins.Filesystem.readdir({path: this.joinPath(path, base)});
 				return result.files.map(f => new DirEntry(f.name, f.type === "directory"));
 			}
 			case "node": {
-				const entries = await this.nodeModule("fs").promises.readdir(this.joinPath(path, this.basePathOrHandle), {withFileTypes: true});
+				const entries = await this.nodeModule("fs").promises.readdir(this.joinPath(path, base), {withFileTypes: true});
 				return entries.map(e => new DirEntry(e.name, e.isDirectory()));
 			}
 			case "fsapi": {
 				const parts = path.split("/").filter(p => p.length);
-				let dir = this.basePathOrHandle;
+				let dir = base;
 				for (const part of parts) dir = await dir.getDirectoryHandle(part);
 				const entries = [];
 				for await (const [name, handle] of dir.entries()) entries.push(new DirEntry(name, handle.kind === "directory"));
