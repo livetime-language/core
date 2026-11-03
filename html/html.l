@@ -218,6 +218,8 @@ HtmlEvent PointerEvent
 	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
 	int pageX                 // The X coordinate of the pointer relative to the whole document
 	int pageY                 // The Y coordinate of the pointer relative to the whole document
+	int clientX               // The X coordinate of the pointer relative to the viewport
+	int clientY               // The Y coordinate of the pointer relative to the viewport
 	bool shiftKey             // Is the shift key down?
 	bool altKey               // Is the alt key down?
 	bool ctrlKey              // Is the control key down?
@@ -407,6 +409,7 @@ global priority low skipInit static class html
 			parentNode = documentBody
 			currentNode = parentNode.firstChild
 			currentOverlay = documentBody.nextSibling
+			dropZones.clear
 			app.draw
 			while currentNode
 				let next = currentNode.nextSibling
@@ -446,6 +449,7 @@ global priority low skipInit static class html
 		initHandlers
 		initStyleSheet
 		initGlobalEventHandlers
+		initDragAndDrop
 	
 	private js void initHandlers
 		window.onresize = e => {
