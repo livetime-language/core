@@ -3,3 +3,6 @@
 
 # HTML Framework
 Elements that are grouped together visually should be in the same function.
+
+# Test when you are done
+When you are done, always test the build to verify everything works as specified.
