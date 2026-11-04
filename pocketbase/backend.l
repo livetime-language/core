@@ -469,7 +469,8 @@ DatabaseTable<T>
 		backend.pocketbase.collection(this.name).subscribe("*", e => {
 			console.log("subscribe", e.action, e.record);
 			if(e.action == "create") {
-					this.items.push(e.record);
+				// add already inserted the item if the server answered before this event
+				if(!this.items.some(i => i.id == e.record.id)) this.items.push(e.record);
 			} else if(e.action == "update") {
 				let item = this.items.find(i => i.id == e.record.id);
 				if(item) {
