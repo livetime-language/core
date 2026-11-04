@@ -31,7 +31,7 @@ global transient skipInit unit system
 	// Environment
 	bool isDebug
 	global bool isMobile
-	bool electron
+	bool isElectron
 	string os
 	
 	// Location
@@ -49,7 +49,7 @@ global transient skipInit unit system
 	public inline js string decodeURIComponent(string value) decodeURIComponent(value)
 
 	private inline js void initMedia
-		this.electron = window?.process?.versions?.electron
+		this.isElectron = !!window?.process?.versions?.electron
 		
 		// Detect the operating system
 		const ua = navigator.userAgent;
@@ -258,7 +258,7 @@ global transient skipInit unit system
 	inline js void blur() document.activeElement.blur()
 	
 	js void setMenu: MenuItem[] menuTemplate
-		if(!system.electron || !document.hasFocus()) return;
+		if(!system.isElectron || !document.hasFocus()) return;
 		const remote = require('@electron/remote');
 		if (process.platform == 'darwin') {
 			menuTemplate.unshift({
