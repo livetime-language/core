@@ -615,6 +615,11 @@ global priority low skipInit static class html
 		let rect = element.getBoundingClientRect()
 		return new Vector2((event.clientX - rect.left)/system.scale, (event.clientY - rect.top)/system.scale)
 
+	// The center of the element relative to the viewport
+	js Vector2 getCenter: HTMLElement element
+		let rect = element.getBoundingClientRect()
+		return new Vector2((rect.left + rect.width/2)/system.scale, (rect.top + rect.height/2)/system.scale)
+
 	js void setCursorPosition: HTMLElement element, int pos
 		const range = document.createRange();
 		const selection = window.getSelection();
