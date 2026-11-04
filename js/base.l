@@ -1989,6 +1989,10 @@ class Reference<T>
 		(this != null and this.container and this.container[this.key])
 	inline bool ! 
 		(this == null or this.container == null or !this.container[this.key])
+	inline bool == string other
+		(this.container[this.key] == other)
+	inline bool != string other
+		(this.container[this.key] != other)
 
 struct Type<T>
 	inline js string toString() this
