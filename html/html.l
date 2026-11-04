@@ -234,12 +234,16 @@ HtmlEvent
 	int button                // The mouse button that was pressed to trigger the event
 	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event
 	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
+
+	// Did the event happen on the element the handler is attached to, not on one of its children?
+	inline js bool isOnElementItself() this.target == this.currentTarget
 		
 	inline Vector2 relativeTouchPosition() html.getRelativeMousePosition(this, this.currentTarget)
 	inline js Vector2 touchPosition() new Vector2(this.clientX/system.scale, this.clientY/system.scale)
 
 HtmlKeyboardEvent
 	KeyCode keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
+	bool isComposing              // Is the key part of a composition by an input method editor (IME)?
 	bool shiftKey
 	bool ctrlKey
 	bool metaKey
