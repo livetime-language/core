@@ -100,7 +100,7 @@ global static class html
 
 		if text != null
 			if element.shadowInnerHtml != text
-			element.innerHTML = text
+				element.innerHTML = text
 				element.shadowInnerHtml = text
 		else
 		if children != null or element.hasChildren
