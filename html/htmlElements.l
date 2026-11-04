@@ -100,7 +100,7 @@ global static class html
 
 		if text != null
 			if element.shadowInnerHtml != text
-				element.innerHTML = text
+			element.innerHTML = text
 				element.shadowInnerHtml = text
 		else
 		if children != null or element.hasChildren
@@ -536,30 +536,35 @@ global static class html
 	// Render a html editable text element in the draw function.
 	// The model variable you pass in will be updated automatically.
 	importance:4
-	global inline void editableText: string model = ""                          // The variable that holds the value. This will be updated when the user changed the text
-		                             inline void(string value) onChanged = null // Called after the model changed
-		                             int tabIndex = -1
-									 bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
-		                             expand Attributes attributes = {}          // The attributes of the HTML element
-		                             expand Style style = null                  // The css style of the HTML element
-		                             dynamic data = {}                          // The data attributes of the element
-		                             bool editable = true
-									 bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
-									 bool selectOnFocus = false                 // Select all text when the element gets focus, so typing replaces it
-									 bool trimOnBlur = true                     // Remove leading and trailing whitespace when the element loses focus
-		                             SourceCodeLocation location
+	global void editableText: Reference<string> model	// The variable that holds the value. This will be updated when the user changed the text
+		                      void(string value) onChanged = null	// Called after the model changed
+							  void() onClick = null	// Called when the user clicks the text
+		                      int tabIndex = -1	// Focus input if focusTabIndex == tabIndex
+							  bool focusInitially = false	// Focus the element when its first created. It will not be focused again when the page is refreshed.
+		                      expand Attributes attributes = {}	// The attributes of the HTML element
+		                      expand Style style = null	// The css style of the HTML element
+		                      dynamic data = {}	// The data attributes of the element
+		                      bool editable = true	// Sets contentEditable
+							  bool updateWithEveryKeystroke = false	// Should onChange be called with every keystroke?
+							  bool selectOnFocus = false	// Select all text when the element gets focus, so typing replaces it
+							  bool trimOnBlur = true	// Remove leading and trailing whitespace when the element loses focus
+		                      SourceCodeLocation location
 		stored void() changeHandler = currentChangeHandler
-		let element = div text:model, attributes, style, data, focusInitially, location
+		let element = div attributes, style, data, focusInitially, location
 		if element.style.outline.toString() == "" then element.style.outline = none
-		// if model != element.innerText then element.innerText = model
+		if html.activeElement != element then element.innerText = model
 		if selectOnFocus
 			// A click places the cursor after the focus event, so the click that focused the element selects again
 			element.onfocus = element.selectContents; attributes.onFocus(.)
 			element.onpointerdown = element.focusedBeforeClick = html.activeElement == element
-			element.onclick = if not element.focusedBeforeClick then element.selectContents
+			element.onclick = if onClick != null {onClick()}; if not element.focusedBeforeClick then element.selectContents
+		else
+		if onClick != null
+			element.onclick = onClick()
+			
 		if editable
 			element.contentEditable = "plaintext-only"
-			let prevModel = model
+			string prevModel = model
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText; onChanged(model); changeHandler
 			else         
@@ -569,46 +574,6 @@ global static class html
 			element.oninput = null
 			element.onblur = null
 			
-		if focusTabIndex == tabIndex
-			system.delay 100
-				element.focus
-
-	// Render a html editable text element in the draw function.
-	// The model variable you pass in will be updated automatically.
-	importance:4
-	global inline void editableText: string model = ""                          // The variable that holds the value. This will be updated when the user changed the text
-		                             inline void(string value) onChanged = null // Called after the model changed
-		                             inline void() onClick = null
-		                             int tabIndex = -1
-		                             expand Attributes attributes = {}          // The attributes of the HTML element
-		                             expand Style style = null                  // The css style of the HTML element
-		                             dynamic data = {}                          // The data attributes of the element
-		                             bool editable = true
-		                             bool updateWithEveryKeystroke = false      // Should onChange be called with every keystroke?
-		                             bool selectOnFocus = true                  // Select all text when the element gets focus, so typing replaces it
-		                             bool trimOnBlur = true                     // Remove leading and trailing whitespace when the element loses focus
-		                             SourceCodeLocation location
-		stored void() changeHandler = currentChangeHandler
-		let element = div attributes, style, data, location
-		if element.style.outline.toString() == "" then element.style.outline = none
-		if model != element.innerText then element.innerText = model
-		element.onclick = onClick(); if selectOnFocus and not element.focusedBeforeClick then element.selectContents
-		if selectOnFocus
-			// A click places the cursor after the focus event, so the click that focused the element selects again
-			element.onfocus = element.selectContents; attributes.onFocus(.)
-			element.onpointerdown = element.focusedBeforeClick = html.activeElement == element
-		if editable
-			element.contentEditable = "plaintext-only"
-			let prevModel = model
-			if updateWithEveryKeystroke
-				element.oninput = model = element.innerText; onChanged(model); changeHandler
-			else         
-				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model != prevModel then onChanged(model); changeHandler
-		else
-			element.contentEditable = "false"
-			element.oninput = null
-			element.onblur = null
-		
 		if focusTabIndex == tabIndex
 			system.delay 100
 				element.focus
