@@ -667,62 +667,26 @@ global static class html
 
 	// ---------------------------------------- Canvas ----------------------------------------
 	
-	dynamic currentContext
+	inline js float devicePixelRatio() (window.devicePixelRatio)
 	
 	// Render a html canvas element in the draw function. 
 	// You can draw on the canvas in an indented block of code underneath the canvas.
 	// Example:
 	//     app
 	//         draw
-	//             canvas size:{100,100}
-	//                 drawRectangle pos:{0,0}, size:{100,100}, color:red
-	importance:4
-	global canvas: Vector2 size
-		           expand Attributes attributes = {} // The attributes of the HTML element
-		           expand Style style = null         // The css style of the HTML element
-		           void() draw
-		           SourceCodeLocation location
-		if style == null then style = {}
-		style.width = {size.x}
-		style.height = {size.y}
-		let canvas = div tag:"canvas", attributes, style, location
-		canvas.width = size.x
-		canvas.height = size.y 
-		currentContext = canvas.context
-		if currentContext == null then currentContext = canvas.context = canvas.getContext("2d")
-		currentContext.clearRect(0,0,style.width,style.height)
-		draw()
+	//             html.canvas
+	//                 canvas.drawRectangle pos:{0,0}, size:{100,100}, color:red
+	canvas: expand Attributes attributes = {} // The attributes of the HTML element
+		    expand Style style = null         // The css style of the HTML element
+		    void(Canvas canvas) draw = null
+		    SourceCodeLocation location
+		let canvasElement = div tag:"canvas", attributes, style, location
+		let pixelRatio = devicePixelRatio
+		canvasElement.width = canvasElement.clientWidth * pixelRatio
+		canvasElement.height = canvasElement.clientHeight * pixelRatio
+		Canvas canvas = {element:canvasElement, context:canvasElement.getContext("2d"), pixelRatio}
+		if draw != null then draw(canvas)
 		return canvas
-		
-	// Draw a rectangle on the canvas in an indented block of code underneath the canvas.
-	// Example:
-	//     app
-	//         draw
-	//             canvas size:{100,100}
-	//                 drawRectangle pos:{0,0}, size:{100,100}, color:red
-	importance:4
-	global drawRectangle: Vector2 pos
-		                  Vector2 size
-		                  Color color = black
-		currentContext.fillStyle = color.colorString
-		currentContext.fillRect(pos.x, pos.y, size.x, size.y)
-		
-	// Draw text on the canvas in an indented block of code underneath the canvas.
-	// Example:
-	//     app
-	//         draw
-	//             canvas size:{100,100}
-	//                 drawText text:"Hello, world!", pos:{0,0}, size:30, color:red
-	importance:4
-	global drawText: implicit string text
-		             Vector2 pos
-		             float size = 30
-		             Font font = null
-		             Color color = black
-		currentContext.fillStyle = color.colorString
-		string effectiveFont = font ? font.name : "Open Sans"
-		currentContext.font = "{size}px {effectiveFont}"
-		currentContext.fillText(text, pos.x, pos.y)
 
 	// ---------------------------------------- Markdown ----------------------------------------
 
@@ -922,4 +886,3 @@ global static class html
 		
 		currentOverlay = nextNode
 		return element
-		
