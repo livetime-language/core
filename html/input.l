@@ -115,6 +115,7 @@ enum KeyCode
 KeyListener
 	KeyCode key
 	void(KeyCode key) do
+	bool whileEditingText = true
 	
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up, Canceled
@@ -147,8 +148,10 @@ unit html
 				ev.stopPropagation();
 				return false;
 			}
+			const focused = document.activeElement;
+			const editingText = ev.isComposing || focused?.isContentEditable || focused?.tagName == "INPUT" || focused?.tagName == "TEXTAREA";
 			for(let listener of html.keyDownListeners) {
-				if(ev.keyCode == listener.key) {
+				if(ev.keyCode == listener.key && (listener.whileEditingText || !editingText)) {
 					listener.do.invoke(ev.keyCode)
 					ev.preventDefault();
 					ev.stopPropagation();
@@ -162,6 +165,7 @@ unit html
 		keyDownListeners.clear
 	
 	onKeyDown: KeyCode key
+		       bool whileEditingText = true	// Handle the key also while the user edits text in a text field (with false, the key keeps its default action there, e.g. Backspace deletes a character)
 		       stored void(KeyCode key) do
-		keyDownListeners.add {key, do}
+		keyDownListeners.add {key, do, whileEditingText}
 
