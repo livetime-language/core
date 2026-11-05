@@ -164,17 +164,13 @@ class Object
 		alpha = 0
 		fx.add FadeAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:0, delta:1
 		return this
-		
-	// 	// When chaining serveral fade animations together, continue where the last one left off
-	// 	// If the last fade animation is already a fade out, don't do anything
-	// 	FadeAnimation lastFadeAnimation = cast runningAnimations.find backwards .type == FadeAnimation and .object == this
-	// 		if lastFadeAnimation.startValue + lastFadeAnimation.delta <= 0: 
-	// 			return
-	// 		startValue = lastFadeAnimation.startValue + lastFadeAnimation.delta
-				
-	// 	fx.add FadeAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue, delta:-startValue, removeWhenDone
-	// 	return this
-		
+
+	fadeOut: float duration = 100        // After the this time in milliseconds, the object should be fully transparent
+		     float delay = 0             // After this time in milliseconds, the object should start fading out
+		     bool removeWhenDone = false // Remove the object when it is fully transparent
+		fx.add FadeAnimation startTime:fx.endOfPrevAnimation(this)+delay, duration, this, startValue:1, delta:-1, removeWhenDone
+		return this
+
 	scaleTo: implicit Vector2 size
 		     float duration = 1000 // After the this time in milliseconds, the object should reach the target size
 		     float delay = 0       // After this time in milliseconds, the object should start scaling
