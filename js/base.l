@@ -1471,6 +1471,13 @@ class List<T>
 	js float average
 		return this.length > 0 ? this.sum() / this.length : 0
 		
+	string mapAndJoin: string(T it) selector
+		                 string separator = ", "
+		let result = ""
+		for this
+			if result then result += separator
+			result += selector(.)
+		return result	
 		
 	// Join the items into a string
 	// Example:
