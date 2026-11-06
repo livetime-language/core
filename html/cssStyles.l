@@ -384,6 +384,9 @@ importance:5 class Padding
 	string paddingString
 	toString => paddingString
 
+	Padding: string paddingString
+		this.paddingString = paddingString
+		
 	Padding: implicit Dimension all // Padding on the top, right, bottom and left of the element
 		paddingString = "{all}"
 
@@ -396,13 +399,13 @@ importance:5 class Padding
 		     implicit Dimension bottom = 0px // Padding on the bottom of the element
 		     implicit Dimension left = 0px   // Padding on the left of the element
 		paddingString = "{top} {right} {bottom} {left}"
-
-	Padding: string paddingString
-		this.paddingString = paddingString
 	
 importance:5 class Margin
 	string marginString
 	toString => marginString
+
+	Margin: string marginString
+		this.marginString = marginString
 
 	Margin: implicit Dimension all // Margin on the top, right, bottom and left of the element
 		marginString = "{all}"
@@ -416,9 +419,6 @@ importance:5 class Margin
 		    implicit Dimension bottom = 0 px // Margin on the bottom of the element
 		    implicit Dimension left = 0 px   // Margin on the left of the element
 		marginString = "{top} {right} {bottom} {left}"
-
-	Margin: string marginString
-		this.marginString = marginString
 
 importance:5 class BackgroundSize
 	global const BackgroundSize contain = {sizeString:"contain"} // Scales the image as large as possible within its container without cropping or stretching the image. If the container is larger than the image, this will result in image tiling, unless the background-repeat property is set to no-repeat.
