@@ -224,6 +224,23 @@ global transient skipInit unit system
 	global inline js int clearDelay: int handle
 		clearTimeout(handle)
 		
+	// Call a function before the browser paints the next frame
+	global inline js int nextFrame: void() do
+		requestAnimationFrame(do)
+		
+	// Call a function when the page is about to be closed or reloaded
+	inline js void onBeforeUnload: void() do
+		window.addEventListener("beforeunload", do)
+		
+	// Call a function when web fonts finished loading, e.g. to measure text again
+	inline js void onFontsLoaded: void() do
+		document.fonts.addEventListener("loadingdone", do)
+		
+	// Open a url in the browser (also from the desktop app)
+	js void openInBrowser: string url
+		if(system.isElectron) require("electron").shell.openExternal(url)
+		else window.open(url, "_blank")
+		
 	inline js void onBlur: void() do
 		window.onblur = do
 		
