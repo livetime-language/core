@@ -21,11 +21,13 @@ app	// Use lowercase name to declare static class. Access members with app.with 
 		players.remove alice	// Remove from list
 		players.clear	// Remove all items from list
 		for p in players	// Iterate over list
-			print "The score of {p.name} is {p.score}"	// String interpolation
+			print "Score of {p.name} is {p.score}"	// If you want "{" without string interpolation, escape it with "\{"
+		for players	// Implicitly declares item it and index i
+			print "Player at index {i} is {.}"	// Use . to refer to the closest iteration variables (it) or lambda parameters
 		for i = 0 to 5	// Iterate over range with inclusive start 0 and exclusive end 5
 			print i	// Prints 0 1 2 3 4
-		for players.length	// Start index is 0 if left out, iteration variable is . if left out
-			let player = players[.]	// Get item by index
+		for players.length	// Start index is 0 if left out, implicitly declares index i
+			let player = players[.]	// You can refer to the iteration variable with . or i here
 		for i to players.length step -1	// Reverse order
 			print i	// Prints 4 3 2 1 0
 			players.removeAt i 	// Remove item at index
