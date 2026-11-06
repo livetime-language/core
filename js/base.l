@@ -1458,13 +1458,12 @@ class List<T>
 	js float average
 		return this.length > 0 ? this.sum() / this.length : 0
 		
-	string joinToString: string(T it) selector
-		                 string separator = ", "
-		let result = ""
-		for this
-			if result then result += separator
-			result += selector(.)
-		return result
+		
+	// Join the items into a string
+	// Example:
+	//     string text = lines.join("\n")
+	importance:4 inline js string join: string separator = ", "
+		this.join(separator)
 		
 	importance:5 shuffle
 		for i = 1 to length backwards
