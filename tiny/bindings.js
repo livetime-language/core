@@ -1,20 +1,20 @@
 // Colors
-const Black = 0
-const DarkBlue = 1
-const DarkPurple = 2
-const DarkGreen = 3
-const Brown = 4
-const DarkGray = 5
-const LightGray = 6
-const White = 7
-const Red = 8
-const Orange = 9
-const Yellow = 10
-const Green = 11
-const Blue = 12
-const Indigo = 13
-const Pink = 14
-const Peach = 15
+var Black = 0
+var DarkBlue = 1
+var DarkPurple = 2
+var DarkGreen = 3
+var Brown = 4
+var DarkGray = 5
+var LightGray = 6
+var White = 7
+var Red = 8
+var Orange = 9
+var Yellow = 10
+var Green = 11
+var Blue = 12
+var Indigo = 13
+var Pink = 14
+var Peach = 15
 
 // core/tiny/graphics.l
 function getPixel(x = 0, y = 0) {
@@ -49,25 +49,25 @@ function stopReplacingColors() {
 }
 
 // Buttons
-const ButtonA = 0;
-const ButtonB = 1;
-const ButtonX = 2;
-const ButtonY = 3;
-const LeftBumper = 4;
-const RightBumper = 5;
-const LeftTrigger = 6;
-const RightTrigger = 7;
-const Select = 8;
-const Start = 9;
-const LeftStickButton = 10;
-const RightStickButton = 11;
-const Up = 12;
-const Down = 13;
-const Left = 14;
-const Right = 15;
-const LeftMouseButton = 16;
-const MiddleMouseButton = 17;
-const RightMouseButton = 18;
+var ButtonA = 0;
+var ButtonB = 1;
+var ButtonX = 2;
+var ButtonY = 3;
+var LeftBumper = 4;
+var RightBumper = 5;
+var LeftTrigger = 6;
+var RightTrigger = 7;
+var Select = 8;
+var Start = 9;
+var LeftStickButton = 10;
+var RightStickButton = 11;
+var Up = 12;
+var Down = 13;
+var Left = 14;
+var Right = 15;
+var LeftMouseButton = 16;
+var MiddleMouseButton = 17;
+var RightMouseButton = 18;
 
 // core/tiny/input.l
 function justPressed(button, player = 0) {

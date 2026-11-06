@@ -2181,8 +2181,9 @@ global transient priority unit system
 	global inline js Promise<T> promise: void(void(T it) resolve, void(Error error) reject) resolve
 		new Promise(resolve)
 		
+	// Only declared with serialization (serializeInternal or serializeExternal), without it nothing is serialized anyway
 	inline js void doNotSerialize: dynamic object
-		_constCache.push(object)
+		typeof _constCache != "undefined" && _constCache.push(object)
 	
 	// Do something a given number of times or for each item in a list
 	global inline js void for: T[] subject    // The list to iterate over

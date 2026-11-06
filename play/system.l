@@ -84,7 +84,7 @@ global transient skipInit unit system
 	internal bool logSerialize
 	
 	private inline js void initMedia
-		_constCache = [null]
+		if(typeof _constCache != "undefined") _constCache = [null]	// Only declared with serialization (serializeInternal or serializeExternal)
 		Colors.init();
 		sounds.init();
 		media.init();

@@ -147,11 +147,11 @@ global transient skipInit unit system
 		
 	private js void startTickInterval
 		if(window._tickInterval) {
-			clearInterval(_tickInterval)
+			clearInterval(window._tickInterval)
 		}
 		if(system.ticksPerSecond) {
 			if(system.tickMode == 0) {
-				_tickInterval = setInterval(() => system.tick(), 1000/system.ticksPerSecond)
+				window._tickInterval = setInterval(() => system.tick(), 1000/system.ticksPerSecond)
 			} else {
 				window.tick = function() {
 					system.tick();
@@ -365,6 +365,9 @@ global transient skipInit unit system
 			document.head.appendChild(link);
 		}
 		link.href = iconUrl;
+	
+	js void toggleDevTools
+		if(typeof require != "undefined") require('@electron/remote').getCurrentWindow().toggleDevTools()
 		
 enum lowercase string DataTransferItemKind: String, File
 		
