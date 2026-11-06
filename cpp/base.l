@@ -14,7 +14,7 @@ immutable struct int
 		(((this % value) + value) % value)
 		
 	// The remainer after a division by the given value. The sign stays the same.
-	inline cpp int remainder: int value // The value to divide by
+	inline cpp precedence:12 int remainder: int value // The value to divide by
 		(this % value)
 		
 	// Returns true if the integer is not zero
@@ -170,7 +170,7 @@ immutable struct float
 		(((this % value) + value) % value)
 		
 	// The remainer after a division by the given value. The sign stays the same.
-	inline cpp float remainder: float value
+	inline cpp precedence:12 float remainder: float value
 		(this % value)
 		
 	inline cpp(cmath) int toInt => std::floor(this)
@@ -1263,7 +1263,34 @@ immutable struct void
 struct Nullable<T>
 	
 // A dynamic type. Useful for representing json and yaml data.
+// The operators of dynamic define the precedence of all operators: Operators without a precedence modifier 
+// (e.g. Vector2 + Vector2 value) get the precedence of the operator with the same name here. 
+// The built-in operators (and, or, &&, ||, ==, !=) get their precedence from here as well.
+// Infix calls without precedence (e.g. a atLeast b) get the precedence 10.
 interface dynamic
+	inline precedence:3 dynamic || dynamic value
+	inline precedence:3 dynamic or dynamic value
+	inline precedence:4 dynamic && dynamic value
+	inline precedence:4 dynamic and dynamic value
+	inline precedence:7 dynamic & dynamic value
+	inline precedence:8 bool == dynamic value
+	inline precedence:8 bool != dynamic value
+	inline precedence:9 bool < dynamic value
+	inline precedence:9 bool <= dynamic value
+	inline precedence:9 bool > dynamic value
+	inline precedence:9 bool >= dynamic value
+	inline precedence:11 dynamic + dynamic value
+	inline precedence:11 dynamic - dynamic value
+	inline precedence:12 dynamic * dynamic value
+	inline precedence:12 dynamic / dynamic value
+	inline precedence:13 binds:rightToLeft dynamic ** dynamic value
+	inline precedence:14 operator:prefix dynamic +
+	inline precedence:14 operator:prefix dynamic -
+	inline precedence:14 operator:prefix bool !
+	inline precedence:14 operator:prefix dynamic ++
+	inline precedence:14 operator:prefix dynamic --
+	inline precedence:15 dynamic ++
+	inline precedence:15 dynamic --
 
 // The base class for all classes
 interface object
