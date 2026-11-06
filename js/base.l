@@ -1962,6 +1962,46 @@ class Set<T>
 	// Return the number of items in the set
 	importance:5 inline js int length() this.size
 
+// A regular expression (a JavaScript RegExp)
+// Example: Find all numbers and their positions
+//     Regex number = {"\\d+", "dg"}
+//     RegexMatch match = number.matchAt(text, 0)
+//     while match
+//         print "{match.text} from {match.start} to {match.end}"
+//         match = number.matchAt(text, match.end)
+js RegExp
+immutable class Regex
+	inline js Regex(string pattern, string flags = "") new RegExp(pattern, flags)
+	
+	// The regex, or null if the pattern is invalid
+	static js Regex tryCreate: string pattern, string flags = ""
+		try { return new RegExp(pattern, flags) } catch(e) { return null }
+		
+	// Escape a string so the regex matches it literally
+	static js string escapePattern: string text
+		return text.replace(/[.*+?^${}()|[\]\\\/-]/g, "\\$&")
+		
+	inline js string source() this.source
+	inline js string flags() this.flags
+	inline js bool test(string text) this.test(text)
+	
+	// Find the first match at or after the position. With the sticky flag "y", the match has to start at the position. The flag "d" provides the start and end of each group
+	inline js RegexMatch matchAt: string text, int position = 0
+		(this.lastIndex = position, this.exec(text))
+		
+// The result of Regex.matchAt
+js Array
+immutable class RegexMatch
+	inline js int start() this.index
+	inline js int end() (this.index + this[0].length)
+	inline js string text() this[0]
+	inline js int groupCount() (this.length - 1)
+	inline js string group(int index) this[index]
+	
+	// The start of a group (needs the flag "d"), -1 if the group didn't participate
+	inline js int groupStart(int index) (this.indices[index]?.[0] ?? -1)
+	inline js int groupEnd(int index) (this.indices[index]?.[1] ?? -1)
+
 // Specifies that a function doesn't return a value
 immutable struct void
 	
