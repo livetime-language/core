@@ -906,6 +906,19 @@ class List<T>
 	void removeRange: int from = 0   // Remove items starting from this index
 		              nocolon int to // Remove items up to (but not including) this index
 		this.splice(from, to-from)
+
+	// Replace a range of items with a list of items (also with more items than a function can take as arguments)
+	// Example: Replace the second and third player with two new players
+	//     players.replaceRange 1 to 3, [{name:"Alice"}, {name:"Bob"}]
+	importance:4 js
+	void replaceRange: int from = 0   // Replace items starting from this index
+		               nocolon int to // Replace items up to (but not including) this index
+		               stored T[] items // The items to insert instead
+		if(items.length < 10000) { this.splice(from, to-from, ...items); return }
+		const tail = this.slice(to)
+		this.length = from
+		for(const item of items) this.push(item)
+		for(const item of tail) this.push(item)
 			
 	// Remove all item the meet a specific condition
 	// Example: Remove all players that have died.
