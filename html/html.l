@@ -45,6 +45,7 @@ dynamic HTMLElement
 	int tabindex
 	string contentEditable
 	dynamic context
+	Canvas canvas // The Canvas of a canvas element created with html.canvas
 	
 	string sourceLocation
 	bool hasChildren
@@ -65,6 +66,7 @@ dynamic HTMLElement
 	inline js void selectContents() getSelection().selectAllChildren(this)
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
 	inline js void focus() this.focus()
+	inline js void focusWithoutScrolling() this.focus({preventScroll:true})
 	inline js void blur() this.blur()
 	inline js void scrollToBottom() this.scrollTo(0, this.scrollHeight)
 	inline js void scrollTo(dynamic options) this.scrollTo(options) // e.g. {top:0, behavior:"instant"}

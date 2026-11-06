@@ -667,26 +667,21 @@ global static class html
 
 	// ---------------------------------------- Canvas ----------------------------------------
 	
-	inline js float devicePixelRatio() (window.devicePixelRatio)
-	
-	// Render a html canvas element in the draw function. 
+	// Render a html canvas element in the draw function. The Canvas object lives as long as the element and keeps its backing store at the element's size.
 	// You can draw on the canvas in an indented block of code underneath the canvas.
 	// Example:
 	//     app
 	//         draw
-	//             html.canvas
+	//             html.canvas width:200, height:100
 	//                 canvas.drawRectangle pos:{0,0}, size:{100,100}, color:red
 	canvas: expand Attributes attributes = {} // The attributes of the HTML element
 		    expand Style style = null         // The css style of the HTML element
 		    void(Canvas canvas) draw = null
 		    SourceCodeLocation location
-		let canvasElement = div tag:"canvas", attributes, style, location
-		let pixelRatio = devicePixelRatio
-		canvasElement.width = canvasElement.clientWidth * pixelRatio
-		canvasElement.height = canvasElement.clientHeight * pixelRatio
-		Canvas canvas = {element:canvasElement, context:canvasElement.getContext("2d"), pixelRatio}
-		if draw != null then draw(canvas)
-		return canvas
+		let element = div tag:"canvas", attributes, style, location
+		if not element.canvas then element.canvas = Canvas(element)
+		if draw != null then draw(element.canvas)
+		return element.canvas
 
 	// ---------------------------------------- Markdown ----------------------------------------
 

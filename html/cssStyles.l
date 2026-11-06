@@ -733,6 +733,7 @@ importance:5 dynamic Style
 	implicit Dimension top // The top position of a positioned element
 	string transform // Applies a 2D or 3D transformation to an element
 	string transformOrigin // The position of transformed elements
+	string touchAction // Which touch gestures the browser handles, e.g. "none" to get all pointer events of touches (for canvas apps)
 	string transformStyle // How nested elements are rendered in 3D space
 	string transition // A shorthand property for setting or returning the four transition properties
 	string transitionProperty // The CSS property that the transition effect is for
