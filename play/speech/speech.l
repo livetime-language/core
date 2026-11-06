@@ -155,7 +155,7 @@ transient speech
 					return pref
 				// The stored voice is not installed (removed by a browser update, or the list is still loading - a pick from an
 				// empty list is not cached): the system preferences below decide, logged with the voices the browser has
-				if voices then print "Stored {language} voice '{userPref}' is not installed, using the system preferences. Installed: {voices.joinToString.name}", type:Reaction
+				if voices then print "Stored {language} voice '{userPref}' is not installed, using the system preferences. Installed: {voices.mapAndJoin.name}", type:Reaction
 					
 			// System preferences
 			for pref.voices as voicePreference
