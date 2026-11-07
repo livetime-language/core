@@ -40,8 +40,8 @@ skipInit class Font
 	string textureFile
 	
 	js void open
-		if(!window._fontCache) _fontCache = {}
-		let font = _fontCache[this.file]
+		if(!window._fontCache) window._fontCache = {}
+		let font = window._fontCache[this.file]
 		if(!font && this.file && this.textureFile) {
 			return new Promise((resolve, reject) => {
 				let path = this.file.startsWith("http") ? "" : _basePath
