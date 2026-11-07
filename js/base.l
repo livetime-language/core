@@ -2071,14 +2071,12 @@ class Reference<T>
 		return container[key]
 	T value
 		return container[key]
-	inline bool toBool
-		(this != null and this.container and this.container[this.key])
-	inline bool ! 
-		(this == null or this.container == null or !this.container[this.key])
-	inline bool == string other
-		(this.container[this.key] == other)
-	inline bool != string other
-		(this.container[this.key] != other)
+		
+	inline js bool toBool() (this != null && this.container != null && !!this.container[this.key])
+	inline js operator:prefix bool !() (this == null || this.container == null || !this.container[this.key])
+	
+	inline js bool == T other: this?.container?.[this.key] == other
+	inline js bool != T other: this?.container?.[this.key] != other
 
 struct Type<T>
 	inline js string toString() this
