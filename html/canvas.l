@@ -87,6 +87,14 @@ Canvas
 		this.context.roundRect(pos.x + width/2, pos.y + width/2, size.x - width, size.y - width, Math.max(0, radius - width/2))
 		this.context.stroke()
 
+	// Draw a filled polygon
+	js void drawPolygon: Vector2[] points
+		                 Color color = black
+		this.setFillStyle(color.colorString)
+		this.context.beginPath()
+		for(const p of points) this.context.lineTo(p.x, p.y)
+		this.context.fill()
+
 	// Draw a straight line
 	js void drawLine: Vector2 from
 		              Vector2 to
