@@ -597,6 +597,8 @@ DatabaseTable<T>
 		listOfFiles.remove(file);
 		backend.onDataChange?.invoke();
 		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
+		
+	baseUrl => "{backend.url}/api/files/{this.name}"
 
 	static js Promise<string> getDataUrlForFile: File file
 		return new Promise((resolve, reject) => {
