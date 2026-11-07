@@ -419,6 +419,7 @@ global priority low skipInit static class html
 			app.draw
 			while currentNode
 				let next = currentNode.nextSibling
+				if currentNode.key then parentNode.childrenByKey.remove currentNode.key
 				currentNode.remove
 				currentNode = next
 			while currentOverlay

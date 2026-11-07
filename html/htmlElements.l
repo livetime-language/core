@@ -45,7 +45,6 @@ global static class html
 				nextNode = currentNode
 				if nextNode then parentNode.insertBefore element, nextNode
 				else         parentNode.appendChild element
-			element.used = true
 			
 		else	
 			if !currentNode or (currentNode.tagName?.toLowerCase != tag or currentNode.sourceLocation != sourceLocation)
@@ -108,24 +107,14 @@ global static class html
 			let prevParentNode = parentNode
 			parentNode = element
 			currentNode = element.firstChild
-			if parentNode.childrenByKey
-				for parentNode.childrenByKey
-					.used = false
 			children()
 			
-			// Remove all children that are no longer used
-			if parentNode.childrenByKey
-				// If the children have keys, removed all nodes that are not marked as "used"
-				for parentNode.childrenByKey
-					if not .used
-						.remove
-						parentNode.childrenByKey.remove .key
-			else
-				// If the chidren don't have keys, remove all remaining nodes, that haven't been reused
-				while currentNode
-					let next = currentNode.nextSibling
-					currentNode.remove
-					currentNode = next
+			// Every child drawn above (reused, created or keyed) is now before currentNode, so the remaining nodes are no longer used
+			while currentNode
+				let next = currentNode.nextSibling
+				if currentNode.key then parentNode.childrenByKey.remove currentNode.key
+				currentNode.remove
+				currentNode = next
 			parentNode = prevParentNode
 
 		if attributes?.scrollIntoView
