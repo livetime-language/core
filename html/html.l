@@ -222,10 +222,6 @@ HtmlEvent PointerEvent
 	int pageY                 // The Y coordinate of the pointer relative to the whole document
 	int clientX               // The X coordinate of the pointer relative to the viewport
 	int clientY               // The Y coordinate of the pointer relative to the viewport
-	bool shiftKey             // Is the shift key down?
-	bool altKey               // Is the alt key down?
-	bool ctrlKey              // Is the control key down?
-	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 	
 	// The position of the pointer relative to the whole document
 	inline js Vector2 position() new Vector2(this.pageX/system.scale, this.pageY/system.scale)
@@ -236,6 +232,10 @@ HtmlEvent
 	int button                // The mouse button that was pressed to trigger the event
 	stopPropagation           // Mark the event as handled and prevent its parent elements from receiving the event
 	preventDefault            // Prevent the default action (for example, showing the context menu on a right click)
+	bool shiftKey             // Is the shift key down?
+	bool altKey               // Is the alt key down?
+	bool ctrlKey              // Is the control key down?
+	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 
 	// Did the event happen on the element the handler is attached to, not on one of its children?
 	inline js bool isOnElementItself() this.target == this.currentTarget
