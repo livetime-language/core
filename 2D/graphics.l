@@ -76,7 +76,7 @@ immutable Texture
 		// In headless mode (node.js), images can't be loaded, but display items are still recorded for printWhatIsOnScreen
 		if(system.isHeadless) return true
 		if(!this.imageOrCanvas && this.file) {
-			this.imageOrCanvas = _htmlImageCache[this.file]
+			this.imageOrCanvas = window._htmlImageCache[this.file]
 		}
 		return this.imageOrCanvas != null
 
@@ -84,8 +84,8 @@ immutable Texture
 		return this.imageOrCanvas != null || system.isHeadless
 	
 	internal js void open
-		if(!window._htmlImageCache) _htmlImageCache = {}
-		let image = _htmlImageCache[this.file]
+		if(!window._htmlImageCache) window._htmlImageCache = {}
+		let image = window._htmlImageCache[this.file]
 		if(!image) {
 			return new Promise((resolve, reject) => {
 				image = new Image()
@@ -174,13 +174,13 @@ skipInit immutable Font
 	actualHeightFactor = .76
 	
 	js void open
-		if(!window._fontCache) _fontCache = {}
-		let font = _fontCache[this.file]
+		if(!window._fontCache) window._fontCache = {}
+		let font = window._fontCache[this.file]
 		if(!font) {
 			let font = new FontFace(this.name, "url("+system.getAbsoluteUrl(this.file)+")");
 			await font.load();
 			document.fonts.add(font);
-			_fontCache[this.file] = font;
+			window._fontCache[this.file] = font;
 			setTimeout(() => this.calculateOffset(), 0)
 		}
 		this.calculateOffset()
