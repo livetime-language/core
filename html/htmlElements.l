@@ -794,16 +794,24 @@ global static class html
 		            expand Attributes attributes = {} // The attributes of the HTML element
 		            expand Style style = null         // The css style of the HTML element
 		            dynamic data = null               // The data attributes of the element
-		            void(string url) onNavigate = null
+		            void(string url) onNavigate = null    // Called before the user navigates the page to a new url
+		            void(string url) onUrlChanged = null  // Called after the url of the page changed (including in-page navigations)
 		            SourceCodeLocation location
 		WebView element = cast div tag:"webview", attributes, style, data, location
 		element.onWillNavigate = onNavigate
+		element.onUrlChanged = onUrlChanged
 		if not element.src then element.src = initialUrl
 		if !element.hasHandlers
 			element.hasHandlers = true
 			element.on "will-navigate"
 				if element.onWillNavigate != null
 					element.onWillNavigate(event.url)
+			element.on "did-navigate"
+				if element.onUrlChanged != null
+					element.onUrlChanged(event.url)
+			element.on "did-navigate-in-page"
+				if event.isMainFrame and element.onUrlChanged != null
+					element.onUrlChanged(event.url)
 		return element
 
 	global body: expand Attributes attributes = {} // The attributes of the element

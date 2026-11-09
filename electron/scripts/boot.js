@@ -37,7 +37,6 @@ app.on('ready', function() {
 		},
 	});
 	
-	remoteMain.enable(mainWindow.webContents);
 	mainWindow.setMenu(null);
 
 	// Electron has no Bluetooth device chooser: navigator.bluetooth.requestDevice gets the first matching device
@@ -56,6 +55,5 @@ app.on('ready', function() {
 	});
 });
 
-app.on('browser-window-created', (_, window) => {
-	require("@electron/remote/main").enable(window.webContents)
-})
+// Windows and webviews (pages tested in a webview with nodeintegration behave like Electron apps) can use @electron/remote
+app.on('web-contents-created', (_, webContents) => remoteMain.enable(webContents))

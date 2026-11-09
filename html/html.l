@@ -270,10 +270,14 @@ HTMLElement WebView
 	string url
 	
 	native void(string url) onWillNavigate
+	native void(string url) onUrlChanged
 	bool hasHandlers
 	
 	inline js void downloadURL(string url) this.downloadURL(url)
 	inline js void goBack() this.goBack()
+	inline js void goForward() this.goForward()
+	inline js void reload() this.reload()
+	inline js void openDevTools() this.openDevTools()
 
 struct float
 	inline Dimension toDimension
