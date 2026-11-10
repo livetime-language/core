@@ -136,6 +136,7 @@ class Touch
 	
 unit html
 	KeyListener[] keyDownListeners
+	void()[string] keyboardShortcuts	// By accelerator as normalizeAccelerator writes it
 	void() defaultButtonToTriggerWithEnterKey = null
 		
 	js void initGlobalEventHandlers
@@ -150,6 +151,17 @@ unit html
 			}
 			const focused = document.activeElement;
 			const editingText = ev.isComposing || focused?.isContentEditable || focused?.tagName == "INPUT" || focused?.tagName == "TEXTAREA";
+			// Keys that type a character with Alt or Shift (Alt+T is "†" on a Mac, Shift+1 is "!") are named after the letter or digit of the physical key
+			const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
+			if(!editingText || ev.ctrlKey || ev.altKey || ev.metaKey || /^(F\d+|Escape)$/.test(key)) {
+				const shortcut = html.keyboardShortcuts.get(modifiers + (key.length == 1 && !/[a-z0-9]/i.test(key) && /^(Key|Digit)/.test(ev.code) ? ev.code.slice(-1) : key).toLowerCase());
+				if(shortcut) {
+					shortcut.invoke()
+					ev.preventDefault();
+					ev.stopPropagation();
+					return false;
+				}
+			}
 			for(let listener of html.keyDownListeners) {
 				if(ev.keyCode == listener.key && (listener.whileEditingText || !editingText)) {
 					listener.do.invoke(ev.keyCode)
@@ -163,9 +175,41 @@ unit html
 	clearGlobalEventHandlers
 		if(!keyDownListeners) keyDownListeners = []
 		keyDownListeners.clear
+		if(!keyboardShortcuts) keyboardShortcuts = {}
+		keyboardShortcuts.clear
 	
 	onKeyDown: KeyCode key
 		       bool whileEditingText = true	// Handle the key also while the user edits text in a text field (with false, the key keeps its default action there, e.g. Backspace deletes a character)
 		       stored void(KeyCode key) do
 		keyDownListeners.add {key, do, whileEditingText}
 
+	// Calls do when the user presses the keys of an accelerator in the syntax of Electron, e.g. "CmdOrCtrl+Shift+P", "Alt+Left" or "F5"
+	// (https://www.electronjs.org/docs/latest/api/accelerator). CmdOrCtrl is Cmd on Apple devices and Ctrl everywhere else.
+	// While the user edits text, only accelerators with Ctrl, Alt or Cmd, function keys and Escape are handled: all other keys type.
+	// Register accelerators in app.start. An accelerator has one listener, the last one registered
+	onKeyboardShortcut: string accelerator
+		          stored void() do
+		keyboardShortcuts[normalizeAccelerator(accelerator)] = do
+
+	// The accelerator as the keydown listener names the pressed keys: lowercase, the modifiers ctrl, alt, shift and meta in this order
+	private js string normalizeAccelerator: string accelerator
+		const meta = html.isAppleDevice() ? "meta" : "ctrl";
+		const names = {commandorcontrol:meta, cmdorctrl:meta, command:"meta", cmd:"meta", super:"meta", control:"ctrl", option:"alt", altgr:"alt",
+			return:"enter", esc:"escape", up:"arrowup", down:"arrowdown", left:"arrowleft", right:"arrowright", space:" ", plus:"+"};
+		const parts = accelerator.toLowerCase().split("+").map(part => names[part.trim()] || part.trim());
+		const key = parts.pop();
+		return ["ctrl", "alt", "shift", "meta"].filter(modifier => parts.includes(modifier)).map(modifier => modifier + "+").join("") + key;
+
+	// An accelerator as menus show it: "⇧⌘P" on Apple devices, "Ctrl+Shift+P" everywhere else
+	js string acceleratorLabel: string accelerator
+		const apple = html.isAppleDevice();
+		const names = apple ? {commandorcontrol:"⌘", cmdorctrl:"⌘", command:"⌘", cmd:"⌘", super:"⌘", meta:"⌘", control:"⌃", ctrl:"⌃", alt:"⌥", option:"⌥", altgr:"⌥", shift:"⇧",
+			return:"↩", enter:"↩", esc:"⎋", escape:"⎋", backspace:"⌫", delete:"⌦", tab:"⇥", up:"↑", down:"↓", left:"←", right:"→", plus:"+"}
+			: {commandorcontrol:"Ctrl", cmdorctrl:"Ctrl", command:"Meta", cmd:"Meta", super:"Meta", control:"Ctrl", option:"Alt", return:"Enter", esc:"Escape", plus:"+"};
+		const parts = accelerator.split("+").map(part => part.trim()).map(part => names[part.toLowerCase()] || (part.length == 1 ? part.toUpperCase() : part));
+		// Apple shows the modifiers in the order Control, Option, Shift, Command
+		const rank = part => ("⌃⌥⇧⌘".indexOf(part) + 5) % 5;
+		return apple ? parts.sort((a, b) => rank(a) - rank(b)).join("") : parts.join("+");
+
+	js bool isAppleDevice
+		return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
