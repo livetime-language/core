@@ -30,7 +30,7 @@ immutable Bytes
 		this.slice(start, end)
 
 transient storage
-	private dynamic basePathOrHandle = null
+	private dynamic basePathOrHandle = ""
 	private dynamic systemPaths = {}	// Resolved Home and UserData paths by BasePathType
 
 	setBasePathOrHandle: dynamic pathOrHandle

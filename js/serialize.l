@@ -129,6 +129,10 @@ interface object
 		function escStr(s) {
 			return "\"" + s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "\""
 		}
+		// Keys are quoted unless they are identifiers. null, true and false would be read as these values
+		function key(k) {
+			return /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) && !/^(null|true|false)$/i.test(k) ? k : escStr(k)
+		}
 		function ser(v, counts, anchors, nextId) {
 			if(v === null) return "null"
 			if(v === undefined) return "null"
@@ -159,8 +163,7 @@ interface object
 				let p = []
 				if(v.size === 0 || typeof v.keys().next().value === "string") {
 					for(let e of v) {
-						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(e[0]) ? e[0] : escStr(e[0])
-						p.push(kk + ": " + ser(e[1], counts, anchors, nextId))
+						p.push(key(e[0]) + ": " + ser(e[1], counts, anchors, nextId))
 					}
 					body = "{" + p.join(", ") + "}"
 				} else {
@@ -175,8 +178,7 @@ interface object
 					if(Object.prototype.hasOwnProperty.call(v, k)) {
 						if(tset && tset.has(k)) continue
 						let child = v[k]
-						let kk = /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) ? k : escStr(k)
-						p.push(kk + ": " + ser(child, counts, anchors, nextId))
+						p.push(key(k) + ": " + ser(child, counts, anchors, nextId))
 					}
 				body = "{" + p.join(", ") + "}"
 			}
@@ -188,214 +190,368 @@ interface object
 		refWalk(subject, counts, new Set())
 		return ser(subject, counts, new Map(), [0])
 
-	static js dynamic fromYaml: string yaml
-		function isIgnorableWs(c) {
-			if(c === 9 || c === 10 || c === 13 || c === 32) return true
-			if(c === 133 || c === 160 || c === 5760) return true
-			if(c >= 8192 && c <= 8202) return true
-			if(c === 8232 || c === 8233) return true
-			if(c === 8239 || c === 8287 || c === 12288) return true
-			if(c === 65279) return true
-			return false
+	// Parses the first document of a YAML file, null if there is none.
+	// Mappings become objects, sequences lists and scalars strings, numbers, booleans or null (YAML 1.2 core schema).
+	// A mapping with a tag that names a class becomes an instance of it (!!Player), !!Map creates a Map.
+	static dynamic fromYaml: string yaml
+		docs := fromYamlDocuments(yaml)
+		return docs.length > 0 ? docs[0] : null
+
+	// Parses all documents of a YAML file (they are separated by "---")
+	static js dynamic[] fromYamlDocuments: string yaml
+		let s = (yaml.charCodeAt(0) === 65279 ? yaml.slice(1) : yaml).replace(/\r\n?/g, "\n"), n = s.length, i = 0
+		let anchors = new Map(), documents = []
+		let escapes = "0abt\tnvfre \"/\\N_LP", escapeCodes = [0, 7, 8, 9, 9, 10, 11, 12, 13, 27, 32, 34, 47, 92, 133, 160, 8232, 8233]
+		// Where a node is: in a block where block collections can start, after the ":" of a key, at a key, or in a flow collection
+		const Block = 0, Value = 1, Key = 2, Flow = 3
+		function fail(message) {
+			throw new Error("fromYaml: " + message + " in line " + s.slice(0, i).split("\n").length)
 		}
-		function skipWs(s, i) {
-			let n = s.length
-			while(i < n && isIgnorableWs(s.charCodeAt(i))) ++i
-			return i
+		function isSpace(c) {
+			return c === 32 || c === 9
 		}
-		function isIdentStart(c) {
-			return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+		// Whether a space, a line break or the end of the file is at j
+		function isBlank(j) {
+			let c = s.charCodeAt(j)
+			return c === 32 || c === 9 || c === 10 || c !== c
 		}
-		function isIdentChar(c) {
-			return isIdentStart(c) || (c >= 48 && c <= 57)
+		function isFlowIndicator(c) {
+			return c === 44 || c === 91 || c === 93 || c === 123 || c === 125
 		}
-		function readIdent(s, i) {
-			let j = i
-			while(j < s.length && isIdentChar(s.charCodeAt(j))) ++j
-			return [s.slice(i, j), j]
+		// Whether the indicator c ("-", "?" or ":") is at i. A blank has to follow it
+		function atIndicator(c) {
+			return s.charCodeAt(i) === c && isBlank(i + 1)
 		}
-		function construct(tag) {
-			let C = globalThis["_" + tag]
-			if(typeof C === "function") return new C()
-			if(tag === "Array") return []
-			if(tag === "Object") return {}
-			return {}
+		// Whether the line at j starts with the document marker "---" or "..."
+		function atMarker(j) {
+			let c = s.charCodeAt(j)
+			return (c === 45 || c === 46) && s.charCodeAt(j + 1) === c && s.charCodeAt(j + 2) === c && isBlank(j + 3) && (j === 0 || s.charCodeAt(j - 1) === 10)
 		}
-		function parseString(s, ctx) {
-			let n = s.length, i = ctx.i
-			if(s.charCodeAt(i) !== 34) throw new Error("fromYaml: expected \"")
-			++i
-			let out = ""
-			while(i < n) {
+		function column() {
+			return i ? i - s.lastIndexOf("\n", i - 1) - 1 : 0
+		}
+		function lineEnd() {
+			let end = s.indexOf("\n", i)
+			return end < 0 ? n : end
+		}
+		// Skips whitespace, line breaks and comments. Returns whether it reached another line
+		function skipBlank() {
+			let crossed = false
+			for(;;) {
 				let c = s.charCodeAt(i)
-				if(c === 34) {
-					ctx.i = i + 1
-					return out
-				}
-				if(c === 92 && i + 1 < n) {
-					let nxt = s.charCodeAt(i + 1)
-					if(nxt === 92) { out += "\\"; i += 2; continue }
-					if(nxt === 34) { out += "\""; i += 2; continue }
-					if(nxt === 110) { out += "\n"; i += 2; continue }
-					if(nxt === 114) { out += "\r"; i += 2; continue }
-					if(nxt === 116) { out += "\t"; i += 2; continue }
-				}
-				out += s[i++]
-			}
-			throw new Error("fromYaml: unterminated string")
-		}
-		function parseScalar(s, ctx) {
-			let i = ctx.i, n = s.length, cc = s.charCodeAt(i)
-			if(cc === 34) return parseString(s, ctx)
-			function kw(t, len) {
-				if(i + len > n) return false
-				if(s.slice(i, i + len) !== t) return false
-				let nx = i + len
-				return nx >= n || !isIdentChar(s.charCodeAt(nx))
-			}
-			if(kw("null", 4)) { ctx.i = i + 4; return null }
-			if(kw("true", 4)) { ctx.i = i + 4; return true }
-			if(kw("false", 5)) { ctx.i = i + 5; return false }
-			if(kw(".nan", 4)) { ctx.i = i + 4; return NaN }
-			if(kw(".inf", 4)) { ctx.i = i + 4; return Infinity }
-			if(kw("-.inf", 5)) { ctx.i = i + 5; return -Infinity }
-			let j = i
-			if(cc === 45) ++j
-			let has = false
-			if(j < n && s.charCodeAt(j) === 46) {
-				++j
-				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-			} else {
-				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-				if(j < n && s.charCodeAt(j) === 46) {
-					++j
-					while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-				}
-			}
-			if(j < n && (s.charCodeAt(j) === 101 || s.charCodeAt(j) === 69)) {
-				++j
-				if(j < n && (s.charCodeAt(j) === 45 || s.charCodeAt(j) === 43)) ++j
-				while(j < n && s.charCodeAt(j) >= 48 && s.charCodeAt(j) <= 57) { has = true; ++j }
-			}
-			if(has) {
-				let start = ctx.i
-				ctx.i = j
-				return parseFloat(s.slice(start, j))
-			}
-			throw new Error("fromYaml: bad scalar at " + i)
-		}
-		function parseFlowArrayInto(arr, s, ctx) {
-			while(true) {
-				ctx.i = skipWs(s, ctx.i)
-				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated [")
-				if(s.charCodeAt(ctx.i) === 93) { ++ctx.i; break }
-				arr.push(parseValue(s, ctx))
-				ctx.i = skipWs(s, ctx.i)
-				let c = s.charCodeAt(ctx.i)
-				if(c === 93) { ++ctx.i; break }
-				if(c !== 44) throw new Error("fromYaml: expected , or ]")
-				++ctx.i
+				if(c === 10) crossed = true
+				if(c === 32 || c === 9 || c === 10) ++i
+				else if(c === 35 && isBlank(i - 1)) i = lineEnd()
+				else return crossed
 			}
 		}
-		function parseFlowMapInto(obj, s, ctx) {
-			while(true) {
-				ctx.i = skipWs(s, ctx.i)
-				if(ctx.i >= s.length) throw new Error("fromYaml: unterminated {")
-				if(s.charCodeAt(ctx.i) === 125) { ++ctx.i; break }
-				let key
-				if(s.charCodeAt(ctx.i) === 34)
-					key = parseString(s, ctx)
+		function isFirstOfLine() {
+			return !s.slice(i - column(), i).trim()
+		}
+		// Skips to the next token, which has to be the first of its line. Returns its column, -1 at the end of the document
+		function nextLine() {
+			skipBlank()
+			if(i >= n || atMarker(i)) return -1
+			if(!isFirstOfLine()) fail("unexpected text")
+			return column()
+		}
+		// Reads an anchor name, alias name or tag, which end at a blank or flow indicator
+		function readToken() {
+			let start = i
+			while(i < n && !isBlank(i) && !isFlowIndicator(s.charCodeAt(i))) ++i
+			return s.slice(start, i)
+		}
+		// Creates the collection of a node: a Map for !!Map, an instance for a tag that names a class
+		function create(anchor, tag, list) {
+			let construct = tag && globalThis["_" + tag]
+			let target = tag === "Map" ? new Map() : list ? [] : typeof construct === "function" ? new construct() : {}
+			if(anchor) anchors.set(anchor, target)
+			return target
+		}
+		function add(target, value) {
+			if(!(target instanceof Map)) target.push(value)
+			else if(Array.isArray(value)) target.set(value[0], value[1])
+			else fail("a Map needs [key, value] pairs")
+		}
+		function set(target, key, value) {
+			if(target instanceof Map) target.set(key, value)
+			else if(key === "<<" && value && typeof value === "object") {
+				// Merge key: adds the entries of a mapping (or of a list of mappings) that target doesn't have
+				for(let source of Array.isArray(value) ? value : [value])
+					for(let k of Object.keys(source))
+						if(!Object.prototype.hasOwnProperty.call(target, k)) target[k] = source[k]
+			} else if(key === "__proto__") Object.defineProperty(target, key, { value: value, enumerable: true, writable: true, configurable: true })
+			else target[key] = value
+		}
+		// Converts a plain scalar to null, a boolean or a number if it is written like one
+		function resolve(text) {
+			if(text === "" || text === "~" || text === "null" || text === "Null" || text === "NULL") return null
+			if(text === "true" || text === "True" || text === "TRUE") return true
+			if(text === "false" || text === "False" || text === "FALSE") return false
+			let c = text.charCodeAt(0)
+			if(c < 43 || c > 57) return text
+			if(/^([-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?|0o[0-7]+|0x[0-9a-fA-F]+)$/.test(text)) return Number(text)
+			if(/^[-+]?\.(inf|Inf|INF)$/.test(text)) return c === 45 ? -Infinity : Infinity
+			return /^\.(nan|NaN|NAN)$/.test(text) ? NaN : text
+		}
+		// Folds the line break at i and moves i to the text of the next line.
+		// Returns the text since start, followed by a space, or by a line break for each empty line
+		function fold(start) {
+			let text = s.slice(start, i).replace(/[ \t]+$/, ""), breaks = 0
+			for(; i < n; ++i) {
+				let c = s.charCodeAt(i)
+				if(c === 10) ++breaks
+				else if(c !== 32 && c !== 9) break
+			}
+			return text + (breaks > 1 ? "\n".repeat(breaks - 1) : " ")
+		}
+		// Reads a scalar in single or double quotes
+		function parseQuoted(quote) {
+			let out = "", start = ++i
+			for(;;) {
+				let c = s.charCodeAt(i)
+				if(c !== c) fail("unterminated string")
+				if(c === quote) {
+					out += s.slice(start, i++)
+					if(quote === 34 || s.charCodeAt(i) !== 39) return out
+					// Two single quotes are an escaped single quote
+					start = i++
+				} else if(c === 92 && quote === 34) {
+					out += s.slice(start, i)
+					let e = s[i + 1], length = e === "x" ? 2 : e === "u" ? 4 : e === "U" ? 8 : 0, k = escapes.indexOf(e)
+					i += 2
+					if(length) {
+						let hex = s.slice(i, i + length)
+						if(!/^[0-9a-fA-F]+$/.test(hex) || hex.length < length) fail("bad escape sequence")
+						out += String.fromCodePoint(parseInt(hex, 16))
+						i += length
+					} else if(e === "\n") {
+						// An escaped line break joins the lines
+						while(isSpace(s.charCodeAt(i))) ++i
+					} else out += k < 0 ? "\\" + e : String.fromCharCode(escapeCodes[k])
+					start = i
+				} else if(c === 10) {
+					out += fold(start)
+					start = i
+				} else ++i
+			}
+		}
+		// Whether the plain scalar ends at i: at a ":" before a blank and, in flow collections, at flow indicators
+		function endsPlain(flow) {
+			let c = s.charCodeAt(i)
+			return c === 58 ? isBlank(i + 1) || flow && isFlowIndicator(s.charCodeAt(i + 1)) : flow && isFlowIndicator(c)
+		}
+		// Reads a scalar without quotes. In blocks, it continues on lines that are indented more than indent
+		function parsePlain(indent, flow) {
+			let out = "", start = i
+			for(;;) {
+				let c = s.charCodeAt(i)
+				if(c === 10 || c !== c) {
+					let end = i, text = fold(start)
+					if(i >= n || s.charCodeAt(i) === 35 || !flow && (column() <= indent || atMarker(i)) || endsPlain(flow)) {
+						i = end
+						break
+					}
+					out += text
+					start = i
+				} else if(endsPlain(flow) || c === 35 && isSpace(s.charCodeAt(i - 1))) break
+				else ++i
+			}
+			return out + s.slice(start, i).replace(/[ \t]+$/, "")
+		}
+		// Reads a literal (|) or folded (>) block scalar: the following lines that are indented more than indent
+		function parseBlockScalar(indent) {
+			let folded = s.charCodeAt(i++) === 62, chomp = 0, textIndent = -1, c
+			// Header: "+" keeps the line breaks at the end, "-" removes them, a digit is the indentation of the text
+			for(; (c = s.charCodeAt(i)) === 43 || c === 45 || c >= 49 && c <= 57; ++i) {
+				if(c === 43) chomp = 1
+				else if(c === 45) chomp = -1
+				else textIndent = indent + c - 48
+			}
+			while(isSpace(s.charCodeAt(i))) ++i
+			if(s.charCodeAt(i) === 35) i = lineEnd()
+			if(i < n && s.charCodeAt(i) !== 10) fail("unexpected text after block scalar header")
+			++i
+			let out = "", empty = 0, any = false, more = false
+			while(i < n && !atMarker(i)) {
+				let j = i
+				while(s.charCodeAt(j) === 32 && (textIndent < 0 || j - i < textIndent)) ++j
+				c = s.charCodeAt(j)
+				if(c !== c) break
+				if(c === 10) {
+					++empty
+					i = j + 1
+					continue
+				}
+				// The first line with text sets the indentation, a line that is indented less ends the scalar
+				if(textIndent < 0 && j - i > indent) textIndent = j - i
+				if(textIndent < 0 || j - i < textIndent) break
+				// Folding joins lines with a space, except lines that are indented more
+				let lineMore = folded && isSpace(c)
+				if(!folded || lineMore || more) out += "\n".repeat(any ? empty + 1 : empty)
+				else out += empty ? "\n".repeat(empty) : any ? " " : ""
+				i = lineEnd()
+				out += s.slice(j, i++)
+				more = lineMore
+				any = true
+				empty = 0
+			}
+			// A last line without line break stays as it is
+			if(i > n) i = n
+			else if(chomp > 0) out += "\n".repeat(any ? empty + 1 : empty)
+			else if(chomp === 0 && any) out += "\n"
+			return out
+		}
+		// Reads a flow sequence [a, b] or a flow mapping {a: 1, b: 2}
+		function parseFlow(anchor, tag) {
+			let list = s.charCodeAt(i++) === 91, close = list ? 93 : 125, target = create(anchor, tag, list)
+			for(;;) {
+				skipBlank()
+				let c = s.charCodeAt(i)
+				if(c === close) {
+					++i
+					return target
+				}
+				if(c !== c) fail(list ? "unterminated [" : "unterminated {")
+				if(atIndicator(63)) {
+					++i
+					skipBlank()
+				}
+				let key = parseNode(0, Flow), value = null
+				skipBlank()
+				let pair = s.charCodeAt(i) === 58
+				if(pair) {
+					++i
+					skipBlank()
+					value = parseNode(0, Flow)
+					skipBlank()
+				}
+				if(!list) set(target, key, value)
+				else if(pair) {
+					// A pair in a sequence is a mapping with one entry
+					let single = {}
+					set(single, key, value)
+					add(target, single)
+				} else add(target, key)
+				c = s.charCodeAt(i)
+				if(c === 44) ++i
+				else if(c !== close) fail(list ? "expected , or ]" : "expected , or }")
+			}
+		}
+		// Reads the node after the "-", "?" or ":" of a block collection at column col:
+		// the rest of the line, or the following lines if they are indented more
+		function parseIndented(col, mode) {
+			if(!skipBlank()) return i < n ? parseNode(col, mode) : null
+			if(i >= n || atMarker(i)) return null
+			// The items of a sequence can have the same indentation as its key
+			let next = column()
+			return next > col || mode === Value && next === col && atIndicator(45) ? parseNode(col, mode) : null
+		}
+		// Reads a block sequence whose items start with "-" at column col
+		function parseBlockSequence(col, anchor, tag) {
+			let target = create(anchor, tag, true)
+			for(;;) {
+				++i
+				add(target, parseIndented(col, Block))
+				let next = nextLine()
+				if(next > col) fail("bad indentation")
+				if(next < col || !atIndicator(45)) return target
+			}
+		}
+		// Reads a block mapping whose keys start at column col
+		function parseBlockMapping(col, anchor, tag) {
+			let target = create(anchor, tag, false)
+			for(;;) {
+				let start = i, explicit = atIndicator(63), key, value = null
+				if(explicit) {
+					++i
+					key = parseIndented(col, Block)
+					skipBlank()
+				} else {
+					key = parseNode(col, Key)
+					while(isSpace(s.charCodeAt(i))) ++i
+					if(!atIndicator(58) || s.lastIndexOf("\n", i) >= start) fail("expected a key followed by a colon")
+				}
+				if(atIndicator(58) && (!explicit || column() === col)) {
+					++i
+					value = parseIndented(col, explicit ? Block : Value)
+				}
+				set(target, key, value)
+				let next = nextLine()
+				if(next > col) fail("bad indentation")
+				if(next < col) return target
+			}
+		}
+		// Reads the node at i. A block node belongs to a collection at column indent: its other lines are indented more
+		function parseNode(indent, mode) {
+			// compact: A block collection can start at i, which it can't after a key on the same line
+			let flow = mode === Flow, compact = mode === Block || mode === Value && isFirstOfLine()
+			let start = i, anchor = "", tag = "", own = false, c
+			while((c = s.charCodeAt(i)) === 38 || c === 33) {
+				++i
+				if(c === 38) anchor = readToken()
 				else {
-					let [id, ni] = readIdent(s, ctx.i)
-					if(!id) throw new Error("fromYaml: expected key")
-					key = id
-					ctx.i = ni
+					// !!name, !name, !handle!name or !<prefix:name>
+					let close = s.charCodeAt(i) === 60 ? s.indexOf(">", i) : -1
+					tag = close < 0 ? readToken() : s.slice(i, close)
+					if(close >= 0) i = close + 1
+					tag = tag.replace(/^.*[!:]/, "") || "str"
 				}
-				ctx.i = skipWs(s, ctx.i)
-				if(s.charCodeAt(ctx.i) !== 58) throw new Error("fromYaml: expected :")
-				++ctx.i
-				let value = parseValue(s, ctx)
-				if(obj instanceof Map) obj.set(key, value)
-				else obj[key] = value
-				ctx.i = skipWs(s, ctx.i)
-				let c = s.charCodeAt(ctx.i)
-				if(c === 125) { ++ctx.i; break }
-				if(c !== 44) throw new Error("fromYaml: expected , or }")
-				++ctx.i
+				let end = i
+				if(flow) skipBlank()
+				else if(skipBlank()) {
+					// No node follows. Only the items of a sequence can have the same indentation as its key
+					if(i >= n || atMarker(i) || column() <= indent && !(mode === Value && column() === indent && atIndicator(45))) {
+						i = end
+						c = 10
+						break
+					}
+					// Before a block mapping on the following lines, anchor and tag belong to the mapping. On the same line, they belong to its first key
+					own = true
+					compact = mode !== Key
+					start = i
+				}
 			}
+			if(!flow && (atIndicator(45) || atIndicator(63))) {
+				if(!compact) fail("a block collection can't start here")
+				return c === 45 ? parseBlockSequence(column(), anchor, tag) : parseBlockMapping(column(), anchor, tag)
+			}
+			let block = !flow && (c === 124 || c === 62), value
+			if(c === 91 || c === 123) value = parseFlow(anchor, tag)
+			else if(c === 42) {
+				++i
+				let name = readToken()
+				if(!anchors.has(name)) fail("unknown alias " + name)
+				value = anchors.get(name)
+			} else {
+				let quoted = c === 34 || c === 39
+				let text = block ? parseBlockScalar(indent) : quoted ? parseQuoted(c) : parsePlain(indent, flow)
+				value = tag === "str" || (block || quoted) && !/^(int|float|bool|null)$/.test(tag) ? text : resolve(text)
+			}
+			if(compact && !block) {
+				while(isSpace(s.charCodeAt(i))) ++i
+				if(atIndicator(58)) {
+					// The node is the first key of a block mapping
+					i = start
+					return parseBlockMapping(column(), own ? anchor : "", own ? tag : "")
+				}
+			}
+			if(anchor) anchors.set(anchor, value)
+			return value
 		}
-		function parseTagged(s, ctx, anchor) {
-			ctx.i += 2
-			let [tag, ni] = readIdent(s, ctx.i)
-			ctx.i = skipWs(s, ni)
-			if(!tag) throw new Error("fromYaml: missing tag")
-			let c = s.charCodeAt(ctx.i)
-			if(tag === "Map") {
-				let map = new Map()
-				if(anchor) ctx.anchors.set(anchor, map)
-				if(c === 91) {
-					++ctx.i
-					let pairs = []
-					parseFlowArrayInto(pairs, s, ctx)
-					for(let p of pairs)
-						map.set(p[0], p[1])
-				} else if(c === 123) {
-					++ctx.i
-					parseFlowMapInto(map, s, ctx)
-				} else throw new Error("fromYaml: expected [ or { after Map tag")
-				return map
+		for(;;) {
+			skipBlank()
+			if(i >= n) return documents
+			let c = s.charCodeAt(i), marker = atMarker(i)
+			if(marker && c === 46 || c === 37 && column() === 0) {
+				// End of a document or a directive like %YAML
+				i = lineEnd()
+				continue
 			}
-			let inst = construct(tag)
-			if(c === 91 && typeof inst.push !== "function") inst = []
-			if(anchor) ctx.anchors.set(anchor, inst)
-			if(c === 91) {
-				++ctx.i
-				parseFlowArrayInto(inst, s, ctx)
-			} else if(c === 123) {
-				++ctx.i
-				parseFlowMapInto(inst, s, ctx)
-			} else throw new Error("fromYaml: expected [ or { after tag")
-			return inst
+			if(marker) i += 3
+			documents.push(parseIndented(-1, Block))
+			if(nextLine() >= 0) fail("unexpected text")
 		}
-		function parseValue(s, ctx) {
-			ctx.i = skipWs(s, ctx.i)
-			let anchor = null
-			if(s.charCodeAt(ctx.i) === 38) {
-				++ctx.i
-				let [an, ni] = readIdent(s, ctx.i)
-				if(!an) throw new Error("fromYaml: bad anchor")
-				anchor = an
-				ctx.i = skipWs(s, ni)
-			}
-			if(s.charCodeAt(ctx.i) === 42) {
-				++ctx.i
-				let [al, ni] = readIdent(s, ctx.i)
-				if(!al) throw new Error("fromYaml: bad alias")
-				ctx.i = skipWs(s, ni)
-				if(anchor) throw new Error("fromYaml: anchor with alias")
-				let ref = ctx.anchors.get(al)
-				if(ref === undefined) throw new Error("fromYaml: unknown alias " + al)
-				return ref
-			}
-			if(ctx.i + 1 < s.length && s.charCodeAt(ctx.i) === 33 && s.charCodeAt(ctx.i + 1) === 33)
-				return parseTagged(s, ctx, anchor)
-			if(s.charCodeAt(ctx.i) === 91) {
-				let arr = []
-				if(anchor) ctx.anchors.set(anchor, arr)
-				++ctx.i
-				parseFlowArrayInto(arr, s, ctx)
-				return arr
-			}
-			if(anchor) throw new Error("fromYaml: anchor without tagged value")
-			return parseScalar(s, ctx)
-		}
-		let ctx = { i: 0, anchors: new Map() }
-		ctx.i = skipWs(yaml, 0)
-		if(ctx.i >= yaml.length) return null
-		let root = parseValue(yaml, ctx)
-		ctx.i = skipWs(yaml, ctx.i)
-		if(ctx.i < yaml.length) throw new Error("fromYaml: trailing input")
-		return root
 
 	static js dynamic fromXml: string xml
 		let length = xml.length
