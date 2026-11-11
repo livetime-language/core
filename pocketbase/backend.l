@@ -482,8 +482,17 @@ DatabaseTable<T>
 			onChange?.();
 			backend.onDataChange?.invoke();
 		}, {@filter:filter, @fields:fields, @expand:expand})
-		let result = await backend.pocketbase.collection(this.name).getList(1, perPage, {filter, sort, expand, skipTotal, fields})
-		this.items = result.items
+		// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
+		const collection = backend.pocketbase.collection(this.name), options = {filter, sort, expand, skipTotal, fields}, pageSize = Math.min(perPage, 1000)
+		const items = (await collection.getList(1, pageSize, options)).items
+		if(pageSize < perPage) {
+			for(let page = 2, last = items; last.length == pageSize && items.length < perPage; page++) {
+				last = (await collection.getList(page, pageSize, options)).items
+				for(const item of last) items.push(item)
+			}
+			if(items.length > perPage) items.length = perPage
+		}
+		this.items = items
 		if(this.items.length > 0) {
 			onChange?.();
 			backend.onDataChange?.invoke();
