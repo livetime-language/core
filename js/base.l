@@ -743,6 +743,13 @@ immutable class string
 	bool isLetter
 		return this.toLowerCase != this.toUpperCase
 
+	// The start and end of the word, run of spaces or punctuation mark at an index, by the rules of the user's language
+	// Null if the index is outside of the string or the platform has no Intl.Segmenter
+	js int[] wordAt: int index
+		if(!Intl.Segmenter) return null
+		let segment = (String.wordSegmenter ??= new Intl.Segmenter(undefined, {granularity:"word"})).segment(this).containing(index)
+		return segment ? [segment.index, segment.index + segment.segment.length] : null
+
 	// ------------------------------------------- Operators -------------------------------------------
 
 	inline string + string value
