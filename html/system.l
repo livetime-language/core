@@ -37,6 +37,7 @@ global transient skipInit unit system
 	// Location
 	public inline js string url	=> location.href
 	public inline js string host	=> location.host
+	public inline js string origin	=> location.origin
 	public inline js string locationHash	=> location.hash
 	public inline js string basePath	=> _basePath
 	public inline js string referrer	=> document.referrer

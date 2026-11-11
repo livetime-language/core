@@ -4,10 +4,12 @@ remoteMain.initialize()
 
 const isDebug = process.argv.includes("debug");
 const shouldOpenDevTools = process.argv.includes("devTools");
+const urlArgument = process.argv.find(arg => /^(https?|file):\/\//.test(arg));	// e.g. electron dist/pb_public http://localhost:24000
 
 // Node.js packages that run in the renderer (e.g. the Claude Agent SDK) need SharedArrayBuffer, which browsers only offer to cross-origin isolated pages
 app.commandLine.appendSwitch('enable-features', 'SharedArrayBuffer');
 if(isDebug) app.commandLine.appendSwitch('remote-debugging-port', '5198');
+
 const BrowserWindow = require('electron').BrowserWindow;
 var mainWindow = null;
 
@@ -17,7 +19,7 @@ app.on('window-all-closed', function() {
 });
 
 app.on('ready', function() {
-	mainWindow = new BrowserWindow({
+		mainWindow = new BrowserWindow({
 		width:	780,
 		height:	585,
 		icon:	__dirname + '/icon-v1.png',
@@ -45,7 +47,7 @@ app.on('ready', function() {
 		if(devices.length) callback(devices[0].deviceId);
 	});
 
-	if(isDebug)	{mainWindow.loadURL('http://localhost:8080');}
+	if(urlArgument)	{mainWindow.loadURL(urlArgument);}
 	else	{mainWindow.loadURL('file://' + __dirname + '/index.html');  mainWindow.setFullScreen(false); }
 
 	if(shouldOpenDevTools) mainWindow.openDevTools();
