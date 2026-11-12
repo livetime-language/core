@@ -225,7 +225,17 @@ transient skipInit static class backend
 		string id
 		for 15 id += validCharsForId[randomInteger(validCharsForId.length)]
 		return id
-		
+
+	// A PocketBase record id (15 characters from [a-z0-9]) that is always the same for the same key. The database has at most one
+	// record with it: the server rejects a second one, whichever client adds it and whatever that client has loaded. Use it with
+	// DatabaseTable.addOnce for records that must exist only once, e.g. one per user and day. Everybody who adds the record must
+	// be able to read it
+	// Example:
+	//     Entry entry = await entries.addOnce {id:await backend.idOf("{user.id} {day}"), user:user.id, day}
+	js async string idOf: string key
+		const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)))
+		return Array.from(hash.subarray(0, 15), byte => (byte % 36).toString(36)).join("")
+
 	// Batch several add, update, remove statements into a transaction in a single request
 	// Useful to save requests as well as ensuring several statements always all succeed or all fail
 	// Important: You need to await all add/update/remove calls (just like outside a batch) to ensure their errors are caught
@@ -291,6 +301,25 @@ DatabaseTable<T>
 		dynamic[] dynamicList = items
 		if dynamicList.none.id == dynamicItem.id
 			items.add item
+
+	// Adds an item with a given id (backend.idOf) unless the database has an item with this id, and returns the local item with
+	// this id. That is the item of the database if it exists already, e.g. because another client added it at the same time: the
+	// server decides which client adds it, so it is added only once even if the local items are not up to date. Returns null if
+	// the database has the item but the user may not read it. Not in a batch
+	importance:3
+	async T addOnce: T item // An item whose id member variable is set
+		dynamic dynamicItem = item
+		dynamic existing
+		try
+			await add item
+		catch
+			// The server rejects the id: it is taken. The local items get the item unless a realtime event has brought it
+			dynamic rejected = error
+			if not rejected.response?.data?.id then throw error
+			existing = await fetchOne("id = '{dynamicItem.id}'")
+		dynamic[] dynamicList = items
+		if existing and dynamicList.none.id == dynamicItem.id then dynamicList.add existing
+		return cast dynamicList.find.id == dynamicItem.id
 
 	// If the item has a valid id member variable, update the item, otherwise add it to the database table
 	importance:3
