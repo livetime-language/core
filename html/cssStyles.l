@@ -42,6 +42,16 @@ enum Unit
 	auto = "auto"
 	none = "none"
 	
+interface Rect
+	float left, top, right, bottom
+	
+	inline js Vector2 topLeft => {left, top}
+	inline js Vector2 topRight => {right, top}
+	inline js Vector2 bottomLeft => {left, bottom}
+	inline js Vector2 bottomRight => {right, bottom}
+	inline js Vector2 size => {right - left, bottom - top}
+	inline js Vector2 center => {(left + right) / 2, (top + bottom) / 2}
+	
 struct Vector2
 	importance:5 float x // The x coordinate of the vector
 	importance:5 float y // The y coordinate of the vector

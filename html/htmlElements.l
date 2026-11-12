@@ -878,3 +878,38 @@ global static class html
 		
 		currentOverlay = nextNode
 		return element
+		
+	global dropdown: bool openOnClick = true
+		             Border border = {1px solid #e4e4e7}
+		             BoxShadow boxShadow = {offsetX:4 offsetY:4 blur:8 color:#00000010}
+					 Color backgroundColor = white
+					 Color overlayColor = #00000000
+		             void(void() openDropdown) alwaysShown
+		             void(void() closeDropdown) whenOpen
+		state bool isOpen = false
+		state Vector2 pos = {0, 0}
+		HTMLElement alwaysShownElement
+		
+		alwaysShownElement = row
+			alwaysShown openDropdown:
+				isOpen = not isOpen
+				if isOpen
+					rect := alwaysShownElement.getBoundingClientRect()
+					pos = {rect.left, rect.bottom}		
+				refresh				
+		onClick:
+			if not openOnClick then return
+			isOpen = not isOpen
+			if isOpen
+				rect := alwaysShownElement.getBoundingClientRect()
+				pos = {rect.left, rect.bottom}		
+			refresh
+			
+		if isOpen	
+			overlay backgroundColor:overlayColor, display:block, zIndex:100
+				column position:absolute, left:pos.x, top:pos.y,
+						padding:4, borderRadius:10, border, boxShadow, backgroundColor
+					whenOpen(closeDropdown:isOpen = false; refresh)
+			onClickOutside:
+				isOpen = false
+				refresh

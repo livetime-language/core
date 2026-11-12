@@ -76,6 +76,7 @@ dynamic HTMLElement
 	inline js void setAttribute(string name, string value) this.setAttribute(name, value)
 	inline js HTMLElement querySelector(string selector) this.querySelector(selector)
 	inline js HTMLElement[] querySelectorAll(string selector) this.querySelectorAll(selector)
+	inline js Rect getBoundingClientRect() this.getBoundingClientRect()
 		
 	native void(HtmlEvent ev) onclick
 	native void(HtmlEvent ev) oncontextmenu
