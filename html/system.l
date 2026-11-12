@@ -112,10 +112,15 @@ global transient skipInit unit system
 			sendFinished
 			updatePageIconAndTitle
 		
-	js async void loadFont: string name
-		let font = new FontFace('OpenSans', `url(${_basePath}${name})`);
-		await font.load();
+	// Load a font file as a css font family. Text that is shown before the font is loaded uses the next font of its font family list
+	// until then, so await the call if the first text needs the font
+	// Example:
+	//     system.loadFont "media/Inter.woff2", family:"Inter"
+	//     div "Hello", fontFamily:"Inter, sans-serif"
+	js async void loadFont: string file, string family = "OpenSans"
+		let font = new FontFace(family, `url("${_basePath}${file}")`, {display:"swap"});
 		document.fonts.add(font);
+		await font.load();
 		
 	js void initAll
 		if(window.reset_state != undefined) reset_state()
