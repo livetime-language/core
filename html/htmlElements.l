@@ -879,13 +879,46 @@ global static class html
 		currentOverlay = nextNode
 		return element
 		
-	global dropdown: bool openOnClick = true
-		             Border border = {1px solid #e4e4e7}
-		             BoxShadow boxShadow = {offsetX:4 offsetY:4 blur:8 color:#00000010}
-					 Color backgroundColor = white
-					 Color overlayColor = #00000000
-		             void(void() openDropdown) alwaysShown
-		             void(void() closeDropdown) whenOpen
+	// Render a dropdown in the draw function. The elements in the first block are always shown, a click on them opens a menu with
+	// the elements of the whenOpen block below them. A click outside of the menu closes it. The menu starts at the left edge of the
+	// always shown elements and moves to the left if it would leave the window.
+	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state), so
+	// dropdowns drawn in a loop must keep their order while one of them is open.
+	// Example: Choose one of several options, which closes the menu
+	//     app
+	//         string[] sizes = ["Small", "Medium", "Large"]
+	//         string size = "Medium"
+	//         draw
+	//             dropdown
+	//                 div "Size: {size}", padding:8, cursor:pointer
+	//             whenOpen:
+	//                 for option in sizes
+	//                     div option, padding:8, cursor:pointer
+	//                         onClick:
+	//                             size = option
+	//                             closeDropdown
+	// Example: Only the arrow opens the menu, which stays open while the user toggles its options
+	//     app
+	//         string[] toppings = ["Cheese", "Ham", "Olives"]
+	//         string[] chosen
+	//         draw
+	//             dropdown openOnClick:false
+	//                 row gap:8
+	//                     div chosen ? chosen.join(", ") : "No toppings"
+	//                     div "▾", cursor:pointer, onClick:openDropdown
+	//             whenOpen:
+	//                 for topping in toppings
+	//                     div "{chosen.includes(topping) ? "☑" : "☐"} {topping}", padding:8, cursor:pointer
+	//                         onClick:
+	//                             chosen.toggle topping
+	//                             refresh
+	global dropdown: bool openOnClick = true	// Whether a click on the always shown elements opens the menu. If false, call openDropdown where it should open
+		             Border border = {1px solid #e4e4e7}	// The border of the menu
+		             BoxShadow boxShadow = {offsetX:4 offsetY:4 blur:8 color:#00000010}	// The shadow of the menu
+					 Color backgroundColor = white	// The background color of the menu
+					 Color overlayColor = #00000000	// The color that covers the page behind the menu while it is open, transparent by default
+		             void(void() openDropdown) alwaysShown	// The elements that are always shown. They can call openDropdown to open the menu
+		             void(void() closeDropdown) whenOpen	// The elements of the menu. They can call closeDropdown to close it
 		state bool isOpen = false
 		state Vector2 pos = {0, 0}
 		HTMLElement alwaysShownElement
@@ -907,9 +940,12 @@ global static class html
 			
 		if isOpen	
 			overlay backgroundColor:overlayColor, display:block, zIndex:100
-				column position:absolute, left:pos.x, top:pos.y,
+				menu := column position:absolute, left:pos.x, top:pos.y,
 						padding:4, borderRadius:10, border, boxShadow, backgroundColor
 					whenOpen(closeDropdown:isOpen = false; refresh)
+				// A menu that would leave the window on the right moves to the left
+				float outside = menu.getBoundingClientRect().right + 4 - documentBody.clientWidth
+				if outside > 0 then menu.style.left = "{pos.x - outside atLeast 4}px"
 			onClickOutside:
 				isOpen = false
 				refresh

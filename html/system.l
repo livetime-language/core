@@ -370,6 +370,16 @@ global transient skipInit unit system
 	js void toggleDevTools
 		if(typeof require != "undefined") require('@electron/remote').getCurrentWindow().toggleDevTools()
 		
+	// Asks the user a question in a dialog with a button to confirm and one to cancel. Returns whether the user confirmed
+	// Example:
+	//     if system.confirm "Delete {item.name}?", ok:"Delete" then items.remove item
+	js bool confirm: string message     // The question
+	                 string ok = "OK"   // The label of the button that confirms (browsers always show "OK")
+		// The native dialog of Electron: after its window.confirm, text fields can't get the focus on Windows
+		if(!system.isElectron) return window.confirm(message)
+		const remote = require('@electron/remote')
+		return remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {type:"question", message, buttons:[ok, "Cancel"], defaultId:0, cancelId:1}) == 0
+		
 enum lowercase string DataTransferItemKind: String, File
 		
 interface DataTransferItem

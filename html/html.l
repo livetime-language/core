@@ -400,6 +400,8 @@ global priority low skipInit static class html
 	private HTMLElement currentOverlay
 	private dynamic currentStyleSheet
 	private bool refreshInProgress = false
+	private float lastRefresh // When the last refresh ended (Time.preciseTime)
+	private int refreshTimer  // The delay of the refresh that refreshSoon is waiting for, 0 if it isn't waiting
 
 	// Call refresh to re-render the html after you changed any data.
 	// Example:
@@ -440,6 +442,22 @@ global priority low skipInit static class html
 			system.onError .
 		finally
 			refreshInProgress = false
+			lastRefresh = Time.preciseTime
+			clearDelay refreshTimer
+			refreshTimer = 0
+		
+	// Call refreshSoon instead of refresh for changes that can arrive in bursts, like realtime updates of a database or the progress
+	// of a download. It re-renders the html at once, unless it was rendered less than the given interval ago: then it re-renders
+	// once when the interval is over, however often it is called until then.
+	// Example:
+	//     app
+	//         start
+	//             backend.onDataChange = refreshSoon
+	global void refreshSoon: float interval = 50 // The time in milliseconds the page rests between two re-renders
+		if refreshTimer then return
+		float wait = lastRefresh + interval - Time.preciseTime
+		if wait <= 0 then refresh
+		else              refreshTimer = delay wait, refresh
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/system.scale)
 	inline js void scrollToTop() window.scrollTo(0,0)
