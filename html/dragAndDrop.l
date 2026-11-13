@@ -6,6 +6,8 @@ global static class html
 	// Draw a list of items that the user can reorder and move into other lists of the same group by dragging them.
 	// Dragging starts when the user presses an element with cursor:move (on touch screens: presses and holds it) and moves the pointer.
 	// The parent element is the drop zone. A preview with the size of the dragged item shows where it will be dropped.
+	// A hint at the pointer can tell what dropping the item on a list does, for example while the user holds CmdOrCtrl (Cmd on Apple
+	// devices, Ctrl everywhere else).
 	// Example:
 	//     column
 	//         forDraggable stack.cards, angleWhileDragging:10
@@ -20,7 +22,9 @@ global static class html
 		                 string group = null	// Items can be moved between lists of the same group (by default, lists drawn by the same line of code)
 		                 void(T it, int i) do	// Draw the item
 		                 stored void(T it) onDrag = null	// The user started to drag the item
-		                 stored void(T it, T prev, T next) onDrop = null	// The user dropped the item between prev and next (its neighbors in this list without the dragged item, null at the start or end)
+		                 stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null	// The user dropped the item between prev and next (its neighbors in this list without the dragged item, null at the start or end), cmdOrCtrl tells whether CmdOrCtrl was held
+		                 stored string(T it, bool cmdOrCtrl) hint = null	// The html shown at the pointer while the item is dragged over this list (none if empty), cmdOrCtrl tells whether CmdOrCtrl is held
+		                 Style hintStyle = {padding:{topAndBottom:2 leftAndRight:6}, borderRadius:4, fontSize:12, color:#ffffff, backgroundColor:#303030}	// The style of the hint
 		                 SourceCodeLocation location
 		ItemDropZone<T> zone = {element:parentNode, group:group ? group : location.toString, items, onDrag, onDrop}
 		dropZones.add zone
@@ -39,6 +43,13 @@ global static class html
 			zone.wrappers.add wrapper
 			if not isDragged then setContentsOnly wrapper
 		if d?.zone == zone and d.index == index then d.preview = div key:"dropPreview", style:withDraggedSize(dropPreview)
+		if d?.zone == zone
+			// Only lists of the same group exchange items, so the source has the same item type
+			ItemDropZone<T> source = cast d.source
+			string text = hint != null ? hint(source.items[d.sourceIndex], d.cmdOrCtrl) : ""
+			if text then d.hint = div text, key:"dragHint", style:hintStyle
+			else         d.hint = null
+			moveHint
 
 	// The wrapper of an item doesn't generate a box, unless the item is dragged
 	private js void setContentsOnly: HTMLElement wrapper
@@ -47,6 +58,11 @@ global static class html
 	// The style of the drop preview with the size and margins of the dragged item, unless the style specifies them
 	private js Style withDraggedSize: Style style
 		return {...html.dragging.previewStyle, ...style}
+
+	// The hint follows the pointer
+	private js void moveHint
+		const d = html.dragging, s = system.scale
+		if(d.hint) Object.assign(d.hint.style, {position:"fixed", left:(d.x + 12)/s + "px", top:(d.y + 16)/s + "px", zIndex:"1001", pointerEvents:"none", whiteSpace:"nowrap"})
 
 	private startDrag: PointerEvent event, DropZone zone, int index, float angle
 		if event.button != 0 or dragging or getCursor(event.target) != "move" then return
@@ -88,6 +104,7 @@ global static class html
 	private js void moveDragged
 		const d = html.dragging, s = system.scale
 		d.element.style.cssText = `position:fixed;left:${(d.x - d.offsetX)/s}px;top:${(d.y - d.offsetY)/s}px;width:${(d.itemWidth + d.marginX)/s}px;rotate:${d.angle}deg;pointer-events:none;z-index:1000`
+		html.moveHint()
 		let zone = d.zone, best = Infinity, cs, horizontal
 		for(const z of html.dropZones) {
 			if(z.group != d.source.group || d.element.contains(z.element)) continue
@@ -163,6 +180,13 @@ global static class html
 			// Touches that move before they were held long enough scroll instead
 			else if(Math.hypot(d.x - d.startX, d.y - d.startY) > 4) d.timer ? html.endDrag(false) : html.beginDrag()
 		})
+		// Hints and drops can depend on CmdOrCtrl. Capturing, so a drop knows the keys of its pointerup
+		for(const type of ["pointermove", "pointerup", "keydown", "keyup"]) addEventListener(type, ev => {
+			const d = html.dragging, cmdOrCtrl = html.isAppleDevice() ? ev.metaKey : ev.ctrlKey
+			if(!d || d.cmdOrCtrl == cmdOrCtrl) return
+			d.cmdOrCtrl = cmdOrCtrl
+			if(d.started) html.refresh()
+		}, true)
 		addEventListener("keydown", ev => { if(ev.key == "Escape" && html.dragging?.started) { ev.stopPropagation(); html.endDrag(false) } }, true)
 		addEventListener("touchmove", ev => { if(html.dragging?.started) ev.preventDefault() }, {passive:false})
 		addEventListener("contextmenu", ev => { if(html.dragging) ev.preventDefault() }, true)
@@ -187,6 +211,8 @@ class Dragging
 	DropZone zone	// The list the item will be dropped into
 	HTMLElement preview	// The drop preview in that list
 	int index	// The position in that list, not counting the dragged item
+	bool cmdOrCtrl	// The user holds Cmd (Apple devices) or Ctrl (everywhere else)
+	HTMLElement hint	// The hint at the pointer (null if there is none)
 
 // A list that forDraggable drew into an element
 class DropZone
@@ -199,7 +225,7 @@ class DropZone
 DropZone ItemDropZone<T>
 	T[] items
 	stored void(T it) onDrag = null
-	stored void(T it, T prev, T next) onDrop = null
+	stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null
 
 	// Call onDrag with the item the user started to drag
 	drag: Dragging d
@@ -211,4 +237,4 @@ DropZone ItemDropZone<T>
 		ItemDropZone<T> source = cast d.source
 		T item = source.items[d.sourceIndex]
 		rest := items.filter . != item
-		onDrop item, rest[d.index - 1], rest[d.index]
+		onDrop item, rest[d.index - 1], rest[d.index], d.cmdOrCtrl
