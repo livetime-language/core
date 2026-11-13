@@ -443,6 +443,32 @@ global static class html
 		element.src = system.basePath + images[model ? 1 : 0].src
 		element.onclick = model = !model; onInput; changeHandler; refresh
 
+	// Render a html element in the draw function that toggles between two images when the user clicks it, with a text next to the image.
+	// The model variable you pass in will be updated when the user clicks the image or the text.
+	// Example: We place the images "On.png" and "Off.png" in "dist/pb_public/media".
+	//     app
+	//         bool notify
+	//         draw
+	//             toggle model:notify, images:[Off, On], text:"Notify me"
+	importance:4
+	global inline void toggle: bool model                        // The variable that holds the value. This will be updated when the user clicks the toggle button
+		                       Image[] images                    // A list with one image per state of the toggle
+		                       string text                       // The text next to the image
+		                       Dimension imageWidth = 32px       // The width of the image
+		                       expand Attributes attributes = {} // The attributes of the HTML element
+		                       expand Style style = null         // The css style of the HTML element, a row with the image and the text
+		                       dynamic data = null               // The data attributes of the element
+		                       SourceCodeLocation location
+		stored void() changeHandler = currentChangeHandler
+		let element = div attributes, style, data, location
+			img images[model ? 1 : 0], width:imageWidth, flexShrink:0
+			div text
+		element.style.display = "flex"
+		element.style.alignItems = "center"
+		element.style.gap = "8px"
+		element.style.cursor = "pointer"
+		element.onclick = model = !model; changeHandler; refresh
+
 	// ---------------------------------------- Input & TextArea ----------------------------------------
 	
 	int focusTabIndex = 0
