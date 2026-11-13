@@ -116,6 +116,10 @@ KeyListener
 	KeyCode key
 	void(KeyCode key) do
 	bool whileEditingText = true
+
+KeyboardShortcut
+	void() do
+	bool whileEditingText = true
 	
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up, Canceled
@@ -136,7 +140,7 @@ class Touch
 	
 unit html
 	KeyListener[] keyDownListeners
-	void()[string] keyboardShortcuts	// By accelerator as normalizeAccelerator writes it
+	KeyboardShortcut[string] keyboardShortcuts	// By accelerator as normalizeAccelerator writes it
 	void() defaultButtonToTriggerWithEnterKey = null
 		
 	js void initGlobalEventHandlers
@@ -151,12 +155,14 @@ unit html
 			}
 			const focused = document.activeElement;
 			const editingText = ev.isComposing || focused?.isContentEditable || focused?.tagName == "INPUT" || focused?.tagName == "TEXTAREA";
-			// Keys that type a character with Alt or Shift (Alt+T is "†" on a Mac, Shift+1 is "!") are named after the letter or digit of the physical key
+			// Keys that type another character with Alt or Shift (on a Mac Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after
+			// the letter or digit they type without modifiers (keyCode follows the keyboard layout)
 			const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
 			if(!editingText || ev.ctrlKey || ev.altKey || ev.metaKey || /^(F\d+|Escape)$/.test(key)) {
-				const shortcut = html.keyboardShortcuts.get(modifiers + (key.length == 1 && !/[a-z0-9]/i.test(key) && /^(Key|Digit)/.test(ev.code) ? ev.code.slice(-1) : key).toLowerCase());
-				if(shortcut) {
-					shortcut.invoke()
+				const typesOther = (key == "Dead" || key.length == 1 && !/[a-z0-9]/i.test(key)) && (ev.keyCode >= 48 && ev.keyCode <= 57 || ev.keyCode >= 65 && ev.keyCode <= 90);
+				const shortcut = html.keyboardShortcuts.get(modifiers + (typesOther ? String.fromCharCode(ev.keyCode) : key).toLowerCase());
+				if(shortcut && (shortcut.whileEditingText || !editingText)) {
+					shortcut.do.invoke()
 					ev.preventDefault();
 					ev.stopPropagation();
 					return false;
@@ -189,7 +195,8 @@ unit html
 	// Register accelerators in app.start. An accelerator has one listener, the last one registered
 	onKeyboardShortcut: string accelerator
 		          stored void() do
-		keyboardShortcuts[normalizeAccelerator(accelerator)] = do
+		          bool whileEditingText = true	// Handle the accelerator also while the user edits text in a text field (with false, the keys keep their default action there: on a Mac Alt+L types "@" on a German keyboard and Ctrl+A moves the caret to the start of the line)
+		keyboardShortcuts[normalizeAccelerator(accelerator)] = {do, whileEditingText}
 
 	// The accelerator as the keydown listener names the pressed keys: lowercase, the modifiers ctrl, alt, shift and meta in this order
 	private js string normalizeAccelerator: string accelerator
