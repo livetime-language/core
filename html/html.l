@@ -404,11 +404,6 @@ global priority low skipInit static class html
 	private int refreshTimer  // The delay of the refresh that refreshSoon is waiting for, 0 if it isn't waiting
 
 	// Call refresh to re-render the html after you changed any data.
-	// Example:
-	//     app
-	//     	   int counter = 0
-	//         draw
-	//             button "You clicked this button {counter} times", onClick:counter++; refresh
 	global void refresh
 		if refreshInProgress 
 			// This might hapapen because removing a node in div triggers its onBlur, which calls refresh
