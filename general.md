@@ -8,6 +8,9 @@ In documents and comments, remove information that is no longer relevant. Do NOT
 Write fast, efficient, elegant code. Keep code short, simple and easy to reason about.
 Avoid small, trivial functions. Avoid functions you only call once (unless there is a good reason).
 
+# Descriptive naming
+Use descriptive names for variables, functions, and classes that clearly convey their purpose and what they do.
+
 # LiveTime Programming Language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).
 
