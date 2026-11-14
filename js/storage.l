@@ -29,6 +29,10 @@ immutable Bytes
 	inline js Bytes slice: int start, int end
 		this.slice(start, end)
 
+	// A url of the bytes, e.g. for an image element (svg images need their type "image/svg+xml")
+	inline js string objectUrl: string mimeType = ""
+		URL.createObjectURL(new Blob([this], {type: mimeType}))
+
 transient storage
 	private dynamic basePathOrHandle = ""
 	private dynamic systemPaths = {}	// Resolved Home and UserData paths by BasePathType

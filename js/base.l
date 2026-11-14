@@ -672,6 +672,18 @@ immutable class string
 		}
 		return result
 	
+	// A hash of the string (53 bits, cyrb53) as 14 hex digits, e.g. to name content. Not cryptographic
+	js string hash
+		let h1 = 0xdeadbeef, h2 = 0x41c6ce57
+		for(let i = 0; i < this.length; i++) {
+			const c = this.charCodeAt(i)
+			h1 = Math.imul(h1 ^ c, 2654435761)
+			h2 = Math.imul(h2 ^ c, 1597334677)
+		}
+		h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+		h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+		return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0")
+
 	js string getExtension
 		let dot = this.lastIndexOf(".")
 		if(dot != -1) return this.substring(dot+1)

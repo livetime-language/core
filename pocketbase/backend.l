@@ -635,7 +635,27 @@ DatabaseTable<T>
 		listOfFiles.remove(file);
 		backend.onDataChange?.invoke();
 		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
-		
+
+	// Adds a file to a file field (e.g. card.images) and returns its name in the database, which is the name with a random suffix
+	// Example:
+	//     string name = await cards.addFile card.images, bytes, "photo.png"
+	importance:4
+	async js string addFile: Reference<string[]> model
+		                     dynamic data	// Bytes, a Blob or a data url
+		                     string name
+		if(typeof data == "string") data = await (await fetch(data)).blob()
+		const form = new FormData()
+		form.append(model.key + "+", data instanceof Blob ? data : new Blob([data]), name)
+		const before = model.container[model.key] || []
+		const files = (await backend.pocketbase.collection(this.name).update(model.container.id, form))[model.key]
+		model.container[model.key] = files
+		return files.find(file => !before.includes(file))
+
+	// The url of a file of a record's file field
+	importance:4
+	js string fileUrl: string id, string name
+		return backend.pocketbase.buildURL("/api/files/" + encodeURIComponent(this.name) + "/" + encodeURIComponent(id) + "/" + encodeURIComponent(name))
+
 	baseUrl => "{backend.url}/api/files/{this.name}"
 
 	static js Promise<string> getDataUrlForFile: File file

@@ -587,6 +587,26 @@ global priority low skipInit static class html
 		alert(log)
 
 		return userMedia
+
+	// An image as a data url of a type, scaled down to fit into maxSize x maxSize (e.g. to send it to an AI model). Other origins have
+	// to allow it (CORS). Throws if the image can't be loaded
+	// Example:
+	//     string dataUrl = await html.imageDataUrl(url, 2000)
+	importance:3
+	async js string imageDataUrl: string url
+		                          int maxSize
+		                          string type = "image/webp"	// Browsers that can't encode it use image/png
+		                          float quality = 0.9
+		const image = document.createElement("img")
+		image.crossOrigin = "anonymous"
+		image.src = url
+		await image.decode()
+		const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight))
+		const canvas = document.createElement("canvas")
+		canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+		canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+		canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height)
+		return canvas.toDataURL(type, quality)
 	
 	private js void setStyle: HTMLElement element, dynamic style
 		// We shouldn't need this because the same line of code can't output less styles than previously
