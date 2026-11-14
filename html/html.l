@@ -278,7 +278,13 @@ HTMLElement WebView
 	inline js void goBack() this.goBack()
 	inline js void goForward() this.goForward()
 	inline js void reload() this.reload()
+	// Also loads the scripts and images of the page again: a reload takes them from the cache while it considers them fresh, which
+	// it does for a tenth of their age if the server sends no Cache-Control header
+	inline js void reloadIgnoringCache() this.reloadIgnoringCache()
 	inline js void openDevTools() this.openDevTools()
+	// The session of the partition loads without the HTTP cache. Only before the first webview of the partition is created: a session
+	// keeps the options it was created with
+	static inline js void disableCache(string partition) require("\x40electron/remote").session.fromPartition(partition, {cache:false})
 
 struct float
 	inline Dimension toDimension
