@@ -153,8 +153,9 @@ unit html
 				ev.stopPropagation();
 				return false;
 			}
-			const focused = document.activeElement;
-			const editingText = ev.isComposing || focused?.isContentEditable || focused?.tagName == "INPUT" || focused?.tagName == "TEXTAREA";
+			// The element the key was pressed in, also if its own key handler has blurred or removed it (Enter that ends editing)
+			const keyTarget = ev.target;
+			const editingText = ev.isComposing || keyTarget.isContentEditable || keyTarget.contentEditable == "true" || keyTarget.contentEditable == "plaintext-only" || keyTarget.tagName == "INPUT" || keyTarget.tagName == "TEXTAREA";
 			// Keys that type another character with Alt or Shift (on a Mac Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after
 			// the letter or digit they type without modifiers (keyCode follows the keyboard layout)
 			const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
