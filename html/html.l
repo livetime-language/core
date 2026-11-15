@@ -87,6 +87,7 @@ dynamic HTMLElement
 	native void(HtmlEvent ev) onclick
 	native void(HtmlEvent ev) oncontextmenu
 	native void(PointerEvent ev) onpointerdown
+	native void(PointerEvent ev) onmousedown
 	native void(PointerEvent ev) onpointermove
 	native void(PointerEvent ev) onpointerup
 	native void(PointerEvent ev) onpointerover
@@ -206,6 +207,7 @@ importance:5 dynamic Attributes
 	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element
 	native void(PointerEvent ev) onPointerDown = null	// Execute this code when the user presses down the left mouse button on the HTML element
+	native void(PointerEvent ev) onMouseDown = null	// Execute this code when the user presses down a mouse button on the HTML element (also after a touch). Its preventDefault keeps the focus and the caret where they are
 	native void(PointerEvent ev) onPointerOver = null	// Execute this code when the pointer hovers over the element
 	native void(PointerEvent ev) onPointerOut = null	// Execute this code when the pointer stops hovering over the element
 	native void(HtmlKeyboardEvent ev) onKeyDown = null	// Execute this code when the user presses a key on the keyboard

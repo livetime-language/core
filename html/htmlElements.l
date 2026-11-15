@@ -77,6 +77,7 @@ global static class html
 			if attributes.onClick != null then 	element.onclick = attributes.onClick
 			if attributes.onRightClick != null then	element.oncontextmenu = attributes.onRightClick
 			if attributes.onPointerDown != null then	element.onpointerdown = attributes.onPointerDown
+			if attributes.onMouseDown != null then	element.onmousedown = attributes.onMouseDown
 			if attributes.onPointerOver != null then	element.onpointerover = attributes.onPointerOver
 			if attributes.onPointerOut != null then 	element.onpointerout  = attributes.onPointerOut
 
