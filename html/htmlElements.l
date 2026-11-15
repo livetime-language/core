@@ -910,7 +910,8 @@ global static class html
 		
 	// Render a dropdown in the draw function. The elements in the first block are always shown, a click on them opens a menu with
 	// the elements of the whenOpen block below them. A click outside of the menu closes it. The menu starts at the left edge of the
-	// always shown elements and moves to the left if it would leave the window.
+	// always shown elements, moves to the left if it would leave the window on the right and opens above them if it would leave
+	// it at the bottom.
 	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state), so
 	// dropdowns drawn in a loop must keep their order while one of them is open.
 	// Example: Choose one of several options, which closes the menu
@@ -949,32 +950,30 @@ global static class html
 		             void(void() openDropdown) alwaysShown	// The elements that are always shown. They can call openDropdown to open the menu
 		             void(void() closeDropdown) whenOpen	// The elements of the menu. They can call closeDropdown to close it
 		state bool isOpen = false
-		state Vector2 pos = {0, 0}
+		state Rect anchor	// Where the always shown elements were when the menu opened
 		HTMLElement alwaysShownElement
 		
 		alwaysShownElement = row
 			alwaysShown openDropdown:
 				isOpen = not isOpen
-				if isOpen
-					rect := alwaysShownElement.getBoundingClientRect()
-					pos = {rect.left, rect.bottom}		
-				refresh				
+				if isOpen then anchor = alwaysShownElement.getBoundingClientRect()
+				refresh
 		onClick:
 			if not openOnClick then return
 			isOpen = not isOpen
-			if isOpen
-				rect := alwaysShownElement.getBoundingClientRect()
-				pos = {rect.left, rect.bottom}		
+			if isOpen then anchor = alwaysShownElement.getBoundingClientRect()
 			refresh
 			
 		if isOpen	
 			overlay backgroundColor:overlayColor, display:block, zIndex:100
-				menu := column position:absolute, left:pos.x, top:pos.y,
+				menu := column position:absolute, left:anchor.left, top:anchor.bottom,
 						padding:4, borderRadius:10, border, boxShadow, backgroundColor
 					whenOpen(closeDropdown:isOpen = false; refresh)
-				// A menu that would leave the window on the right moves to the left
-				float outside = menu.getBoundingClientRect().right + 4 - documentBody.clientWidth
-				if outside > 0 then menu.style.left = "{pos.x - outside atLeast 4}px"
+				// A menu that would leave the window (the overlay covers it) on the right moves to the left, at the bottom it opens above
+				rect := menu.getBoundingClientRect()
+				overlayElement := menu.parentNode
+				if rect.right + 4 > overlayElement.clientWidth then menu.style.left = "{overlayElement.clientWidth - 4 - (rect.right - rect.left) atLeast 4}px"
+				if rect.bottom + 4 > overlayElement.clientHeight then menu.style.top = "{anchor.top - (rect.bottom - rect.top) atLeast 4}px"
 			onClickOutside:
 				isOpen = false
 				refresh
