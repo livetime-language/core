@@ -9,7 +9,7 @@ Write fast, efficient, elegant code. Keep code short, simple and easy to reason 
 Avoid small, trivial functions. Avoid functions you only call once (unless there is a good reason).
 
 # Descriptive naming
-Use descriptive names for variables, functions, and classes that clearly convey their purpose and what they do.
+Prefer long, descriptive names over short ones that don't convey what they do or represent.
 
 # LiveTime Programming Language
 LiveTime uses indentation with tabs to indicate a block of code. Always use tabs for indentation (never spaces).

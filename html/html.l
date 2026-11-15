@@ -22,7 +22,9 @@ dynamic HTMLElement
 	string src
 	dynamic srcObject
 	HTMLElement firstChild
+	HTMLElement lastChild
 	HTMLElement nextSibling
+	HTMLElement previousSibling
 	HTMLElement parentNode
 	string href
 
