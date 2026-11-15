@@ -57,12 +57,16 @@ dynamic HTMLElement
 	HTMLElement[string] childrenByKey
 	string key
 	bool used
+	bool[string] sourceLocationsNotFound	// The source locations that html.findNodeToReuse didn't find from this node on
+	int sourceLocationsNotFoundInRefresh	// The refresh that sourceLocationsNotFound belongs to
 	bool scrolledIntoView
 	bool focusedBeforeClick
 		
 	inline js HTMLElement remove() this.remove()
 	inline js void appendChild(HTMLElement element) this.appendChild(element)
-	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode)
+	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode) // Appends newNode if referenceNode is null
+	// Moves a node of the document without taking its focus or reloading its iframes (moveBefore, where the browser has it), inserts other nodes
+	inline js void moveOrInsertBefore(HTMLElement node, HTMLElement referenceNode) (this.moveBefore && node.isConnected && this.isConnected ? this.moveBefore(node, referenceNode) : this.insertBefore(node, referenceNode))
 	inline js void setSelectionRange(int from, int to) this.setSelectionRange(from, to)
 	inline js void select() this.select()
 	inline js void selectContents() getSelection().selectAllChildren(this)
@@ -408,6 +412,7 @@ global priority low skipInit static class html
 	private HTMLElement currentOverlay
 	private dynamic currentStyleSheet
 	private bool refreshInProgress = false
+	private int refreshCount
 	private float lastRefresh // When the last refresh ended (Time.preciseTime)
 	private int refreshTimer  // The delay of the refresh that refreshSoon is waiting for, 0 if it isn't waiting
 
@@ -424,6 +429,7 @@ global priority low skipInit static class html
 			return
 		try
 			refreshInProgress = true
+			refreshCount++
 			system.resetStateIndex
 			currentStyleSheet.replaceSync("")
 			nodesCreated = nodesUpdated = 0

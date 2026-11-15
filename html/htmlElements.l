@@ -43,26 +43,27 @@ global static class html
 				nextNode = currentNode.nextSibling
 			else
 				nextNode = currentNode
-				if nextNode then parentNode.insertBefore element, nextNode
-				else         parentNode.appendChild element
+				parentNode.moveOrInsertBefore element, nextNode
 			
 		else	
-			if !currentNode or (currentNode.tagName?.toLowerCase != tag or currentNode.sourceLocation != sourceLocation)
-				// Create new element
+			element = findNodeToReuse(currentNode, tag, sourceLocation)
+			if element
+				// The nodes before it weren't drawn this time
+				while currentNode != element
+					let next = currentNode.nextSibling
+					currentNode.remove
+					currentNode = next
+				nextNode = currentNode.nextSibling
+				nodesUpdated++
+			else
 				element = HTMLElement.create tag
 				element.sourceLocation = sourceLocation
 				nextNode = currentNode
-				if nextNode then parentNode.insertBefore element, nextNode
-				else         parentNode.appendChild element
+				parentNode.insertBefore element, nextNode
 				if focusInitially
 					system.delay 0
 						element.focus
 				nodesCreated++
-			else
-				// Resuse existing element
-				element = currentNode
-				nextNode = currentNode.nextSibling
-				nodesUpdated++
 		
 		setStyle element, style
 		setDataAttributes element, data
@@ -101,8 +102,8 @@ global static class html
 			if element.shadowInnerHtml != text
 				element.innerHTML = text
 				element.shadowInnerHtml = text
-		else
-		if children != null or element.hasChildren
+		// Children or nothing: the text or children it had before are removed
+		else if children != null or element.hasChildren or element.shadowInnerHtml != null
 			element.shadowInnerHtml = null
 			let prevParentNode = parentNode
 			parentNode = element
@@ -129,6 +130,23 @@ global static class html
 		element.hasChildren = children != null
 		currentNode = nextNode
 		return element
+
+	// The first node from startNode on that the same code drew (source location and tag), null if there is none before the next keyed
+	// node. Reusing it instead of the node at the current position keeps the nodes after a node that isn't drawn anymore (a dropdown that
+	// closed) with their focus and state.
+	// The current position stays at startNode while new nodes are inserted before it, so a source location that wasn't found isn't
+	// searched again from there in this refresh (a long list replaced by another one)
+	private HTMLElement findNodeToReuse: HTMLElement startNode, string tag, string sourceLocation
+		if not startNode or (startNode.sourceLocationsNotFoundInRefresh == refreshCount and startNode.sourceLocationsNotFound[sourceLocation]) then return null
+		let candidate = startNode
+		while candidate and not candidate.key and (candidate.sourceLocation != sourceLocation or candidate.tagName?.toLowerCase != tag)
+			candidate = candidate.nextSibling
+		if candidate and not candidate.key then return candidate
+		if startNode.sourceLocationsNotFoundInRefresh != refreshCount
+			startNode.sourceLocationsNotFoundInRefresh = refreshCount
+			startNode.sourceLocationsNotFound = {}
+		startNode.sourceLocationsNotFound[sourceLocation] = true
+		return null
 
 	// Set the children of a html element with a given id within the draw function.
 	// Useful for filling a placeholder of a template
@@ -865,15 +883,18 @@ global static class html
 		HTMLElement element, nextNode
 		string sourceLocation = location?.toString
 		
-		if !currentOverlay or currentOverlay.sourceLocation != sourceLocation
+		element = findNodeToReuse(currentOverlay, "div", sourceLocation)
+		if element
+			while currentOverlay != element
+				let next = currentOverlay.nextSibling
+				currentOverlay.remove
+				currentOverlay = next
+			nextNode = currentOverlay.nextSibling
+		else
 			element = HTMLElement.create "div"
 			element.sourceLocation = sourceLocation
 			nextNode = currentOverlay
-			if nextNode then documentBody.parentNode.insertBefore element, nextNode
-			else         documentBody.parentNode.appendChild element
-		else
-			element = currentOverlay
-			nextNode = currentOverlay.nextSibling
+			documentBody.parentNode.insertBefore element, nextNode
 		
 		if style == null then style = {}	
 		if not style.inset then           style.inset = {0,0,0,0}

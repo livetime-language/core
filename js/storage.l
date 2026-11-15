@@ -36,6 +36,7 @@ immutable Bytes
 transient storage
 	private dynamic basePathOrHandle = ""
 	private dynamic systemPaths = {}	// Resolved Home and UserData paths by BasePathType
+	private dynamic lastUnfinishedWriteByFile = {}	// The Promise of the last write of each file that isn't done yet, by base path type and path
 
 	setBasePathOrHandle: dynamic pathOrHandle
 		this.basePathOrHandle = pathOrHandle
@@ -220,42 +221,53 @@ transient storage
 			}
 		} catch (e) { return null; }
 
+	// Calls performWrite when the previous write of the same file is done, so the file gets the content of the last call. Writes of a file
+	// that overlap mix their content in Node: a shorter content leaves the end of a longer one behind it
+	private js dynamic runAfterPreviousWriteOfFile: string file
+		                                            dynamic performWrite
+		const previousWrite = this.lastUnfinishedWriteByFile[file];
+		const thisWrite = this.lastUnfinishedWriteByFile[file] = (async () => { try { await previousWrite; } catch (e) {} return performWrite(); })();
+		thisWrite.catch(() => {}).finally(() => { if (this.lastUnfinishedWriteByFile[file] === thisWrite) delete this.lastUnfinishedWriteByFile[file]; });
+		return thisWrite;
+
 	// Write a utf8 string to relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null
 	async js async void writeFile: string path
 		                           string content
 		                           BasePathType basePath = Custom
-		const base = await this.resolveBase(basePath);
-		switch (this.backend(base)) {
-			case "capacitor":
-				await Capacitor.Plugins.Filesystem.writeFile({path: this.joinPath(path, base), data: content, encoding: "utf8", recursive: true});
-				return;
-			case "node": {
-				const fs = this.nodeModule("fs").promises;
-				const full = this.joinPath(path, base);
-				await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
-				await fs.writeFile(full, content, "utf8");
-				return;
+		return this.runAfterPreviousWriteOfFile(basePath + ":" + path, async () => {
+			const base = await this.resolveBase(basePath);
+			switch (this.backend(base)) {
+				case "capacitor":
+					await Capacitor.Plugins.Filesystem.writeFile({path: this.joinPath(path, base), data: content, encoding: "utf8", recursive: true});
+					return;
+				case "node": {
+					const fs = this.nodeModule("fs").promises;
+					const full = this.joinPath(path, base);
+					await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
+					await fs.writeFile(full, content, "utf8");
+					return;
+				}
+				case "fsapi": {
+					const parts = path.split("/").filter(p => p.length);
+					const name = parts.pop();
+					let dir = base;
+					for (const part of parts) dir = await dir.getDirectoryHandle(part, {create: true});
+					const writable = await (await dir.getFileHandle(name, {create: true})).createWritable();
+					await writable.write(content);
+					await writable.close();
+					return;
+				}
+				default: {
+					const store = await this.idbStore("readwrite");
+					await new Promise((resolve, reject) => {
+						const r = store.put(content, path);
+						r.onsuccess = () => resolve();
+						r.onerror = () => reject(r.error);
+					});
+					return;
+				}
 			}
-			case "fsapi": {
-				const parts = path.split("/").filter(p => p.length);
-				const name = parts.pop();
-				let dir = base;
-				for (const part of parts) dir = await dir.getDirectoryHandle(part, {create: true});
-				const writable = await (await dir.getFileHandle(name, {create: true})).createWritable();
-				await writable.write(content);
-				await writable.close();
-				return;
-			}
-			default: {
-				const store = await this.idbStore("readwrite");
-				await new Promise((resolve, reject) => {
-					const r = store.put(content, path);
-					r.onsuccess = () => resolve();
-					r.onerror = () => reject(r.error);
-				});
-				return;
-			}
-		}
+		});
 
 	// Write raw bytes to a file returned by a file picker or to the file at path (absolute or relative)
 	// using Capacitor/Node/File System API, or IndexedDB if the base path is null
@@ -280,41 +292,43 @@ transient storage
 				await writable.close();
 				return true;
 			}
-			const base = await this.resolveBase(basePath);
-			switch (this.backend(base)) {
-				case "capacitor": {
-					let binary = "";
-					for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-					await Capacitor.Plugins.Filesystem.writeFile({path: this.joinPath(path, base), data: btoa(binary), recursive: true});
-					return true;
+			return await this.runAfterPreviousWriteOfFile(basePath + ":" + path, async () => {
+				const base = await this.resolveBase(basePath);
+				switch (this.backend(base)) {
+					case "capacitor": {
+						let binary = "";
+						for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+						await Capacitor.Plugins.Filesystem.writeFile({path: this.joinPath(path, base), data: btoa(binary), recursive: true});
+						return true;
+					}
+					case "node": {
+						const fs = this.nodeModule("fs").promises;
+						const full = this.joinPath(path, base);
+						await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
+						await fs.writeFile(full, bytes);
+						return true;
+					}
+					case "fsapi": {
+						const parts = path.split("/").filter(p => p.length);
+						const name = parts.pop();
+						let dir = base;
+						for (const part of parts) dir = await dir.getDirectoryHandle(part, {create: true});
+						const writable = await (await dir.getFileHandle(name, {create: true})).createWritable();
+						await writable.write(bytes);
+						await writable.close();
+						return true;
+					}
+					default: {
+						const store = await this.idbStore("readwrite");
+						await new Promise((resolve, reject) => {
+							const r = store.put(bytes, path);
+							r.onsuccess = () => resolve();
+							r.onerror = () => reject(r.error);
+						});
+						return true;
+					}
 				}
-				case "node": {
-					const fs = this.nodeModule("fs").promises;
-					const full = this.joinPath(path, base);
-					await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
-					await fs.writeFile(full, bytes);
-					return true;
-				}
-				case "fsapi": {
-					const parts = path.split("/").filter(p => p.length);
-					const name = parts.pop();
-					let dir = base;
-					for (const part of parts) dir = await dir.getDirectoryHandle(part, {create: true});
-					const writable = await (await dir.getFileHandle(name, {create: true})).createWritable();
-					await writable.write(bytes);
-					await writable.close();
-					return true;
-				}
-				default: {
-					const store = await this.idbStore("readwrite");
-					await new Promise((resolve, reject) => {
-						const r = store.put(bytes, path);
-						r.onsuccess = () => resolve();
-						r.onerror = () => reject(r.error);
-					});
-					return true;
-				}
-			}
+			});
 		} catch (e) { return false; }
 
 	// Delete the file at relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null
