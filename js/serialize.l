@@ -2,7 +2,8 @@ json
 	importance:5 inline js dynamic parse: string value
 		JSON.parse(value)
 	importance:5 inline js string stringify: dynamic value
-		JSON.stringify(value)
+		                                     bool indent = false	// indent: one line per value, indented with tabs
+		JSON.stringify(value, null, indent ? "\t" : "")
 
 interface object
 	inline js string toJson() JSON.stringify(this)
