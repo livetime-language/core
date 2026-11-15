@@ -32,6 +32,7 @@ global transient skipInit unit system
 	bool isDebug
 	global bool isMobile
 	bool isElectron
+	bool isWebview	// An Electron page in a webview of another app (e.g. an app tested in an app's browser): the window and its menu belong to that app
 	string os
 	
 	// Location
@@ -51,6 +52,7 @@ global transient skipInit unit system
 
 	private inline js void initMedia
 		this.isElectron = !!window?.process?.versions?.electron
+		try { this.isWebview = this.isElectron && require('@electron/remote').getCurrentWebContents().getType() == 'webview' } catch {}
 		
 		// Detect the operating system
 		const ua = navigator.userAgent;
@@ -280,8 +282,9 @@ global transient skipInit unit system
 		
 	inline js void blur() document.activeElement.blur()
 	
+	// Sets the native menu of the window (macOS: of the application). Not in a webview: it would replace the menu of the app that shows it
 	js void setMenu: MenuItem[] menuTemplate
-		if(!system.isElectron || !document.hasFocus()) return;
+		if(!system.isElectron || system.isWebview || !document.hasFocus()) return;
 		const remote = require('@electron/remote');
 		if (process.platform == 'darwin') {
 			menuTemplate.unshift({
