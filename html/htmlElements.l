@@ -602,7 +602,8 @@ global static class html
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText; onChanged(model); changeHandler
 			else         
-				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model != prevModel then onChanged(model); changeHandler
+				// The caller's onBlur, which this replaces, runs after the model changed
+				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model == prevModel then attributes.onBlur(.) else onChanged(model); changeHandler; attributes.onBlur(.)
 		else
 			element.contentEditable = "false"
 			element.oninput = null

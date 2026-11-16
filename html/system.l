@@ -251,6 +251,9 @@ global transient skipInit unit system
 		
 	inline js void onBlur: void() do
 		window.onblur = do
+
+	// Whether the document has the focus. It doesn't while another window or app has it, also while an element loses the focus for this reason
+	inline js bool hasFocus() document.hasFocus()
 		
 	inline js void onFocus: void() do
 		window.onfocus = do
