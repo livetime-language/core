@@ -2,6 +2,7 @@ global static class html
 	Dragging dragging	// The item the user pressed or drags (null if there is none)
 	private DropZone[] dropZones	// The lists forDraggable drew during the last refresh
 	private bool dragEnded	// Suppresses the click that follows the drop
+	private dynamic dragStyleSheet	// Enabled while an item is dragged
 
 	// Draw a list of items that the user can reorder and move into other lists of the same group by dragging them.
 	// Dragging starts when the user presses an element with cursor:move (on touch screens: presses and holds it) and moves the pointer.
@@ -94,6 +95,7 @@ global static class html
 		d.index = d.sourceIndex
 		getSelection().removeAllRanges()
 		document.documentElement.style.userSelect = "none"
+		html.dragStyleSheet.disabled = false
 		html.moveDragged()
 		d.source.drag(d)
 		html.refresh()
@@ -173,13 +175,20 @@ global static class html
 		dragEnded = true
 		delay 0
 			dragEnded = false
-		allowTextSelection
+		removeDragStyles
 		if drop then d.zone.drop d
 		refresh
 
-	private inline js void allowTextSelection() document.documentElement.style.userSelect = ""
+	private js void removeDragStyles
+		document.documentElement.style.userSelect = ""
+		html.dragStyleSheet.disabled = true
 
 	private js void initDragAndDrop
+		// When the drop preview moves above the visible items of a scrolling list (while it scrolls up), the browser would scroll back to keep
+		// them in place (scroll anchoring)
+		html.dragStyleSheet = new CSSStyleSheet({disabled:true})
+		html.dragStyleSheet.replaceSync("* { overflow-anchor: none }")
+		document.adoptedStyleSheets = [...document.adoptedStyleSheets, html.dragStyleSheet]
 		for(const type of ["pointermove", "pointerup", "pointercancel"]) addEventListener(type, ev => {
 			const d = html.dragging
 			if(!d || ev.pointerId != d.pointerId) return
