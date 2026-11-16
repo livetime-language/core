@@ -8,7 +8,8 @@ global static class html
 	// Dragging starts when the user presses an element with cursor:move (on touch screens: presses and holds it) and moves the pointer.
 	// The parent element is the drop zone. A preview with the size of the dragged item shows where it will be dropped.
 	// A hint at the pointer can tell what dropping the item on a list does, for example while the user holds CmdOrCtrl (Cmd on Apple
-	// devices, Ctrl everywhere else).
+	// devices, Ctrl everywhere else). canDrop can allow an item only at some positions of a list, or in none of them (then the item
+	// goes back where it was while it is near that list).
 	// Example:
 	//     column
 	//         forDraggable stack.cards, angleWhileDragging:10
@@ -24,10 +25,11 @@ global static class html
 		                 void(T it, int i) do	// Draw the item
 		                 stored void(T it) onDrag = null	// The user started to drag the item
 		                 stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null	// The user dropped the item between prev and next (its neighbors in this list without the dragged item, null at the start or end), cmdOrCtrl tells whether CmdOrCtrl was held
+		                 stored bool(T it, int index) canDrop = null	// Whether the item can be dropped at index of this list (not counting the dragged item; everywhere if null). It can always be put back where it was
 		                 stored string(T it, bool cmdOrCtrl) hint = null	// The html shown at the pointer while the item is dragged over this list (none if empty), cmdOrCtrl tells whether CmdOrCtrl is held
 		                 Style hintStyle = {padding:{topAndBottom:2 leftAndRight:6}, borderRadius:4, fontSize:12, color:#ffffff, backgroundColor:#303030}	// The style of the hint
 		                 SourceCodeLocation location
-		ItemDropZone<T> zone = {element:parentNode, before:currentNode ? currentNode.previousSibling : parentNode.lastChild, group:group ? group : location.toString, items, onDrag, onDrop}
+		ItemDropZone<T> zone = {element:parentNode, before:currentNode ? currentNode.previousSibling : parentNode.lastChild, group:group ? group : location.toString, items, onDrag, onDrop, canDrop}
 		dropZones.add zone
 		// Every refresh creates new lists, so the drag switches to them
 		Dragging d = dragging?.started ? dragging : null
@@ -123,11 +125,13 @@ global static class html
 			const ownPreview = z == d.zone ? preview : null, half = (ownPreview ? ownPreview[end] - ownPreview[start] : horizontal ? d.itemWidth : d.itemHeight)/2
 			// Without the preview, a list that follows the list of the preview in the same direction (one below the other) moves back by its size
 			const shift = preview && !ownPreview && previewZone?.horizontal == horizontal && follows(r, preview, horizontal) ? preview[start] - preview[end] - (horizontal ? d.marginX : d.marginY) - gapOf(previewZone.style, horizontal) : 0
-			// A list extends from its end in its direction, so items can be dropped below (or right of) short and empty lists. Not if another
-			// list follows it there: between them the closer position wins
+			// A list extends from its last position in its direction, so items can be dropped below (or right of) short and empty lists. Not if
+			// another list follows it there: between them the closer position wins
 			const isFollowed = zones.some(o => follows(o.r, r, horizontal))
 			const items = z.wrappers.filter(w => w != d.element).map(w => (w.firstElementChild || w).getBoundingClientRect())
-			for(let i = 0; i <= items.length; i++) {
+			// The positions where the item can be dropped. Near a list where it can't be dropped at all, it goes back where it was
+			const all = [...items.keys(), items.length], accepted = all.filter(i => z.accepts(d, i)), positions = accepted.length ? accepted : all
+			for(const i of positions) {
 				// Moving the preview to i moves the items in between by its size, so it would start where item i starts or end where item i-1 ends.
 				// In an empty list it follows the element drawn before the items
 				const previewCenter =
@@ -137,10 +141,10 @@ global static class html
 						i < items.length ? items[i][start] :
 						i ? items[i - 1][end] + (horizontal ? d.marginX : d.marginY) + gapOf(style, horizontal) :
 						z.before?.parentNode == z.element ? z.before.getBoundingClientRect()[end] : r[start] + parseFloat(horizontal ? style.paddingLeft : style.paddingTop)*s)
-				const along = i == items.length && !isFollowed && center > previewCenter ? 0 : Math.abs(previewCenter - center)
+				const along = i == positions.at(-1) && !isFollowed && center > previewCenter ? 0 : Math.abs(previewCenter - center)
 				const distance = Math.hypot(across, along)
 				// Lists are drawn from outside to inside and from start to end: on a tie the innermost and the later list wins, in a list the first position
-				if(distance < best || distance == best && z != zone) { best = distance; zone = z; index = i }
+				if(distance < best || distance == best && z != zone) { best = distance; [zone, index] = accepted.length ? [z, i] : [d.source, d.sourceIndex] }
 			}
 		}
 		if(zone != d.zone || index != d.index) {
@@ -241,11 +245,19 @@ class DropZone
 	HTMLElement[] wrappers	// The wrappers of the items
 	drag: Dragging d
 	drop: Dragging d
+	bool accepts: Dragging d, int index	// Whether the dragged item can be dropped at index
+		return true
 
 DropZone ItemDropZone<T>
 	T[] items
 	stored void(T it) onDrag = null
 	stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null
+	stored bool(T it, int index) canDrop = null
+
+	// Call canDrop with the dragged item, unless it goes back where it was
+	bool accepts: Dragging d, int index
+		ItemDropZone<T> source = cast d.source
+		return canDrop == null or (source == this and index == d.sourceIndex) or canDrop(source.items[d.sourceIndex], index)
 
 	// Call onDrag with the item the user started to drag
 	drag: Dragging d
