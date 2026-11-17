@@ -290,10 +290,10 @@ DatabaseTable<T>
 	async void add: T item // An item with a id member variable of type string that is not set yet
 		dynamic dynamicItem = item
 		if backend.pocketbaseOrBatch == backend.pocketbase
+			// The item gets the values the server set (id, created, updated and those of hooks), like with the realtime event of the creation (subscribe)
 			dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(item)
-			dynamicItem.id = newRecord.id
-			dynamicItem.created = newRecord.created
-			dynamicItem.updated = newRecord.updated
+			forDynamic newRecord
+				dynamicItem[key] = .
 		else
 			if not dynamicItem.id then dynamicItem.id = backend.newId
 			backend.pocketbaseOrBatch.collection(this.name).create(item)
