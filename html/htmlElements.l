@@ -882,6 +882,11 @@ global static class html
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
 
+	// Whether an overlay (a dialog or the menu of a dropdown) is shown: refresh keeps only the overlays it draws after the body.
+	// Keys that act on the page behind the overlays can ignore themselves meanwhile
+	bool isOverlayShown
+		return documentBody.nextSibling != null
+		
 	global overlay: void() children = null            // The children of the element
 	                void() onClickOutside = null
 		            expand Attributes attributes = {} // The attributes of the element
@@ -940,8 +945,9 @@ global static class html
 	// the elements of the whenOpen block below them. A click outside of the menu closes it. The menu starts at the left edge of the
 	// always shown elements, moves to the left if it would leave the window on the right and opens above them if it would leave
 	// it at the bottom.
-	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state), so
-	// dropdowns drawn in a loop must keep their order while one of them is open.
+	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state). Dropdowns
+	// drawn in a loop get a key, e.g. the id of their item: a menu that is drawn for another key (an item before it was added or
+	// removed) closes instead of belonging to another item.
 	// With keepFocus the menu doesn't take the focus, like a native menu: a text the user is editing keeps its caret while the user
 	// chooses and when a click outside closes the menu. Only a text field of the menu takes the focus when it is clicked, and loses
 	// it to a click elsewhere in the menu. The always shown elements keep the focus where it is too if a click on them opens the
@@ -981,21 +987,28 @@ global static class html
 		             BoxShadow boxShadow = {offsetX:4 offsetY:4 blur:8 color:#00000010}	// The shadow of the menu
 					 Color backgroundColor = white	// The background color of the menu
 					 Color overlayColor = #00000000	// The color that covers the page behind the menu while it is open, transparent by default
+		             string key = ""	// What the dropdown belongs to, e.g. the id of its item in a loop. The menu closes when it is drawn with another key
 		             void(void() openDropdown) alwaysShown	// The elements that are always shown. They can call openDropdown to open the menu
 		             void(void() closeDropdown) whenOpen	// The elements of the menu. They can call closeDropdown to close it
 		state bool isOpen = false
 		state Rect anchor	// Where the always shown elements were when the menu opened
+		state string openKey	// The key the menu was opened with
 		HTMLElement alwaysShownElement
 		
+		if openKey != key then isOpen = false
 		alwaysShownElement = row
 			alwaysShown openDropdown:
 				isOpen = not isOpen
-				if isOpen then anchor = alwaysShownElement.getBoundingClientRect()
+				if isOpen
+					anchor = alwaysShownElement.getBoundingClientRect()
+					openKey = key
 				refresh
 		onClick:
 			if not openOnClick then return
 			isOpen = not isOpen
-			if isOpen then anchor = alwaysShownElement.getBoundingClientRect()
+			if isOpen
+				anchor = alwaysShownElement.getBoundingClientRect()
+				openKey = key
 			refresh
 		onMouseDown:
 			// By default, the mouse button going down moves the focus to what it hits. Also the handler of the menu's overlay
