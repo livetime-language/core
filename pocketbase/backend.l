@@ -269,6 +269,38 @@ DatabaseTable<T>
 	importance:5 T[] items = []
 	bool busy
 
+	// The updates of each item that are sent or waiting to be sent, by id. They are sent one after another: the record of a
+	// realtime event is the one the server loaded before the other updates of the same time were saved, so updates sent at
+	// once would each bring back the old values of the other's fields. Realtime events keep the local values of these fields
+	private dynamic unfinishedUpdatesById = {}
+
+	// Sends an update of an item after the earlier updates of this item are done (at once in a batch, which must get it
+	// before it is sent) and returns the record of the server (null in a batch)
+	private js async dynamic sendAfterEarlierUpdates: string id
+		                                             dynamic update
+		const collection = backend.pocketbaseOrBatch.collection(this.name);
+		if (backend.pocketbaseOrBatch != backend.pocketbase) return collection.update(id, update);
+		const unfinishedUpdates = this.unfinishedUpdatesById[id] ??= [];
+		const previousRequest = unfinishedUpdates.at(-1)?.request;
+		const thisUpdate = {update, request: (async () => { try { await previousRequest; } catch (e) {} return collection.update(id, update); })()};
+		unfinishedUpdates.push(thisUpdate);
+		try {
+			return await thisUpdate.request;
+		} finally {
+			unfinishedUpdates.splice(unfinishedUpdates.indexOf(thisUpdate), 1);
+			if (!unfinishedUpdates.length) delete this.unfinishedUpdatesById[id];
+		}
+
+	// Copies the record of a realtime event onto the local item, except the fields that unfinished updates of this client change
+	private js void assignEventRecord: dynamic item
+		                               dynamic record
+		const unfinishedUpdates = this.unfinishedUpdatesById[record.id];
+		if (unfinishedUpdates) {
+			record = {...record};
+			for (const {update} of unfinishedUpdates) for (const key in update) delete record[key.replace(/^\+|[+-]$/, "")];
+		}
+		Object.assign(item, record);
+
 	// ------------------------------------------------------- Add -------------------------------------------------------
 
 	// Add an item to the database table and the local items and set its id member variable to the id assigned by the database
@@ -326,7 +358,7 @@ DatabaseTable<T>
 	async T save: T item
 		dynamic dynamicItem = item
 		if dynamicItem.id
-			await backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, dynamicItem)
+			await sendAfterEarlierUpdates dynamicItem.id, dynamicItem
 		else if backend.pocketbaseOrBatch == backend.pocketbase
 			let newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem)
 			dynamicItem.id = newRecord.id
@@ -442,7 +474,7 @@ DatabaseTable<T>
 		// Keys with a PocketBase modifier ("count+", "count-", "+tags") don't hold the final value, so don't copy them locally
 		forDynamic update
 			if not (key.startsWith("+") or key.endsWith("+") or key.endsWith("-")) then dynamicItem[key] = .
-		dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, update)
+		dynamic newRecord = await sendAfterEarlierUpdates(dynamicItem.id, update)
 		// Copy the resolved values of modifier keys from the response (a batched update has no response, the local value stays stale until the next fetch)
 		if newRecord
 			forDynamic update
@@ -454,7 +486,7 @@ DatabaseTable<T>
 	// Update an item in the server database table (don't update the local items)
 	async void updateOnServer: string id
 		                       dynamic update	
-		await backend.pocketbaseOrBatch.collection(this.name).update(id, update)
+		await sendAfterEarlierUpdates id, update
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
@@ -466,7 +498,7 @@ DatabaseTable<T>
 	importance:3
 	async void update: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, item)
+		sendAfterEarlierUpdates dynamicItem.id, item
 		
 	// Update a single field of an item with a valid id member variable in the database table and the local items
 	// Example:
@@ -483,7 +515,7 @@ DatabaseTable<T>
 		if(!item.id) {
 			await this.add(item)
 		} else {
-			await backend.pocketbaseOrBatch.collection(this.name).@update(item.id, {[key]:value})
+			await this.sendAfterEarlierUpdates(item.id, {[key]:value})
 		}
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
@@ -500,13 +532,11 @@ DatabaseTable<T>
 			if(e.action == "create") {
 				// add already inserted the item if the server answered before this event. It gets the values the server set (hooks)
 				let item = this.items.find(i => i.id == e.record.id);
-				if(item) Object.assign(item, e.record);
+				if(item) this.assignEventRecord(item, e.record);
 				else this.items.push(e.record);
 			} else if(e.action == "update") {
 				let item = this.items.find(i => i.id == e.record.id);
-				if(item) {
-					Object.assign(item, e.record);
-				}
+				if(item) this.assignEventRecord(item, e.record);
 			} else if(e.action == "delete") {
 				this.items.removeWhere(i => i.id == e.record.id);
 			}
@@ -540,8 +570,7 @@ DatabaseTable<T>
 			if(e.action == "delete") {
 				onDelete?.();
 			} else {
-				// model = e.record;
-				Object.assign(model, e.record);
+				this.assignEventRecord(model, e.record);
 				onChange?.();
 			}
 			backend.onDataChange?.invoke();
