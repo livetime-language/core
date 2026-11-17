@@ -937,6 +937,9 @@ global static class html
 	// it at the bottom.
 	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state), so
 	// dropdowns drawn in a loop must keep their order while one of them is open.
+	// With keepFocus the dropdown doesn't take the focus, like a native menu: a text the user is editing keeps its caret while the
+	// user opens the menu and chooses. Only a text field of the dropdown takes the focus when it is clicked (and loses it to a click
+	// elsewhere in the dropdown), the element that had the focus when the menu opened gets it back when the menu closes.
 	// Example: Choose one of several options, which closes the menu
 	//     app
 	//         string[] sizes = ["Small", "Medium", "Large"]
@@ -966,6 +969,7 @@ global static class html
 	//                             chosen.toggle topping
 	//                             refresh
 	global dropdown: bool openOnClick = true	// Whether a click on the always shown elements opens the menu. If false, call openDropdown where it should open
+		             bool keepFocus = false	// Whether the element that has the focus keeps it while the user uses the dropdown
 		             Border border = {1px solid #e4e4e7}	// The border of the menu
 		             BoxShadow boxShadow = {offsetX:4 offsetY:4 blur:8 color:#00000010}	// The shadow of the menu
 					 Color backgroundColor = white	// The background color of the menu
@@ -974,6 +978,7 @@ global static class html
 		             void(void() closeDropdown) whenOpen	// The elements of the menu. They can call closeDropdown to close it
 		state bool isOpen = false
 		state Rect anchor	// Where the always shown elements were when the menu opened
+		state HTMLElement focusedElement	// With keepFocus: the element that had the focus when the menu opened
 		HTMLElement alwaysShownElement
 		
 		alwaysShownElement = row
@@ -986,8 +991,12 @@ global static class html
 			isOpen = not isOpen
 			if isOpen then anchor = alwaysShownElement.getBoundingClientRect()
 			refresh
+		onMouseDown:
+			// By default, the mouse button going down moves the focus to what it hits
+			if keepFocus and not ev.target.closest("input, textarea, select, [contenteditable]") and not ev.currentTarget.contains(html.activeElement) then ev.preventDefault
 			
 		if isOpen	
+			if keepFocus and not focusedElement then focusedElement = html.activeElement
 			overlay backgroundColor:overlayColor, display:block, zIndex:100
 				menu := column position:absolute, left:anchor.left, top:anchor.bottom,
 						padding:4, borderRadius:10, border, boxShadow, backgroundColor
@@ -995,8 +1004,15 @@ global static class html
 				// A menu that would leave the window (the overlay covers it) on the right moves to the left, at the bottom it opens above
 				rect := menu.getBoundingClientRect()
 				overlayElement := menu.parentNode
+				overlayElement.onmousedown = alwaysShownElement.onmousedown
 				if rect.right + 4 > overlayElement.clientWidth then menu.style.left = "{overlayElement.clientWidth - 4 - (rect.right - rect.left) atLeast 4}px"
 				if rect.bottom + 4 > overlayElement.clientHeight then menu.style.top = "{anchor.top - (rect.bottom - rect.top) atLeast 4}px"
 			onClickOutside:
 				isOpen = false
 				refresh
+		else if focusedElement
+			// A text field of the menu took the focus. An element with contentEditable would get it back with the caret at its start
+			if html.activeElement != focusedElement
+				focusedElement.focus
+				if focusedElement.contentEditable != "inherit" then focusedElement.moveCaretToEnd
+			focusedElement = null

@@ -71,6 +71,7 @@ dynamic HTMLElement
 	inline js void select() this.select()
 	inline js void selectContents() getSelection().selectAllChildren(this)
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
+	inline js void moveCaretToEnd() getSelection().collapse(this, this.childNodes.length) // Puts the caret behind the contents of an element with contentEditable
 	inline js void focus() this.focus()
 	inline js void focusWithoutScrolling() this.focus({preventScroll:true})
 	inline js void blur() this.blur()
@@ -82,6 +83,8 @@ dynamic HTMLElement
 	inline js void setAttribute(string name, string value) this.setAttribute(name, value)
 	inline js HTMLElement querySelector(string selector) this.querySelector(selector)
 	inline js HTMLElement[] querySelectorAll(string selector) this.querySelectorAll(selector)
+	inline js HTMLElement closest(string selector) this.closest(selector) // The element itself or its nearest ancestor that matches the selector, null if there is none
+	inline js bool contains(HTMLElement element) this.contains(element) // Whether the element is this element or inside of it
 	inline js Rect getBoundingClientRect() this.getBoundingClientRect()
 		
 	native void(HtmlEvent ev) onclick
