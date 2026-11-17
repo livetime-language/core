@@ -41,6 +41,11 @@ global static class html
 			// Move the element to the current position unless it is already there
 			if element == currentNode
 				nextNode = currentNode.nextSibling
+			else if element.parentNode == parentNode and element.contains(html.activeElement)
+				// The element follows the current position (the nodes before it were drawn already): the nodes in between move behind it,
+				// so a text in it that is being edited keeps its caret
+				currentNode.moveNodesBehind element
+				nextNode = currentNode
 			else
 				nextNode = currentNode
 				parentNode.moveOrInsertBefore element, nextNode

@@ -67,6 +67,15 @@ dynamic HTMLElement
 	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode) // Appends newNode if referenceNode is null
 	// Moves a node of the document without taking its focus or reloading its iframes (moveBefore, where the browser has it), inserts other nodes
 	inline js void moveOrInsertBefore(HTMLElement node, HTMLElement referenceNode) (this.moveBefore && node.isConnected && this.isConnected ? this.moveBefore(node, referenceNode) : this.insertBefore(node, referenceNode))
+	// Moves this node and its next siblings up to node (a later sibling) behind node, in their order. Unlike moving node before them, this keeps
+	// the caret of a text in node that is being edited (moveBefore keeps the focus, not the selection)
+	js void moveNodesBehind: HTMLElement node
+		const parent = this.parentNode, reference = node.nextSibling
+		for(let n = this; n && n != node;) {
+			const next = n.nextSibling
+			parent.moveBefore ? parent.moveBefore(n, reference) : parent.insertBefore(n, reference)
+			n = next
+		}
 	inline js void setSelectionRange(int from, int to) this.setSelectionRange(from, to)
 	inline js void select() this.select()
 	inline js void selectContents() getSelection().selectAllChildren(this)

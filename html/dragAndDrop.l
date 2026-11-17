@@ -23,6 +23,7 @@ global static class html
 		                 Style dropPreview = {backgroundColor:#000000, opacity:0.05, borderRadius:4}	// The style of the drop preview, which has the size of the dragged item unless you specify width or height
 		                 string group = null	// Items can be moved between lists of the same group (by default, lists drawn by the same line of code)
 		                 void(T it, int i) do	// Draw the item
+		                 string(T it) keyOf = null	// A unique key of the item (by default its index): its elements follow it when items are added, removed or moved before it, so a field that is being edited keeps its item and the focus
 		                 stored void(T it) onDrag = null	// The user started to drag the item
 		                 stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null	// The user dropped the item between prev and next (its neighbors in this list without the dragged item, null at the start or end), cmdOrCtrl tells whether CmdOrCtrl was held
 		                 stored bool(T it, int index) canDrop = null	// Whether the item can be dropped at index of this list (not counting the dragged item; everywhere if null). It can always be put back where it was
@@ -41,7 +42,7 @@ global static class html
 			if not isDragged
 				if d?.zone == zone and d.index == index then d.preview = div key:"dropPreview", style:withDraggedSize(dropPreview)
 				index++
-			wrapper := div key:"{i}", onPointerDown:startDrag ., zone, i, angleWhileDragging
+			wrapper := div key:keyOf != null ? keyOf(item) : "{i}", onPointerDown:startDrag ., zone, i, angleWhileDragging
 				do item, i
 			zone.wrappers.add wrapper
 			if not isDragged then setContentsOnly wrapper
