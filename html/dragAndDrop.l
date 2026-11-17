@@ -95,7 +95,8 @@ global static class html
 		d.previewStyle = {width:r.width/s + "px", height:r.height/s + "px", margin:cs.marginTop + " " + cs.marginRight + " " + cs.marginBottom + " " + cs.marginLeft, flexShrink:"0"}
 		d.zone = d.source
 		d.index = d.sourceIndex
-		getSelection().removeAllRanges()
+		// Not a caret: the text that is being edited keeps it if the press didn't take its focus
+		if(!getSelection().isCollapsed) getSelection().removeAllRanges()
 		document.documentElement.style.userSelect = "none"
 		html.dragStyleSheet.disabled = false
 		html.moveDragged()
