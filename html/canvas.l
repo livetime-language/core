@@ -107,6 +107,22 @@ Canvas
 		this.context.lineTo(to.x, to.y)
 		this.context.stroke()
 
+	// Draw the outline of an SVG path (the d attribute of a path element, e.g. of an icon) with round ends and corners.
+	// The path is scaled and its origin is at pos, width is the width of the line in css pixels
+	js void strokePath: string path
+		                Vector2 pos
+		                float scale = 1
+		                Color color = black
+		                float width = 1
+		this.context.save()
+		this.context.translate(pos.x, pos.y)
+		this.context.scale(scale, scale)
+		this.context.strokeStyle = color.colorString
+		this.context.lineWidth = width / scale
+		this.context.lineCap = this.context.lineJoin = "round"
+		this.context.stroke(new Path2D(path))
+		this.context.restore()
+
 	// Draw text, pos is the left end of its baseline
 	js void drawText: implicit string text
 		              Vector2 pos
