@@ -74,9 +74,10 @@ global static class html
 		setDataAttributes element, data
 		
 		if attributes != null
-			if attributes.id and attributes.id != element.id then	element.id = attributes.id
-			if (attributes.class and attributes.class != element.class) then	element.class = attributes.class
-			if attributes.title and attributes.title != element.title then	element.title = attributes.title
+			// An empty value that is given removes the one the reused element had
+			if attributes.id != null and attributes.id != element.id then	element.id = attributes.id
+			if attributes.class != null and attributes.class != element.class then	element.class = attributes.class
+			if attributes.title != null and attributes.title != element.title then	element.title = attributes.title
 			if attributes.tabIndex then	element.set("tabindex", attributes.tabIndex.toString)
 			
 			if attributes.onClick != null then 	element.onclick = attributes.onClick
