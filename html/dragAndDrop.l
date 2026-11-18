@@ -106,27 +106,29 @@ global static class html
 		html.autoScroll(d)
 
 	// Move the dragged item to the pointer and find where it would be dropped: in the list and at the position where the center of the drop
-	// preview would be closest to the center of the item (wherever the user holds it)
+	// preview would be closest to the center of the item (wherever the user holds it). The positions are measured with the preview hidden,
+	// so where the preview is doesn't change where it goes: it moves what follows it, also other lists (by less than its size if one of
+	// them has room to spare), and measured with it the preview would jump back and forth between two lists underneath each other
 	private js void moveDragged
 		const d = html.dragging, s = system.scale
 		d.element.style.cssText = `position:fixed;left:${(d.x - d.offsetX)/s}px;top:${(d.y - d.offsetY)/s}px;width:${(d.itemWidth + d.marginX)/s}px;rotate:${d.angle}deg;pointer-events:none;z-index:1000`
 		html.moveHint()
-		const centerX = d.x + d.toCenterX, centerY = d.y + d.toCenterY, preview = d.preview?.getBoundingClientRect()
+		const centerX = d.x + d.toCenterX, centerY = d.y + d.toCenterY
+		// Without the preview its scrolling ancestors may be too short for their scroll positions, which they get back afterwards
+		const preview = d.preview?.isConnected ? d.preview : null, display = preview?.style.display, scrolled = []
+		for(let el = preview?.parentElement; el; el = el.parentElement) scrolled.push([el, el.scrollLeft, el.scrollTop])
+		if(preview) preview.style.display = "none"
 		const zones = html.dropZones.filter(z => z.group == d.source.group && !d.element.contains(z.element)).map(z => {
 			const style = getComputedStyle(z.element)
 			return {z, style, r:z.element.getBoundingClientRect(), horizontal:style.display.includes("flex") && style.flexDirection.startsWith("row")}
 		})
 		// Whether a starts right of b (horizontal) or below b
 		const follows = (a, b, horizontal) => horizontal ? a.left >= b.right - 1 && a.top < b.bottom && a.bottom > b.top : a.top >= b.bottom - 1 && a.left < b.right && a.right > b.left
-		const gapOf = (style, horizontal) => (parseFloat(horizontal ? style.columnGap : style.rowGap) || 0)*s
-		const previewZone = zones.find(o => o.z == d.zone)
 		let zone = d.zone, index = d.index, best = Infinity
 		for(const {z, style, r, horizontal} of zones) {
 			const start = horizontal ? "left" : "top", end = horizontal ? "right" : "bottom", center = horizontal ? centerX : centerY
 			const across = horizontal ? Math.max(r.top - centerY, 0, centerY - r.bottom) : Math.max(r.left - centerX, 0, centerX - r.right)
-			const ownPreview = z == d.zone ? preview : null, half = (ownPreview ? ownPreview[end] - ownPreview[start] : horizontal ? d.itemWidth : d.itemHeight)/2
-			// Without the preview, a list that follows the list of the preview in the same direction (one below the other) moves back by its size
-			const shift = preview && !ownPreview && previewZone?.horizontal == horizontal && follows(r, preview, horizontal) ? preview[start] - preview[end] - (horizontal ? d.marginX : d.marginY) - gapOf(previewZone.style, horizontal) : 0
+			const half = (horizontal ? d.itemWidth : d.itemHeight)/2
 			// A list extends from its last position in its direction, so items can be dropped below (or right of) short and empty lists. Not if
 			// another list follows it there: between them the closer position wins
 			const isFollowed = zones.some(o => follows(o.r, r, horizontal))
@@ -134,20 +136,21 @@ global static class html
 			// The positions where the item can be dropped. Near a list where it can't be dropped at all, it goes back where it was
 			const all = [...items.keys(), items.length], accepted = all.filter(i => z.accepts(d, i)), positions = accepted.length ? accepted : all
 			for(const i of positions) {
-				// Moving the preview to i moves the items in between by its size, so it would start where item i starts or end where item i-1 ends.
-				// In an empty list it follows the element drawn before the items
-				const previewCenter =
-					ownPreview && i == d.index ? (ownPreview[start] + ownPreview[end])/2 :
-					ownPreview && i > d.index ? items[i - 1][end] - half :
-					shift + half + (
-						i < items.length ? items[i][start] :
-						i ? items[i - 1][end] + (horizontal ? d.marginX : d.marginY) + gapOf(style, horizontal) :
-						z.before?.parentNode == z.element ? z.before.getBoundingClientRect()[end] : r[start] + parseFloat(horizontal ? style.paddingLeft : style.paddingTop)*s)
+				// The preview at i would start where item i starts or follow item i-1. In an empty list it follows the element drawn before the items
+				const previewCenter = half + (
+					i < items.length ? items[i][start] :
+					i ? items[i - 1][end] + (horizontal ? d.marginX : d.marginY) + (parseFloat(horizontal ? style.columnGap : style.rowGap) || 0)*s :
+					z.before?.parentNode == z.element ? z.before.getBoundingClientRect()[end] : r[start] + parseFloat(horizontal ? style.paddingLeft : style.paddingTop)*s)
 				const along = i == positions.at(-1) && !isFollowed && center > previewCenter ? 0 : Math.abs(previewCenter - center)
 				const distance = Math.hypot(across, along)
 				// Lists are drawn from outside to inside and from start to end: on a tie the innermost and the later list wins, in a list the first position
 				if(distance < best || distance == best && z != zone) { best = distance; [zone, index] = accepted.length ? [z, i] : [d.source, d.sourceIndex] }
 			}
+		}
+		if(preview) {
+			const clamped = scrolled.filter(([el, left, top]) => el.scrollLeft != left || el.scrollTop != top)
+			preview.style.display = display
+			for(const [el, left, top] of clamped) el.scrollTo({left, top, behavior:"instant"})
 		}
 		if(zone != d.zone || index != d.index) {
 			d.zone = zone
