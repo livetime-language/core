@@ -69,10 +69,11 @@ const linkModules = debug && platform == process.platform && arch == process.arc
 			// The lockfile has no libc field, so npm installs the musl builds too, which Electron doesn't use
 			for(const dir of fs.globSync(buildPath + "/node_modules/{*,@*/*}/*-musl")) fs.rmSync(dir, {recursive:true})
 		}],
-		// Executables of npm packages get their own entitlements: the hardened runtime blocks JIT compilers (e.g. Bun, which compiles claude) by default
+		// Executables of npm packages and of the app get their own entitlements: the hardened runtime blocks JIT compilers (e.g. Bun, which compiles claude)
+		// and the microphone (e.g. a speech recognizer) by default
 		osxSign:!debug && identity && {identity, continueOnError:false, optionsForFile:file => file.includes(".app/Contents/Resources/") ? {entitlements:[
 			"com.apple.security.cs.allow-jit", "com.apple.security.cs.allow-unsigned-executable-memory", "com.apple.security.cs.disable-executable-page-protection",
-			"com.apple.security.cs.allow-dyld-environment-variables", "com.apple.security.cs.disable-library-validation"]} : {}}})
+			"com.apple.security.cs.allow-dyld-environment-variables", "com.apple.security.cs.disable-library-validation", "com.apple.security.device.audio-input"]} : {}}})
 	fs.rmSync(temp, {recursive:true})
 
 	// Packaging changes Info.plist, which breaks the signature: debug builds and builds without an identity are signed here, so macOS launches the app
