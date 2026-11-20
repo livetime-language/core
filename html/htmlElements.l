@@ -105,6 +105,14 @@ global static class html
 			element.onblur  = setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null then attributes.onBlur(.)
 			if html.activeElement == element then setStyle(element, styleWhenFocused)
 
+		// The window moves where the user drags an element with movesWindow, except where the elements in it are that the user interacts with.
+		// The system takes these drags before the page gets the events (CSS app-region)
+		bool movesWindow = attributes?.movesWindow == true
+		if movesWindow or insideWindowMover
+			bool interactive = styleWhenHovering != null or ["input", "textarea", "select", "button", "a"].includes(tag) or (attributes != null and (attributes.onClick != null or attributes.onRightClick != null or attributes.onPointerDown != null or attributes.onMouseDown != null or attributes.title))
+			setAppRegion element, movesWindow ? "drag" : interactive ? "no-drag" : ""
+			if movesWindow then windowMoverDrawn = true
+
 		if text != null
 			if element.shadowInnerHtml != text
 				element.innerHTML = text
@@ -113,9 +121,12 @@ global static class html
 		else if children != null or element.hasChildren or element.shadowInnerHtml != null
 			element.shadowInnerHtml = null
 			let prevParentNode = parentNode
+			bool wasInsideWindowMover = insideWindowMover
 			parentNode = element
 			currentNode = element.firstChild
+			insideWindowMover = wasInsideWindowMover or movesWindow
 			children()
+			insideWindowMover = wasInsideWindowMover
 			
 			// Every child drawn above (reused, created or keyed) is now before currentNode, so the remaining nodes are no longer used
 			while currentNode
@@ -137,6 +148,13 @@ global static class html
 		element.hasChildren = children != null
 		currentNode = nextNode
 		return element
+
+	private bool insideWindowMover	// Whether the elements being drawn are in an element with movesWindow
+	private bool windowMoverDrawn	// Whether an element with movesWindow was drawn, so overlays keep the drags of the user that start on them from moving the window
+
+	// The CSS app-region of the element: "drag" moves the window, "no-drag" leaves the events to the page where an element that moves the window is
+	private js void setAppRegion: HTMLElement element, string region
+		if(element.appRegion !== region) element.style.appRegion = element.appRegion = region
 
 	// The first node from startNode on that the same code drew (source location and tag), null if there is none before the next keyed
 	// node. Reusing it instead of the node at the current position keeps the nodes after a node that isn't drawn anymore (a dropdown that
@@ -883,6 +901,45 @@ global static class html
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
 
+	// The bar at the top of a window that has no title bar of the system (system.hasNativeTitleBar: an Electron window with titleBarStyle
+	// "hidden" or "hiddenInset"): a row that moves the window where the user drags it (movesWindow), except where its elements are that the
+	// user interacts with. On macOS it starts with room for the buttons the system draws at the top left (the traffic lights), on Windows
+	// and Linux it ends with the buttons Minimize, Maximize and Close. In full screen, in a window with the system's title bar and outside
+	// Electron it is only a row. On macOS, titleBarOverlay of boot.js with the height of the row centers the traffic lights in it
+	// Example:
+	//     app
+	//         draw
+	//             titleBar height:40, alignItems:center
+	//                 div "My App", padding:{left:12}
+	//                 div flex:1
+	importance:4
+	global titleBar: expand Attributes attributes = {}	// The attributes of the HTML element
+	                 expand Style style = {}	// The css style of the HTML element
+	                 void() children = null	// The children of the HTML element
+	                 SourceCodeLocation location
+		bool drawsWindowControls = system.isElectron and not system.isWebview and not system.hasNativeTitleBar and not system.isFullScreen
+		attributes.movesWindow = true
+		style.display = flex
+		style.flexDirection = row
+		return div attributes, style, location
+			// Where the traffic lights end: the window controls overlay of Electron tells it (titleBarOverlay of boot.js), 84 is where they end without it (titleBarStyle "hiddenInset")
+			if drawsWindowControls and system.os == "macOS" then div width:"env(titlebar-area-x, 84px)", flexShrink:0
+			children()
+			if drawsWindowControls and system.os != "macOS"
+				for icon in [minimizeWindowIcon, system.isMaximized ? restoreWindowIcon : maximizeWindowIcon, closeWindowIcon]
+					div text:icon, title:icon == minimizeWindowIcon ? "Minimize" : icon == closeWindowIcon ? "Close" : system.isMaximized ? "Restore" : "Maximize", width:46, alignSelf:stretch, flexShrink:0,
+						display:flex, alignItems:center, justifyContent:center, transition:"background-color 100ms",
+						styleWhenHovering:icon == closeWindowIcon ? {backgroundColor:#e81123, color:white} : {backgroundColor:#80808028},
+						onClick:
+							if icon == minimizeWindowIcon then system.minimizeWindow
+							else if icon == closeWindowIcon then system.closeWindow
+							else system.toggleMaximizedWindow
+
+	const minimizeWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M0 5.5h10\" stroke=\"currentColor\"/></svg>"
+	const maximizeWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><rect x=\".5\" y=\".5\" width=\"9\" height=\"9\" fill=\"none\" stroke=\"currentColor\"/></svg>"
+	const restoreWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M2.5 2.5V.5h7v7h-2M.5 2.5h7v7h-7z\" fill=\"none\" stroke=\"currentColor\"/></svg>"
+	const closeWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M.5.5l9 9M9.5.5l-9 9\" stroke=\"currentColor\"/></svg>"
+
 	// Whether an overlay (a dialog or the menu of a dropdown) is shown: refresh keeps only the overlays it draws after the body.
 	// Keys that act on the page behind the overlays can ignore themselves meanwhile
 	bool isOverlayShown
@@ -926,11 +983,15 @@ global static class html
 		
 		if onClickOutside != null
 			element.onclick = if .target == element then onClickOutside()
+		// The window doesn't move where the overlay covers an element that moves it
+		if windowMoverDrawn then setAppRegion element, "no-drag"
 
 		let prevParentNode = parentNode
 		let prevCurrentNode = currentNode
+		bool wasInsideWindowMover = insideWindowMover
 		parentNode = element
 		currentNode = element.firstChild
+		insideWindowMover = false
 		children()
 		while currentNode
 			let next = currentNode.nextSibling
@@ -938,6 +999,7 @@ global static class html
 			currentNode = next
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
+		insideWindowMover = wasInsideWindowMover
 		
 		currentOverlay = nextNode
 		return element

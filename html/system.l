@@ -34,6 +34,11 @@ global transient skipInit unit system
 	bool isElectron
 	bool isWebview	// An Electron page in a webview of another app (e.g. an app tested in an app's browser): the window and its menu belong to that app
 	string os
+
+	// The window of the Desktop app (Electron, not a webview), read when its size changes (html.resize)
+	bool hasNativeTitleBar = true	// Whether the system draws the title bar. Without it (titleBarStyle "hidden" or "hiddenInset" of boot.js) the page draws it (html.titleBar)
+	bool isFullScreen
+	bool isMaximized
 	
 	// Location
 	public inline js string url	=> location.href
@@ -378,6 +383,20 @@ global transient skipInit unit system
 		}
 		link.href = iconUrl;
 	
+	js void readWindowState
+		if(!system.isElectron || system.isWebview) return
+		const win = require('@electron/remote').getCurrentWindow()
+		system.isFullScreen = win.isFullScreen()
+		system.isMaximized = win.isMaximized()
+		// A window in full screen has no title bar either way
+		if(!system.isFullScreen) system.hasNativeTitleBar = win.getBounds().height != win.getContentBounds().height
+
+	inline js void minimizeWindow() require('@electron/remote').getCurrentWindow().minimize()
+	inline js void closeWindow() require('@electron/remote').getCurrentWindow().close()
+	js void toggleMaximizedWindow
+		const win = require('@electron/remote').getCurrentWindow()
+		if(win.isMaximized()) win.unmaximize(); else win.maximize()
+
 	js void toggleDevTools
 		if(typeof require != "undefined") require('@electron/remote').getCurrentWindow().toggleDevTools()
 		

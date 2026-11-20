@@ -215,6 +215,7 @@ importance:5 dynamic Attributes
 	bool scrollIntoView // Scroll the element just enough to make it fully visible, whenever this changes to true
 	bool scrollToTop // Scroll the content of the element to the very top on every draw where this is true
 	bool scrollToBottom // Scroll the content of the element to the very bottom on every draw where this is true
+	bool movesWindow // Dragging the element moves the window (Electron windows without the system's title bar, see html.titleBar), except where the elements in it are that the user interacts with: those with a pointer handler, a tooltip or a hover style, fields, buttons and links
 
 	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element
@@ -450,6 +451,7 @@ global priority low skipInit static class html
 			parentNode = documentBody
 			currentNode = parentNode.firstChild
 			currentOverlay = documentBody.nextSibling
+			insideWindowMover = false
 			dropZones.clear
 			app.draw
 			while currentNode
@@ -565,6 +567,7 @@ global priority low skipInit static class html
 			body.style.zoom = system.scale
 		}
 		body.className = system.isMobile ? "mobile" : ""
+		system.readWindowState()
 		html.resizeInProgress = false
 	
 	enableScrolling: bool value
@@ -577,6 +580,12 @@ global priority low skipInit static class html
 			style.position = fixed
 			style.top = {0}
 			style.bottom = {0}
+
+	// The width of a text in a CSS font, e.g. "bold 14px OpenSans", without drawing it
+	js float measureTextWidth: string text, string font
+		const context = html.textMeasuringContext ||= new OffscreenCanvas(1, 1).getContext("2d")
+		context.font = font
+		return context.measureText(text).width
 
 	private js void setDataAttributes: HTMLElement element, dynamic attributes
 		if(attributes) {
