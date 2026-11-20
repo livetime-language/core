@@ -230,10 +230,13 @@ transient storage
 		thisWrite.catch(() => {}).finally(() => { if (this.lastUnfinishedWriteByFile[file] === thisWrite) delete this.lastUnfinishedWriteByFile[file]; });
 		return thisWrite;
 
-	// Write a utf8 string to relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null
+	// Write a utf8 string to relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null.
+	// atomically (Node): writes a temporary file next to it and renames it, so other processes that read the file at the same
+	// time get the old or the new content, never a part of it. The file is then a new one (a symbolic link is replaced by it)
 	async js async void writeFile: string path
 		                           string content
 		                           BasePathType basePath = Custom
+		                           bool atomically = false
 		return this.runAfterPreviousWriteOfFile(basePath + ":" + path, async () => {
 			const base = await this.resolveBase(basePath);
 			switch (this.backend(base)) {
@@ -244,7 +247,12 @@ transient storage
 					const fs = this.nodeModule("fs").promises;
 					const full = this.joinPath(path, base);
 					await fs.mkdir(this.nodeModule("path").dirname(full), {recursive: true});
-					await fs.writeFile(full, content, "utf8");
+					if (!atomically) return await fs.writeFile(full, content, "utf8");
+					const temporary = full + "." + process.pid + "." + Math.random().toString(36).slice(2) + ".tmp";
+					await fs.writeFile(temporary, content, "utf8");
+					// Windows refuses to replace a file that another process has open, which then gets the content directly
+					try { await fs.rename(temporary, full); }
+					catch (e) { await fs.writeFile(full, content, "utf8"); await fs.rm(temporary, {force: true}); }
 					return;
 				}
 				case "fsapi": {
