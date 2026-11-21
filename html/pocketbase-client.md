@@ -4,4 +4,4 @@ Run "livetime schema update <target>" to update database. Use target "Editor" fo
 After merging a branch, run schema update in the target directory if needed.
 
 # Ask to write data migration if needed
-Don't write migrations without asking. When you are done and a change requires a migration, ask the user if you should write and run a one-time script to update the production database.
+Only write migrations if the user asks you to. When you are done and a change requires a migration, ask the user if you should write and run a one-time script to update the production database.
