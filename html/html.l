@@ -426,6 +426,9 @@ global priority low skipInit static class html
 	private HTMLElement currentNode
 	private HTMLElement currentOverlay
 	private dynamic currentStyleSheet
+	private string[] styleRules	// The rules html.style adds during a refresh, the stylesheet has exactly these at its end (applyStyleRules)
+	private dynamic appliedStyleRules	// The rules of the last refresh (a Set), unless the stylesheet changed since
+	private string styleSheetText	// Their text, null if the stylesheet changed since
 	private bool refreshInProgress = false
 	private int refreshCount
 	private float lastRefresh // When the last refresh ended (Time.preciseTime)
@@ -446,7 +449,7 @@ global priority low skipInit static class html
 			refreshInProgress = true
 			refreshCount++
 			system.resetStateIndex
-			currentStyleSheet.replaceSync("")
+			styleRules.clear
 			nodesCreated = nodesUpdated = 0
 			parentNode = documentBody
 			currentNode = parentNode.firstChild
@@ -454,6 +457,7 @@ global priority low skipInit static class html
 			insideWindowMover = false
 			dropZones.clear
 			app.draw
+			applyStyleRules
 			while currentNode
 				let next = currentNode.nextSibling
 				if currentNode.key then parentNode.childrenByKey.remove currentNode.key
@@ -516,6 +520,16 @@ global priority low skipInit static class html
 			html.resize();
 			html.refresh();
 		}
+
+	// Rules that are no longer added are removed only at the end of a refresh: without them, a layout during the draw (an element's size
+	// is read) would give the elements other sizes for a moment, which moves scroll positions (they are clamped to the shorter content)
+	private js void applyStyleRules
+		// A rule that is inserted later comes first (insertRule inserts at the start)
+		const text = this.styleRules.slice().reverse().join("\n")
+		if(text == this.styleSheetText) return
+		this.currentStyleSheet.replaceSync(text)
+		this.styleSheetText = text
+		this.appliedStyleRules = new Set(this.styleRules)
 
 	private js void initStyleSheet
 		this.currentStyleSheet = new CSSStyleSheet()

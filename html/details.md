@@ -14,7 +14,7 @@ When you are done, always test the build to verify everything works as specified
 - An element reuses the one drawn at the same position by the same code, keeping its text but getting the new item's handlers, so a field being edited saves to another item when items move before it. Key lists with fields (`key:`, `keyOf:` of `forDraggable`).
 - A focused element removed by a refresh gets a blur event with the locals of its old draw: check member variables there, not captured locals.
 - `state` variables belong to the call's location and its position in the order of calls of a draw, so calls must not change their order while the state matters.
-- `refresh` clears the stylesheet: add `html.style` rules in every `draw`.
+- `refresh` keeps only the `html.style` rules its `draw` adds (it removes the others at its end): add them in every `draw`.
 - `row` and `column` have no `styleWhenHovering`: use `div display:flex`.
 - `lineHeight` is a factor of the font size, not a length.
 - `forDraggable` drags elements with computed `cursor:move`.
