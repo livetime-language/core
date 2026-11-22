@@ -227,6 +227,7 @@ importance:5 dynamic Attributes
 	native void(HtmlKeyboardEvent ev) onKeyUp = null	// Execute this code when the user releases a key on the keyboard
 	native void(FocusEvent ev) onBlur = null	// Execute this code when the element loses focus
 	native void(FocusEvent ev) onFocus = null	// Execute this code when the element gains focus
+	native void(HtmlEvent ev) onVisible = null	// Execute this code when the element comes within one screen of the visible area of its scroll container, e.g. to fetch more items (DatabaseTable.fetchMore). Async code is awaited, followed by a refresh and executed again while the element stays within reach (see callOnVisible)
 
 	int tabIndex = 0
 
@@ -488,6 +489,38 @@ global priority low skipInit static class html
 		float wait = lastRefresh + interval - Time.preciseTime
 		if wait <= 0 then refresh
 		else              refreshTimer = delay wait, refresh
+
+	// Executes onVisible (see Attributes) when the element comes within one screen of the visible area of its scroll
+	// container (the nearest ancestor with overflow auto or scroll, else the page)
+	js void observeVisibility: HTMLElement element, void(HtmlEvent ev) onVisible
+		if(!element.onVisible) {
+			let root = element
+			while((root = root.parentElement) && !/auto|scroll/.test(getComputedStyle(root).overflowY));
+			const owner = root ?? html
+			owner.visibilityObserver ??= new IntersectionObserver(entries => {
+				for(const entry of entries) if(entry.isIntersecting) html.callOnVisible(entry.target, owner.visibilityObserver)
+			}, {root, rootMargin:"100% 0px"})
+			owner.visibilityObserver.observe(element)
+		}
+		element.onVisible = onVisible
+
+	// Executes onVisible of the element. Async code (e.g. fetching more items) is awaited and followed by a refresh. If the
+	// element is in the upper half of its scroll container, the content below it stays in place, so content that appears
+	// above it (like older items at the top of a list) does not push the view down. Observing the element again executes
+	// onVisible again if the element is still within reach, so draw it only while there is more to load.
+	js async void callOnVisible: HTMLElement element, dynamic observer
+		if(element.isAwaitingOnVisible) return
+		const result = element.onVisible({target:element})
+		if(!(result instanceof Promise)) return
+		element.isAwaitingOnVisible = true
+		try { await result } finally { element.isAwaitingOnVisible = false }
+		const scroller = observer.root ?? document.scrollingElement, box = scroller.getBoundingClientRect()
+		const keepsContentBelow = element.getBoundingClientRect().top < box.top + box.height / 2
+		const distanceFromBottom = scroller.scrollHeight - scroller.scrollTop
+		html.refresh()
+		if(keepsContentBelow) scroller.scrollTop = scroller.scrollHeight - distanceFromBottom
+		observer.unobserve(element)
+		if(element.isConnected) observer.observe(element)
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/system.scale)
 	inline js void scrollToTop() window.scrollTo(0,0)

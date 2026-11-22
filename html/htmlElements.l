@@ -89,6 +89,7 @@ global static class html
 
 			if attributes.onKeyDown != null then	element.onkeydown = attributes.onKeyDown
 			if attributes.onKeyUp != null then	element.onkeyup = attributes.onKeyUp
+			if attributes.onVisible != null then	html.observeVisibility element, attributes.onVisible
 
 			if styleWhenFocused == null
 				if attributes.onBlur != null then	element.onblur = attributes.onBlur

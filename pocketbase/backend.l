@@ -388,6 +388,13 @@ DatabaseTable<T>
 
 	// The total number of items in the database
 	int totalItemsOfLastFetch
+
+	// The last page of fetch, subscribe or fetchMore was full and sorted, so fetchMore may find more items
+	bool hasMore
+
+	// Where fetchMore continues: the page size, the options of the last fetch or subscribe and the filter for the items
+	// after the last fetched one
+	private dynamic nextPage
 	
 	// Fetch all items from the database table and store them locally in the member variable "items"
 	// Example:
@@ -405,6 +412,7 @@ DatabaseTable<T>
 	importance:5 
 	async T[] fetchAll: string sort = null
 		items = cast await backend.pocketbase.collection(this.name).getFullList({sort})
+		hasMore = false
 		return items
 		
 	// Fetch a subset of items from the database table and store them locally in the member variable "items".
@@ -433,10 +441,52 @@ DatabaseTable<T>
 		             int page = 1
 		             int perPage = 1000
 					 bool skipTotal = true
+		if sort then sort += ",id"	// Equal values in the same order on every page (see fetchMore)
 		let result = await backend.pocketbase.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
 		items = cast result.items
 		totalItemsOfLastFetch = result.totalItems
+		rememberNextPage result.items, perPage, {filter, sort, expand, fields}
 		return items
+
+	// Fetch the next page of the last fetch or subscribe (same filter, sort and page size, at most 1000) and add it to the
+	// local items. It fetches the items after the last fetched one in the sort order (the ids decide between equal values),
+	// so items that are added or removed meanwhile make it neither skip nor repeat one. Paging needs a sort, and the
+	// fetched fields must include the sort fields.
+	// Example: messages, the newest at the bottom, with older ones fetched when the user scrolls near the top
+	//     app
+	//         DatabaseTable<Message> messages = {name:"messages"}
+	//         start
+	//             await messages.fetch sort:"-created", perPage:50
+	//             refresh
+	//         draw
+	//             column height:100%, overflowY:auto
+	//                 if messages.hasMore then div onVisible:await messages.fetchMore
+	//                 for messages.items.sortBy .created
+	//                     div .text
+	importance:5
+	async void fetchMore
+		if not hasMore then return
+		dynamic query = nextPage.query
+		dynamic[] page = (await backend.pocketbase.collection(this.name).getList(1, nextPage.perPage, {filter:nextPage.filter, sort:query.sort, expand:query.expand, fields:query.fields, skipTotal:true})).items
+		dynamic[] dynamicList = items
+		for item in page
+			if dynamicList.none.id == item.id then dynamicList.add item	// Unless a realtime event added it already
+		rememberNextPage page, nextPage.perPage, query
+
+	// The items after the last one of the page in the sort order of the query follow on the next page. For the sort "a,-b,id"
+	// and the last item {a:1, b:2, id:"x"}, these are the items with a > 1 || a = 1 && b < 2 || a = 1 && b = 2 && id > "x"
+	rememberNextPage: dynamic[] page, int perPage, dynamic query
+		hasMore = query.sort and page.length == perPage
+		if not hasMore then return
+		string sort = query.sort
+		string after, equalBefore
+		for key in sort.split(",")
+			bool isDescending = key.startsWith("-")
+			string field = isDescending ? key.substring(1) : key
+			string value = backend.pocketbase.filter("\{:value}", {value:page.last[field]})
+			after += "{after ? " || " : ""}{equalBefore}{field} {isDescending ? "<" : ">"} {value}"
+			equalBefore += "{field} = {value} && "
+		nextPage = {perPage:perPage atMost 1000, query, filter:query.filter ? "({query.filter}) && ({after})" : after}
 		
 	// Fetch and return a single item from the database table. Returns null only when no item matches the filter
 	// (PocketBase answers 404) and throws on every other error (network, not signed in, ...): a caller that creates
@@ -544,6 +594,7 @@ DatabaseTable<T>
 			backend.onDataChange?.invoke();
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
+		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
 		const collection = backend.pocketbase.collection(this.name), options = {filter, sort, expand, skipTotal, fields}, pageSize = Math.min(perPage, 1000)
 		const items = (await collection.getList(1, pageSize, options)).items
 		if(pageSize < perPage) {
@@ -554,6 +605,7 @@ DatabaseTable<T>
 			if(items.length > perPage) items.length = perPage
 		}
 		this.items = items
+		this.rememberNextPage(items, perPage, {filter, sort, expand, fields})
 		if(this.items.length > 0) {
 			onChange?.();
 			backend.onDataChange?.invoke();
