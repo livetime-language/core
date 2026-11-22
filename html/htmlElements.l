@@ -204,7 +204,7 @@ global static class html
 			rule += html.camelToKebabCase(key) + ": " + style[key].toString() + "; ";
 		}
 		rule += " }";
-		html.currentStyleSheet.insertRule(rule);
+		html.addStyleRule(rule);
 
 	// Adds a css style rule string
 	// Example:
@@ -214,7 +214,15 @@ global static class html
 	importance:1
 	global js void style: string selector
 	                      string ruleString
-		html.currentStyleSheet.insertRule(selector + " { " + ruleString + " }");
+		html.addStyleRule(selector + " { " + ruleString + " }");
+
+	// A new rule applies at once, so the draw can measure the elements it styles. The stylesheet gets the rules of a refresh at its end
+	// (applyStyleRules)
+	private js void addStyleRule: string rule
+		if(html.refreshInProgress) html.styleRules.push(rule)
+		if(html.refreshInProgress && html.appliedStyleRules?.has(rule)) return
+		html.currentStyleSheet.insertRule(rule)
+		html.styleSheetText = null
 
 	// Convert a camelCase string to a kebab-case string, for example "backgroundColor" becomes "background-color"
 	string camelToKebabCase(string str)
