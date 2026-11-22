@@ -22,6 +22,7 @@ Check your code with "livetime check", build with "livetime build".
 Work around them until they are fixed:
 - `//` starts a comment even inside a regular expression of a `js` body (`livetime check` doesn't notice): write `[/]`.
 - A lambda with several statements assigned to a field as an indented block crashes the compiler, reported at an unrelated line: write the statements on one line, separated by `;`.
+- A lambda that returns a struct doesn't copy it: `Pos[] heads = selections.map(.head)` shares the objects, and assigning a struct field changes it in place (`s.head = x` is `s.head.assign(x)`). Copy with a loop (`heads.add s.head` clones).
 
 If you find another bug in the LiveTime compiler, append a test that reproduces it to /Users/heiko/Projects/LiveTime3/src/compiler.livetime.test, add it with its workaround to this list and add a task to the LiveTime3 project. The task should include removing any workaround in the codebase and the bug's entry in this list.
 
@@ -40,7 +41,7 @@ If you find another bug in the LiveTime compiler, append a test that reproduces 
 - Functions that call themselves need a return type.
 - A parameter named like a CSS property (`icon`) is passed as that style in shorthand (`div icon`): use another name.
 - An argument whose last name equals a parameter's name is passed as that parameter (`textIn(selection.to, p)` passes `to`): use labels.
-- `row`, `column` and static class names (`file`, `data`, `storage`, `html`, `system`, `app`) can't be variable names.
+- `row`, `column`, `span` and static class names (`file`, `data`, `storage`, `html`, `system`, `app`) can't be variable names.
 - Lambdas have implicit parameters (`it`) that hide outer variables: don't name locals `it`.
 - Inside `onClick:`, `.` is the event: name the loop variables a handler needs.
 - In a one-line lambda, `if c then a; b` puts `b` into the `if`.
