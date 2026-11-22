@@ -158,9 +158,7 @@ unit html
 			// The element the key was pressed in, also if its own key handler has blurred or removed it (Enter that ends editing)
 			const keyTarget = ev.target;
 			const editingText = ev.isComposing || keyTarget.isContentEditable || keyTarget.contentEditable == "true" || keyTarget.contentEditable == "plaintext-only" || keyTarget.tagName == "INPUT" || keyTarget.tagName == "TEXTAREA";
-			// Keys that type another character with Alt or Shift (on a Mac Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after
-			// the letter or digit they type without modifiers (keyCode follows the keyboard layout)
-			const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
+			const key = ev.key || "";
 			// Another key while a shortcut is held makes it a combination (Right Option and L type "@" on a German Mac keyboard)
 			const pressed = html.pressedShortcut;
 			if(pressed && ev.code != pressed.code) pressed.cancelled = true;
@@ -168,8 +166,7 @@ unit html
 			// It types nothing, so it is also handled while editing text, and keeps its default action for the keys that follow
 			const side = /^(Alt|Control|Shift|Meta)(Left|Right)$/.exec(ev.code);
 			if(side || !editingText || ev.ctrlKey || ev.altKey || ev.metaKey || /^(F\d+|Escape)$/.test(key)) {
-				const typesOther = (key == "Dead" || key.length == 1 && !/[a-z0-9]/i.test(key)) && (ev.keyCode >= 48 && ev.keyCode <= 57 || ev.keyCode >= 65 && ev.keyCode <= 90);
-				const shortcut = html.keyboardShortcuts.get(side ? side[2].toLowerCase() + {Alt:"alt", Control:"ctrl", Shift:"shift", Meta:"meta"}[side[1]] : modifiers + (typesOther ? String.fromCharCode(ev.keyCode) : key).toLowerCase());
+				const shortcut = html.keyboardShortcuts.get(side ? side[2].toLowerCase() + {Alt:"alt", Control:"ctrl", Shift:"shift", Meta:"meta"}[side[1]] : html.pressedAccelerator(ev));
 				if(shortcut && (shortcut.whileEditingText || !editingText)) {
 					// A shortcut with a release is pressed once until its key goes up: repeats of the held key don't count
 					if(!shortcut.release) shortcut.do.invoke()
@@ -246,6 +243,18 @@ unit html
 		          bool whileEditingText = true	// Handle the accelerator also while the user edits text in a text field (with false, the keys keep their default action there: on a Mac Alt+L types "@" on a German keyboard and Ctrl+A moves the caret to the start of the line)
 		keyboardShortcuts[normalizeAccelerator(accelerator)] = {do, release, whileEditingText}
 
+	// The keys of a keydown event as normalizeAccelerator writes accelerators. Keys that type another character with Alt or Shift (on a Mac
+	// Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after the letter or digit they type without modifiers (keyCode follows
+	// the keyboard layout)
+	private js string pressedAccelerator: dynamic ev
+		const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
+		const typesOther = (key == "Dead" || key.length == 1 && !/[a-z0-9]/i.test(key)) && (ev.keyCode >= 48 && ev.keyCode <= 57 || ev.keyCode >= 65 && ev.keyCode <= 90);
+		return modifiers + (typesOther ? String.fromCharCode(ev.keyCode) : key).toLowerCase();
+
+	// Whether a keydown event (also of an element's own listener) has the keys of an accelerator (onKeyboardShortcut). Not for a modifier key alone
+	js bool isAcceleratorPressed: dynamic ev, string accelerator
+		return html.pressedAccelerator(ev) == html.normalizeAccelerator(accelerator);
+
 	// The accelerator as the keydown listener names the pressed keys: lowercase, the modifiers ctrl, alt, shift and meta in this order
 	private js string normalizeAccelerator: string accelerator
 		const meta = html.isAppleDevice() ? "meta" : "ctrl";
@@ -274,3 +283,75 @@ unit html
 
 	js bool isAppleDevice
 		return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+	// Runs an editing command (undo, redo, cut, copy, paste, delete, duplicate, selectAll) on the text field that has the focus (input,
+	// textarea or contentEditable) and returns true. Without a selection, cut, copy, delete and duplicate act on the caret's line, like
+	// in code editors: cut and delete remove it with its line break, duplicate inserts a copy below it. Duplicate inserts a copy of the
+	// selected text after it. The other commands are the browser's (system.runEditingCommand), so they are in the field's undo history.
+	// A focus outside the page (a webview, an iframe, another window) and Copy of text selected outside of text fields also get the
+	// command of the browser. Returns false otherwise, if no text field has the focus: the command is the app's, e.g. for the items it selects
+	js bool editText: string command
+		const element = document.activeElement, selection = getSelection()
+		if(!document.hasFocus() || element?.tagName == "IFRAME" || element?.tagName == "WEBVIEW") {
+			system.runEditingCommand(command)
+			return true
+		}
+		const field = element?.tagName == "INPUT" || element?.tagName == "TEXTAREA"
+		if(!field && !element?.isContentEditable) {
+			// Text selected outside of text fields is copied by the browser
+			if(command != "copy" || selection.isCollapsed) return false
+			system.runEditingCommand(command)
+			return true
+		}
+		const insert = text => document.execCommand("insertText", false, text)
+		// Inputs without a selection (number, email) and passwords only get the browser's commands
+		const ownCommand = ["cut", "copy", "delete", "duplicate"].includes(command) && !(field && (element.selectionStart == null || element.type == "password"))
+		const collapsed = field ? element.selectionStart == element.selectionEnd : selection.isCollapsed
+		if(!ownCommand || !collapsed && command != "duplicate") system.runEditingCommand(command)
+		else if(!collapsed) {
+			if(field) {
+				const start = element.selectionStart, end = element.selectionEnd
+				element.setSelectionRange(end, end)
+				insert(element.value.substring(start, end))
+				element.setSelectionRange(end, end + end - start)
+			} else {
+				const text = selection.toString()
+				selection.collapseToEnd()
+				insert(text)
+			}
+		} else if(field) {
+			const value = element.value, caret = element.selectionStart
+			const start = caret > 0 ? value.lastIndexOf("\n", caret - 1) + 1 : 0
+			const end = value.indexOf("\n", caret) < 0 ? value.length : value.indexOf("\n", caret)
+			const line = value.substring(start, end), multiline = element.tagName == "TEXTAREA"
+			if(command == "cut" || command == "copy") navigator.clipboard.writeText(multiline ? line + "\n" : line)
+			if(command == "duplicate") {
+				if(!multiline) return true
+				element.setSelectionRange(end, end)
+				insert("\n" + line)
+				element.setSelectionRange(caret + line.length + 1, caret + line.length + 1)
+			} else if(command != "copy") {
+				// The last line goes with the line break before it
+				const last = end == value.length
+				element.setSelectionRange(last && start > 0 ? start - 1 : start, last ? end : end + 1)
+				document.execCommand("delete")
+			}
+		} else {
+			// The paragraph of the caret (Firefox only knows lines as they are wrapped)
+			const unit = /Firefox/.test(navigator.userAgent) ? "lineboundary" : "paragraphboundary"
+			const node = selection.focusNode, offset = selection.focusOffset
+			selection.modify("move", "backward", unit)
+			selection.modify("extend", "forward", unit)
+			const line = selection.toString()
+			if(command == "cut" || command == "copy") navigator.clipboard.writeText(line)
+			if(command == "copy") selection.collapse(node, offset)
+			else if(command == "duplicate") {
+				selection.collapseToEnd()
+				insert("\n" + line)
+			} else {
+				// With the line break after it. An empty last paragraph: delete removes the line break before it
+				selection.modify("extend", "forward", "character")
+				document.execCommand("delete")
+			}
+		}
+		return true

@@ -226,7 +226,19 @@ global transient skipInit unit system
 		
 	inline js void copyToClipboard: string text
 		navigator.clipboard.writeText(text)
-		
+
+	// The text of the clipboard. Browsers ask the user for permission (or to confirm each read)
+	js async string readClipboard
+		return await navigator.clipboard.readText()
+
+	// Runs an editing command of the browser where the focus is: undo, redo, cut, copy, paste, delete or selectAll. In Electron on the
+	// focused web contents (also a webview or the developer tools), like the roles of a native menu. Browsers can't paste this way
+	js void runEditingCommand: string command
+		if(!system.isElectron) return void document.execCommand(command)
+		const remote = require('@electron/remote')
+		const contents = remote.webContents.getFocusedWebContents() || remote.getCurrentWebContents()
+		contents[command]?.()
+
 	global inline js int delay: float time // The delay in milliseconds
 		                        void() do
 		setTimeout(do, time)
