@@ -260,6 +260,9 @@ HtmlEvent
 	bool ctrlKey              // Is the control key down?
 	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
 
+	// Is CmdOrCtrl down (Cmd on Apple devices, Ctrl everywhere else)?
+	inline js bool isCmdOrCtrl() (html.isAppleDevice() ? this.metaKey : this.ctrlKey)
+
 	// Did the event happen on the element the handler is attached to, not on one of its children?
 	inline js bool isOnElementItself() this.target == this.currentTarget
 		

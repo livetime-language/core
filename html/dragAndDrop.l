@@ -10,6 +10,9 @@ global static class html
 	// A hint at the pointer can tell what dropping the item on a list does, for example while the user holds CmdOrCtrl (Cmd on Apple
 	// devices, Ctrl everywhere else). canDrop can allow an item only at some positions of a list, or in none of them (then the item
 	// goes back where it was while it is near that list).
+	// Pressing a selected item (isSelected) drags the selected items of all lists of the group along: they leave their lists and follow it as a
+	// stack with their number, the drop preview has the size of the pressed item. They are dropped together and in their order (that of the
+	// lists, then of their items): onDrop is called for each of them, the first one goes between prev and next, each following one after the one before.
 	// Example:
 	//     column
 	//         forDraggable stack.cards, angleWhileDragging:10
@@ -25,8 +28,9 @@ global static class html
 		                 void(T it, int i) do	// Draw the item
 		                 string(T it) keyOf = null	// A unique key of the item (by default its index): its elements follow it when items are added, removed or moved before it, so a field that is being edited keeps its item and the focus
 		                 stored void(T it) onDrag = null	// The user started to drag the item
-		                 stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null	// The user dropped the item between prev and next (its neighbors in this list without the dragged item, null at the start or end), cmdOrCtrl tells whether CmdOrCtrl was held
-		                 stored bool(T it, int index) canDrop = null	// Whether the item can be dropped at index of this list (not counting the dragged item; everywhere if null). It can always be put back where it was
+		                 stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null	// The user dropped the item between prev and next (its neighbors in this list without the dragged items, null at the start or end; for each further dragged item prev is the one before it), cmdOrCtrl tells whether CmdOrCtrl was held
+		                 stored bool(T it, int index) canDrop = null	// Whether the item can be dropped at index of this list (not counting the dragged items; everywhere if null). Dragged items are dropped where all of them can be, or put back where the pressed one was
+		                 stored bool(T it) isSelected = null	// Whether the item is selected: pressing a selected item drags all selected items of the group
 		                 stored string(T it, bool cmdOrCtrl) hint = null	// The html shown at the pointer while the item is dragged over this list (none if empty), cmdOrCtrl tells whether CmdOrCtrl is held
 		                 Style hintStyle = {padding:{topAndBottom:2 leftAndRight:6}, borderRadius:4, fontSize:12, color:#ffffff, backgroundColor:#303030}	// The style of the hint
 		                 SourceCodeLocation location
@@ -38,14 +42,24 @@ global static class html
 		if d and d.zone.element == zone.element then d.zone = zone
 		int index = 0
 		for item in items
-			isDragged := d?.source == zone and d.sourceIndex == i
-			if not isDragged
+			bool selected = isSelected != null and isSelected(item)
+			zone.selected.add selected
+			isPressed := d?.source == zone and d.sourceIndex == i
+			isDraggedAlong := not isPressed and selected and d?.dragsSelection and d.source.group == zone.group
+			if not isPressed and not isDraggedAlong
 				if d?.zone == zone and d.index == index then d.preview = div key:"dropPreview", style:withDraggedSize(dropPreview)
 				index++
 			wrapper := div key:keyOf != null ? keyOf(item) : "{i}", onPointerDown:startDrag ., zone, i, angleWhileDragging
 				do item, i
+				// The number of dragged items at the top right of the pressed one
+				if isPressed and d.items.length > 1
+					div "{d.items.length}", key:"dragCount", position:absolute, top:-8, right:-8, minWidth:20, height:20, boxSizing:"border-box", padding:{topAndBottom:0 leftAndRight:6}, borderRadius:10,
+						display:flex, alignItems:center, justifyContent:center, zIndex:1000, fontSize:11, fontWeight:600, color:#ffffff, backgroundColor:#303030
 			zone.wrappers.add wrapper
-			if not isDragged then setContentsOnly wrapper
+			if isDraggedAlong
+				zone.draggedAlong.add wrapper
+				placeDragged wrapper, countDraggedAlong(zone.group)
+			else if not isPressed then setContentsOnly wrapper
 		if d?.zone == zone and d.index == index then d.preview = div key:"dropPreview", style:withDraggedSize(dropPreview)
 		if d?.zone == zone
 			// Only lists of the same group exchange items, so the source has the same item type
@@ -62,6 +76,21 @@ global static class html
 	// The style of the drop preview with the size and margins of the dragged item, unless the style specifies them
 	private js Style withDraggedSize: Style style
 		return {...html.dragging.previewStyle, ...style}
+
+	// The pressed item follows the pointer, the items dragged along are stacked behind it (rank 1, 2, ...), up to three of them visible
+	private js void placeDragged: HTMLElement element, int rank
+		const d = html.dragging, s = system.scale, offset = 4*Math.min(rank, 3)
+		element.style.cssText = `position:fixed;left:${(d.x - d.offsetX)/s + offset}px;top:${(d.y - d.offsetY)/s + offset}px;width:${(d.itemWidth + d.marginX)/s}px;rotate:${d.angle}deg;pointer-events:none;z-index:${1000 - rank}${rank > 3 ? ";visibility:hidden" : ""}`
+
+	private js int countDraggedAlong: string group
+		return html.dropZones.reduce((count, z) => z.group == group ? count + z.draggedAlong.length : count, 0)
+
+	// The items the user drags, in the order of the lists and of their items
+	private dynamic[] collectDraggedItems: Dragging d
+		dynamic[] dragged
+		for z in dropZones
+			if z.group == d.source.group then z.addDraggedItems d, dragged
+		return dragged
 
 	// The hint follows the pointer
 	private js void moveHint
@@ -94,15 +123,19 @@ global static class html
 		d.marginX = (ml + parseFloat(cs.marginRight))*s
 		d.marginY = (mt + parseFloat(cs.marginBottom))*s
 		d.previewStyle = {width:r.width/s + "px", height:r.height/s + "px", margin:cs.marginTop + " " + cs.marginRight + " " + cs.marginBottom + " " + cs.marginLeft, flexShrink:"0"}
+		d.dragsSelection = d.source.selected[d.sourceIndex]
+		d.items = html.collectDraggedItems(d)
+		d.returnIndex = d.dragsSelection ? d.source.selected.slice(0, d.sourceIndex).filter(selected => !selected).length : d.sourceIndex
 		d.zone = d.source
-		d.index = d.sourceIndex
+		d.index = d.returnIndex
 		// Not a caret: the text that is being edited keeps it if the press didn't take its focus
 		if(!getSelection().isCollapsed) getSelection().removeAllRanges()
 		document.documentElement.style.userSelect = "none"
 		html.dragStyleSheet.disabled = false
-		html.moveDragged()
 		d.source.drag(d)
+		// The items dragged along leave their lists before the positions are measured
 		html.refresh()
+		html.moveDragged()
 		html.autoScroll(d)
 
 	// Move the dragged item to the pointer and find where it would be dropped: in the list and at the position where the center of the drop
@@ -110,15 +143,15 @@ global static class html
 	// so where the preview is doesn't change where it goes: it moves what follows it, also other lists (by less than its size if one of
 	// them has room to spare), and measured with it the preview would jump back and forth between two lists underneath each other
 	private js void moveDragged
-		const d = html.dragging, s = system.scale
-		d.element.style.cssText = `position:fixed;left:${(d.x - d.offsetX)/s}px;top:${(d.y - d.offsetY)/s}px;width:${(d.itemWidth + d.marginX)/s}px;rotate:${d.angle}deg;pointer-events:none;z-index:1000`
+		const d = html.dragging, s = system.scale, group = html.dropZones.filter(z => z.group == d.source.group), dragged = [d.element, ...group.flatMap(z => z.draggedAlong)]
+		dragged.forEach((element, rank) => html.placeDragged(element, rank))
 		html.moveHint()
 		const centerX = d.x + d.toCenterX, centerY = d.y + d.toCenterY
 		// Without the preview its scrolling ancestors may be too short for their scroll positions, which they get back afterwards
 		const preview = d.preview?.isConnected ? d.preview : null, display = preview?.style.display, scrolled = []
 		for(let el = preview?.parentElement; el; el = el.parentElement) scrolled.push([el, el.scrollLeft, el.scrollTop])
 		if(preview) preview.style.display = "none"
-		const zones = html.dropZones.filter(z => z.group == d.source.group && !d.element.contains(z.element)).map(z => {
+		const zones = group.filter(z => !dragged.some(element => element.contains(z.element))).map(z => {
 			const style = getComputedStyle(z.element)
 			return {z, style, r:z.element.getBoundingClientRect(), horizontal:style.display.includes("flex") && style.flexDirection.startsWith("row")}
 		})
@@ -132,7 +165,7 @@ global static class html
 			// A list extends from its last position in its direction, so items can be dropped below (or right of) short and empty lists. Not if
 			// another list follows it there: between them the closer position wins
 			const isFollowed = zones.some(o => follows(o.r, r, horizontal))
-			const items = z.wrappers.filter(w => w != d.element).map(w => (w.firstElementChild || w).getBoundingClientRect())
+			const items = z.wrappers.filter(w => !dragged.includes(w)).map(w => (w.firstElementChild || w).getBoundingClientRect())
 			// The positions where the item can be dropped. Near a list where it can't be dropped at all, it goes back where it was
 			const all = [...items.keys(), items.length], accepted = all.filter(i => z.accepts(d, i)), positions = accepted.length ? accepted : all
 			for(const i of positions) {
@@ -144,7 +177,7 @@ global static class html
 				const along = i == positions.at(-1) && !isFollowed && center > previewCenter ? 0 : Math.abs(previewCenter - center)
 				const distance = Math.hypot(across, along)
 				// Lists are drawn from outside to inside and from start to end: on a tie the innermost and the later list wins, in a list the first position
-				if(distance < best || distance == best && z != zone) { best = distance; [zone, index] = accepted.length ? [z, i] : [d.source, d.sourceIndex] }
+				if(distance < best || distance == best && z != zone) { best = distance; [zone, index] = accepted.length ? [z, i] : [d.source, d.returnIndex] }
 			}
 		}
 		if(preview) {
@@ -185,7 +218,7 @@ global static class html
 		delay 0
 			dragEnded = false
 		removeDragStyles
-		if drop then d.zone.drop d
+		if drop then d.zone.drop d, collectDraggedItems(d)
 		refresh
 
 	private js void removeDragStyles
@@ -224,6 +257,9 @@ global static class html
 class Dragging
 	DropZone source	// The list the item comes from
 	int sourceIndex	// The index of the item in the source list
+	int returnIndex	// Where the item goes back to in the source list, not counting the dragged items
+	bool dragsSelection	// The item is selected (isSelected of forDraggable): the selected items of the group are dragged along
+	dynamic[] items	// The dragged items, in the order of the lists and of their items
 	HTMLElement element	// The wrapper of the item
 	float angle	// Rotate the item by this angle in degrees
 	int pointerId
@@ -238,7 +274,7 @@ class Dragging
 	Style previewStyle	// The size and margins of the item
 	DropZone zone	// The list the item will be dropped into
 	HTMLElement preview	// The drop preview in that list
-	int index	// The position in that list, not counting the dragged item
+	int index	// The position in that list, not counting the dragged items
 	bool cmdOrCtrl	// The user holds Cmd (Apple devices) or Ctrl (everywhere else)
 	HTMLElement hint	// The hint at the pointer (null if there is none)
 
@@ -248,10 +284,13 @@ class DropZone
 	HTMLElement before	// The element drawn before the items (null if they come first): an empty list shows the drop preview after it
 	string group	// Items can be moved between lists of the same group
 	HTMLElement[] wrappers	// The wrappers of the items
+	bool[] selected	// Whether each item is selected
+	HTMLElement[] draggedAlong	// The wrappers of the items that are dragged along with the pressed item
 	drag: Dragging d
-	drop: Dragging d
-	bool accepts: Dragging d, int index	// Whether the dragged item can be dropped at index
+	drop: Dragging d, dynamic[] dragged
+	bool accepts: Dragging d, int index	// Whether the dragged items can be dropped at index
 		return true
+	addDraggedItems: Dragging d, dynamic[] dragged	// Adds the items of this list that are dragged
 
 DropZone ItemDropZone<T>
 	T[] items
@@ -259,19 +298,28 @@ DropZone ItemDropZone<T>
 	stored void(T it, T prev, T next, bool cmdOrCtrl) onDrop = null
 	stored bool(T it, int index) canDrop = null
 
-	// Call canDrop with the dragged item, unless it goes back where it was
+	// Call canDrop with each dragged item, unless they go back where the pressed one was
 	bool accepts: Dragging d, int index
-		ItemDropZone<T> source = cast d.source
-		return canDrop == null or (source == this and index == d.sourceIndex) or canDrop(source.items[d.sourceIndex], index)
+		if canDrop == null or (d.source == this and index == d.returnIndex) then return true
+		T[] draggedItems = cast d.items
+		for item in draggedItems
+			if not canDrop(item, index) then return false
+		return true
+
+	addDraggedItems: Dragging d, dynamic[] dragged
+		for items
+			if (this == d.source and i == d.sourceIndex) or (d.dragsSelection and selected[i]) then dragged.add .
 
 	// Call onDrag with the item the user started to drag
 	drag: Dragging d
 		onDrag items[d.sourceIndex]
 
-	// Call onDrop with the dragged item and its new neighbors
-	drop: Dragging d
-		// Only lists of the same group exchange items, so the source has the same item type
-		ItemDropZone<T> source = cast d.source
-		T item = source.items[d.sourceIndex]
-		rest := items.filter . != item
-		onDrop item, rest[d.index - 1], rest[d.index], d.cmdOrCtrl
+	// Call onDrop with each dragged item and its new neighbors: the dragged item before it, the first one follows the item before the drop
+	// preview (only lists of the same group exchange items, so the dragged items have the same type)
+	drop: Dragging d, dynamic[] dragged
+		T[] droppedItems = cast dragged
+		rest := items.filter not droppedItems.includes(.)
+		T prev = rest[d.index - 1]
+		for item in droppedItems
+			onDrop item, prev, rest[d.index], d.cmdOrCtrl
+			prev = item
