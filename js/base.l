@@ -762,6 +762,17 @@ immutable class string
 		let segment = (String.wordSegmenter ??= new Intl.Segmenter(undefined, {granularity:"word"})).segment(this).containing(index)
 		return segment ? [segment.index, segment.index + segment.segment.length] : null
 
+	// The start and end of the character the user sees at an index (grapheme cluster): an emoji with its modifiers, a flag, a letter
+	// with its accents. A surrogate pair if the platform has no Intl.Segmenter. Null if the index is outside of the string
+	js int[] graphemeAt: int index
+		if(index < 0 || index >= this.length) return null
+		if(Intl.Segmenter) {
+			const segment = (String.graphemeSegmenter ??= new Intl.Segmenter(undefined, {granularity:"grapheme"})).segment(this).containing(index);
+			return [segment.index, segment.index + segment.segment.length];
+		}
+		const start = index > 0 && this.charCodeAt(index) >> 10 == 0x37 && this.charCodeAt(index - 1) >> 10 == 0x36 ? index - 1 : index;
+		return [start, start + (this.charCodeAt(start) >> 10 == 0x36 && this.charCodeAt(start + 1) >> 10 == 0x37 ? 2 : 1)];
+
 	// ------------------------------------------- Operators -------------------------------------------
 
 	inline string + string value
