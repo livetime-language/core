@@ -409,7 +409,16 @@ global transient skipInit unit system
 		if(!system.isElectron) return window.confirm(message)
 		const remote = require('@electron/remote')
 		return remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {type:"question", message, buttons:[ok, "Cancel"], defaultId:0, cancelId:1}) == 0
-		
+
+	// Shows a message in a dialog with an OK button and waits until the user closes it
+	// Example:
+	//     system.showMessage "Could not save {item.name}"
+	js void showMessage: string message
+		// The native dialog of Electron: after its window.alert, text fields can't get the focus on Windows
+		if(!system.isElectron) return window.alert(message)
+		const remote = require('@electron/remote')
+		remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {message})
+
 enum lowercase string DataTransferItemKind: String, File
 		
 interface DataTransferItem

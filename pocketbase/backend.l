@@ -123,7 +123,7 @@ transient skipInit static class backend
 	importance:5 inline js async 
 	dynamic post: string url   // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
 	              dynamic body // Object with data to send to the backend, e.g. {offerId: "nx7n98bscxomkl4", amount: 5000}
-		backend.pocketbase.send(url, {method:"POST", @body:body})
+		backend.pocketbase.send(url, {method:"POST", @body:body, requestKey:null})
 		
 	// Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
 	// Example:
@@ -195,7 +195,9 @@ transient skipInit static class backend
 		pocketbase.authStore.clear();
 		system.removeLocalStorageItem('pocketbase_auth');
 
-	// Duplicated pending requests are automatically cancelled by default. Use this funtion to enable or disable this.
+	// Duplicated pending reads are automatically cancelled by default. Use this function to enable or disable this.
+	// Writes are never cancelled (requestKey:null): the server saves a cancelled write anyway, the client would only lose
+	// its answer, e.g. the first of two records added in quick succession would throw although it was saved
 	// Example:
 	//     itemsTable.fetchAll // canceled
 	//     itemsTable.fetchAll // canceled
@@ -256,7 +258,7 @@ transient skipInit static class backend
 		} finally {
 			backend.pocketbaseOrBatch = prevPocketbaseOrBatch;
 		}
-		if(currentBatch.requests.length) await currentBatch.send();
+		if(currentBatch.requests.length) await currentBatch.send({requestKey:null});
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "filter" and "length" to access the local items.
@@ -282,7 +284,7 @@ DatabaseTable<T>
 		if (backend.pocketbaseOrBatch != backend.pocketbase) return collection.update(id, update);
 		const unfinishedUpdates = this.unfinishedUpdatesById[id] ??= [];
 		const previousRequest = unfinishedUpdates.at(-1)?.request;
-		const thisUpdate = {update, request: (async () => { try { await previousRequest; } catch (e) {} return collection.update(id, update); })()};
+		const thisUpdate = {update, request: (async () => { try { await previousRequest; } catch (e) {} return collection.update(id, update, {requestKey:null}); })()};
 		unfinishedUpdates.push(thisUpdate);
 		try {
 			return await thisUpdate.request;
@@ -323,7 +325,7 @@ DatabaseTable<T>
 		dynamic dynamicItem = item
 		if backend.pocketbaseOrBatch == backend.pocketbase
 			// The item gets the values the server set (id, created, updated and those of hooks), like with the realtime event of the creation (subscribe)
-			dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(item)
+			dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(item, {requestKey:null})
 			forDynamic newRecord
 				dynamicItem[key] = .
 		else
@@ -360,7 +362,7 @@ DatabaseTable<T>
 		if dynamicItem.id
 			await sendAfterEarlierUpdates dynamicItem.id, dynamicItem
 		else if backend.pocketbaseOrBatch == backend.pocketbase
-			let newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem)
+			let newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem, {requestKey:null})
 			dynamicItem.id = newRecord.id
 			dynamicItem.created = newRecord.created
 			dynamicItem.updated = newRecord.updated
@@ -381,7 +383,7 @@ DatabaseTable<T>
 	importance:5
 	async void remove: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		await backend.pocketbaseOrBatch.collection(this.name).delete(dynamicItem.id)
+		await backend.pocketbaseOrBatch.collection(this.name).delete(dynamicItem.id, {requestKey:null})
 		items.remove item
 		
 	// ------------------------------------------------------- Fetch -------------------------------------------------------
@@ -548,7 +550,7 @@ DatabaseTable<T>
 	importance:3
 	async void update: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		sendAfterEarlierUpdates dynamicItem.id, item
+		await sendAfterEarlierUpdates dynamicItem.id, item
 		
 	// Update a single field of an item with a valid id member variable in the database table and the local items
 	// Example:
@@ -660,7 +662,7 @@ DatabaseTable<T>
 			for(let i=0; i<files.length; i++) {
 				let file = files[i]
 				try {
-					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
+					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]}, {requestKey:null});
 					model.container[model.key] = result[model.key];
 					if(i < files.length-1) backend.onDataChange?.invoke();
 				} catch(e) {
@@ -696,7 +698,7 @@ DatabaseTable<T>
 					let url = urls[i]
 					let response = await fetch(url);
 					let imageBlob = await response.blob();
-					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]});
+					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]}, {requestKey:null});
 					model.container[model.key] = result[model.key];
 					// if(i < urls.length-1) html.refresh();
 				} catch(e) {
@@ -717,7 +719,7 @@ DatabaseTable<T>
 		let listOfFiles = model.container[model.key];
 		listOfFiles.remove(file);
 		backend.onDataChange?.invoke();
-		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
+		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]}, {requestKey:null});
 
 	// Adds a file to a file field (e.g. card.images) and returns its name in the database, which is the name with a random suffix
 	// Example:
@@ -730,7 +732,7 @@ DatabaseTable<T>
 		const form = new FormData()
 		form.append(model.key + "+", data instanceof Blob ? data : new Blob([data]), name)
 		const before = model.container[model.key] || []
-		const files = (await backend.pocketbase.collection(this.name).update(model.container.id, form))[model.key]
+		const files = (await backend.pocketbase.collection(this.name).update(model.container.id, form, {requestKey:null}))[model.key]
 		model.container[model.key] = files
 		return files.find(file => !before.includes(file))
 
