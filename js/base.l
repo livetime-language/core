@@ -672,6 +672,18 @@ immutable class string
 		}
 		return result
 	
+	// A hash of the string (53 bits, cyrb53) as 14 hex digits, e.g. to name content. Not cryptographic
+	js string hash
+		let h1 = 0xdeadbeef, h2 = 0x41c6ce57
+		for(let i = 0; i < this.length; i++) {
+			const c = this.charCodeAt(i)
+			h1 = Math.imul(h1 ^ c, 2654435761)
+			h2 = Math.imul(h2 ^ c, 1597334677)
+		}
+		h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+		h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+		return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0")
+
 	js string getExtension
 		let dot = this.lastIndexOf(".")
 		if(dot != -1) return this.substring(dot+1)
@@ -749,6 +761,17 @@ immutable class string
 		if(!Intl.Segmenter) return null
 		let segment = (String.wordSegmenter ??= new Intl.Segmenter(undefined, {granularity:"word"})).segment(this).containing(index)
 		return segment ? [segment.index, segment.index + segment.segment.length] : null
+
+	// The start and end of the character the user sees at an index (grapheme cluster): an emoji with its modifiers, a flag, a letter
+	// with its accents. A surrogate pair if the platform has no Intl.Segmenter. Null if the index is outside of the string
+	js int[] graphemeAt: int index
+		if(index < 0 || index >= this.length) return null
+		if(Intl.Segmenter) {
+			const segment = (String.graphemeSegmenter ??= new Intl.Segmenter(undefined, {granularity:"grapheme"})).segment(this).containing(index);
+			return [segment.index, segment.index + segment.segment.length];
+		}
+		const start = index > 0 && this.charCodeAt(index) >> 10 == 0x37 && this.charCodeAt(index - 1) >> 10 == 0x36 ? index - 1 : index;
+		return [start, start + (this.charCodeAt(start) >> 10 == 0x36 && this.charCodeAt(start + 1) >> 10 == 0x37 ? 2 : 1)];
 
 	// ------------------------------------------- Operators -------------------------------------------
 

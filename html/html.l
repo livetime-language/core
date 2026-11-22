@@ -22,7 +22,9 @@ dynamic HTMLElement
 	string src
 	dynamic srcObject
 	HTMLElement firstChild
+	HTMLElement lastChild
 	HTMLElement nextSibling
+	HTMLElement previousSibling
 	HTMLElement parentNode
 	string href
 
@@ -55,16 +57,30 @@ dynamic HTMLElement
 	HTMLElement[string] childrenByKey
 	string key
 	bool used
+	bool[string] sourceLocationsNotFound	// The source locations that html.findNodeToReuse didn't find from this node on
+	int sourceLocationsNotFoundInRefresh	// The refresh that sourceLocationsNotFound belongs to
 	bool scrolledIntoView
 	bool focusedBeforeClick
 		
 	inline js HTMLElement remove() this.remove()
 	inline js void appendChild(HTMLElement element) this.appendChild(element)
-	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode)
+	inline js void insertBefore(HTMLElement newNode, HTMLElement referenceNode) this.insertBefore(newNode, referenceNode) // Appends newNode if referenceNode is null
+	// Moves a node of the document without taking its focus or reloading its iframes (moveBefore, where the browser has it), inserts other nodes
+	inline js void moveOrInsertBefore(HTMLElement node, HTMLElement referenceNode) (this.moveBefore && node.isConnected && this.isConnected ? this.moveBefore(node, referenceNode) : this.insertBefore(node, referenceNode))
+	// Moves this node and its next siblings up to node (a later sibling) behind node, in their order. Unlike moving node before them, this keeps
+	// the caret of a text in node that is being edited (moveBefore keeps the focus, not the selection)
+	js void moveNodesBehind: HTMLElement node
+		const parent = this.parentNode, reference = node.nextSibling
+		for(let n = this; n && n != node;) {
+			const next = n.nextSibling
+			parent.moveBefore ? parent.moveBefore(n, reference) : parent.insertBefore(n, reference)
+			n = next
+		}
 	inline js void setSelectionRange(int from, int to) this.setSelectionRange(from, to)
 	inline js void select() this.select()
 	inline js void selectContents() getSelection().selectAllChildren(this)
 	inline js void setCursorPosition(int index) html.setCursorPosition(this, index)
+	inline js void moveCaretToEnd() getSelection().collapse(this, this.childNodes.length) // Puts the caret behind the contents of an element with contentEditable
 	inline js void focus() this.focus()
 	inline js void focusWithoutScrolling() this.focus({preventScroll:true})
 	inline js void blur() this.blur()
@@ -76,11 +92,14 @@ dynamic HTMLElement
 	inline js void setAttribute(string name, string value) this.setAttribute(name, value)
 	inline js HTMLElement querySelector(string selector) this.querySelector(selector)
 	inline js HTMLElement[] querySelectorAll(string selector) this.querySelectorAll(selector)
+	inline js HTMLElement closest(string selector) this.closest(selector) // The element itself or its nearest ancestor that matches the selector, null if there is none
+	inline js bool contains(HTMLElement element) this.contains(element) // Whether the element is this element or inside of it
 	inline js Rect getBoundingClientRect() this.getBoundingClientRect()
 		
 	native void(HtmlEvent ev) onclick
 	native void(HtmlEvent ev) oncontextmenu
 	native void(PointerEvent ev) onpointerdown
+	native void(PointerEvent ev) onmousedown
 	native void(PointerEvent ev) onpointermove
 	native void(PointerEvent ev) onpointerup
 	native void(PointerEvent ev) onpointerover
@@ -196,16 +215,19 @@ importance:5 dynamic Attributes
 	bool scrollIntoView // Scroll the element just enough to make it fully visible, whenever this changes to true
 	bool scrollToTop // Scroll the content of the element to the very top on every draw where this is true
 	bool scrollToBottom // Scroll the content of the element to the very bottom on every draw where this is true
+	bool movesWindow // Dragging the element moves the window (Electron windows without the system's title bar, see html.titleBar), except where the elements in it are that the user interacts with: those with a pointer handler, a tooltip or a hover style, fields, buttons and links
 
 	native void(HtmlEvent ev) onClick = null	// Execute this code when the user releases the left mouse button on the HTML element
 	native void(HtmlEvent ev) onRightClick = null	// Execute this code when the user releases the right mouse button on the HTML element
 	native void(PointerEvent ev) onPointerDown = null	// Execute this code when the user presses down the left mouse button on the HTML element
+	native void(PointerEvent ev) onMouseDown = null	// Execute this code when the user presses down a mouse button on the HTML element (also after a touch). Its preventDefault keeps the focus and the caret where they are
 	native void(PointerEvent ev) onPointerOver = null	// Execute this code when the pointer hovers over the element
 	native void(PointerEvent ev) onPointerOut = null	// Execute this code when the pointer stops hovering over the element
 	native void(HtmlKeyboardEvent ev) onKeyDown = null	// Execute this code when the user presses a key on the keyboard
 	native void(HtmlKeyboardEvent ev) onKeyUp = null	// Execute this code when the user releases a key on the keyboard
 	native void(FocusEvent ev) onBlur = null	// Execute this code when the element loses focus
 	native void(FocusEvent ev) onFocus = null	// Execute this code when the element gains focus
+	native void(HtmlEvent ev) onVisible = null	// Execute this code when the element comes within one screen of the visible area of its scroll container, e.g. to fetch more items (DatabaseTable.fetchMore). Async code is awaited, followed by a refresh and executed again while the element stays within reach (see callOnVisible)
 
 	int tabIndex = 0
 
@@ -237,6 +259,9 @@ HtmlEvent
 	bool altKey               // Is the alt key down?
 	bool ctrlKey              // Is the control key down?
 	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
+
+	// Is CmdOrCtrl down (Cmd on Apple devices, Ctrl everywhere else)?
+	inline js bool isCmdOrCtrl() (html.isAppleDevice() ? this.metaKey : this.ctrlKey)
 
 	// Did the event happen on the element the handler is attached to, not on one of its children?
 	inline js bool isOnElementItself() this.target == this.currentTarget
@@ -278,7 +303,13 @@ HTMLElement WebView
 	inline js void goBack() this.goBack()
 	inline js void goForward() this.goForward()
 	inline js void reload() this.reload()
+	// Also loads the scripts and images of the page again: a reload takes them from the cache while it considers them fresh, which
+	// it does for a tenth of their age if the server sends no Cache-Control header
+	inline js void reloadIgnoringCache() this.reloadIgnoringCache()
 	inline js void openDevTools() this.openDevTools()
+	// The session of the partition loads without the HTTP cache. Only before the first webview of the partition is created: a session
+	// keeps the options it was created with
+	static inline js void disableCache(string partition) require("\x40electron/remote").session.fromPartition(partition, {cache:false})
 
 struct float
 	inline Dimension toDimension
@@ -399,7 +430,11 @@ global priority low skipInit static class html
 	private HTMLElement currentNode
 	private HTMLElement currentOverlay
 	private dynamic currentStyleSheet
+	private string[] styleRules	// The rules html.style adds during a refresh, the stylesheet has exactly these at its end (applyStyleRules)
+	private dynamic appliedStyleRules	// The rules of the last refresh (a Set), unless the stylesheet changed since
+	private string styleSheetText	// Their text, null if the stylesheet changed since
 	private bool refreshInProgress = false
+	private int refreshCount
 	private float lastRefresh // When the last refresh ended (Time.preciseTime)
 	private int refreshTimer  // The delay of the refresh that refreshSoon is waiting for, 0 if it isn't waiting
 
@@ -411,14 +446,17 @@ global priority low skipInit static class html
 			return
 		try
 			refreshInProgress = true
+			refreshCount++
 			system.resetStateIndex
-			currentStyleSheet.replaceSync("")
+			styleRules.clear
 			nodesCreated = nodesUpdated = 0
 			parentNode = documentBody
 			currentNode = parentNode.firstChild
 			currentOverlay = documentBody.nextSibling
+			insideWindowMover = false
 			dropZones.clear
 			app.draw
+			applyStyleRules
 			while currentNode
 				let next = currentNode.nextSibling
 				if currentNode.key then parentNode.childrenByKey.remove currentNode.key
@@ -453,6 +491,38 @@ global priority low skipInit static class html
 		float wait = lastRefresh + interval - Time.preciseTime
 		if wait <= 0 then refresh
 		else              refreshTimer = delay wait, refresh
+
+	// Executes onVisible (see Attributes) when the element comes within one screen of the visible area of its scroll
+	// container (the nearest ancestor with overflow auto or scroll, else the page)
+	js void observeVisibility: HTMLElement element, void(HtmlEvent ev) onVisible
+		if(!element.onVisible) {
+			let root = element
+			while((root = root.parentElement) && !/auto|scroll/.test(getComputedStyle(root).overflowY));
+			const owner = root ?? html
+			owner.visibilityObserver ??= new IntersectionObserver(entries => {
+				for(const entry of entries) if(entry.isIntersecting) html.callOnVisible(entry.target, owner.visibilityObserver)
+			}, {root, rootMargin:"100% 0px"})
+			owner.visibilityObserver.observe(element)
+		}
+		element.onVisible = onVisible
+
+	// Executes onVisible of the element. Async code (e.g. fetching more items) is awaited and followed by a refresh. If the
+	// element is in the upper half of its scroll container, the content below it stays in place, so content that appears
+	// above it (like older items at the top of a list) does not push the view down. Observing the element again executes
+	// onVisible again if the element is still within reach, so draw it only while there is more to load.
+	js async void callOnVisible: HTMLElement element, dynamic observer
+		if(element.isAwaitingOnVisible) return
+		const result = element.onVisible({target:element})
+		if(!(result instanceof Promise)) return
+		element.isAwaitingOnVisible = true
+		try { await result } finally { element.isAwaitingOnVisible = false }
+		const scroller = observer.root ?? document.scrollingElement, box = scroller.getBoundingClientRect()
+		const keepsContentBelow = element.getBoundingClientRect().top < box.top + box.height / 2
+		const distanceFromBottom = scroller.scrollHeight - scroller.scrollTop
+		html.refresh()
+		if(keepsContentBelow) scroller.scrollTop = scroller.scrollHeight - distanceFromBottom
+		observer.unobserve(element)
+		if(element.isConnected) observer.observe(element)
 		
 	inline js Vector2 scrollPosition() new Vector2(window.pageXOffset, window.pageYOffset/system.scale)
 	inline js void scrollToTop() window.scrollTo(0,0)
@@ -481,6 +551,16 @@ global priority low skipInit static class html
 			html.resize();
 			html.refresh();
 		}
+
+	// Rules that are no longer added are removed only at the end of a refresh: without them, a layout during the draw (an element's size
+	// is read) would give the elements other sizes for a moment, which moves scroll positions (they are clamped to the shorter content)
+	private js void applyStyleRules
+		// A rule that is inserted later comes first (insertRule inserts at the start)
+		const text = this.styleRules.slice().reverse().join("\n")
+		if(text == this.styleSheetText) return
+		this.currentStyleSheet.replaceSync(text)
+		this.styleSheetText = text
+		this.appliedStyleRules = new Set(this.styleRules)
 
 	private js void initStyleSheet
 		this.currentStyleSheet = new CSSStyleSheet()
@@ -532,6 +612,7 @@ global priority low skipInit static class html
 			body.style.zoom = system.scale
 		}
 		body.className = system.isMobile ? "mobile" : ""
+		system.readWindowState()
 		html.resizeInProgress = false
 	
 	enableScrolling: bool value
@@ -544,6 +625,12 @@ global priority low skipInit static class html
 			style.position = fixed
 			style.top = {0}
 			style.bottom = {0}
+
+	// The width of a text in a CSS font, e.g. "bold 14px OpenSans", without drawing it
+	js float measureTextWidth: string text, string font
+		const context = html.textMeasuringContext ||= new OffscreenCanvas(1, 1).getContext("2d")
+		context.font = font
+		return context.measureText(text).width
 
 	private js void setDataAttributes: HTMLElement element, dynamic attributes
 		if(attributes) {
@@ -582,6 +669,26 @@ global priority low skipInit static class html
 		alert(log)
 
 		return userMedia
+
+	// An image as a data url of a type, scaled down to fit into maxSize x maxSize (e.g. to send it to an AI model). Other origins have
+	// to allow it (CORS). Throws if the image can't be loaded
+	// Example:
+	//     string dataUrl = await html.imageDataUrl(url, 2000)
+	importance:3
+	async js string imageDataUrl: string url
+		                          int maxSize
+		                          string type = "image/webp"	// Browsers that can't encode it use image/png
+		                          float quality = 0.9
+		const image = document.createElement("img")
+		image.crossOrigin = "anonymous"
+		image.src = url
+		await image.decode()
+		const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight))
+		const canvas = document.createElement("canvas")
+		canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+		canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+		canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height)
+		return canvas.toDataURL(type, quality)
 	
 	private js void setStyle: HTMLElement element, dynamic style
 		// We shouldn't need this because the same line of code can't output less styles than previously

@@ -32,7 +32,13 @@ global transient skipInit unit system
 	bool isDebug
 	global bool isMobile
 	bool isElectron
+	bool isWebview	// An Electron page in a webview of another app (e.g. an app tested in an app's browser): the window and its menu belong to that app
 	string os
+
+	// The window of the Desktop app (Electron, not a webview), read when its size changes (html.resize)
+	bool hasNativeTitleBar = true	// Whether the system draws the title bar. Without it (titleBarStyle "hidden" or "hiddenInset" of boot.js) the page draws it (html.titleBar)
+	bool isFullScreen
+	bool isMaximized
 	
 	// Location
 	public inline js string url	=> location.href
@@ -51,6 +57,7 @@ global transient skipInit unit system
 
 	private inline js void initMedia
 		this.isElectron = !!window?.process?.versions?.electron
+		try { this.isWebview = this.isElectron && require('@electron/remote').getCurrentWebContents().getType() == 'webview' } catch {}
 		
 		// Detect the operating system
 		const ua = navigator.userAgent;
@@ -249,6 +256,9 @@ global transient skipInit unit system
 		
 	inline js void onBlur: void() do
 		window.onblur = do
+
+	// Whether the document has the focus. It doesn't while another window or app has it, also while an element loses the focus for this reason
+	inline js bool hasFocus() document.hasFocus()
 		
 	inline js void onFocus: void() do
 		window.onfocus = do
@@ -280,8 +290,9 @@ global transient skipInit unit system
 		
 	inline js void blur() document.activeElement.blur()
 	
+	// Sets the native menu of the window (macOS: of the application). Not in a webview: it would replace the menu of the app that shows it
 	js void setMenu: MenuItem[] menuTemplate
-		if(!system.isElectron || !document.hasFocus()) return;
+		if(!system.isElectron || system.isWebview || !document.hasFocus()) return;
 		const remote = require('@electron/remote');
 		if (process.platform == 'darwin') {
 			menuTemplate.unshift({
@@ -372,6 +383,20 @@ global transient skipInit unit system
 		}
 		link.href = iconUrl;
 	
+	js void readWindowState
+		if(!system.isElectron || system.isWebview) return
+		const win = require('@electron/remote').getCurrentWindow()
+		system.isFullScreen = win.isFullScreen()
+		system.isMaximized = win.isMaximized()
+		// A window in full screen has no title bar either way
+		if(!system.isFullScreen) system.hasNativeTitleBar = win.getBounds().height != win.getContentBounds().height
+
+	inline js void minimizeWindow() require('@electron/remote').getCurrentWindow().minimize()
+	inline js void closeWindow() require('@electron/remote').getCurrentWindow().close()
+	js void toggleMaximizedWindow
+		const win = require('@electron/remote').getCurrentWindow()
+		if(win.isMaximized()) win.unmaximize(); else win.maximize()
+
 	js void toggleDevTools
 		if(typeof require != "undefined") require('@electron/remote').getCurrentWindow().toggleDevTools()
 		
@@ -384,7 +409,16 @@ global transient skipInit unit system
 		if(!system.isElectron) return window.confirm(message)
 		const remote = require('@electron/remote')
 		return remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {type:"question", message, buttons:[ok, "Cancel"], defaultId:0, cancelId:1}) == 0
-		
+
+	// Shows a message in a dialog with an OK button and waits until the user closes it
+	// Example:
+	//     system.showMessage "Could not save {item.name}"
+	js void showMessage: string message
+		// The native dialog of Electron: after its window.alert, text fields can't get the focus on Windows
+		if(!system.isElectron) return window.alert(message)
+		const remote = require('@electron/remote')
+		remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {message})
+
 enum lowercase string DataTransferItemKind: String, File
 		
 interface DataTransferItem

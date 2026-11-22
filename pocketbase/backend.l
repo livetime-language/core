@@ -123,7 +123,7 @@ transient skipInit static class backend
 	importance:5 inline js async 
 	dynamic post: string url   // Relative url of the endpoint on the backend, e.g. "/api/negotiate/accept"
 	              dynamic body // Object with data to send to the backend, e.g. {offerId: "nx7n98bscxomkl4", amount: 5000}
-		backend.pocketbase.send(url, {method:"POST", @body:body})
+		backend.pocketbase.send(url, {method:"POST", @body:body, requestKey:null})
 		
 	// Calls the PocketBase authRefresh function to get the authenticated user. Call this function when the application starts.
 	// Example:
@@ -195,7 +195,9 @@ transient skipInit static class backend
 		pocketbase.authStore.clear();
 		system.removeLocalStorageItem('pocketbase_auth');
 
-	// Duplicated pending requests are automatically cancelled by default. Use this funtion to enable or disable this.
+	// Duplicated pending reads are automatically cancelled by default. Use this function to enable or disable this.
+	// Writes are never cancelled (requestKey:null): the server saves a cancelled write anyway, the client would only lose
+	// its answer, e.g. the first of two records added in quick succession would throw although it was saved
 	// Example:
 	//     itemsTable.fetchAll // canceled
 	//     itemsTable.fetchAll // canceled
@@ -256,7 +258,7 @@ transient skipInit static class backend
 		} finally {
 			backend.pocketbaseOrBatch = prevPocketbaseOrBatch;
 		}
-		if(currentBatch.requests.length) await currentBatch.send();
+		if(currentBatch.requests.length) await currentBatch.send({requestKey:null});
 
 // Use this class to add, remove, fetch and update items from a remote PocketBase collection. 
 // The items are stored locally in the member variable "items". Use the functions "get", "find", "filter" and "length" to access the local items.
@@ -268,6 +270,38 @@ DatabaseTable<T>
 	// The items you fetch from the backend are stored locally in this list
 	importance:5 T[] items = []
 	bool busy
+
+	// The updates of each item that are sent or waiting to be sent, by id. They are sent one after another: the record of a
+	// realtime event is the one the server loaded before the other updates of the same time were saved, so updates sent at
+	// once would each bring back the old values of the other's fields. Realtime events keep the local values of these fields
+	private dynamic unfinishedUpdatesById = {}
+
+	// Sends an update of an item after the earlier updates of this item are done (at once in a batch, which must get it
+	// before it is sent) and returns the record of the server (null in a batch)
+	private js async dynamic sendAfterEarlierUpdates: string id
+		                                             dynamic update
+		const collection = backend.pocketbaseOrBatch.collection(this.name);
+		if (backend.pocketbaseOrBatch != backend.pocketbase) return collection.update(id, update);
+		const unfinishedUpdates = this.unfinishedUpdatesById[id] ??= [];
+		const previousRequest = unfinishedUpdates.at(-1)?.request;
+		const thisUpdate = {update, request: (async () => { try { await previousRequest; } catch (e) {} return collection.update(id, update, {requestKey:null}); })()};
+		unfinishedUpdates.push(thisUpdate);
+		try {
+			return await thisUpdate.request;
+		} finally {
+			unfinishedUpdates.splice(unfinishedUpdates.indexOf(thisUpdate), 1);
+			if (!unfinishedUpdates.length) delete this.unfinishedUpdatesById[id];
+		}
+
+	// Copies the record of a realtime event onto the local item, except the fields that unfinished updates of this client change
+	private js void assignEventRecord: dynamic item
+		                               dynamic record
+		const unfinishedUpdates = this.unfinishedUpdatesById[record.id];
+		if (unfinishedUpdates) {
+			record = {...record};
+			for (const {update} of unfinishedUpdates) for (const key in update) delete record[key.replace(/^\+|[+-]$/, "")];
+		}
+		Object.assign(item, record);
 
 	// ------------------------------------------------------- Add -------------------------------------------------------
 
@@ -290,10 +324,10 @@ DatabaseTable<T>
 	async void add: T item // An item with a id member variable of type string that is not set yet
 		dynamic dynamicItem = item
 		if backend.pocketbaseOrBatch == backend.pocketbase
-			dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(item)
-			dynamicItem.id = newRecord.id
-			dynamicItem.created = newRecord.created
-			dynamicItem.updated = newRecord.updated
+			// The item gets the values the server set (id, created, updated and those of hooks), like with the realtime event of the creation (subscribe)
+			dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(item, {requestKey:null})
+			forDynamic newRecord
+				dynamicItem[key] = .
 		else
 			if not dynamicItem.id then dynamicItem.id = backend.newId
 			backend.pocketbaseOrBatch.collection(this.name).create(item)
@@ -326,9 +360,9 @@ DatabaseTable<T>
 	async T save: T item
 		dynamic dynamicItem = item
 		if dynamicItem.id
-			await backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, dynamicItem)
+			await sendAfterEarlierUpdates dynamicItem.id, dynamicItem
 		else if backend.pocketbaseOrBatch == backend.pocketbase
-			let newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem)
+			let newRecord = await backend.pocketbaseOrBatch.collection(this.name).create(dynamicItem, {requestKey:null})
 			dynamicItem.id = newRecord.id
 			dynamicItem.created = newRecord.created
 			dynamicItem.updated = newRecord.updated
@@ -349,13 +383,20 @@ DatabaseTable<T>
 	importance:5
 	async void remove: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		await backend.pocketbaseOrBatch.collection(this.name).delete(dynamicItem.id)
+		await backend.pocketbaseOrBatch.collection(this.name).delete(dynamicItem.id, {requestKey:null})
 		items.remove item
 		
 	// ------------------------------------------------------- Fetch -------------------------------------------------------
 
 	// The total number of items in the database
 	int totalItemsOfLastFetch
+
+	// The last page of fetch, subscribe or fetchMore was full and sorted, so fetchMore may find more items
+	bool hasMore
+
+	// Where fetchMore continues: the page size, the options of the last fetch or subscribe and the filter for the items
+	// after the last fetched one
+	private dynamic nextPage
 	
 	// Fetch all items from the database table and store them locally in the member variable "items"
 	// Example:
@@ -373,6 +414,7 @@ DatabaseTable<T>
 	importance:5 
 	async T[] fetchAll: string sort = null
 		items = cast await backend.pocketbase.collection(this.name).getFullList({sort})
+		hasMore = false
 		return items
 		
 	// Fetch a subset of items from the database table and store them locally in the member variable "items".
@@ -401,10 +443,52 @@ DatabaseTable<T>
 		             int page = 1
 		             int perPage = 1000
 					 bool skipTotal = true
+		if sort then sort += ",id"	// Equal values in the same order on every page (see fetchMore)
 		let result = await backend.pocketbase.collection(this.name).getList(page, perPage, {filter, sort, expand, skipTotal, fields})
 		items = cast result.items
 		totalItemsOfLastFetch = result.totalItems
+		rememberNextPage result.items, perPage, {filter, sort, expand, fields}
 		return items
+
+	// Fetch the next page of the last fetch or subscribe (same filter, sort and page size, at most 1000) and add it to the
+	// local items. It fetches the items after the last fetched one in the sort order (the ids decide between equal values),
+	// so items that are added or removed meanwhile make it neither skip nor repeat one. Paging needs a sort, and the
+	// fetched fields must include the sort fields.
+	// Example: messages, the newest at the bottom, with older ones fetched when the user scrolls near the top
+	//     app
+	//         DatabaseTable<Message> messages = {name:"messages"}
+	//         start
+	//             await messages.fetch sort:"-created", perPage:50
+	//             refresh
+	//         draw
+	//             column height:100%, overflowY:auto
+	//                 if messages.hasMore then div onVisible:await messages.fetchMore
+	//                 for messages.items.sortBy .created
+	//                     div .text
+	importance:5
+	async void fetchMore
+		if not hasMore then return
+		dynamic query = nextPage.query
+		dynamic[] page = (await backend.pocketbase.collection(this.name).getList(1, nextPage.perPage, {filter:nextPage.filter, sort:query.sort, expand:query.expand, fields:query.fields, skipTotal:true})).items
+		dynamic[] dynamicList = items
+		for item in page
+			if dynamicList.none.id == item.id then dynamicList.add item	// Unless a realtime event added it already
+		rememberNextPage page, nextPage.perPage, query
+
+	// The items after the last one of the page in the sort order of the query follow on the next page. For the sort "a,-b,id"
+	// and the last item {a:1, b:2, id:"x"}, these are the items with a > 1 || a = 1 && b < 2 || a = 1 && b = 2 && id > "x"
+	rememberNextPage: dynamic[] page, int perPage, dynamic query
+		hasMore = query.sort and page.length == perPage
+		if not hasMore then return
+		string sort = query.sort
+		string after, equalBefore
+		for key in sort.split(",")
+			bool isDescending = key.startsWith("-")
+			string field = isDescending ? key.substring(1) : key
+			string value = backend.pocketbase.filter("\{:value}", {value:page.last[field]})
+			after += "{after ? " || " : ""}{equalBefore}{field} {isDescending ? "<" : ">"} {value}"
+			equalBefore += "{field} = {value} && "
+		nextPage = {perPage:perPage atMost 1000, query, filter:query.filter ? "({query.filter}) && ({after})" : after}
 		
 	// Fetch and return a single item from the database table. Returns null only when no item matches the filter
 	// (PocketBase answers 404) and throws on every other error (network, not signed in, ...): a caller that creates
@@ -442,7 +526,7 @@ DatabaseTable<T>
 		// Keys with a PocketBase modifier ("count+", "count-", "+tags") don't hold the final value, so don't copy them locally
 		forDynamic update
 			if not (key.startsWith("+") or key.endsWith("+") or key.endsWith("-")) then dynamicItem[key] = .
-		dynamic newRecord = await backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, update)
+		dynamic newRecord = await sendAfterEarlierUpdates(dynamicItem.id, update)
 		// Copy the resolved values of modifier keys from the response (a batched update has no response, the local value stays stale until the next fetch)
 		if newRecord
 			forDynamic update
@@ -454,7 +538,7 @@ DatabaseTable<T>
 	// Update an item in the server database table (don't update the local items)
 	async void updateOnServer: string id
 		                       dynamic update	
-		await backend.pocketbaseOrBatch.collection(this.name).update(id, update)
+		await sendAfterEarlierUpdates id, update
 		
 	// Update a complete item with a valid id member variable in the database table and the local items
 	// Example:
@@ -466,7 +550,7 @@ DatabaseTable<T>
 	importance:3
 	async void update: T item // An item with a valid id member variable of type string
 		dynamic dynamicItem = item
-		backend.pocketbaseOrBatch.collection(this.name).update(dynamicItem.id, item)
+		await sendAfterEarlierUpdates dynamicItem.id, item
 		
 	// Update a single field of an item with a valid id member variable in the database table and the local items
 	// Example:
@@ -483,7 +567,7 @@ DatabaseTable<T>
 		if(!item.id) {
 			await this.add(item)
 		} else {
-			await backend.pocketbaseOrBatch.collection(this.name).@update(item.id, {[key]:value})
+			await this.sendAfterEarlierUpdates(item.id, {[key]:value})
 		}
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
@@ -498,13 +582,13 @@ DatabaseTable<T>
 		backend.pocketbase.collection(this.name).subscribe("*", e => {
 			console.log("subscribe", e.action, e.record);
 			if(e.action == "create") {
-				// add already inserted the item if the server answered before this event
-				if(!this.items.some(i => i.id == e.record.id)) this.items.push(e.record);
+				// add already inserted the item if the server answered before this event. It gets the values the server set (hooks)
+				let item = this.items.find(i => i.id == e.record.id);
+				if(item) this.assignEventRecord(item, e.record);
+				else this.items.push(e.record);
 			} else if(e.action == "update") {
 				let item = this.items.find(i => i.id == e.record.id);
-				if(item) {
-					Object.assign(item, e.record);
-				}
+				if(item) this.assignEventRecord(item, e.record);
 			} else if(e.action == "delete") {
 				this.items.removeWhere(i => i.id == e.record.id);
 			}
@@ -512,6 +596,7 @@ DatabaseTable<T>
 			backend.onDataChange?.invoke();
 		}, {@filter:filter, @fields:fields, @expand:expand})
 		// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
+		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
 		const collection = backend.pocketbase.collection(this.name), options = {filter, sort, expand, skipTotal, fields}, pageSize = Math.min(perPage, 1000)
 		const items = (await collection.getList(1, pageSize, options)).items
 		if(pageSize < perPage) {
@@ -522,6 +607,7 @@ DatabaseTable<T>
 			if(items.length > perPage) items.length = perPage
 		}
 		this.items = items
+		this.rememberNextPage(items, perPage, {filter, sort, expand, fields})
 		if(this.items.length > 0) {
 			onChange?.();
 			backend.onDataChange?.invoke();
@@ -538,8 +624,7 @@ DatabaseTable<T>
 			if(e.action == "delete") {
 				onDelete?.();
 			} else {
-				// model = e.record;
-				Object.assign(model, e.record);
+				this.assignEventRecord(model, e.record);
 				onChange?.();
 			}
 			backend.onDataChange?.invoke();
@@ -577,7 +662,7 @@ DatabaseTable<T>
 			for(let i=0; i<files.length; i++) {
 				let file = files[i]
 				try {
-					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]});
+					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[file]}, {requestKey:null});
 					model.container[model.key] = result[model.key];
 					if(i < files.length-1) backend.onDataChange?.invoke();
 				} catch(e) {
@@ -613,7 +698,7 @@ DatabaseTable<T>
 					let url = urls[i]
 					let response = await fetch(url);
 					let imageBlob = await response.blob();
-					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]});
+					let result = await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"+"]:[imageBlob]}, {requestKey:null});
 					model.container[model.key] = result[model.key];
 					// if(i < urls.length-1) html.refresh();
 				} catch(e) {
@@ -634,8 +719,28 @@ DatabaseTable<T>
 		let listOfFiles = model.container[model.key];
 		listOfFiles.remove(file);
 		backend.onDataChange?.invoke();
-		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]});
-		
+		await backend.pocketbase.collection(this.name).update(model.container.id, {[model.key+"-"]:[file]}, {requestKey:null});
+
+	// Adds a file to a file field (e.g. card.images) and returns its name in the database, which is the name with a random suffix
+	// Example:
+	//     string name = await cards.addFile card.images, bytes, "photo.png"
+	importance:4
+	async js string addFile: Reference<string[]> model
+		                     dynamic data	// Bytes, a Blob or a data url
+		                     string name
+		if(typeof data == "string") data = await (await fetch(data)).blob()
+		const form = new FormData()
+		form.append(model.key + "+", data instanceof Blob ? data : new Blob([data]), name)
+		const before = model.container[model.key] || []
+		const files = (await backend.pocketbase.collection(this.name).update(model.container.id, form, {requestKey:null}))[model.key]
+		model.container[model.key] = files
+		return files.find(file => !before.includes(file))
+
+	// The url of a file of a record's file field
+	importance:4
+	js string fileUrl: string id, string name
+		return backend.pocketbase.buildURL("/api/files/" + encodeURIComponent(this.name) + "/" + encodeURIComponent(id) + "/" + encodeURIComponent(name))
+
 	baseUrl => "{backend.url}/api/files/{this.name}"
 
 	static js Promise<string> getDataUrlForFile: File file

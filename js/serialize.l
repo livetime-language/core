@@ -2,7 +2,8 @@ json
 	importance:5 inline js dynamic parse: string value
 		JSON.parse(value)
 	importance:5 inline js string stringify: dynamic value
-		JSON.stringify(value)
+		                                     bool indent = false	// indent: one line per value, indented with tabs
+		JSON.stringify(value, null, indent ? "\t" : "")
 
 interface object
 	inline js string toJson() JSON.stringify(this)
@@ -92,6 +93,47 @@ interface object
 						default	obj[name] = value ? value.toString().replaceAll("\\t" with "\t").replaceAll("\\n" with "\n") : ""
 				result.add(obj)
 		return result
+
+	// Three-way merge, e.g. of a file that several processes change: base is the value as it was last read or written, mine its
+	// current value here, theirs what is stored now (somebody else might have changed it since). Returns the value with the changes
+	// of both: mine wins where both changed the same value, theirs where both added the same key. Objects and Maps are merged key by
+	// key, lists of objects with an id item by item (in the order of theirs), other lists as a whole. The objects, Maps and lists of
+	// mine are updated in place, so references to them stay valid
+	static js dynamic mergeConcurrentChanges: dynamic base, dynamic mine, dynamic theirs
+		const isObject = v => v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Map);
+		const isListOfObjectsWithIds = v => Array.isArray(v) && v.every(item => isObject(item) && item.id !== undefined);
+		const isEqual = (a, b) => {
+			if (a === b) return true;
+			if (a === null || b === null || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b) || (a instanceof Map) !== (b instanceof Map)) return false;
+			if (a instanceof Map) return a.size === b.size && [...a].every(([key, value]) => b.has(key) && isEqual(value, b.get(key)));
+			const keys = Object.keys(a);
+			return keys.length === Object.keys(b).length && keys.every(key => Object.prototype.hasOwnProperty.call(b, key) && isEqual(a[key], b[key]));
+		};
+		const merge = (base, mine, theirs) => {
+			if (mine instanceof Map && theirs instanceof Map) {
+				for (const key of new Set([...mine.keys(), ...theirs.keys()])) {
+					const value = merge(base instanceof Map ? base.get(key) : undefined, mine.get(key), theirs.get(key));
+					value === undefined ? mine.delete(key) : mine.set(key, value);
+				}
+				return mine;
+			}
+			if (isListOfObjectsWithIds(mine) && isListOfObjectsWithIds(theirs)) {
+				const byId = list => new Map(isListOfObjectsWithIds(list) ? list.map(item => [item.id, item]) : []);
+				const baseById = byId(base), mineById = byId(mine), theirsById = byId(theirs);
+				const merged = [...new Set([...theirsById.keys(), ...mineById.keys()])].map(id => merge(baseById.get(id), mineById.get(id), theirsById.get(id)));
+				mine.splice(0, mine.length, ...merged.filter(item => item !== undefined));
+				return mine;
+			}
+			if (isObject(mine) && isObject(theirs)) {
+				for (const key of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
+					const value = merge(isObject(base) ? base[key] : undefined, mine[key], theirs[key]);
+					if (value === undefined) delete mine[key]; else mine[key] = value;
+				}
+				return mine;
+			}
+			return isEqual(mine, base) || base === undefined && theirs !== undefined ? theirs : mine;
+		};
+		return merge(base, mine, theirs);
 
 	static js string toYaml: dynamic subject
 		function refWalk(v, counts, path) {

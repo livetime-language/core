@@ -41,46 +41,55 @@ global static class html
 			// Move the element to the current position unless it is already there
 			if element == currentNode
 				nextNode = currentNode.nextSibling
+			else if element.parentNode == parentNode and element.contains(html.activeElement)
+				// The element follows the current position (the nodes before it were drawn already): the nodes in between move behind it,
+				// so a text in it that is being edited keeps its caret
+				currentNode.moveNodesBehind element
+				nextNode = currentNode
 			else
 				nextNode = currentNode
-				if nextNode then parentNode.insertBefore element, nextNode
-				else         parentNode.appendChild element
+				parentNode.moveOrInsertBefore element, nextNode
 			
 		else	
-			if !currentNode or (currentNode.tagName?.toLowerCase != tag or currentNode.sourceLocation != sourceLocation)
-				// Create new element
+			element = findNodeToReuse(currentNode, tag, sourceLocation)
+			if element
+				// The nodes before it weren't drawn this time
+				while currentNode != element
+					let next = currentNode.nextSibling
+					currentNode.remove
+					currentNode = next
+				nextNode = currentNode.nextSibling
+				nodesUpdated++
+			else
 				element = HTMLElement.create tag
 				element.sourceLocation = sourceLocation
 				nextNode = currentNode
-				if nextNode then parentNode.insertBefore element, nextNode
-				else         parentNode.appendChild element
+				parentNode.insertBefore element, nextNode
 				if focusInitially
 					system.delay 0
 						element.focus
 				nodesCreated++
-			else
-				// Resuse existing element
-				element = currentNode
-				nextNode = currentNode.nextSibling
-				nodesUpdated++
 		
 		setStyle element, style
 		setDataAttributes element, data
 		
 		if attributes != null
-			if attributes.id and attributes.id != element.id then	element.id = attributes.id
-			if (attributes.class and attributes.class != element.class) then	element.class = attributes.class
-			if attributes.title and attributes.title != element.title then	element.title = attributes.title
+			// An empty value that is given removes the one the reused element had
+			if attributes.id != null and attributes.id != element.id then	element.id = attributes.id
+			if attributes.class != null and attributes.class != element.class then	element.class = attributes.class
+			if attributes.title != null and attributes.title != element.title then	element.title = attributes.title
 			if attributes.tabIndex then	element.set("tabindex", attributes.tabIndex.toString)
 			
 			if attributes.onClick != null then 	element.onclick = attributes.onClick
 			if attributes.onRightClick != null then	element.oncontextmenu = attributes.onRightClick
 			if attributes.onPointerDown != null then	element.onpointerdown = attributes.onPointerDown
+			if attributes.onMouseDown != null then	element.onmousedown = attributes.onMouseDown
 			if attributes.onPointerOver != null then	element.onpointerover = attributes.onPointerOver
 			if attributes.onPointerOut != null then 	element.onpointerout  = attributes.onPointerOut
 
 			if attributes.onKeyDown != null then	element.onkeydown = attributes.onKeyDown
 			if attributes.onKeyUp != null then	element.onkeyup = attributes.onKeyUp
+			if attributes.onVisible != null then	html.observeVisibility element, attributes.onVisible
 
 			if styleWhenFocused == null
 				if attributes.onBlur != null then	element.onblur = attributes.onBlur
@@ -97,17 +106,28 @@ global static class html
 			element.onblur  = setStyle(element, styleWhenNotFocused); if attributes?.onBlur != null then attributes.onBlur(.)
 			if html.activeElement == element then setStyle(element, styleWhenFocused)
 
+		// The window moves where the user drags an element with movesWindow, except where the elements in it are that the user interacts with.
+		// The system takes these drags before the page gets the events (CSS app-region)
+		bool movesWindow = attributes?.movesWindow == true
+		if movesWindow or insideWindowMover
+			bool interactive = styleWhenHovering != null or ["input", "textarea", "select", "button", "a"].includes(tag) or (attributes != null and (attributes.onClick != null or attributes.onRightClick != null or attributes.onPointerDown != null or attributes.onMouseDown != null or attributes.title))
+			setAppRegion element, movesWindow ? "drag" : interactive ? "no-drag" : ""
+			if movesWindow then windowMoverDrawn = true
+
 		if text != null
 			if element.shadowInnerHtml != text
 				element.innerHTML = text
 				element.shadowInnerHtml = text
-		else
-		if children != null or element.hasChildren
+		// Children or nothing: the text or children it had before are removed
+		else if children != null or element.hasChildren or element.shadowInnerHtml != null
 			element.shadowInnerHtml = null
 			let prevParentNode = parentNode
+			bool wasInsideWindowMover = insideWindowMover
 			parentNode = element
 			currentNode = element.firstChild
+			insideWindowMover = wasInsideWindowMover or movesWindow
 			children()
+			insideWindowMover = wasInsideWindowMover
 			
 			// Every child drawn above (reused, created or keyed) is now before currentNode, so the remaining nodes are no longer used
 			while currentNode
@@ -129,6 +149,30 @@ global static class html
 		element.hasChildren = children != null
 		currentNode = nextNode
 		return element
+
+	private bool insideWindowMover	// Whether the elements being drawn are in an element with movesWindow
+	private bool windowMoverDrawn	// Whether an element with movesWindow was drawn, so overlays keep the drags of the user that start on them from moving the window
+
+	// The CSS app-region of the element: "drag" moves the window, "no-drag" leaves the events to the page where an element that moves the window is
+	private js void setAppRegion: HTMLElement element, string region
+		if(element.appRegion !== region) element.style.appRegion = element.appRegion = region
+
+	// The first node from startNode on that the same code drew (source location and tag), null if there is none before the next keyed
+	// node. Reusing it instead of the node at the current position keeps the nodes after a node that isn't drawn anymore (a dropdown that
+	// closed) with their focus and state.
+	// The current position stays at startNode while new nodes are inserted before it, so a source location that wasn't found isn't
+	// searched again from there in this refresh (a long list replaced by another one)
+	private HTMLElement findNodeToReuse: HTMLElement startNode, string tag, string sourceLocation
+		if not startNode or (startNode.sourceLocationsNotFoundInRefresh == refreshCount and startNode.sourceLocationsNotFound[sourceLocation]) then return null
+		let candidate = startNode
+		while candidate and not candidate.key and (candidate.sourceLocation != sourceLocation or candidate.tagName?.toLowerCase != tag)
+			candidate = candidate.nextSibling
+		if candidate and not candidate.key then return candidate
+		if startNode.sourceLocationsNotFoundInRefresh != refreshCount
+			startNode.sourceLocationsNotFoundInRefresh = refreshCount
+			startNode.sourceLocationsNotFound = {}
+		startNode.sourceLocationsNotFound[sourceLocation] = true
+		return null
 
 	// Set the children of a html element with a given id within the draw function.
 	// Useful for filling a placeholder of a template
@@ -160,7 +204,7 @@ global static class html
 			rule += html.camelToKebabCase(key) + ": " + style[key].toString() + "; ";
 		}
 		rule += " }";
-		html.currentStyleSheet.insertRule(rule);
+		html.addStyleRule(rule);
 
 	// Adds a css style rule string
 	// Example:
@@ -170,7 +214,15 @@ global static class html
 	importance:1
 	global js void style: string selector
 	                      string ruleString
-		html.currentStyleSheet.insertRule(selector + " { " + ruleString + " }");
+		html.addStyleRule(selector + " { " + ruleString + " }");
+
+	// A new rule applies at once, so the draw can measure the elements it styles. The stylesheet gets the rules of a refresh at its end
+	// (applyStyleRules)
+	private js void addStyleRule: string rule
+		if(html.refreshInProgress) html.styleRules.push(rule)
+		if(html.refreshInProgress && html.appliedStyleRules?.has(rule)) return
+		html.currentStyleSheet.insertRule(rule)
+		html.styleSheetText = null
 
 	// Convert a camelCase string to a kebab-case string, for example "backgroundColor" becomes "background-color"
 	string camelToKebabCase(string str)
@@ -443,6 +495,32 @@ global static class html
 		element.src = system.basePath + images[model ? 1 : 0].src
 		element.onclick = model = !model; onInput; changeHandler; refresh
 
+	// Render a html element in the draw function that toggles between two images when the user clicks it, with a text next to the image.
+	// The model variable you pass in will be updated when the user clicks the image or the text.
+	// Example: We place the images "On.png" and "Off.png" in "dist/pb_public/media".
+	//     app
+	//         bool notify
+	//         draw
+	//             toggle model:notify, images:[Off, On], text:"Notify me"
+	importance:4
+	global inline void toggle: bool model                        // The variable that holds the value. This will be updated when the user clicks the toggle button
+		                       Image[] images                    // A list with one image per state of the toggle
+		                       string text                       // The text next to the image
+		                       Dimension imageWidth = 32px       // The width of the image
+		                       expand Attributes attributes = {} // The attributes of the HTML element
+		                       expand Style style = null         // The css style of the HTML element, a row with the image and the text
+		                       dynamic data = null               // The data attributes of the element
+		                       SourceCodeLocation location
+		stored void() changeHandler = currentChangeHandler
+		let element = div attributes, style, data, location
+			img images[model ? 1 : 0], width:imageWidth, flexShrink:0
+			div text
+		element.style.display = "flex"
+		element.style.alignItems = "center"
+		element.style.gap = "8px"
+		element.style.cursor = "pointer"
+		element.onclick = model = !model; changeHandler; refresh
+
 	// ---------------------------------------- Input & TextArea ----------------------------------------
 	
 	int focusTabIndex = 0
@@ -557,7 +635,8 @@ global static class html
 			if updateWithEveryKeystroke
 				element.oninput = model = element.innerText; onChanged(model); changeHandler
 			else         
-				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model != prevModel then onChanged(model); changeHandler
+				// The caller's onBlur, which this replaces, runs after the model changed
+				element.onblur = model = trimOnBlur ? element.innerText.trim : element.innerText; element.innerText = model; if model == prevModel then attributes.onBlur(.) else onChanged(model); changeHandler; attributes.onBlur(.)
 		else
 			element.contentEditable = "false"
 			element.oninput = null
@@ -796,11 +875,14 @@ global static class html
 		            dynamic data = null               // The data attributes of the element
 		            void(string url) onNavigate = null    // Called before the user navigates the page to a new url
 		            void(string url) onUrlChanged = null  // Called after the url of the page changed (including in-page navigations)
+		            bool cache = true                     // false: the pages of the partition (data.partition) never come from the HTTP cache, e.g. apps in development. The partition must not be used yet
 		            SourceCodeLocation location
 		WebView element = cast div tag:"webview", attributes, style, data, location
 		element.onWillNavigate = onNavigate
 		element.onUrlChanged = onUrlChanged
-		if not element.src then element.src = initialUrl
+		if not element.src and initialUrl
+			if not cache then WebView.disableCache data.partition
+			element.src = initialUrl
 		if !element.hasHandlers
 			element.hasHandlers = true
 			element.on "will-navigate"
@@ -828,6 +910,50 @@ global static class html
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
 
+	// The bar at the top of a window that has no title bar of the system (system.hasNativeTitleBar: an Electron window with titleBarStyle
+	// "hidden" or "hiddenInset"): a row that moves the window where the user drags it (movesWindow), except where its elements are that the
+	// user interacts with. On macOS it starts with room for the buttons the system draws at the top left (the traffic lights), on Windows
+	// and Linux it ends with the buttons Minimize, Maximize and Close. In full screen, in a window with the system's title bar and outside
+	// Electron it is only a row. On macOS, titleBarOverlay of boot.js with the height of the row centers the traffic lights in it
+	// Example:
+	//     app
+	//         draw
+	//             titleBar height:40, alignItems:center
+	//                 div "My App", padding:{left:12}
+	//                 div flex:1
+	importance:4
+	global titleBar: expand Attributes attributes = {}	// The attributes of the HTML element
+	                 expand Style style = {}	// The css style of the HTML element
+	                 void() children = null	// The children of the HTML element
+	                 SourceCodeLocation location
+		bool drawsWindowControls = system.isElectron and not system.isWebview and not system.hasNativeTitleBar and not system.isFullScreen
+		attributes.movesWindow = true
+		style.display = flex
+		style.flexDirection = row
+		return div attributes, style, location
+			// Where the traffic lights end: the window controls overlay of Electron tells it (titleBarOverlay of boot.js), 84 is where they end without it (titleBarStyle "hiddenInset")
+			if drawsWindowControls and system.os == "macOS" then div width:"env(titlebar-area-x, 84px)", flexShrink:0
+			children()
+			if drawsWindowControls and system.os != "macOS"
+				for icon in [minimizeWindowIcon, system.isMaximized ? restoreWindowIcon : maximizeWindowIcon, closeWindowIcon]
+					div text:icon, title:icon == minimizeWindowIcon ? "Minimize" : icon == closeWindowIcon ? "Close" : system.isMaximized ? "Restore" : "Maximize", width:46, alignSelf:stretch, flexShrink:0,
+						display:flex, alignItems:center, justifyContent:center, transition:"background-color 100ms",
+						styleWhenHovering:icon == closeWindowIcon ? {backgroundColor:#e81123, color:white} : {backgroundColor:#80808028},
+						onClick:
+							if icon == minimizeWindowIcon then system.minimizeWindow
+							else if icon == closeWindowIcon then system.closeWindow
+							else system.toggleMaximizedWindow
+
+	const minimizeWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M0 5.5h10\" stroke=\"currentColor\"/></svg>"
+	const maximizeWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><rect x=\".5\" y=\".5\" width=\"9\" height=\"9\" fill=\"none\" stroke=\"currentColor\"/></svg>"
+	const restoreWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M2.5 2.5V.5h7v7h-2M.5 2.5h7v7h-7z\" fill=\"none\" stroke=\"currentColor\"/></svg>"
+	const closeWindowIcon = "<svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M.5.5l9 9M9.5.5l-9 9\" stroke=\"currentColor\"/></svg>"
+
+	// Whether an overlay (a dialog or the menu of a dropdown) is shown: refresh keeps only the overlays it draws after the body.
+	// Keys that act on the page behind the overlays can ignore themselves meanwhile
+	bool isOverlayShown
+		return documentBody.nextSibling != null
+		
 	global overlay: void() children = null            // The children of the element
 	                void() onClickOutside = null
 		            expand Attributes attributes = {} // The attributes of the element
@@ -836,15 +962,18 @@ global static class html
 		HTMLElement element, nextNode
 		string sourceLocation = location?.toString
 		
-		if !currentOverlay or currentOverlay.sourceLocation != sourceLocation
+		element = findNodeToReuse(currentOverlay, "div", sourceLocation)
+		if element
+			while currentOverlay != element
+				let next = currentOverlay.nextSibling
+				currentOverlay.remove
+				currentOverlay = next
+			nextNode = currentOverlay.nextSibling
+		else
 			element = HTMLElement.create "div"
 			element.sourceLocation = sourceLocation
 			nextNode = currentOverlay
-			if nextNode then documentBody.parentNode.insertBefore element, nextNode
-			else         documentBody.parentNode.appendChild element
-		else
-			element = currentOverlay
-			nextNode = currentOverlay.nextSibling
+			documentBody.parentNode.insertBefore element, nextNode
 		
 		if style == null then style = {}	
 		if not style.inset then           style.inset = {0,0,0,0}
@@ -863,11 +992,15 @@ global static class html
 		
 		if onClickOutside != null
 			element.onclick = if .target == element then onClickOutside()
+		// The window doesn't move where the overlay covers an element that moves it
+		if windowMoverDrawn then setAppRegion element, "no-drag"
 
 		let prevParentNode = parentNode
 		let prevCurrentNode = currentNode
+		bool wasInsideWindowMover = insideWindowMover
 		parentNode = element
 		currentNode = element.firstChild
+		insideWindowMover = false
 		children()
 		while currentNode
 			let next = currentNode.nextSibling
@@ -875,15 +1008,23 @@ global static class html
 			currentNode = next
 		parentNode = prevParentNode
 		currentNode = prevCurrentNode
+		insideWindowMover = wasInsideWindowMover
 		
 		currentOverlay = nextNode
 		return element
 		
 	// Render a dropdown in the draw function. The elements in the first block are always shown, a click on them opens a menu with
 	// the elements of the whenOpen block below them. A click outside of the menu closes it. The menu starts at the left edge of the
-	// always shown elements and moves to the left if it would leave the window.
-	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state), so
-	// dropdowns drawn in a loop must keep their order while one of them is open.
+	// always shown elements, moves to the left if it would leave the window on the right and opens above them if it would leave
+	// it at the bottom.
+	// Whether a dropdown is open is kept per call in the source code and its position among these calls during a draw (state). Dropdowns
+	// drawn in a loop get a key, e.g. the id of their item: a menu that is drawn for another key (an item before it was added or
+	// removed) closes instead of belonging to another item.
+	// With keepFocus the menu doesn't take the focus, like a native menu: a text the user is editing keeps its caret while the user
+	// chooses and when a click outside closes the menu. Only a text field of the menu takes the focus when it is clicked, and loses
+	// it to a click elsewhere in the menu. The always shown elements keep the focus where it is too if a click on them opens the
+	// menu (openOnClick). Otherwise they take it like any element, and the one that calls openDropdown has to prevent that itself
+	// (onMouseDown: ev.preventDefault).
 	// Example: Choose one of several options, which closes the menu
 	//     app
 	//         string[] sizes = ["Small", "Medium", "Large"]
@@ -913,39 +1054,49 @@ global static class html
 	//                             chosen.toggle topping
 	//                             refresh
 	global dropdown: bool openOnClick = true	// Whether a click on the always shown elements opens the menu. If false, call openDropdown where it should open
+		             bool keepFocus = false	// Whether the element that has the focus keeps it while the user uses the dropdown
 		             Border border = {1px solid #e4e4e7}	// The border of the menu
 		             BoxShadow boxShadow = {offsetX:4 offsetY:4 blur:8 color:#00000010}	// The shadow of the menu
 					 Color backgroundColor = white	// The background color of the menu
 					 Color overlayColor = #00000000	// The color that covers the page behind the menu while it is open, transparent by default
+		             string key = ""	// What the dropdown belongs to, e.g. the id of its item in a loop. The menu closes when it is drawn with another key
 		             void(void() openDropdown) alwaysShown	// The elements that are always shown. They can call openDropdown to open the menu
 		             void(void() closeDropdown) whenOpen	// The elements of the menu. They can call closeDropdown to close it
 		state bool isOpen = false
-		state Vector2 pos = {0, 0}
+		state Rect anchor	// Where the always shown elements were when the menu opened
+		state string openKey	// The key the menu was opened with
 		HTMLElement alwaysShownElement
 		
+		if openKey != key then isOpen = false
 		alwaysShownElement = row
 			alwaysShown openDropdown:
 				isOpen = not isOpen
 				if isOpen
-					rect := alwaysShownElement.getBoundingClientRect()
-					pos = {rect.left, rect.bottom}		
-				refresh				
+					anchor = alwaysShownElement.getBoundingClientRect()
+					openKey = key
+				refresh
 		onClick:
 			if not openOnClick then return
 			isOpen = not isOpen
 			if isOpen
-				rect := alwaysShownElement.getBoundingClientRect()
-				pos = {rect.left, rect.bottom}		
+				anchor = alwaysShownElement.getBoundingClientRect()
+				openKey = key
 			refresh
+		onMouseDown:
+			// By default, the mouse button going down moves the focus to what it hits. Also the handler of the menu's overlay
+			if keepFocus and (openOnClick or ev.currentTarget != alwaysShownElement) and not ev.target.closest("input, textarea, select, [contenteditable]") and not ev.currentTarget.contains(html.activeElement) then ev.preventDefault
 			
 		if isOpen	
 			overlay backgroundColor:overlayColor, display:block, zIndex:100
-				menu := column position:absolute, left:pos.x, top:pos.y,
+				menu := column position:absolute, left:anchor.left, top:anchor.bottom,
 						padding:4, borderRadius:10, border, boxShadow, backgroundColor
 					whenOpen(closeDropdown:isOpen = false; refresh)
-				// A menu that would leave the window on the right moves to the left
-				float outside = menu.getBoundingClientRect().right + 4 - documentBody.clientWidth
-				if outside > 0 then menu.style.left = "{pos.x - outside atLeast 4}px"
+				// A menu that would leave the window (the overlay covers it) on the right moves to the left, at the bottom it opens above
+				rect := menu.getBoundingClientRect()
+				overlayElement := menu.parentNode
+				overlayElement.onmousedown = alwaysShownElement.onmousedown
+				if rect.right + 4 > overlayElement.clientWidth then menu.style.left = "{overlayElement.clientWidth - 4 - (rect.right - rect.left) atLeast 4}px"
+				if rect.bottom + 4 > overlayElement.clientHeight then menu.style.top = "{anchor.top - (rect.bottom - rect.top) atLeast 4}px"
 			onClickOutside:
 				isOpen = false
 				refresh

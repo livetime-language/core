@@ -116,6 +116,11 @@ KeyListener
 	KeyCode key
 	void(KeyCode key) do
 	bool whileEditingText = true
+
+KeyboardShortcut
+	void() do
+	void(bool cancelled) release = null
+	bool whileEditingText = true
 	
 // Phase of a touch or a click
 enum TouchPhase: Still, Down, Move, Up, Canceled
@@ -136,7 +141,8 @@ class Touch
 	
 unit html
 	KeyListener[] keyDownListeners
-	void()[string] keyboardShortcuts	// By accelerator as normalizeAccelerator writes it
+	KeyboardShortcut[string] keyboardShortcuts	// By accelerator as normalizeAccelerator writes it
+	dynamic pressedShortcut = null	// The shortcut with a release whose key is down: {shortcut, code, cancelled}
 	void() defaultButtonToTriggerWithEnterKey = null
 		
 	js void initGlobalEventHandlers
@@ -149,14 +155,30 @@ unit html
 				ev.stopPropagation();
 				return false;
 			}
-			const focused = document.activeElement;
-			const editingText = ev.isComposing || focused?.isContentEditable || focused?.tagName == "INPUT" || focused?.tagName == "TEXTAREA";
-			// Keys that type a character with Alt or Shift (Alt+T is "†" on a Mac, Shift+1 is "!") are named after the letter or digit of the physical key
+			// The element the key was pressed in, also if its own key handler has blurred or removed it (Enter that ends editing)
+			const keyTarget = ev.target;
+			const editingText = ev.isComposing || keyTarget.isContentEditable || keyTarget.contentEditable == "true" || keyTarget.contentEditable == "plaintext-only" || keyTarget.tagName == "INPUT" || keyTarget.tagName == "TEXTAREA";
+			// Keys that type another character with Alt or Shift (on a Mac Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after
+			// the letter or digit they type without modifiers (keyCode follows the keyboard layout)
 			const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
-			if(!editingText || ev.ctrlKey || ev.altKey || ev.metaKey || /^(F\d+|Escape)$/.test(key)) {
-				const shortcut = html.keyboardShortcuts.get(modifiers + (key.length == 1 && !/[a-z0-9]/i.test(key) && /^(Key|Digit)/.test(ev.code) ? ev.code.slice(-1) : key).toLowerCase());
-				if(shortcut) {
-					shortcut.invoke()
+			// Another key while a shortcut is held makes it a combination (Right Option and L type "@" on a German Mac keyboard)
+			const pressed = html.pressedShortcut;
+			if(pressed && ev.code != pressed.code) pressed.cancelled = true;
+			// A modifier key alone is named after its side ("rightalt"), whatever else is held (AltGr is Ctrl and Right Alt on Windows).
+			// It types nothing, so it is also handled while editing text, and keeps its default action for the keys that follow
+			const side = /^(Alt|Control|Shift|Meta)(Left|Right)$/.exec(ev.code);
+			if(side || !editingText || ev.ctrlKey || ev.altKey || ev.metaKey || /^(F\d+|Escape)$/.test(key)) {
+				const typesOther = (key == "Dead" || key.length == 1 && !/[a-z0-9]/i.test(key)) && (ev.keyCode >= 48 && ev.keyCode <= 57 || ev.keyCode >= 65 && ev.keyCode <= 90);
+				const shortcut = html.keyboardShortcuts.get(side ? side[2].toLowerCase() + {Alt:"alt", Control:"ctrl", Shift:"shift", Meta:"meta"}[side[1]] : modifiers + (typesOther ? String.fromCharCode(ev.keyCode) : key).toLowerCase());
+				if(shortcut && (shortcut.whileEditingText || !editingText)) {
+					// A shortcut with a release is pressed once until its key goes up: repeats of the held key don't count
+					if(!shortcut.release) shortcut.do.invoke()
+					else if(!ev.repeat) {
+						html.releaseShortcut(true)
+						html.pressedShortcut = {shortcut, code:ev.code, cancelled:false}
+						shortcut.do.invoke()
+					}
+					if(side) return;
 					ev.preventDefault();
 					ev.stopPropagation();
 					return false;
@@ -172,6 +194,36 @@ unit html
 			}
 		}
 
+		// The key of a held shortcut or a modifier went up (on a Mac, keys that are released while Cmd is held send no keyup)
+		document.onkeyup = ev => {
+			const pressed = html.pressedShortcut;
+			if(!pressed || ev.code != pressed.code && !/^(Alt|Control|Shift|Meta)/.test(ev.code)) return;
+			html.releaseShortcut(pressed.cancelled);
+			if(!pressed.cancelled) ev.preventDefault();
+		}
+		// Keys released in another window send no keyup
+		window.addEventListener("blur", () => html.releaseShortcut(true));
+
+	// Ends the press of the held shortcut: calls its release
+	private js void releaseShortcut: bool cancelled
+		const pressed = html.pressedShortcut;
+		if(!pressed) return;
+		html.pressedShortcut = null;
+		pressed.shortcut.release.invoke(cancelled);
+
+	// Calls handler once, when the pointer that is down now is released (or the window loses the focus): e.g. in onPointerDown, to see
+	// how long a button was held
+	js void onPointerRelease: stored void() handler
+		const release = () => {
+			removeEventListener("pointerup", release, true);
+			removeEventListener("pointercancel", release, true);
+			removeEventListener("blur", release);
+			handler.invoke();
+		}
+		addEventListener("pointerup", release, true);
+		addEventListener("pointercancel", release, true);
+		addEventListener("blur", release);
+
 	clearGlobalEventHandlers
 		if(!keyDownListeners) keyDownListeners = []
 		keyDownListeners.clear
@@ -184,29 +236,38 @@ unit html
 		keyDownListeners.add {key, do, whileEditingText}
 
 	// Calls do when the user presses the keys of an accelerator in the syntax of Electron, e.g. "CmdOrCtrl+Shift+P", "Alt+Left" or "F5"
-	// (https://www.electronjs.org/docs/latest/api/accelerator). CmdOrCtrl is Cmd on Apple devices and Ctrl everywhere else.
-	// While the user edits text, only accelerators with Ctrl, Alt or Cmd, function keys and Escape are handled: all other keys type.
-	// Register accelerators in app.start. An accelerator has one listener, the last one registered
+	// (https://www.electronjs.org/docs/latest/api/accelerator), or a modifier key of one side alone ("RightAlt", "RightCmd", "LeftShift",
+	// "RightCtrl"). CmdOrCtrl is Cmd on Apple devices and Ctrl everywhere else.
+	// While the user edits text, only accelerators with Ctrl, Alt or Cmd, function keys, Escape and modifier keys alone are handled: all
+	// other keys type. Register accelerators in app.start. An accelerator has one listener, the last one registered
 	onKeyboardShortcut: string accelerator
 		          stored void() do
-		keyboardShortcuts[normalizeAccelerator(accelerator)] = do
+		          stored void(bool cancelled) release = null	// Called when the keys are released (keyup of the key or a modifier, or the window lost the focus). With it, do isn't called for repeats of the held key. cancelled: another key was pressed meanwhile (a combination, e.g. Right Option and L type "@") or the window lost the focus
+		          bool whileEditingText = true	// Handle the accelerator also while the user edits text in a text field (with false, the keys keep their default action there: on a Mac Alt+L types "@" on a German keyboard and Ctrl+A moves the caret to the start of the line)
+		keyboardShortcuts[normalizeAccelerator(accelerator)] = {do, release, whileEditingText}
 
 	// The accelerator as the keydown listener names the pressed keys: lowercase, the modifiers ctrl, alt, shift and meta in this order
 	private js string normalizeAccelerator: string accelerator
 		const meta = html.isAppleDevice() ? "meta" : "ctrl";
 		const names = {commandorcontrol:meta, cmdorctrl:meta, command:"meta", cmd:"meta", super:"meta", control:"ctrl", option:"alt", altgr:"alt",
-			return:"enter", esc:"escape", up:"arrowup", down:"arrowdown", left:"arrowleft", right:"arrowright", space:" ", plus:"+"};
+			return:"enter", esc:"escape", up:"arrowup", down:"arrowdown", left:"arrowleft", right:"arrowright", space:" ", plus:"+",
+			rightoption:"rightalt", leftoption:"leftalt", rightcommand:"rightmeta", leftcommand:"leftmeta", rightcmd:"rightmeta", leftcmd:"leftmeta",
+			rightsuper:"rightmeta", leftsuper:"leftmeta", rightcontrol:"rightctrl", leftcontrol:"leftctrl"};
 		const parts = accelerator.toLowerCase().split("+").map(part => names[part.trim()] || part.trim());
 		const key = parts.pop();
 		return ["ctrl", "alt", "shift", "meta"].filter(modifier => parts.includes(modifier)).map(modifier => modifier + "+").join("") + key;
 
-	// An accelerator as menus show it: "⇧⌘P" on Apple devices, "Ctrl+Shift+P" everywhere else
+	// An accelerator as menus show it: "⇧⌘P" on Apple devices, "Ctrl+Shift+P" everywhere else. A modifier key alone: "Right ⌥", "Right Alt"
 	js string acceleratorLabel: string accelerator
 		const apple = html.isAppleDevice();
 		const names = apple ? {commandorcontrol:"⌘", cmdorctrl:"⌘", command:"⌘", cmd:"⌘", super:"⌘", meta:"⌘", control:"⌃", ctrl:"⌃", alt:"⌥", option:"⌥", altgr:"⌥", shift:"⇧",
 			return:"↩", enter:"↩", esc:"⎋", escape:"⎋", backspace:"⌫", delete:"⌦", tab:"⇥", up:"↑", down:"↓", left:"←", right:"→", plus:"+"}
-			: {commandorcontrol:"Ctrl", cmdorctrl:"Ctrl", command:"Meta", cmd:"Meta", super:"Meta", control:"Ctrl", option:"Alt", return:"Enter", esc:"Escape", plus:"+"};
-		const parts = accelerator.split("+").map(part => part.trim()).map(part => names[part.toLowerCase()] || (part.length == 1 ? part.toUpperCase() : part));
+			: {commandorcontrol:"Ctrl", cmdorctrl:"Ctrl", command:"Meta", cmd:"Meta", super:"Meta", meta:"Meta", control:"Ctrl", ctrl:"Ctrl", alt:"Alt", option:"Alt", shift:"Shift", return:"Enter", esc:"Escape", plus:"+"};
+		const name = part => {
+			const side = /^(left|right)(.+)$/i.exec(part)
+			return side && names[side[2].toLowerCase()] ? side[1][0].toUpperCase() + side[1].slice(1).toLowerCase() + " " + names[side[2].toLowerCase()] : names[part.toLowerCase()] || (part.length == 1 ? part.toUpperCase() : part)
+		}
+		const parts = accelerator.split("+").map(part => name(part.trim()));
 		// Apple shows the modifiers in the order Control, Option, Shift, Command
 		const rank = part => ("⌃⌥⇧⌘".indexOf(part) + 5) % 5;
 		return apple ? parts.sort((a, b) => rank(a) - rank(b)).join("") : parts.join("+");

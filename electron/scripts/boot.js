@@ -4,11 +4,13 @@ remoteMain.initialize()
 
 const isDebug = process.argv.includes("debug");
 const shouldOpenDevTools = process.argv.includes("devTools");
+const inBackground = process.argv.includes("background");	// For tests: the window stays hidden, so it never takes the focus or covers other windows
 const urlArgument = process.argv.find(arg => /^(https?|file):\/\//.test(arg));	// e.g. electron dist/pb_public http://localhost:24000
 
 // Node.js packages that run in the renderer (e.g. the Claude Agent SDK) need SharedArrayBuffer, which browsers only offer to cross-origin isolated pages
 app.commandLine.appendSwitch('enable-features', 'SharedArrayBuffer');
 if(isDebug) app.commandLine.appendSwitch('remote-debugging-port', '5198');
+if(inBackground) app.dock?.hide();	// No Dock icon on macOS
 
 const BrowserWindow = require('electron').BrowserWindow;
 var mainWindow = null;
@@ -24,7 +26,7 @@ app.on('ready', function() {
 		height:	585,
 		icon:	__dirname + '/icon-v1.png',
 		acceptFirstMouse:	true,
-		show:	true,
+		show:	!inBackground,
 		titleBarStyle:	isDebug ? "default" : "hiddenInset",
 		webPreferences: { 
 			nodeIntegration:	true,
@@ -40,6 +42,13 @@ app.on('ready', function() {
 	});
 	
 	mainWindow.setMenu(null);
+
+	// The page of a hidden window has no focus (document.hasFocus) and paints one frame per second once it was reloaded.
+	// With the emulated focus it behaves like the page of the frontmost window, also for other DevTools clients
+	if(inBackground) {
+		mainWindow.webContents.debugger.attach();
+		mainWindow.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', {enabled:true});
+	}
 
 	// Electron has no Bluetooth device chooser: navigator.bluetooth.requestDevice gets the first matching device
 	mainWindow.webContents.on('select-bluetooth-device', (event, devices, callback) => {
