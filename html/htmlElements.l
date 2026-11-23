@@ -91,6 +91,13 @@ global static class html
 			if attributes.onKeyUp != null then	element.onkeyup = attributes.onKeyUp
 			if attributes.onVisible != null then	html.observeVisibility element, attributes.onVisible
 
+			if attributes.draggable then	element.set("draggable", "true")
+			if attributes.onDragStart != null then	element.ondragstart = attributes.onDragStart
+			if attributes.onDragOver != null then	element.ondragover = attributes.onDragOver
+			if attributes.onDragLeave != null then	element.ondragleave = attributes.onDragLeave
+			if attributes.onDrop != null then	element.ondrop = attributes.onDrop
+			if attributes.onDragEnd != null then	element.ondragend = attributes.onDragEnd
+
 			if styleWhenFocused == null
 				if attributes.onBlur != null then	element.onblur = attributes.onBlur
 				if attributes.onFocus != null then	element.onfocus = attributes.onFocus

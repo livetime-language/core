@@ -50,6 +50,7 @@ If you find a bug in the LiveTime compiler, add it to this list in lib/core/gene
 - `@` in template literals of `js` bodies escapes identifiers: write `"\x40scope/package"`.
 - `inline js` functions are inlined, not emitted: JavaScript can't call them.
 - Inline members of event types must be `inline js` with `this.`.
+- An `interface` of a browser type (`DragEvent`) gets its methods on the browser's prototype, replacing them: declare them `inline js`. A class of that name hides the browser's.
 - `inline` functions substitute their argument expressions: assigning to a field of a parameter changes nothing.
 - `list.includes(x)` on objects throws if `x` is null.
 - A struct read from a list is a copy: change items in `for s in list` or assign the copy back.
