@@ -115,6 +115,12 @@ dynamic HTMLElement
 
 	native void(FocusEvent ev) onblur
 	native void(FocusEvent ev) onfocus
+
+	native void(DragEvent ev) ondragstart
+	native void(DragEvent ev) ondragover
+	native void(DragEvent ev) ondragleave
+	native void(DragEvent ev) ondrop
+	native void(DragEvent ev) ondragend
 	
 	inline js void set(string name, string value) this.setAttribute(name, value)
 	inline js void get(string name) this.getAttribute(name)
@@ -229,6 +235,14 @@ importance:5 dynamic Attributes
 	native void(FocusEvent ev) onFocus = null	// Execute this code when the element gains focus
 	native void(HtmlEvent ev) onVisible = null	// Execute this code when the element comes within one screen of the visible area of its scroll container, e.g. to fetch more items (DatabaseTable.fetchMore). Async code is awaited, followed by a refresh and executed again while the element stays within reach (see callOnVisible)
 
+	// The browser's drag and drop, which also takes and gives files of the system (a list that the user reorders: forDraggable)
+	bool draggable	// The user can drag the element (onDragStart tells what is dragged)
+	native void(DragEvent ev) onDragStart = null	// The user started to drag the element: set what is dragged (ev.dataTransfer)
+	native void(DragEvent ev) onDragOver = null	// Something is dragged over the element, repeatedly while it is: ev.preventDefault lets it be dropped there
+	native void(DragEvent ev) onDragLeave = null	// What is dragged left the element or one of its children (ev.relatedTarget is where it went)
+	native void(DragEvent ev) onDrop = null	// Something was dropped on the element (onDragOver allowed it)
+	native void(DragEvent ev) onDragEnd = null	// The drag of the element ended, dropped or cancelled
+
 	int tabIndex = 0
 
 enum lowercase string PointerType: Mouse, Pen, Touch
@@ -268,6 +282,22 @@ HtmlEvent
 		
 	inline Vector2 relativeTouchPosition() html.getRelativeMousePosition(this, this.currentTarget)
 	inline js Vector2 touchPosition() new Vector2(this.clientX/system.scale, this.clientY/system.scale)
+
+// The browser's DragEvent (an interface: a class would hide the browser's)
+interface DragEvent
+	HTMLElement target
+	HTMLElement currentTarget
+	HTMLElement relatedTarget	// onDragLeave: the element the pointer went to
+	dynamic dataTransfer	// What is dragged (DataTransfer: setData, getData, types, files, dropEffect, effectAllowed)
+	int clientX	// The position of the pointer relative to the viewport
+	int clientY
+	bool shiftKey
+	bool altKey
+	bool ctrlKey
+	bool metaKey
+	// Inline: methods declared in an interface would replace the browser's
+	inline js void stopPropagation() this.stopPropagation()
+	inline js void preventDefault() this.preventDefault()
 
 HtmlKeyboardEvent
 	KeyCode keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key

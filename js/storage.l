@@ -371,6 +371,76 @@ transient storage
 			}
 		}
 
+	// Create a folder and the folders it is in (relative or absolute path) using Capacitor/Node. Throws on other platforms
+	async js async void createDirectory: string path
+		                                 BasePathType basePath = Custom
+		const base = await this.resolveBase(basePath);
+		switch (this.backend(base)) {
+			case "capacitor":
+				try { await Capacitor.Plugins.Filesystem.mkdir({path: this.joinPath(path, base), recursive: true}); } catch (e) { if (!/exist/i.test(e.message)) throw e; }
+				return;
+			case "node":
+				await this.nodeModule("fs").promises.mkdir(this.joinPath(path, base), {recursive: true});
+				return;
+			default: throw new Error("Folders can't be created here");
+		}
+
+	// Move or rename a file or folder (relative or absolute paths) using Capacitor/Node, the folders of the new path are created. Throws if
+	// something is at the new path already (except the item itself under another case) or on other platforms
+	async js async void moveFile: string from
+		                          string to
+		                          BasePathType basePath = Custom
+		const base = await this.resolveBase(basePath), source = this.joinPath(from, base), target = this.joinPath(to, base);
+		if (source.toLowerCase() != target.toLowerCase() && await this.exists(to, basePath)) throw new Error(this.getFileName(to) + " already exists");
+		switch (this.backend(base)) {
+			case "capacitor":
+				await Capacitor.Plugins.Filesystem.rename({from: source, to: target});
+				return;
+			case "node": {
+				const fs = this.nodeModule("fs").promises;
+				await fs.mkdir(this.nodeModule("path").dirname(target), {recursive: true});
+				await fs.rename(source, target);
+				return;
+			}
+			default: throw new Error("Files can't be moved here");
+		}
+
+	// Copy a file or a folder with its content (relative or absolute paths) using Capacitor/Node. Throws if something is at the new path
+	// already or on other platforms
+	async js async void copyFile: string from
+		                          string to
+		                          BasePathType basePath = Custom
+		const base = await this.resolveBase(basePath), source = this.joinPath(from, base), target = this.joinPath(to, base);
+		if (await this.exists(to, basePath)) throw new Error(this.getFileName(to) + " already exists");
+		switch (this.backend(base)) {
+			case "capacitor":
+				await Capacitor.Plugins.Filesystem.copy({from: source, to: target});
+				return;
+			case "node":
+				await this.nodeModule("fs").promises.cp(source, target, {recursive: true, errorOnExist: true, force: false, preserveTimestamps: true});
+				return;
+			default: throw new Error("Files can't be copied here");
+		}
+
+	// Whether a file or folder exists at the path (relative or absolute) using Capacitor/Node/File System API, or IndexedDB if the base path is null
+	async js async bool exists: string path
+		                        BasePathType basePath = Custom
+		const base = await this.resolveBase(basePath);
+		try {
+			switch (this.backend(base)) {
+				case "capacitor": await Capacitor.Plugins.Filesystem.stat({path: this.joinPath(path, base)}); return true;
+				case "node": await this.nodeModule("fs").promises.lstat(this.joinPath(path, base)); return true;
+				case "fsapi": {
+					const parts = path.split("/").filter(p => p.length), name = parts.pop();
+					let dir = base;
+					for (const part of parts) dir = await dir.getDirectoryHandle(part);
+					if (name) for await (const entry of dir.keys()) if (entry == name) return true;
+					return !name;
+				}
+				default: return await this.readFile(path, basePath) != null;
+			}
+		} catch (e) { return false; }
+
 	// Return a list of DirEntry objects for relative path using Capacitor/Node/File System API, or IndexedDB if the base path is null
 	async js async DirEntry[] readDirectory: string path
 		                                     BasePathType basePath = Custom
