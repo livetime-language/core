@@ -19,10 +19,7 @@ LiveTime uses indentation with tabs to indicate a block of code. Always use tabs
 Check your code with "livetime check", build with "livetime build".
 
 # LiveTime bugs
-Work around them until they are fixed:
-- A lambda that returns a struct doesn't copy it: `Pos[] heads = selections.map(.head)` shares the objects, and assigning a struct field changes it in place (`s.head = x` is `s.head.assign(x)`). Copy with a loop (`heads.add s.head` clones).
-
-If you find a bug in the LiveTime compiler, add it to this list in lib/core/general.md. Append a test that reproduces it to /Users/heiko/Projects/LiveTime3/src/compiler.livetime.test and add a task to the LiveTime3 project. The task should include removing any workaround in the codebase and the bug's entry in general.md.
+If you find a bug in the LiveTime compiler, add it to this section in lib/core/general.md. Append a test that reproduces it to /Users/heiko/Projects/LiveTime3/src/compiler.livetime.test and add a task to the LiveTime3 project. The task should include removing any workaround in the codebase and the bug's entry in general.md.
 
 # LiveTime pitfalls
 - Only files directly in `src/` are compiled, not files in subfolders.
