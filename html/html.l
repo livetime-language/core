@@ -273,6 +273,8 @@ HtmlEvent
 	bool altKey               // Is the alt key down?
 	bool ctrlKey              // Is the control key down?
 	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
+	int clientX               // The X coordinate of the pointer relative to the viewport (pointer and mouse events)
+	int clientY               // The Y coordinate of the pointer relative to the viewport
 
 	// Is CmdOrCtrl down (Cmd on Apple devices, Ctrl everywhere else)?
 	inline js bool isCmdOrCtrl() (html.isAppleDevice() ? this.metaKey : this.ctrlKey)
@@ -301,6 +303,7 @@ interface DragEvent
 
 HtmlKeyboardEvent
 	KeyCode keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
+	string key                    // The character the key types with the modifiers (e.g. "+"), or the name of the key (e.g. "Enter")
 	bool isComposing              // Is the key part of a composition by an input method editor (IME)?
 	bool shiftKey
 	bool ctrlKey
