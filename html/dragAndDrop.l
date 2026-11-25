@@ -113,11 +113,12 @@ global static class html
 		const r = child.getBoundingClientRect(), cs = getComputedStyle(child), ml = parseFloat(cs.marginLeft), mt = parseFloat(cs.marginTop)
 		clearTimeout(d.timer)
 		d.started = true
-		// The dragged wrapper includes the margins of the item, the preview gets them too
-		d.offsetX = d.x - r.left + ml*s
-		d.offsetY = d.y - r.top + mt*s
-		d.toCenterX = r.left + r.width/2 - d.x
-		d.toCenterY = r.top + r.height/2 - d.y
+		// The user holds the item where it was pressed, not where the pointer is now: a busy main thread handles the first move late, when the
+		// pointer may be far away. The dragged wrapper includes the margins of the item, the preview gets them too
+		d.offsetX = d.startX - r.left + ml*s
+		d.offsetY = d.startY - r.top + mt*s
+		d.toCenterX = r.left + r.width/2 - d.startX
+		d.toCenterY = r.top + r.height/2 - d.startY
 		d.itemWidth = r.width
 		d.itemHeight = r.height
 		d.marginX = (ml + parseFloat(cs.marginRight))*s
@@ -267,8 +268,8 @@ class Dragging
 	float startX, startY	// The position where the user pressed the item
 	int timer	// On touch screens, this timer starts dragging when the user held the touch long enough
 	bool started	// The pointer moved far enough or the touch was held long enough
-	float offsetX, offsetY	// The position of the pointer relative to the wrapper
-	float toCenterX, toCenterY	// The center of the item relative to the pointer
+	float offsetX, offsetY	// The position where the user pressed the item relative to the wrapper
+	float toCenterX, toCenterY	// The center of the item relative to where the user pressed it
 	float itemWidth, itemHeight	// The size of the item without margins
 	float marginX, marginY	// The sum of the horizontal and the vertical margins of the item
 	Style previewStyle	// The size and margins of the item
