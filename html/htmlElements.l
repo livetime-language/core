@@ -882,11 +882,13 @@ global static class html
 		            dynamic data = null               // The data attributes of the element
 		            void(string url) onNavigate = null    // Called before the user navigates the page to a new url
 		            void(string url) onUrlChanged = null  // Called after the url of the page changed (including in-page navigations)
+		            void() onLoaded = null                // Called when a page finished loading (also after a reload)
 		            bool cache = true                     // false: the pages of the partition (data.partition) never come from the HTTP cache, e.g. apps in development. The partition must not be used yet
 		            SourceCodeLocation location
 		WebView element = cast div tag:"webview", attributes, style, data, location
 		element.onWillNavigate = onNavigate
 		element.onUrlChanged = onUrlChanged
+		element.onLoaded = onLoaded
 		if not element.src and initialUrl
 			if not cache then WebView.disableCache data.partition
 			element.src = initialUrl
@@ -901,6 +903,9 @@ global static class html
 			element.on "did-navigate-in-page"
 				if event.isMainFrame and element.onUrlChanged != null
 					element.onUrlChanged(event.url)
+			element.on "did-finish-load"
+				if element.onLoaded != null
+					element.onLoaded()
 		return element
 
 	global body: expand Attributes attributes = {} // The attributes of the element

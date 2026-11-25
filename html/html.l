@@ -330,6 +330,7 @@ HTMLElement WebView
 	
 	native void(string url) onWillNavigate
 	native void(string url) onUrlChanged
+	native void() onLoaded
 	bool hasHandlers
 	
 	inline js void downloadURL(string url) this.downloadURL(url)
