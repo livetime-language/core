@@ -186,7 +186,7 @@ static class app
 
 The layout changes `root` in place (it never replaces the object), so you can also keep `root` inside a bigger settings object and save that. Never put panels or HTML elements into the arrangement: saving compares and copies it deeply.
 
-If the saved arrangement doesn't mention a panel (say you added a new panel in a later version of your app), the layout gives it a place automatically: in the largest switcher, or for a fixed panel at the start.
+If the saved arrangement doesn't mention a panel (say you added a new panel in a later version of your app), the layout gives it a place automatically: in the switcher the user used last (it has the keyboard focus or was clicked last; sidebars, whose shown panel has `tabTogglesVisibility`, don't count), otherwise in the largest switcher, or for a fixed panel at the start.
 
 ## 9. A default arrangement
 
@@ -201,7 +201,7 @@ static PanelSplit createDefaultLayout
 	]}
 ```
 
-This makes a row: the Board on the left, an empty main switcher (all other panels will be placed there because it is the largest) and a 300 px sidebar with Explorer and Search.
+This makes a row: the Board on the left, an empty main switcher (all other panels will be placed there until the user uses another switcher, because it is the largest) and a 300 px sidebar with Explorer and Search.
 
 A column on the right with two switchers:
 
@@ -291,7 +291,7 @@ Layout layout = {panels:allPanels, tabColor:app.primaryColor, dividerColor:#0000
 ## 16. Common mistakes
 
 - **Forgetting the tag**: without `layout` in `Tags`, the classes don't exist.
-- **Changing titles without a place**: the panel jumps to the largest switcher because its place "changed". Set `place`.
+- **Changing titles without a place**: the panel jumps to the switcher used last because its place "changed". Set `place`.
 - **Passing null**: `layout.show null` is safe, but your own `list.includes(panel)` throws if `panel` is null.
 - **Storing panels in the arrangement**: the arrangement is saved and compared, so keep it plain data.
 - **Removing a panel without `close`**: it works (its tab just disappears), but the switcher keeps its place forever. Call `layout.close` when the panel is really gone.

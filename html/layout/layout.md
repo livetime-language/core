@@ -32,11 +32,12 @@ app
 ## Layout
 - `root: PanelSplit`: the arrangement, plain data (`PanelSplit{vertical, children}`, `PanelSwitcher{keys, history}`, `FixedPanelPlace{key}`, each with `size` in px). Changed in place; save it in `onChange` (e.g. `object.toYaml`, restore with `object.fromYaml`). Never put panels or elements into it.
 - `show panel, focus`: makes it the shown tab of its switcher. Ignores panels that `panels` doesn't return.
+- `open panel, focus`: like `show`, for a panel the user opens (a file): first moves its place to `activeSwitcher`, also from another switcher, where panels of other items may share it.
 - `close panel, keepPlace`: its switcher shows the previous panel. Remove the panel from `panels` yourself. Without `keepPlace`, its spot is forgotten and an emptied switcher disappears.
 - `isShown panel`, `findShownPanel(switcher, findPanels)`, `findSwitcher(placeKey)`.
 - `drawToolbar: (switcher, left)`: draws header buttons after the tabs (left) or at the right end.
 - `hideSwitcher: (switcher)`: hides a switcher whose shown tab with `tabTogglesVisibility` was clicked. `drawCloseButton: (panel)`: draws the cross of a closeable panel, otherwise the layout draws `closeIcon`.
-- `mainSwitcher`: the largest switcher; panels without a spot go there. `tabColor`, `dividerColor`, `minimumSize`.
+- `activeSwitcher`: the switcher that has the keyboard focus or was clicked last, skipping sidebars (shown panel has `tabTogglesVisibility`); panels without a spot go there. `mainSwitcher`: the largest switcher, used if there's no active switcher. `tabColor`, `dividerColor`, `minimumSize`.
 - Default arrangement: build a `PanelSplit` with `FixedPanelPlace(key:…)` and `PanelSwitcher(size:…, keys:[…])`. Panels missing from it are added automatically.
 
 ## Pitfalls

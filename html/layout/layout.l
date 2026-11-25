@@ -25,7 +25,7 @@ class PanelDrag
 // panel left disappears. The arrangement (root) is plain data of the panels' keys and sizes: save it when onChange is called and give it
 // back to restore it. The panels come from panels whenever they are needed, so they can change with what the app shows: e.g. those of the
 // selected item, which take the places of the previous item's panels with the same keys (Panel.place). A panel without a place goes to the
-// largest switcher (mainSwitcher), a fixed panel to the start of root. Panels get show when they become visible and hide when they no
+// switcher the user used last (activeSwitcher), otherwise to the largest one (mainSwitcher), a fixed panel to the start of root. Panels get show when they become visible and hide when they no
 // longer are. Projects use it with the tag "layout" (.livetime/targets.lc).
 // Example:
 //     app
@@ -48,6 +48,8 @@ Layout
 	Color	dividerColor = #00000018
 	float	minimumSize = 120	// Resizing keeps nodes at least this wide or high
 	PanelSwitcher	mainSwitcher	// The largest switcher of the last draw
+	PanelSwitcher	activeSwitcher	// The switcher that has the keyboard focus or was clicked last, not one of a sidebar (Panel.tabTogglesVisibility): new panels go there
+	bool	tracksActiveSwitcher
 	Panel[]	visiblePanels	// What the last draw showed
 	PanelSwitcher[]	drawnSwitchers	// The switchers of the last draw and their elements (mainSwitcher)
 	HTMLElement[]	switcherElements
@@ -110,7 +112,8 @@ Layout
 				if split.children.includes(node) then return split
 		return null
 
-	// Gives each panel without a place one: a fixed panel at the start of root, the others in the largest switcher
+	// Gives each panel without a place one: a fixed panel at the start of root, the others in the switcher the user used last, otherwise
+	// in the largest one
 	placePanels: Panel[] all
 		LayoutNode[] nodes = collectNodes(root)
 		PanelSwitcher[] switchers = collectSwitchers
@@ -124,7 +127,7 @@ Layout
 						if place.key == key then placed = true
 				if not placed then root.children.insert FixedPanelPlace(key:key), index:0
 			else if switchers.none(.keys.includes(key))
-				PanelSwitcher target = mainSwitcher and switchers.includes(mainSwitcher) ? mainSwitcher : switchers.first
+				PanelSwitcher target = activeSwitcher and switchers.includes(activeSwitcher) ? activeSwitcher : mainSwitcher and switchers.includes(mainSwitcher) ? mainSwitcher : switchers.first
 				if not target
 					target = PanelSwitcher(size:1000)
 					root.children.add target
@@ -151,6 +154,13 @@ Layout
 				panel.show
 		refresh
 		if focus then panel.focus
+
+	// Shows a panel the user opens (e.g. a file) in the switcher the user used last (activeSwitcher): its place moves there, also from
+	// another switcher where panels of other items have it
+	open: Panel panel, bool focus = false
+		if activeSwitcher and not panel.fixed and not activeSwitcher.keys.includes(panel.placeKey) and collectSwitchers.includes(activeSwitcher) and findPanels.includes(panel)
+			movePanel panel.placeKey, {node:activeSwitcher, position:Center}
+		show panel, focus
 
 	// The panel closes: its switcher shows the panel it showed before. Unless keepPlace, its place is removed if no other panel of panels
 	// has it (with its last place a switcher disappears)
@@ -179,6 +189,7 @@ Layout
 		if onChange != null then onChange()
 
 	draw
+		trackActiveSwitcher
 		Panel[] all = findPanels
 		placePanels all
 		html.style ".layoutTabs::-webkit-scrollbar", "display:none"
@@ -327,6 +338,26 @@ Layout
 				drawDropZone switcher, centerAllowed:true
 		drawnSwitchers.add switcher
 		switcherElements.add element
+
+	// The user focused or clicked into a drawn switcher: new panels go there, unless it is a sidebar, whose panel toggles its visibility.
+	// Then they go where they went before, e.g. a file opened in the Explorer to the editors
+	useSwitcher: int index
+		PanelSwitcher switcher = drawnSwitchers[index]
+		if not findShownPanel(switcher, findPanels)?.tabTogglesVisibility then activeSwitcher = switcher
+
+	// Calls useSwitcher when the keyboard focus moves into a switcher or the user presses the pointer in one. Captured, so panels that
+	// stop the events don't hide them. focus, not focusin: a webview that gets the focus only gets focus. A click into an iframe only
+	// blurs the window, whose active element is the iframe then
+	private js void trackActiveSwitcher
+		if(this.tracksActiveSwitcher) return
+		this.tracksActiveSwitcher = true
+		const use = target => {
+			const index = target instanceof Node ? this.switcherElements.findIndex(element => element.contains(target)) : -1
+			if(index >= 0) this.useSwitcher(index)
+		}
+		addEventListener("focus", ev => use(ev.target), true)
+		addEventListener("pointerdown", ev => use(ev.target), true)
+		addEventListener("blur", ev => { if(ev.target == window) setTimeout(() => use(document.activeElement)) })
 
 	// Where the dragged tab would go among the tabs, with the size and the shape of the tab
 	drawTabPreview

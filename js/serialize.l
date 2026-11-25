@@ -98,7 +98,7 @@ interface object
 	// current value here, theirs what is stored now (somebody else might have changed it since). Returns the value with the changes
 	// of both: mine wins where both changed the same value, theirs where both added the same key. Objects and Maps are merged key by
 	// key, lists of objects with an id item by item (in the order of theirs), other lists as a whole. The objects, Maps and lists of
-	// mine are updated in place, so references to them stay valid
+	// mine are updated in place, so references to them stay valid; a list taken as a whole only replaces mine if theirs differs
 	static js dynamic mergeConcurrentChanges: dynamic base, dynamic mine, dynamic theirs
 		const isObject = v => v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Map);
 		const isListOfObjectsWithIds = v => Array.isArray(v) && v.every(item => isObject(item) && item.id !== undefined);
@@ -131,7 +131,8 @@ interface object
 				}
 				return mine;
 			}
-			return isEqual(mine, base) || base === undefined && theirs !== undefined ? theirs : mine;
+			// An equal value keeps the objects of mine, which may be referenced (e.g. the nodes of a Layout in a list without ids)
+			return !isEqual(mine, theirs) && (isEqual(mine, base) || base === undefined && theirs !== undefined) ? theirs : mine;
 		};
 		return merge(base, mine, theirs);
 
