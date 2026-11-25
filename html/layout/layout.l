@@ -41,6 +41,9 @@ Layout
 	Panel[]()	panels = null	// The panels it arranges
 	void()	onChange = null	// The user changed the arrangement or a size: save root
 	void(PanelSwitcher switcher, bool left) drawToolbar = null	// Draws buttons in the header of a switcher: after its tabs (left) or at its right end
+	void(PanelSwitcher switcher) hideSwitcher = null	// Hides the switcher (Panel.tabTogglesVisibility), e.g. by hiding a sidebar. Without it, its panels get Panel.hidden
+	void(Panel panel) drawCloseButton = null	// Draws the cross of a closeable panel (Panel.closeable) that calls Panel.close, e.g. like the buttons of drawToolbar. Without it, the layout draws closeIcon
+	string	closeIcon = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>"	// The cross of a closeable panel (Panel.closeable), drawn in tabColor
 	Color	tabColor = #004979
 	Color	dividerColor = #00000018
 	float	minimumSize = 120	// Resizing keeps nodes at least this wide or high
@@ -272,8 +275,9 @@ Layout
 					dragOver ev, {node:split, position:Between, index:childIndex, extent:(before + after) / 4}
 				onDrop:dropDragged ev
 
-	// The tabs of the panels, the toolbars and the panel it shows. The left and right margins are the padding of the panel, so a panel can
-	// reach into them. The tabs scroll horizontally if they don't fit
+	// The tabs of the panels, the toolbars, the cross of a closeable panel and the panel it shows. The left and right margins are the
+	// padding of the panel, so a panel can reach into them. The tabs scroll horizontally if they don't fit. A click on the tab of the shown
+	// panel hides the switcher if the panel has tabTogglesVisibility
 	void drawSwitcher: PanelSwitcher switcher, Panel[] all, string flex
 		Panel shown = findShownPanel(switcher, all)
 		Panel[] tabs = (findPanelsOf(switcher, all)).filter(not .tabHidden)
@@ -299,7 +303,13 @@ Layout
 							border:{1px solid tabColor}
 							borderRadius:32
 							cursor:pointer
-							onClick:show p, focus:true
+							onClick:
+								if not selected or not p.tabTogglesVisibility then show p, focus:true
+								else if hideSwitcher != null then hideSwitcher(switcher)
+								else
+									for q in findPanelsOf(switcher, all)
+										q.hidden = true
+									refresh
 							onDragStart:startDrag ev, p
 							onDragEnd:endDrag
 					if target != null and (target.beforeKey == "" or tabs.none(.placeKey == target.beforeKey)) then drawTabPreview
@@ -307,6 +317,10 @@ Layout
 				if drawToolbar != null then drawToolbar switcher, true
 				div flex:1
 				if drawToolbar != null then drawToolbar switcher, false
+				if shown.closeable and drawCloseButton != null then drawCloseButton shown
+				else if shown.closeable
+					div text:closeIcon, title:"Close {shown.title}", width:30, height:30, flexShrink:0, borderRadius:8, display:flex, alignItems:center, justifyContent:center, cursor:pointer,
+						color:tabColor, styleWhenHovering:{backgroundColor:"#0000000b"}, onClick:shown.close
 			// The panel
 			row flex:1, minHeight:0, overflow:hidden, padding:{0 8 0 8}, position:relative
 				shown.draw

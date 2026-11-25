@@ -8,6 +8,8 @@ Panel
 	bool	autoWidth	// As wide as its content needs, the user can't change its width
 	bool	hidden	// The Layout leaves it out as if it didn't have it, setCommands still runs
 	bool	tabHidden	// Has no tab in its switcher, which still shows it if it is the panel shown last
+	bool	closeable	// While its switcher shows it, a cross at the right end of the switcher's header calls close
+	bool	tabTogglesVisibility	// A click on its tab while its switcher shows it hides the switcher (Layout.hideSwitcher), e.g. the panels of a sidebar
 	bool	isPanelStarted
 
 	// The key of its place in a Layout
@@ -27,3 +29,5 @@ Panel
 	setCommands: bool shown
 	// Gives the panel the keyboard focus (Layout.show with focus)
 	focus
+	// The user closes the panel with the cross of its switcher (closeable): remove it from the panels of the Layout and call Layout.close
+	close

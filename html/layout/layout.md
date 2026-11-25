@@ -25,6 +25,8 @@ app
 - `title`: tab text. `place`: key of its spot in the layout (default: title). Keep it stable: a panel whose title changes needs a `place`. Panels of different items with the same place take turns there.
 - `fixed`: no tab, not draggable, others can be dropped beside it. `autoWidth`: as wide as its content, not resizable.
 - `hidden`: left out (e.g. a hidden sidebar). `tabHidden`: no tab, still shown if it was shown last.
+- `closeable`: while shown, a cross at the right end of its switcher's header calls `close`, which the panel implements (remove it from `panels`, call `layout.close`).
+- `tabTogglesVisibility`: a click on its tab while it is shown hides its switcher (`layout.hideSwitcher`, without it the switcher's panels get `hidden`).
 - Lifecycle: `start` (first time visible), `show` (became visible), `hide` (no longer visible), `focus`, `setCommands: bool shown`.
 
 ## Layout
@@ -33,6 +35,7 @@ app
 - `close panel, keepPlace`: its switcher shows the previous panel. Remove the panel from `panels` yourself. Without `keepPlace`, its spot is forgotten and an emptied switcher disappears.
 - `isShown panel`, `findShownPanel(switcher, findPanels)`, `findSwitcher(placeKey)`.
 - `drawToolbar: (switcher, left)`: draws header buttons after the tabs (left) or at the right end.
+- `hideSwitcher: (switcher)`: hides a switcher whose shown tab with `tabTogglesVisibility` was clicked. `drawCloseButton: (panel)`: draws the cross of a closeable panel, otherwise the layout draws `closeIcon`.
 - `mainSwitcher`: the largest switcher; panels without a spot go there. `tabColor`, `dividerColor`, `minimumSize`.
 - Default arrangement: build a `PanelSplit` with `FixedPanelPlace(key:…)` and `PanelSwitcher(size:…, keys:[…])`. Panels missing from it are added automatically.
 
