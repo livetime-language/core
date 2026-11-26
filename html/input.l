@@ -243,6 +243,10 @@ unit html
 		          bool whileEditingText = true	// Handle the accelerator also while the user edits text in a text field (with false, the keys keep their default action there: on a Mac Alt+L types "@" on a German keyboard and Ctrl+A moves the caret to the start of the line)
 		keyboardShortcuts[normalizeAccelerator(accelerator)] = {do, release, whileEditingText}
 
+	// Removes the listener of an accelerator (onKeyboardShortcut), so its keys keep their default action
+	removeKeyboardShortcut: string accelerator
+		keyboardShortcuts.remove normalizeAccelerator(accelerator)
+
 	// The keys of a keydown event as normalizeAccelerator writes accelerators. Keys that type another character with Alt or Shift (on a Mac
 	// Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after the letter or digit they type without modifiers (keyCode follows
 	// the keyboard layout)

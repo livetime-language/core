@@ -26,7 +26,25 @@ transient skipInit static class backend
 	void() onDataChange = null
 	dynamic headlessData	// Records the headless stub serves per collection, seeded by tests: backend.headlessData["cards"] = [...]
 	dynamic headlessFilters	// The filter of the last fetch per collection in headless mode (the stub ignores it, a test checks it): backend.headlessFilters["cards"]
-		
+	// The error while the server can't be reached, "" while it can: a request got no answer (no network, the server is down) or a proxy
+	// couldn't reach the server (502-504), the realtime connection broke or the device went offline. It is set when the server still can't
+	// be reached 2 seconds later, so brief interruptions (the server closes idle realtime connections) show nothing. Then the server is asked
+	// every 2 seconds until it answers and the realtime connection is back (waitUntilConnected). onConnectionChange is called when it changes
+	// Example:
+	//     app
+	//         start
+	//             backend.onConnectionChange = refresh
+	//         draw
+	//             if backend.connectionError then div backend.connectionError, color:white, backgroundColor:red
+	string connectionError
+	void() onConnectionChange = null
+	private string lastConnectionError	// The error of the last failed request or broken connection, connectionError once it lasts
+	private dynamic connected	// Resolved while the connection works (waitUntilConnected)
+	private dynamic resolveConnected	// Resolves connected, null while the connection works
+	private bool watchesNetwork	// The offline event of the window is handled
+	// The realtime subscriptions of DatabaseTable.subscribe and subscribeById, null without any (subscribeTable)
+	private dynamic[] subscriptions
+
 	async js void connect: string url = ""
 		if(system.isHeadless) {
 			// In headless mode (node.js), we can't load the PocketBase library, so we use a stub
@@ -66,7 +84,139 @@ transient skipInit static class backend
 		else	backend.url = window.location && window.location.host && !system.isDebug ? location.origin : "http://localhost:8090"
 		if(backend.pocketbase) backend.pocketbase.realtime.unsubscribe();
 		backend.pocketbase = backend.pocketbaseOrBatch = new PocketBase(backend.url);
+		backend.subscriptions = null
 		this.users = new DatabaseTable("users", []);
+		// All requests (also of collections, batches and the realtime client) go through send
+		const send = backend.pocketbase.send.bind(backend.pocketbase)
+		backend.pocketbase.send = async (path, options) => {
+			try {
+				return await send(path, options)
+			} catch(e) {
+				backend.reportIfConnectionError(e)
+				throw e
+			}
+		}
+		// The realtime client reconnects by itself. Its topics are empty when it was disconnected on purpose
+		backend.pocketbase.realtime.onDisconnect = topics => { if(topics.length) backend.reportConnectionError("The realtime connection was interrupted") }
+		if(!backend.watchesNetwork) {
+			backend.watchesNetwork = true
+			window.addEventListener("offline", () => backend.reportConnectionError("The network connection was lost"))
+		}
+
+	// Whether the error of a request means that the server can't be reached: the request got no answer (no network, the server is down)
+	// or a proxy in front of the server couldn't reach it
+	js bool isConnectionError: dynamic error
+		return error?.status === 0 && !error.isAbort || error?.status >= 502 && error?.status <= 504
+
+	// Returns once the server answers and the realtime connection is there (if there are subscriptions), at once unless a request failed for
+	// lack of a connection or the realtime connection broke
+	// Example: sign in again until the server can be reached
+	//     while not user
+	//         try
+	//             user = await backend.authWithPassword email, password
+	//         catch
+	//             if not backend.isConnectionError(error) then throw error
+	//             await backend.waitUntilConnected
+	async js void waitUntilConnected
+		await backend.connected
+
+	// Reports the error of a request if the server couldn't be reached (connectionError) and returns whether it did
+	private js bool reportIfConnectionError: dynamic error
+		if(!backend.isConnectionError(error)) return false
+		backend.reportConnectionError(error.status ? error.status + " " + (error.response?.message || {502:"Bad Gateway", 503:"Service Unavailable", 504:"Gateway Timeout"}[error.status]) : error.originalError?.message || error.message)
+		return true
+
+	private js void reportConnectionError: string detail
+		backend.lastConnectionError = "Can't reach " + new URL(backend.url).host + ": " + detail + (navigator.onLine === false ? " (the device is offline)" : "")
+		if(backend.resolveConnected) return
+		backend.connected = new Promise(resolve => backend.resolveConnected = resolve)
+		setTimeout(() => backend.checkConnection(), 2000)
+
+	// The realtime client reconnects by itself, but not when its first connection failed: connect starts it then (and does nothing while it
+	// reconnects)
+	private async js void checkConnection
+		const realtime = backend.pocketbase.realtime
+		try {
+			await backend.pocketbase.send("/api/health", {requestKey:null})
+			if(realtime.hasSubscriptionListeners() && !realtime.isConnected) await realtime.connect()
+			if(!realtime.hasSubscriptionListeners() || realtime.isConnected) {
+				backend.resolveConnected()
+				backend.resolveConnected = null
+				backend.setConnectionError("")
+				return
+			}
+		} catch(e) {}
+		backend.setConnectionError(backend.lastConnectionError)
+		setTimeout(() => backend.checkConnection(), 2000)
+
+	private js void setConnectionError: string error
+		if((backend.connectionError || "") == error) return	// The fields of backend have no defaults (skipInit)
+		backend.connectionError = error
+		backend.onConnectionChange?.invoke()
+
+	// Subscribes to the realtime events of the topic of the collection and fetches the items with load, then again after each reconnect: the
+	// server forgets the client while its realtime connection is interrupted, so the events of meanwhile are lost. This also happens when the
+	// server closes the connection (after 5 minutes without events and after 30 minutes). The events (apply) that arrive while the items are
+	// fetched follow them (merge), so a fetch neither overwrites nor misses them. While the server can't be reached, the fetch waits for it
+	private js async void subscribeTable: dynamic table
+		                                   string topic
+		                                   dynamic options
+		                                   dynamic load
+		                                   dynamic merge
+		                                   dynamic apply
+		const subscription = {table, topic: table.name + "/" + topic, load, merge, apply, fetches: 0, pendingEvents: []}
+		try {
+			// Resolves once the server sends the events, so the first fetch misses none
+			subscription.unsubscribe = await backend.pocketbase.collection(table.name).subscribe(topic, e => subscription.pendingEvents ? subscription.pendingEvents.push(e) : apply(e), options)
+		} catch(e) {
+			if(!backend.reportIfConnectionError(e)) throw e
+		}
+		await backend.connected
+		if(!backend.subscriptions) {
+			backend.subscriptions = []
+			// Added while the realtime connection is there, so only reconnects call it
+			backend.pocketbase.realtime.subscribe("PB_CONNECT", () => {
+				for(const subscription of backend.subscriptions ?? []) backend.fetchSubscription(subscription).catch(e => console.error(e))
+			}).catch(e => backend.reportIfConnectionError(e) || console.error(e))
+		}
+		// Subscribing the table to the topic again replaces the subscription
+		const previous = backend.subscriptions.find(s => s.table == table && s.topic == subscription.topic)
+		if(previous) previous.unsubscribe?.()
+		backend.subscriptions = backend.subscriptions.filter(s => s != previous).concat(subscription)
+		await backend.fetchSubscription(subscription)
+
+	// The fetch that started last applies its items and then the events that arrived since the first unfinished one started. A fetch that
+	// failed for lack of a connection is tried again when the server answers, unless the items were fetched again meanwhile (after a reconnect)
+	private js async void fetchSubscription: dynamic subscription
+		for(;;) {
+			const fetch = ++subscription.fetches
+			subscription.pendingEvents ??= []
+			try {
+				const result = await subscription.load()
+				if(fetch == subscription.fetches) subscription.merge(result)
+				return
+			} catch(e) {
+				if(!backend.isConnectionError(e)) throw e
+			} finally {
+				if(fetch == subscription.fetches) {
+					const events = subscription.pendingEvents
+					subscription.pendingEvents = null
+					for(const e of events) subscription.apply(e)
+				}
+			}
+			await backend.connected
+			if(fetch != subscription.fetches || !backend.subscriptions?.includes(subscription)) return
+		}
+
+	// Like the realtime client, unsubscribing removes the subscriptions of the topic of all tables. The last one ends the realtime connection
+	private js async void unsubscribeTable: string collectionName
+		                                     string topic
+		backend.subscriptions = backend.subscriptions?.filter(s => s.topic != collectionName + "/" + topic)
+		await backend.pocketbase.collection(collectionName).unsubscribe(topic)
+		if(backend.subscriptions?.length === 0) {
+			backend.subscriptions = null
+			await backend.pocketbase.realtime.unsubscribe("PB_CONNECT")
+		}
 
 	// Creates a stub of the PocketBase client for headless mode (node.js). Fetches serve the records a test
 	// seeded via backend.headlessData["cards"] = [...] (unfiltered and unsorted - filter, sort and fields are
@@ -107,7 +257,7 @@ transient skipInit static class backend
 			createBatch: () => ({collection, requests: [], send: none}),
 			send: none,
 			autoCancellation: () => {},
-			realtime: {unsubscribe: () => {}},
+			realtime: {subscribe: none, unsubscribe: () => {}},
 			// A signed in session; clear signs out like the real store
 			authStore: {token:"headless", record:null, isValid:true, clear() { this.token = ""; this.record = null }, onChange: () => {}},
 		}
@@ -579,39 +729,45 @@ DatabaseTable<T>
 		                     int perPage = 10000
 					         bool skipTotal = true
 							 void() onChange = null
-		backend.pocketbase.collection(this.name).subscribe("*", e => {
-			console.log("subscribe", e.action, e.record);
-			if(e.action == "create") {
-				// add already inserted the item if the server answered before this event. It gets the values the server set (hooks)
-				let item = this.items.find(i => i.id == e.record.id);
-				if(item) this.assignEventRecord(item, e.record);
-				else this.items.push(e.record);
-			} else if(e.action == "update") {
-				let item = this.items.find(i => i.id == e.record.id);
-				if(item) this.assignEventRecord(item, e.record);
-			} else if(e.action == "delete") {
-				this.items.removeWhere(i => i.id == e.record.id);
-			}
-			onChange?.();
-			backend.onDataChange?.invoke();
-		}, {@filter:filter, @fields:fields, @expand:expand})
-		// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
 		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
-		const collection = backend.pocketbase.collection(this.name), options = {filter, sort, expand, skipTotal, fields}, pageSize = Math.min(perPage, 1000)
-		const items = (await collection.getList(1, pageSize, options)).items
-		if(pageSize < perPage) {
-			for(let page = 2, last = items; last.length == pageSize && items.length < perPage; page++) {
-				last = (await collection.getList(page, pageSize, options)).items
-				for(const item of last) items.push(item)
-			}
-			if(items.length > perPage) items.length = perPage
-		}
-		this.items = items
-		this.rememberNextPage(items, perPage, {filter, sort, expand, fields})
-		if(this.items.length > 0) {
-			onChange?.();
-			backend.onDataChange?.invoke();
-		}
+		const collection = backend.pocketbase.collection(this.name), options = {filter, sort, expand, skipTotal, fields}
+		const notify = () => { onChange?.(); backend.onDataChange?.invoke() }
+		let fetchedBefore = false
+		await backend.subscribeTable(this, "*", {@filter:filter, @fields:fields, @expand:expand},
+			async () => {
+				// After a reconnect, as many pages as the items fill (fetchMore adds pages)
+				const count = fetchedBefore ? Math.max(perPage, Math.ceil(this.items.length / perPage) * perPage) : perPage, pageSize = Math.min(count, 1000)
+				// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
+				const records = (await collection.getList(1, pageSize, options)).items
+				for(let page = 2, last = records; last.length == pageSize && records.length < count; page++) {
+					last = (await collection.getList(page, pageSize, options)).items
+					records.push(...last)
+				}
+				if(records.length > count) records.length = count
+				return {records, count}
+			},
+			({records, count}) => {
+				// Items that are still there keep their objects (the app refers to them) and the local values of unfinished updates
+				const itemsById = new Map(this.items.map(item => [item.id, item])), hadItems = this.items.length > 0
+				this.items = records.map(record => {
+					const item = itemsById.get(record.id)
+					if(item) this.assignEventRecord(item, record)
+					return item || record
+				})
+				this.rememberNextPage(this.items, count, {filter, sort, expand, fields})
+				if(this.nextPage) this.nextPage.perPage = Math.min(perPage, 1000)
+				fetchedBefore = true
+				if(hadItems || this.items.length) notify()
+			},
+			e => {
+				console.log("subscribe", e.action, e.record)
+				const item = this.items.find(i => i.id == e.record.id)
+				// add already inserted the item if the server answered before this event. It gets the values the server set (hooks)
+				if(e.action == "delete") this.items.removeWhere(i => i.id == e.record.id)
+				else if(item) this.assignEventRecord(item, e.record)
+				else if(e.action == "create") this.items.push(e.record)
+				notify()
+			})
 		return this.items
 
 	async js T subscribeById: string id
@@ -619,22 +775,37 @@ DatabaseTable<T>
 		                      string expand = null
 							  void() onChange = null
 		                      void() onDelete = null
-		backend.pocketbase.collection(this.name).subscribe(id, e => {
-			console.log("subscribeById", e.action, e.record);
-			if(e.action == "delete") {
-				onDelete?.();
-			} else {
-				this.assignEventRecord(model, e.record);
-				onChange?.();
-			}
-			backend.onDataChange?.invoke();
-		}, {@fields:fields, @expand:expand})
-		var model = await backend.pocketbase.collection(this.name).getOne(id, {@fields:fields, @expand:expand})
-		return model;
+		const options = {@fields:fields, @expand:expand}
+		let model = null
+		await backend.subscribeTable(this, id, options,
+			// After a reconnect, a deleted item is null
+			() => backend.pocketbase.collection(this.name).getOne(id, options).catch(e => { if(model && e?.status == 404) return null; throw e }),
+			record => {
+				if(!model) return model = record
+				if(record) {
+					this.assignEventRecord(model, record)
+					onChange?.()
+				} else {
+					onDelete?.()
+				}
+				backend.onDataChange?.invoke()
+			},
+			e => {
+				console.log("subscribeById", e.action, e.record)
+				if(!model) return
+				if(e.action == "delete") {
+					onDelete?.()
+				} else {
+					this.assignEventRecord(model, e.record)
+					onChange?.()
+				}
+				backend.onDataChange?.invoke()
+			})
+		return model
 
 	importance:3
-	inline js async void unsubscribe: string topic = "*"
-		backend.pocketbase.collection(this.name).unsubscribe(topic)
+	async js void unsubscribe: string topic = "*"
+		await backend.unsubscribeTable(this.name, topic)
 		
 	// ------------------------------------------------------- Files -------------------------------------------------------
 		

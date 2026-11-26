@@ -20,6 +20,7 @@ Check your code with "livetime check", build with "livetime build".
 
 # LiveTime bugs
 If you find a bug in the LiveTime compiler, add it to this section in lib/core/general.md. Append a test that reproduces it to /Users/heiko/Projects/LiveTime3/src/compiler.livetime.test and add a task to the LiveTime3 project. The task should include removing any workaround in the codebase and the bug's entry in general.md.
+- `@` before a name in string, template and regex literals of `js` bodies is removed (it escapes identifiers outside literals): write `"\x40scope/package"`, `/\x40(\w+)/`.
 
 # LiveTime pitfalls
 - Only files directly in `src/` are compiled, not files in subfolders.
@@ -44,8 +45,9 @@ If you find a bug in the LiveTime compiler, add it to this section in lib/core/g
 - Stored lambdas are objects: `js` bodies call them with `.invoke(...)`.
 - Function types have no async variant: to await a lambda, take a `stored void()` parameter and `await (dynamic)run()`.
 - A `void()` assigned to a field drops the Promise of an async lambda.
-- `@` in template literals of `js` bodies escapes identifiers: write `"\x40scope/package"`.
+- `new SomeClass()` in `js` bodies gets no field defaults (LiveTime passes them at its call sites): create LiveTime objects in LiveTime code.
 - `inline js` functions are inlined, not emitted: JavaScript can't call them.
+- A function that only `js` bodies call is not emitted: call it from LiveTime code too, or write its logic in the `js` body.
 - Inline members of event types must be `inline js` with `this.`.
 - An `interface` of a browser type (`DragEvent`) gets its methods on the browser's prototype, replacing them: declare them `inline js`. A class of that name hides the browser's.
 - `inline` functions substitute their argument expressions: assigning to a field of a parameter changes nothing.

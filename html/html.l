@@ -273,6 +273,8 @@ HtmlEvent
 	bool altKey               // Is the alt key down?
 	bool ctrlKey              // Is the control key down?
 	bool metaKey              // Is the meta key ("Command" on Mac, "Windows" on Windows) down?
+	int clientX               // The X coordinate of the pointer relative to the viewport (pointer and mouse events)
+	int clientY               // The Y coordinate of the pointer relative to the viewport
 
 	// Is CmdOrCtrl down (Cmd on Apple devices, Ctrl everywhere else)?
 	inline js bool isCmdOrCtrl() (html.isAppleDevice() ? this.metaKey : this.ctrlKey)
@@ -301,6 +303,7 @@ interface DragEvent
 
 HtmlKeyboardEvent
 	KeyCode keyCode               // A system and implementation dependent numerical code identifying the unmodified pressed key
+	string key                    // The character the key types with the modifiers (e.g. "+"), or the name of the key (e.g. "Enter")
 	bool isComposing              // Is the key part of a composition by an input method editor (IME)?
 	bool shiftKey
 	bool ctrlKey
@@ -327,6 +330,7 @@ HTMLElement WebView
 	
 	native void(string url) onWillNavigate
 	native void(string url) onUrlChanged
+	native void() onLoaded
 	bool hasHandlers
 	
 	inline js void downloadURL(string url) this.downloadURL(url)
@@ -466,14 +470,18 @@ global priority low skipInit static class html
 	private bool refreshInProgress = false
 	private int refreshCount
 	private float lastRefresh // When the last refresh ended (Time.preciseTime)
-	private int refreshTimer  // The delay of the refresh that refreshSoon is waiting for, 0 if it isn't waiting
+	private int refreshTimer  // The delay of the refresh that refreshSoon waits for, 0 if it doesn't wait
 
-	// Call refresh to re-render the html after you changed any data.
+	// Call refresh to re-render the html after you changed any data. It re-renders at once: in code that runs during other work (an
+	// event handler in the middle of an edit, a draw), call refreshSoon.
 	global void refresh
 		if refreshInProgress 
 			// This might hapapen because removing a node in div triggers its onBlur, which calls refresh
 			print "Skipping refresh because another refresh is already in progress"
 			return
+		// It shows what refreshSoon was called for until now; a call during it re-renders again
+		clearDelay refreshTimer
+		refreshTimer = 0
 		try
 			refreshInProgress = true
 			refreshCount++
@@ -506,21 +514,18 @@ global priority low skipInit static class html
 		finally
 			refreshInProgress = false
 			lastRefresh = Time.preciseTime
-			clearDelay refreshTimer
-			refreshTimer = 0
 		
 	// Call refreshSoon instead of refresh for changes that can arrive in bursts, like realtime updates of a database or the progress
-	// of a download. It re-renders the html at once, unless it was rendered less than the given interval ago: then it re-renders
-	// once when the interval is over, however often it is called until then.
+	// of a download, and in code that runs during other work (an event handler in the middle of an edit, a draw). It never re-renders
+	// right away: it re-renders once after the code that runs now, and at least the given interval after the last re-render, however
+	// often it is called until then.
 	// Example:
 	//     app
 	//         start
 	//             backend.onDataChange = refreshSoon
 	global void refreshSoon: float interval = 50 // The time in milliseconds the page rests between two re-renders
 		if refreshTimer then return
-		float wait = lastRefresh + interval - Time.preciseTime
-		if wait <= 0 then refresh
-		else              refreshTimer = delay wait, refresh
+		refreshTimer = delay (lastRefresh + interval - Time.preciseTime) atLeast 0, refresh
 
 	// Executes onVisible (see Attributes) when the element comes within one screen of the visible area of its scroll
 	// container (the nearest ancestor with overflow auto or scroll, else the page)
