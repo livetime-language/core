@@ -521,7 +521,7 @@ transient skipInit global unit graphics
 				align == 0  ? pos.x : align  == 1 ? pos.x-sizeX*.5 : pos.x-sizeX,
 				valign == 0 ? pos.y : valign == 1 ? pos.y-sizeY*.5 : pos.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} position:{${Math.round(pos.x)},${Math.round(pos.y)}} topLeft:{${Math.round(pos.x-halfSizeX)},${Math.round(pos.y-halfSizeY)}} bottomRight:{${Math.round(pos.x+halfSizeX)},${Math.round(pos.y+halfSizeY)}}`,
 				location, pos.location, size.location,
 				image.texture.imageOrCanvas,
@@ -571,7 +571,7 @@ transient skipInit global unit graphics
 					-halfSizeX,
 					-halfSizeY,
 					sizeX, sizeY,
-					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
+					layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 					`Image ${image.name} position:{${Math.round(pos.x)},${Math.round(pos.y)}} topLeft:{${Math.round(pos.x-halfSizeX)},${Math.round(pos.y-halfSizeY)}} bottomRight:{${Math.round(pos.x+halfSizeX)},${Math.round(pos.y+halfSizeY)}}`,
 					location, pos.location, size.location,
 					image.texture.imageOrCanvas,
@@ -722,7 +722,7 @@ transient skipInit global unit graphics
 				y,
 				scaledLeftSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Left Slice`,
 				location, pos.location, size.location,
 				image.texture.imageOrCanvas,
@@ -735,7 +735,7 @@ transient skipInit global unit graphics
 				y,
 				sizeX - scaledLeftSlice - scaledRightSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Middle Slice`,
 				location, pos.location, size.location,
 				image.texture.imageOrCanvas,
@@ -748,7 +748,7 @@ transient skipInit global unit graphics
 				y,
 				scaledRightSlice, 
 				sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`Image ${image.name} Right Slice`,
 				location, pos.location, size.location,
 				image.texture.imageOrCanvas,
@@ -785,7 +785,7 @@ transient skipInit global unit graphics
 				align == 0  ? pos.x : align  == 1 ? pos.x-sizeX*.5 : pos.x-sizeX,
 				valign == 0 ? pos.y : valign == 1 ? pos.y-sizeY*.5 : pos.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, image.file,
 				`PartialImage ${image.name} position:{${Math.round(pos.x)},${Math.round(pos.y)}} topLeft:{${Math.round(pos.x-halfSizeX)},${Math.round(pos.y-halfSizeY)}} bottomRight:{${Math.round(pos.x+halfSizeX)},${Math.round(pos.y+halfSizeY)}}`,
 				location, pos.location, size.location,
 				image.texture.imageOrCanvas,
@@ -990,7 +990,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer != int.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, null, text,
+				layer != float.minValue ? layer : graphics.currentLayer, (alpha * graphics.currentAlpha).clamp(0 to 1), currentClippingPath, null, text,
 				"Text \"{text.replaceAll("\n", "\\n").replaceAll("\"", "\\\"")}\" pos:\{{math.round(pos.x)},{math.round(pos.y)}\} size:{math.round(sizeX)} topLeft:\{{math.round(pos.x-halfSizeX)},{math.round(pos.y-halfSizeY)}\} bottomRight:\{{math.round(pos.x+halfSizeX)},{math.round(pos.y+halfSizeY)}\} color:{effectiveColor}",
 				location, pos.location, size.location,
 				effectiveColor ? effectiveColor.hex : null, 
@@ -1226,7 +1226,7 @@ transient skipInit global unit graphics
 				x + offsetX,
 				y + offsetY,
 				sizeX, sizeY, 
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, null, text,
+				layer != float.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, currentClippingPath, null, text,
 				"Text \"{text}\" pos:\{{math.round(pos.x)},{math.round(pos.y)}\} size:{math.round(size.x)}",
 				location, pos.location, size.location,
 				(color || currentColor).hex, 
@@ -1335,13 +1335,13 @@ transient skipInit global unit graphics
 			if scale != 1.0	then textSize = math.round(textSize * scale); effectiveSize *= scale
 			let effectiveLayer = layer != float.minValue ? layer : math.floor(graphics.currentLayer)
 			let effectiveAlpha = enabled ? alpha : alpha * alphaWhenDisabled
-			if text then drawText text, pos+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, effectiveAlpha, location
+			if text then drawText text, pos+textOffset, textSize, textColor, visibleFor, layer:effectiveLayer+2, alpha:effectiveAlpha, location
 			if accentImage
 				if not accentColor
 					if effectiveClickableBy and effectiveClickableBy[0] then	accentColor = effectiveClickableBy[0].playerColor
 					else	accentColor = input.localPlayer.playerColor
-				drawImage accentImage, pos, frame, effectiveSize, visibleFor, layer:effectiveLayer+1, effectiveAlpha, location, color:accentColor
-			if image then drawImage image, pos, frame, effectiveSize, visibleFor, layer:effectiveLayer, effectiveAlpha, location
+				drawImage accentImage, pos, frame, effectiveSize, visibleFor, layer:effectiveLayer+1, alpha:effectiveAlpha, location, color:accentColor
+			if image then drawImage image, pos, frame, effectiveSize, visibleFor, layer:effectiveLayer, alpha:effectiveAlpha, location
 			
 			
 	// ------------------------------------------------------- Rectangle -------------------------------------------------------
@@ -1375,7 +1375,7 @@ transient skipInit global unit graphics
 				align == 0  ? pos.x : align  == 1 ? pos.x-sizeX*.5 : pos.x-sizeX,
 				valign == 0 ? pos.y : valign == 1 ? pos.y-sizeY*.5 : pos.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Rectangle",
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Rectangle",
 				`Rectangle position:{${Math.round(pos.x)},${Math.round(pos.y)}} size:{${Math.round(sizeX)},${Math.round(sizeY)}} topLeft:{${Math.round(pos.x-halfSizeX)},${Math.round(pos.y-halfSizeY)}} bottomRight:{${Math.round(pos.x+halfSizeX)},${Math.round(pos.y+halfSizeY)}} color:${color?.hex}`,
 				location, pos.location, size.location,
 				color || !outlineColor ? (color || graphics.currentColor).hex : null,
@@ -1411,7 +1411,7 @@ transient skipInit global unit graphics
 				align == 0  ? pos.x : align  == 1 ? pos.x-sizeX*.5 : pos.x-sizeX,
 				valign == 0 ? pos.y : valign == 1 ? pos.y-sizeY*.5 : pos.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "RoundedRectangle", 
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "RoundedRectangle", 
 				`RoundedRectangle position:${Math.round(pos.x)},${Math.round(pos.y)} size:${Math.round(size.x)},${Math.round(size.y)}${graphics.alignmentDescription(align, valign)}`,
 				location, pos.location, size.location,
 				radius,
@@ -1462,7 +1462,7 @@ transient skipInit global unit graphics
 				pos.x - sizeX/2, 
 				pos.y - sizeY/2, 
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Circle", 
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Circle", 
 				`Circle position:{${Math.round(pos.x)},${Math.round(pos.y)}} size:${Math.round(sizeX)} topLeft:{${Math.round(pos.x-sizeX/2)},${Math.round(pos.y-sizeY/2)}} bottomRight:{${Math.round(pos.x+sizeX/2)},${Math.round(pos.y+sizeY/2)}} color:${effectiveColor} outlineColor:${outlineColor} outlineWidth:${outlineWidth}`,
 				location, pos.location, size.location,
 				startAngle, angle,
@@ -1495,7 +1495,7 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				from.x, from.y,
 				to.x - from.x, to.y - from.y,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
 				`Line from:{${Math.round(from.x)},${Math.round(from.y)}} to:{${Math.round(to.x)},${Math.round(to.y)}}`,
 				location, from.location, null,
 				to,
@@ -1525,7 +1525,7 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				pos.x, pos.y,
 				0, 0,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, "Line", 
 				`Line ${points.mapAndJoin(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, pos.location, null,
 				points,
@@ -1601,7 +1601,7 @@ transient skipInit global unit graphics
 				graphics.totalMatrix,
 				pos.x, pos.y,
 				0, 0,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Polygon",
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, shadow, "Polygon",
 				`Polygon ${points.mapAndJoin(a => "{"+Math.round(a.x)+","+Math.round(a.y)+"}",",")}`,
 				location, pos.location, null,
 				points,
@@ -1692,7 +1692,7 @@ transient skipInit global unit graphics
 				pos.x - sizeX/2,
 				pos.y - sizeY/2,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
 				`Texture "${texture.file}" position:{${pos.x},${pos.y}} topLeft:{${pos.x-sizeX/2},${pos.y-sizeY/2}} bottomRight:{${pos.x+sizeX/2},${pos.y+sizeY/2}}`,
 				location, pos.location, size.location,
 				texture.imageOrCanvas,
@@ -1728,7 +1728,7 @@ transient skipInit global unit graphics
 				pos.x - sizeX/2,
 				pos.y - sizeY/2,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file, 
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file, 
 				`Texture "${texture.file}" position:{${Math.round(pos.x)},${Math.round(pos.y)}} topLeft:{${Math.round(pos.x-sizeX/2)},${Math.round(pos.y-sizeY/2)}} bottomRight:{${Math.round(pos.x+sizeX/2)},${Math.round(pos.y+sizeY/2)}}`,
 				location, pos.location, size.location,
 				texture.imageOrCanvas,
@@ -1777,7 +1777,7 @@ transient skipInit global unit graphics
 					pos.x - sizeX/2,
 					pos.y - sizeY/2,
 					sizeX, sizeY,
-					layer != int.minValue ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
+					layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, alpha * graphics.currentAlpha, graphics.currentClippingPath, null, texture.file,
 					`ImageFromUrl "${texture.file}" position:{${Math.round(pos.x)},${Math.round(pos.y)}} topLeft:{${Math.round(pos.x-sizeX/2)},${Math.round(pos.y-sizeY/2)}} bottomRight:{${Math.round(pos.x+sizeX/2)},${Math.round(pos.y+sizeY/2)}}`,
 					location, pos.location, size.location,
 					texture.imageOrCanvas,
@@ -1811,7 +1811,7 @@ transient skipInit global unit graphics
 				align == 0  ? pos.x : align  == 1 ? pos.x-sizeX*.5 : pos.x-sizeX,
 				valign == 0 ? pos.y : valign == 1 ? pos.y-sizeY*.5 : pos.y-sizeY,
 				sizeX, sizeY,
-				layer != int.minValue ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, null, "Clear", 
+				layer != -Number.MAX_VALUE ? layer : graphics.currentLayer, 1, graphics.currentClippingPath, null, "Clear", 
 				`ClearRectangle position:{${Math.round(pos.x)},${Math.round(pos.y)}} topLeft:{${Math.round(pos.x-sizeX*.5)},${Math.round(pos.y-sizeY*.5)}} bottomRight:{${Math.round(pos.x+sizeX*.5)},${Math.round(pos.y+sizeY*.5)}}`,
 				location, pos.location, size.location,
 				"clear", null, 0
@@ -2843,8 +2843,7 @@ internal transient immutable DisplayItem DisplayCircle
 			if(this.angle == math.twoPi) {
 				graphics.context.arc(this.x+radius, this.y+radius, radius, 0, math.twoPi, this.direction);
 			} else {
-				let startAngle = this.startAngle - math.halfPi
-				graphics.context.arc(this.x+radius, this.y+radius, radius, startAngle*math.twoPi, (startAngle+this.angle)*math.twoPi, this.direction);
+				graphics.context.arc(this.x+radius, this.y+radius, radius, this.startAngle, this.startAngle + (this.direction ? -this.angle : this.angle), this.direction);
 			}
 		} else {
 			let radiusX = this.w/2
