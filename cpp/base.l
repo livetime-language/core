@@ -873,7 +873,7 @@ struct List<T>
 	// cpp float average
 	// 	return this.length > 0 ? this.sum() / this.length : 0
 		
-	// string joinToString: string(T a) selector
+	// string mapAndJoin: string(T a) selector
 	// 	                 string separator = ", "
 	// 	let result = ""
 	// 	for this
