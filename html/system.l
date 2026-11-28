@@ -45,6 +45,7 @@ global transient skipInit unit system
 	public inline js string host	=> location.host
 	public inline js string origin	=> location.origin
 	public inline js string locationHash	=> location.hash
+	public inline js string urlParameter(string name) (new URLSearchParams(location.search).get(name) ?? "")	// The value of a parameter of the page's url ("?email=…"), "" without it
 	public inline js string basePath	=> _basePath
 	public inline js string referrer	=> document.referrer
 	public inline js string protocolAndHost() (window.location?.host && !system.isDebug ? location.origin : "http://localhost")

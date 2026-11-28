@@ -722,6 +722,8 @@ DatabaseTable<T>
 
 	// ------------------------------------------------------- Subscribe -------------------------------------------------------
 		
+	// Fetches the items and keeps them up to date with realtime events, also after reconnects. An update event of an item that isn't
+	// there adds it: the user may see it now (the list rule) or it matches the filter now
 	async js T[] subscribe: string filter = null
 		                     string sort = null
 					         string fields = null
@@ -729,12 +731,16 @@ DatabaseTable<T>
 		                     int perPage = 10000
 					         bool skipTotal = true
 							 void() onChange = null
+							 string() fetchFilter = null	// Narrows the fetches, not the realtime events, read for each fetch: e.g. a filter by indexed fields the list rule implies
 		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
-		const collection = backend.pocketbase.collection(this.name), options = {filter, sort, expand, skipTotal, fields}
+		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort, expand, skipTotal, fields}
 		const notify = () => { onChange?.(); backend.onDataChange?.invoke() }
 		let fetchedBefore = false
+		let options = realtimeOptions
 		await backend.subscribeTable(this, "*", {@filter:filter, @fields:fields, @expand:expand},
 			async () => {
+				const narrowing = fetchFilter?.()
+				options = narrowing ? {...realtimeOptions, filter: filter ? `(${filter}) && (${narrowing})` : narrowing} : realtimeOptions
 				// After a reconnect, as many pages as the items fill (fetchMore adds pages)
 				const count = fetchedBefore ? Math.max(perPage, Math.ceil(this.items.length / perPage) * perPage) : perPage, pageSize = Math.min(count, 1000)
 				// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
@@ -754,7 +760,7 @@ DatabaseTable<T>
 					if(item) this.assignEventRecord(item, record)
 					return item || record
 				})
-				this.rememberNextPage(this.items, count, {filter, sort, expand, fields})
+				this.rememberNextPage(this.items, count, {filter:options.filter, sort, expand, fields})
 				if(this.nextPage) this.nextPage.perPage = Math.min(perPage, 1000)
 				fetchedBefore = true
 				if(hadItems || this.items.length) notify()
@@ -765,10 +771,20 @@ DatabaseTable<T>
 				// add already inserted the item if the server answered before this event. It gets the values the server set (hooks)
 				if(e.action == "delete") this.items.removeWhere(i => i.id == e.record.id)
 				else if(item) this.assignEventRecord(item, e.record)
-				else if(e.action == "create") this.items.push(e.record)
+				else this.items.push(e.record)
 				notify()
 			})
 		return this.items
+
+	// Fetches the items of the filter (all pages) and adds those that aren't there, e.g. those a subscription's fetchFilter left out
+	// that the user may see now. The items that are there keep their objects, which realtime events keep up to date
+	importance:3
+	async js void fetchAndAdd: string filter
+		                       string expand = null
+		const records = await backend.pocketbase.collection(this.name).getFullList({filter, expand, batch:1000, requestKey:null})
+		const ids = new Set(this.items.map(item => item.id))
+		for(const record of records) if(!ids.has(record.id)) this.items.push(record)
+		backend.onDataChange?.invoke()
 
 	async js T subscribeById: string id
 		                      string fields = null
