@@ -732,9 +732,9 @@ DatabaseTable<T>
 					         bool skipTotal = true
 							 void() onChange = null
 							 string() fetchFilter = null	// Narrows the fetches, not the realtime events, read for each fetch: e.g. a filter by indexed fields the list rule implies
-							 string fetchFields = null	// The fields of the fetches instead of fields, not of the realtime events: e.g. without large fields that are loaded when needed
+							 dynamic fetchQuery = null	// Query parameters of the fetches, not of the realtime events: e.g. for a hook of the server that leaves out large fields
 		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
-		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort: sort || "id", expand, skipTotal, fields}, fetchOptions = fetchFields ? {...realtimeOptions, fields: fetchFields} : realtimeOptions
+		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort: sort || "id", expand, skipTotal, fields}, fetchOptions = fetchQuery ? {...realtimeOptions, query: fetchQuery} : realtimeOptions
 		const notify = () => { onChange?.(); backend.onDataChange?.invoke() }
 		let fetchedBefore = false
 		let options = fetchOptions
@@ -763,7 +763,7 @@ DatabaseTable<T>
 					if(item) this.assignEventRecord(item, record)
 					return item || record
 				})
-				this.rememberNextPage(this.items, count, {filter:options.filter, sort, expand, fields:options.fields})
+				this.rememberNextPage(this.items, count, {filter:options.filter, sort, expand, fields})
 				if(this.nextPage) this.nextPage.perPage = Math.min(perPage, 1000)
 				fetchedBefore = true
 				if(hadItems || this.items.length) notify()
@@ -784,8 +784,8 @@ DatabaseTable<T>
 	importance:3
 	async js void fetchAndAdd: string filter
 		                       string expand = null
-		                       string fields = null	// A comma separated list of fields to fetch, e.g. "name,active,created"
-		const records = await backend.pocketbase.collection(this.name).getFullList({filter, fields, expand, batch:1000, requestKey:null})
+		                       dynamic query = null	// Further query parameters, e.g. for a hook of the server
+		const records = await backend.pocketbase.collection(this.name).getFullList({filter, expand, query, batch:1000, requestKey:null})
 		const ids = new Set(this.items.map(item => item.id))
 		for(const record of records) if(!ids.has(record.id)) this.items.push(record)
 		backend.onDataChange?.invoke()
