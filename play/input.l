@@ -2182,14 +2182,21 @@ skipInit global unit input
 		              implicit nocolon Player[] by = null // Only consider touches or clicks by this player or list of players
 		              bool showClickableArea = false      // Highlight the clickable area for debugging
 		              bool markAsHandled = true           // Mark the touch as handled so it won't trigger more touch events
+		              HorizontalAlignment align = Center  // The horizontal alignment of the touch area
+		              VerticalAlignment valign = Middle   // The vertical alignment of the touch area
 		              void(Touch touch) do                // Do this for each touch or click
 		if not active then return
+		let sizeX = size.x
+		let sizeY = size.y || size.x
+		let x = align == Left ? pos.x : align  == Center ? pos.x-sizeX/2 : pos.x-sizeX
+		let y = valign == Top ? pos.y : valign == Middle ? pos.y-sizeY/2 : pos.y-sizeY
 		for getTargetedPlayers(by) as player
 			for internalUsers[player.id].upTouches as touch
-				if !touch.handled and pos.x <= touch.position.x < pos.x + size.x and pos.y <= touch.position.y < pos.y + size.y
+				if !touch.handled and x <= touch.position.x < x + sizeX and y <= touch.position.y < y + sizeY
 					do touch
 					if markAsHandled then touch.handled = true
 					Snapshot.autoSave
+		if showClickableArea then drawRectangle pos:{x+sizeX/2, y+sizeY/2}, size:{sizeX, sizeY}, color:#ff000080
 
 	// Do something when the player ends a touch or click within a given circle.
 	//

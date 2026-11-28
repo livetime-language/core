@@ -122,7 +122,7 @@ class Player
 				if neighborCell and opponent and opponent != this
 					Cell[] surroundedCells = collectsurroundedCells neighborPos
 						surroundedCells.each.player = null
-						print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.joinToString.gridPos.toString}", type:Reaction
+						print "{surroundedCells.length} pieces captued by {this}: {surroundedCells.mapAndJoin.gridPos.toString}", type:Reaction
 						
 						// Animate the captured pieces to the player's video feed
 						animate duration:500 milliseconds

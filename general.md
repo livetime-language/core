@@ -55,5 +55,7 @@ If you find a bug in the LiveTime compiler, add it to this section in lib/core/g
 - A struct read from a list is a copy: change items in `for s in list` or assign the copy back.
 - A method redeclared in a subclass extends the base method (the base runs first); with `override` it replaces it.
 - `object.fromYaml` uses YAML 1.2 (`yes` is a string) and returns plain objects unless a mapping is tagged with a class name.
+- An unlabeled argument goes to the first free parameter of its type, not the next one: `drawImage image, pos, layer:l, a` passes `a` as `scale`, not `alpha`. Label it.
+- `input.justJoinedPlayers` returns ids: add `input.players.find(.id == playerId)` to the app's player list, not a new `Player` (`touch.by` never equals a copy).
 
 Add new pitfalls to this list in lib/core/general.md.

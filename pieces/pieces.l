@@ -4,7 +4,7 @@ unit Framework
 		return !board or board.isVisibleFor player
 			
 	getBoardAt: Vector2 pos, Player player
-		for Framework.objects -> object
+		for object in Framework.objects
 			if object is Board
 				Board b = cast object
 				if (b.visibleFor == null or b.visibleFor.any.id == player.id)
@@ -75,18 +75,23 @@ Object Piece
 	
 	finishTouch
 		rotateTouch = null
-		if moveTouch: moveTouch = null; onDrop
+		if moveTouch
+			moveTouch = null
+			onDrop
 		
 	override tick
 		// Complete size if one or both components aren't specified
 		if image
-			if size.x == 0: size.x = image.size.x; size.y = image.size.y; else
-			if size.y == 0: size.y = size.x * image.size.y / image.size.x;
+			if size.x == 0
+				size.x = image.size.x
+				size.y = image.size.y
+			else if size.y == 0
+				size.y = size.x * image.size.y / image.size.x
 				
 		// Rotate	
 		Vector2 iconPos = this.iconPos ? this.iconPos : (rotatable ? {(size.x+size.y)*.29, (size.x+size.y)*.29}*{1,-1} : size/2*{1,-1})
 		if rotatable and Framework.selectedObjects.includes(this)
-			onTouchDown pos:position+iconPos, size:Image.rotateIcon.size+clickableMargin, by:visibleFor
+			onTouchDown pos:position+iconPos, size:media.rotateIcon.size+clickableMargin, by:visibleFor
 				rotateTouch = touch
 				rotateOffset = angle - math.getAngleForVector(touch.position - position)
 				rotatedOverThreshold = false
@@ -94,17 +99,17 @@ Object Piece
 			onTouchMove rotateTouch
 				core.smooth touch.by
 					angle = targetAngle = math.getAngleForVector(touch.position - position) + rotateOffset
-				if (touch.position - touch.startPosition).length > 16: rotatedOverThreshold = true
+				if (touch.position - touch.startPosition).length > 16 then rotatedOverThreshold = true
 				
 			onTouchUp rotateTouch
 				targetAngle = math.round(angle / .25) * .25
 				rotateTouch = null
-				if !rotatedOverThreshold: targetAngle += .25
+				if !rotatedOverThreshold then targetAngle += .25
 				interactingPlayer = touch.by
-				if angle == targetAngle: onRotate
+				if angle == targetAngle then onRotate
 		
 		// Move
-		onTouchDown position, size, angle, by:visibleFor
+		onTouchDown position, size, by:visibleFor
 			if movable
 				moveTouch = touch
 				touchOffset = position - touch.position
@@ -114,8 +119,8 @@ Object Piece
 		onTouchMove moveTouch
 			core.smooth moveTouch.by
 				position = touch.position + touchOffset
-				if touch.position - touch.startPosition > 8: isBeingMoved = true
-				if board: board.snap this, touch.position
+				if touch.position - touch.startPosition > 8 then isBeingMoved = true
+				if board then board.snap this, touch.position
 				checkBoardsWhileMoving touch
 							
 		onTouchUp moveTouch
@@ -132,7 +137,7 @@ Object Piece
 		if angle != targetAngle
 			core.smooth interactingPlayer
 				angle = math.moveTowards(angle, targetAngle, .03)
-				if angle == targetAngle: onRotate
+				if angle == targetAngle then onRotate
 		
 		// Draw rotation icon
 		if rotatable and Framework.selectedObjects.includes(this) and not (rotateTouch and rotatedOverThreshold)
@@ -142,20 +147,30 @@ Object Piece
 				
 	draw
 		if image
-			if side == Front || !backImage: drawImage image, position, size, frame:frame mod image.frames.length, angle, location
-			else                            drawImage backImage, position, size, frame:frame mod backImage.frames.length, angle, location
+			if side == Front || !backImage
+				drawImage image, position, size, frame:frame mod image.frames.length, angle, location
+			else
+				drawImage backImage, position, size, frame:frame mod backImage.frames.length, angle, location
 		
 	private checkBoardsWhileMoving: Touch touch
 		Vector2 pos = position
-		if board: pos = position * board.matrix
+		if board then pos = position * board.matrix
 		let nextBoard = Framework.getBoardAt pos, touch.by
 		if nextBoard != board
 			delay
-				if board: board.objects.remove this; position = position * board.matrix; touchOffset = touchOffset * board.matrix.scaleVector
-				else      Framework.objects.remove this
+				if board
+					board.objects.remove this
+					position = position * board.matrix
+					touchOffset = touchOffset * board.matrix.scaleVector
+				else
+					Framework.objects.remove this
 				board = nextBoard
-				if board: board.objects.insert this; position = position / board.matrix; touchOffset = touchOffset / board.matrix.scaleVector
-				else      Framework.objects.insert this
+				if board
+					board.objects.insert this
+					position = position / board.matrix
+					touchOffset = touchOffset / board.matrix.scaleVector
+				else
+					Framework.objects.insert this
 				onBoardChanged
 					
 Piece Stack
@@ -188,22 +203,25 @@ Piece Stack
 		Framework.objects.insert topObject
 		topObject.position += stackOffset
 		topObject.side = sideWhenRemoving
-		if objects.length == 0: Framework.objects.remove this
-		else                    updatePositions
+		if objects.length == 0
+			Framework.objects.remove this
+		else
+			updatePositions
 		return topObject
 		
 	private updatePositions
-		if objects.length == 0: return
+		if objects.length == 0 then return
 		shownObjectCount = math.min(3, objects.length)
 		position = basePosition + (shownObjectCount-1)/2 * stackOffset
-		for shownObjectCount: objects[objects.length-shownObjectCount+i].position = basePosition + i * stackOffset
+		for i to shownObjectCount
+			objects[objects.length-shownObjectCount+i].position = basePosition + i * stackOffset
 			
 		let a = objects[objects.length-shownObjectCount]
 		let b = objects[objects.length-1]
 		size = (b.position+{b.size.x/2, b.image.size.y/2}) - (a.position-{a.size.x/2, a.size.y/2})
 	
 	override tick
-		for math.clamp(objects.length-shownObjectCount, min:0) to objects.length <- i
+		for i = (objects.length-shownObjectCount atLeast 0) to objects.length
 			let obj = objects[i]
 			let image = obj.backImage || obj.image
 			drawImage image, obj.position, frame:obj.frame mod image.frames.length, size:obj.size
@@ -242,7 +260,8 @@ Piece Board
 		
 	debugString
 		string children
-		for objects: children += .debugString
+		for objects
+			children += .debugString
 		return "(Board pos:{position.x} {position.y} children:{children})"
 		
 	finishTouch
@@ -280,7 +299,7 @@ Piece Board
 		// Zoom
 		if zoomable	
 			onScrolllWithin position, size, by:visibleFor
-				float factor = zoomLookupTable[math.clamp math.round(event.delta.y)+40, min:0, max:zoomLookupTable.length-1]
+				float factor = zoomLookupTable[(math.round(event.delta.y)+40) atLeast 0 atMost zoomLookupTable.length-1]
 				matrix.move event.position
 				matrix.scale {factor, factor}
 				matrix.move event.position*{-1,-1}
@@ -291,8 +310,8 @@ Piece Board
 			drawButton icon, pos:position+{size.x/2-32, -size.y/2+32}, clickableBy:owner
 				contentVisibleForOthers = contentVisibleForOthers == On ? Off : On
 				
-		if color: drawRectangle position, size, color:color, layer:-1, visibleFor
-		if image: drawImage image, position, size
+		if color then drawRectangle position, size, color:color, layer:-1, visibleFor
+		if image then drawImage image, position, size
 		
 	snap: Piece currentObject, Vector2 pos
 		
@@ -313,13 +332,13 @@ Board SmartBoard
 			
 		if snapToPosition != currentObject.snappedAt
 			if currentObject.snappedAt
-				grid[(currentObject.snappedAt/cellSize).rounded] = null
+				grid[(currentObject.snappedAt/cellSize).round] = null
 				currentObject.onUnsnap
 				
 			currentObject.snappedAt = snapToPosition
 				
 			if snapToPosition
-				grid[(snapToPosition/cellSize).rounded] = currentObject
+				grid[(snapToPosition/cellSize).round] = currentObject
 				currentObject.onSnap
 				
 		
@@ -334,7 +353,7 @@ Board SpotBoard
 	snap: Piece currentObject, Vector2 pos
 		Vector2 closestSpotPos = Vector2.none
 		float minDistance = int.maxValue
-		for spots -> spot
+		for spot in spots
 			let spotPos = spot.getClosestPoint pos, this.position
 			let delta = (spotPos - pos).abs
 			let distance = delta.length
@@ -354,7 +373,7 @@ class Spot
 Spot SpotGrid
 	Vector2 cellSize
 	getClosestPoint: Vector2 touchPos, Vector2 boardPos
-		return ((touchPos-boardPos)/cellSize).rounded*cellSize + boardPos
+		return ((touchPos-boardPos)/cellSize).round*cellSize + boardPos
 		
 Spot SpotHexGrid
 	Vector2 cellSize
@@ -396,7 +415,7 @@ Piece Coin
 			onTouchMove moveTouch
 				core.smooth touch.by
 					position = touch.position + touchOffset
-				if touch.position - touch.startPosition > 8: isBeingMoved = true
+				if touch.position - touch.startPosition > 8 then isBeingMoved = true
 				updateNeighbors siblings, isBeingMoved
 				checkBoardsWhileMoving touch
 			
@@ -404,8 +423,10 @@ Piece Coin
 				Framework.selectedObjects[touch.by.id] = this
 				moveTouch = null
 				
-				if closestCoinType == Over: mergeWith closestCoin; else
-				if !isBeingMoved:           transferToNeighbor closestCoin
+				if closestCoinType == Over
+					mergeWith closestCoin
+				else if !isBeingMoved
+					transferToNeighbor closestCoin
 		else
 			onTouchUp position, radius:64, by:owner
 				transferToNeighbor closestCoin
@@ -414,27 +435,26 @@ Piece Coin
 			if closestCoinType == Neighbor 
 				drawCircle (position + closestCoin.position)/2, size:12, color:darkColor, outlineColor:lightColor, outlineWidth:5
 			if !isInfinate
-				if value < 10:  drawText cast value, position+{0, -4}, color:darkColor, size:42, style:Bold, font:ShadowedSerif, visibleFor:valueVisibleFor; else
-				if value < 100: drawText cast value, position+{0, -4}, color:darkColor, size:30, style:Bold, font:ShadowedSerif, visibleFor:valueVisibleFor; else
-				                drawText cast value, position+{0, -4}, color:darkColor, size:22, style:Bold, font:ShadowedSerif, visibleFor:valueVisibleFor;
+				let textSize = value < 10 ? 42 : value < 100 ? 30 : 22
+				drawText cast value, position+{0, -4}, color:darkColor, size:textSize, style:Bold, font:ShadowedSerif, visibleFor:valueVisibleFor
 			
 			drawImage image, position, frame:closestCoinType == Over ? 1 : 0
 			
 	private static updateNeighbors: Object[] siblings, bool isBeingMoved
-		for siblings -> object
+		for object in siblings
 			if object.type == Coin
 				Coin c = cast object
 				c.clearClosestCoin
 				
-		for siblings -> object
+		for object in siblings
 			if object.type == Coin
 				Coin c = cast object
 				let closestCoin = getClosestCoin c, threshold:90
 				if closestCoin and c.closestCoin != closestCoin
 					let distance = closestCoin.position distanceTo object.position
 					if distance < closestCoin.distanceToClosest
-						if c.closestCoin: c.closestCoin.clearClosestCoin
-						if closestCoin.closestCoin: closestCoin.closestCoin.clearClosestCoin
+						if c.closestCoin then c.closestCoin.clearClosestCoin
+						if closestCoin.closestCoin then closestCoin.closestCoin.clearClosestCoin
 							
 						c.distanceToClosest = distance
 						c.closestCoin = closestCoin
@@ -447,7 +467,7 @@ Piece Coin
 	private static getClosestCoin: Coin source, float threshold = float.infinity
 		Coin closestCoin = null
 		float minDistance = threshold
-		for source.siblings -> object
+		for object in source.siblings
 			if object.type == Coin and object != source
 				Coin c = cast object
 				if c.image == source.image
@@ -459,10 +479,10 @@ Piece Coin
 		return closestCoin
 		
 	onBoardChanged
-		if closestCoin: closestCoin.clearClosestCoin
+		if closestCoin then closestCoin.clearClosestCoin
 		clearClosestCoin		
 		
-	clearClosestCoin:
+	clearClosestCoin
 		closestCoin = null
 		distanceToClosest = float.infinity
 		closestCoinType = None		
@@ -473,15 +493,15 @@ Piece Coin
 		updateNeighbors siblings, isBeingMoved:false
 	
 	private transferToNeighbor: Coin coin, int amount = 1
-		if !isInfinate and value - amount < 0: return
+		if !isInfinate and value - amount < 0 then return
 		Coin neighbor = coin
 		if !neighbor
-			if value <= amount and !isInfinate: return
+			if value <= amount and !isInfinate then return
 			neighbor = {position:position+transferNeighborOffset, image:image}
-			if board: board.add neighbor
+			if board then board.add neighbor
 			neighbor.moveToFront
 		value -= amount
 		neighbor.value += amount
-		if !isInfinate and !allowZero and value <= 0: removeImmediately
+		if !isInfinate and !allowZero and value <= 0 then removeImmediately
 		updateNeighbors siblings, isBeingMoved:false
 

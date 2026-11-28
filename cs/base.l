@@ -642,7 +642,7 @@ class List<T>
 	// cs float average
 	// 	return this.Count > 0 ? this.sum() / this.Count : 0
 		
-	// string joinToString: string(T a) selector
+	// string mapAndJoin: string(T a) selector
 	// 	                 string separator = ", "
 	// 	let result = ""
 	// 	for this

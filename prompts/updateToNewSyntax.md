@@ -25,3 +25,12 @@ ParticleSystem(position:)	ParticleSystem(position:) (unchanged, does not take po
 players	app.players
 me	this
 joinToString	mapAndJoin
+for list -> item	for item in list
+for start to end <- i	for i = start to end
+for n: statement	for i to n (statement on the next line)
+if a: b; else (newline) if c: d	if a (newline) b (newline) else if c (newline) d
+math.clamp(x, min:a, max:b)	x atLeast a atMost b
+vector.rounded	vector.round
+Image.rotateIcon	media.rotateIcon
+onTouchDown pos, size, angle	onTouchDown pos, size (no rotated variant)
+click pos by player	click pos, user:player.playerIndex
