@@ -191,6 +191,18 @@ unit html
 			}
 		}
 
+		// The back and forward buttons of the mouse ("MouseBack", "MouseForward", also with modifiers) run their shortcut when they are
+		// pressed, also while the user edits text. None of their events gets to the page then (its pointer handlers would act on them as on
+		// clicks, the browser would go back in its history)
+		for(const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "auxclick"]) addEventListener(type, ev => {
+			const button = {3:"mouseback", 4:"mouseforward"}[ev.button];
+			const shortcut = button && html.keyboardShortcuts.get(html.pressedAccelerator(ev) + button);
+			if(!shortcut) return;
+			ev.preventDefault();
+			ev.stopPropagation();
+			if(type == "pointerdown") shortcut.do.invoke();
+		}, true);
+
 		// The key of a held shortcut or a modifier went up (on a Mac, keys that are released while Cmd is held send no keyup)
 		document.onkeyup = ev => {
 			const pressed = html.pressedShortcut;
@@ -233,8 +245,9 @@ unit html
 		keyDownListeners.add {key, do, whileEditingText}
 
 	// Calls do when the user presses the keys of an accelerator in the syntax of Electron, e.g. "CmdOrCtrl+Shift+P", "Alt+Left" or "F5"
-	// (https://www.electronjs.org/docs/latest/api/accelerator), or a modifier key of one side alone ("RightAlt", "RightCmd", "LeftShift",
-	// "RightCtrl"). CmdOrCtrl is Cmd on Apple devices and Ctrl everywhere else.
+	// (https://www.electronjs.org/docs/latest/api/accelerator), a modifier key of one side alone ("RightAlt", "RightCmd", "LeftShift",
+	// "RightCtrl") or the back and forward buttons of the mouse ("MouseBack", "Alt+MouseForward"). CmdOrCtrl is Cmd on Apple devices and
+	// Ctrl everywhere else. Modifier keys alone and mouse buttons can't be accelerators of Electron's menus.
 	// While the user edits text, only accelerators with Ctrl, Alt or Cmd, function keys, Escape and modifier keys alone are handled: all
 	// other keys type. Register accelerators in app.start. An accelerator has one listener, the last one registered
 	onKeyboardShortcut: string accelerator
@@ -248,12 +261,14 @@ unit html
 		keyboardShortcuts.remove normalizeAccelerator(accelerator)
 
 	// The keys of a keydown event as normalizeAccelerator writes accelerators. Keys that type another character with Alt or Shift (on a Mac
-	// Alt+T is "†" and Alt+E a dead key, Shift+1 is "!") are named after the letter or digit they type without modifiers (keyCode follows
-	// the keyboard layout)
+	// Alt+T is "†" and Alt+E a dead key, Shift+1 is "!", Shift+- is "_") are named after the letter, digit or punctuation they type without
+	// modifiers (keyCode follows the keyboard layout)
 	private js string pressedAccelerator: dynamic ev
 		const key = ev.key || "", modifiers = (ev.ctrlKey ? "ctrl+" : "") + (ev.altKey ? "alt+" : "") + (ev.shiftKey ? "shift+" : "") + (ev.metaKey ? "meta+" : "");
-		const typesOther = (key == "Dead" || key.length == 1 && !/[a-z0-9]/i.test(key)) && (ev.keyCode >= 48 && ev.keyCode <= 57 || ev.keyCode >= 65 && ev.keyCode <= 90);
-		return modifiers + (typesOther ? String.fromCharCode(ev.keyCode) : key).toLowerCase();
+		const typesOther = key == "Dead" || key.length == 1 && !/[a-z0-9]/i.test(key);
+		const punctuation = ev.altKey || ev.shiftKey ? {186:";", 187:"=", 188:",", 189:"-", 190:".", 191:"/", 192:"`", 219:"[", 220:"\\", 221:"]", 222:"'"}[ev.keyCode] : null;
+		const unmodified = ev.keyCode >= 48 && ev.keyCode <= 57 || ev.keyCode >= 65 && ev.keyCode <= 90 ? String.fromCharCode(ev.keyCode) : punctuation;
+		return modifiers + (typesOther && unmodified ? unmodified : key).toLowerCase();
 
 	// Whether a keydown event (also of an element's own listener) has the keys of an accelerator (onKeyboardShortcut). Not for a modifier key alone
 	js bool isAcceleratorPressed: dynamic ev, string accelerator
@@ -274,8 +289,8 @@ unit html
 	js string acceleratorLabel: string accelerator
 		const apple = html.isAppleDevice();
 		const names = apple ? {commandorcontrol:"⌘", cmdorctrl:"⌘", command:"⌘", cmd:"⌘", super:"⌘", meta:"⌘", control:"⌃", ctrl:"⌃", alt:"⌥", option:"⌥", altgr:"⌥", shift:"⇧",
-			return:"↩", enter:"↩", esc:"⎋", escape:"⎋", backspace:"⌫", delete:"⌦", tab:"⇥", up:"↑", down:"↓", left:"←", right:"→", plus:"+"}
-			: {commandorcontrol:"Ctrl", cmdorctrl:"Ctrl", command:"Meta", cmd:"Meta", super:"Meta", meta:"Meta", control:"Ctrl", ctrl:"Ctrl", alt:"Alt", option:"Alt", shift:"Shift", return:"Enter", esc:"Escape", plus:"+"};
+			return:"↩", enter:"↩", esc:"⎋", escape:"⎋", backspace:"⌫", delete:"⌦", tab:"⇥", up:"↑", down:"↓", left:"←", right:"→", plus:"+", mouseback:"Mouse Back", mouseforward:"Mouse Forward"}
+			: {commandorcontrol:"Ctrl", cmdorctrl:"Ctrl", command:"Meta", cmd:"Meta", super:"Meta", meta:"Meta", control:"Ctrl", ctrl:"Ctrl", alt:"Alt", option:"Alt", shift:"Shift", return:"Enter", esc:"Escape", plus:"+", mouseback:"Mouse Back", mouseforward:"Mouse Forward"};
 		const name = part => {
 			const side = /^(left|right)(.+)$/i.exec(part)
 			return side && names[side[2].toLowerCase()] ? side[1][0].toUpperCase() + side[1].slice(1).toLowerCase() + " " + names[side[2].toLowerCase()] : names[part.toLowerCase()] || (part.length == 1 ? part.toUpperCase() : part)
