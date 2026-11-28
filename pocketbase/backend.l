@@ -732,15 +732,16 @@ DatabaseTable<T>
 					         bool skipTotal = true
 							 void() onChange = null
 							 string() fetchFilter = null	// Narrows the fetches, not the realtime events, read for each fetch: e.g. a filter by indexed fields the list rule implies
+							 string fetchFields = null	// The fields of the fetches instead of fields, not of the realtime events: e.g. without large fields that are loaded when needed
 		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
-		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort: sort || "id", expand, skipTotal, fields}
+		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort: sort || "id", expand, skipTotal, fields}, fetchOptions = fetchFields ? {...realtimeOptions, fields: fetchFields} : realtimeOptions
 		const notify = () => { onChange?.(); backend.onDataChange?.invoke() }
 		let fetchedBefore = false
-		let options = realtimeOptions
+		let options = fetchOptions
 		await backend.subscribeTable(this, "*", {@filter:filter, @fields:fields, @expand:expand},
 			async () => {
 				const narrowing = fetchFilter?.()
-				options = narrowing ? {...realtimeOptions, filter: filter ? `(${filter}) && (${narrowing})` : narrowing} : realtimeOptions
+				options = narrowing ? {...fetchOptions, filter: filter ? `(${filter}) && (${narrowing})` : narrowing} : fetchOptions
 				// After a reconnect, as many pages as the items fill (fetchMore adds pages)
 				const count = fetchedBefore ? Math.max(perPage, Math.ceil(this.items.length / perPage) * perPage) : perPage, pageSize = Math.min(count, 1000)
 				// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full. Without
@@ -762,7 +763,7 @@ DatabaseTable<T>
 					if(item) this.assignEventRecord(item, record)
 					return item || record
 				})
-				this.rememberNextPage(this.items, count, {filter:options.filter, sort, expand, fields})
+				this.rememberNextPage(this.items, count, {filter:options.filter, sort, expand, fields:options.fields})
 				if(this.nextPage) this.nextPage.perPage = Math.min(perPage, 1000)
 				fetchedBefore = true
 				if(hadItems || this.items.length) notify()
@@ -783,7 +784,8 @@ DatabaseTable<T>
 	importance:3
 	async js void fetchAndAdd: string filter
 		                       string expand = null
-		const records = await backend.pocketbase.collection(this.name).getFullList({filter, expand, batch:1000, requestKey:null})
+		                       string fields = null	// A comma separated list of fields to fetch, e.g. "name,active,created"
+		const records = await backend.pocketbase.collection(this.name).getFullList({filter, fields, expand, batch:1000, requestKey:null})
 		const ids = new Set(this.items.map(item => item.id))
 		for(const record of records) if(!ids.has(record.id)) this.items.push(record)
 		backend.onDataChange?.invoke()
