@@ -733,7 +733,7 @@ DatabaseTable<T>
 							 void() onChange = null
 							 string() fetchFilter = null	// Narrows the fetches, not the realtime events, read for each fetch: e.g. a filter by indexed fields the list rule implies
 		if(sort) sort += ",id" // Equal values in the same order on every page (see fetchMore)
-		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort, expand, skipTotal, fields}
+		const collection = backend.pocketbase.collection(this.name), realtimeOptions = {filter, sort: sort || "id", expand, skipTotal, fields}
 		const notify = () => { onChange?.(); backend.onDataChange?.invoke() }
 		let fetchedBefore = false
 		let options = realtimeOptions
@@ -743,10 +743,12 @@ DatabaseTable<T>
 				options = narrowing ? {...realtimeOptions, filter: filter ? `(${filter}) && (${narrowing})` : narrowing} : realtimeOptions
 				// After a reconnect, as many pages as the items fill (fetchMore adds pages)
 				const count = fetchedBefore ? Math.max(perPage, Math.ceil(this.items.length / perPage) * perPage) : perPage, pageSize = Math.min(count, 1000)
-				// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full
+				// The server returns at most 1000 items per page. If more are asked for, the following pages are read while they are full. Without
+				// the caller's sort, a page continues after the last id, so items that change or are added meanwhile are read neither twice nor not at all
 				const records = (await collection.getList(1, pageSize, options)).items
 				for(let page = 2, last = records; last.length == pageSize && records.length < count; page++) {
-					last = (await collection.getList(page, pageSize, options)).items
+					const afterLast = backend.pocketbase.filter("id > {:id}", {id: last[last.length - 1].id})
+					last = (await collection.getList(sort ? page : 1, pageSize, sort ? options : {...options, filter: options.filter ? `(${options.filter}) && ${afterLast}` : afterLast})).items
 					records.push(...last)
 				}
 				if(records.length > count) records.length = count
